@@ -497,5 +497,12 @@
  "You can watch one building. Switching moves your alerts from %@ to here.": "Puedes seguir un edificio. Al cambiar, tus alertas pasan de %@ a este.",
  "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise.": "Gratis: alertas de delitos a menos de media milla. Con Find A Crib Plus, también cada nueva llamada al 311 sobre este edificio: plagas, calefacción, fugas, ruido.",
  "A notification and an email for every new 311 call. All part of Plus": "Una notificación y un correo por cada nueva llamada al 311. Todo es parte de Plus",
- "Every 311 call back to 2010. Part of Plus": "Todas las llamadas al 311 desde 2010. Parte de Plus"
+ "Every 311 call back to 2010. Part of Plus": "Todas las llamadas al 311 desde 2010. Parte de Plus",
+ "%@ and %@ are typing…": "%1$@ y %2$@ están escribiendo…",
+ "%@ is typing…": "%@ está escribiendo…",
+ "%lld neighbors are typing…": "%lld vecinos están escribiendo…",
+ "From": "Desde",
+ "Typing": "Escribiendo",
+ "Sent": "Enviado",
+ "Sent before this phone joined, so it can't be read here": "Enviado antes de que este teléfono se uniera; no se puede leer aquí"
 }

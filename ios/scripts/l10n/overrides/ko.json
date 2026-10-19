@@ -514,5 +514,12 @@
  "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise.": "무료: 반 마일 이내 범죄 알림. Find A Crib Plus에서는 이 건물의 새 311 신고(해충, 난방, 누수, 소음)마다 알림도 받습니다.",
  "A notification and an email for every new 311 call. All part of Plus": "새 311 신고마다 알림과 이메일. 모두 Plus에 포함됩니다",
  "Every 311 call back to 2010. Part of Plus": "2010년부터의 모든 311 신고. Plus에 포함",
- "Free: crime alerts within half a mile of your building": "무료: 내 건물 반 마일 이내 범죄 알림"
+ "Free: crime alerts within half a mile of your building": "무료: 내 건물 반 마일 이내 범죄 알림",
+ "%@ and %@ are typing…": "%1$@님과 %2$@님이 입력 중…",
+ "%@ is typing…": "%@님이 입력 중…",
+ "%lld neighbors are typing…": "이웃 %lld명이 입력 중…",
+ "From": "보낸 곳",
+ "Sent": "보낸 시간",
+ "Typing": "입력 중",
+ "Shows details": "세부 정보 보기"
 }

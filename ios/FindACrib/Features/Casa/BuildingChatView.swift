@@ -411,6 +411,7 @@ struct MessageDetail: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("chat-detail")
     }
 

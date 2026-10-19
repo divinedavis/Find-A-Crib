@@ -152,6 +152,10 @@
       "back" : "%1$@ %2$@ in view",
       "src" : "d71f957b7f24a884"
     },
+    "%@ and %@ are typing…" : {
+      "back" : "%1$@ and %2$@ are writing...",
+      "src" : "d493b44f88eb374f"
+    },
     "%@ and %@ here — see each one" : {
       "back" : "%1$@ and %2$@ here, see each one",
       "src" : "754484d2fe449f4f"
@@ -191,6 +195,10 @@
     "%@ included in the rent" : {
       "back" : "%@ included in the rent",
       "src" : "b82f9704195977f5"
+    },
+    "%@ is typing…" : {
+      "back" : "%@ is writing...",
+      "src" : "1b1a9339298c2b76"
     },
     "%@–%@ bed" : {
       "back" : "Bed %1$@-%2$@",
@@ -263,6 +271,10 @@
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
+    },
+    "%lld neighbors are typing…" : {
+      "back" : "%lld neighbors are writing...",
+      "src" : "3135c5f1fa7a9570"
     },
     "%lld of %lld open" : {
       "back" : "%1$lld of %2$lld open",
@@ -475,6 +487,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "A lottery or subletting is only sent when the rent of an unit is at or below its limit and your family income falls into one of its income bands. Leave both blank to find out everything. Your income and your home also determine which lotteries and subleases you qualify for in the Lotteries tab.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A neighbor" : {
+      "back" : "A neighbor",
+      "src" : "8a1b0af88df1be25"
     },
     "A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything." : {
       "back" : "A notice of lack of fault, according to the Ellis Law, the owner's move and demolition, means that a tenant may be forced to leave without having done anything.",
@@ -1516,6 +1532,10 @@
       "back" : "Find the rental office",
       "src" : "ce86efbe57b0ad69"
     },
+    "findacrib.com" : {
+      "back" : "Findacrib.com",
+      "src" : "e480e427e49b1500"
+    },
     "First come" : {
       "back" : "First come",
       "src" : "e8149207419beec3"
@@ -1563,6 +1583,10 @@
     "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
       "back" : "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call in this building: pests, heat, leaks, noise.",
       "src" : "96c2f8f5a0a55fc8"
+    },
+    "From" : {
+      "back" : "of",
+      "src" : "dcef3ebdb355b26a"
     },
     "From " : {
       "back" : "from",
@@ -1935,6 +1959,10 @@
     "Inspector could not get in to verify (2nd try)" : {
       "back" : "The inspector could not enter to verify (second attempt)",
       "src" : "3c11eee3369906db"
+    },
+    "iPhone app" : {
+      "back" : "iPhone application",
+      "src" : "14536ade71675316"
     },
     "Is it legal?" : {
       "back" : "Is it legal?",
@@ -3344,6 +3372,14 @@
       "back" : "Older people",
       "src" : "4f35aa6873595eea"
     },
+    "Sent" : {
+      "back" : "envoy",
+      "src" : "3d9152aa3055f8ff"
+    },
+    "Sent before this phone joined, so it can't be read here" : {
+      "back" : "Sent before this phone joined, so it cannot be read here.",
+      "src" : "3ab98e791ec939f6"
+    },
     "Set up" : {
       "back" : "to establish",
       "src" : "b21a509db5a8b6ba"
@@ -3391,6 +3427,10 @@
     "Showing the newest %lld." : {
       "back" : "Showing the latest %lld.",
       "src" : "daa5f33f75cba90f"
+    },
+    "Shows details" : {
+      "back" : "Show details",
+      "src" : "87017ec8e68dca4a"
     },
     "Sign in" : {
       "back" : "Log in",
@@ -3612,6 +3652,10 @@
       "back" : "SUBSIDIZED BUILDING / FRIENDLY WITH VALUES",
       "src" : "068ad4280fce30a8"
     },
+    "Tap a message to see when it was sent, or to report it." : {
+      "back" : "Tap a message to see when it was sent or to report it.",
+      "src" : "eb5a51e012bd32fd"
+    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star to rate it in the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -3824,6 +3868,10 @@
       "back" : "This PDF is a scanned one without text. Paste the text of the lease agreement instead, or ask for a digital copy.",
       "src" : "99ff816496917107"
     },
+    "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at the time can read it." : {
+      "back" : "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at that time can read it.",
+      "src" : "1d66e2f93f977504"
+    },
     "this property" : {
       "back" : "This property",
       "src" : "1e1be15335512a21"
@@ -3843,6 +3891,10 @@
     "to" : {
       "back" : "A",
       "src" : "10e05d95e6e3c184"
+    },
+    "Today" : {
+      "back" : "today",
+      "src" : "67637ca5b966dd09"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts, take an hour.",
@@ -3903,6 +3955,10 @@
     "typically %@ sq ft" : {
       "back" : "Typically %@ square feet",
       "src" : "fbd4aeec0e8b3c67"
+    },
+    "Typing" : {
+      "back" : "typing",
+      "src" : "98273442af7d70d7"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 mile",
@@ -4171,6 +4227,10 @@
     "Yes" : {
       "back" : "yes",
       "src" : "f85ada67100a471c"
+    },
+    "Yesterday" : {
+      "back" : "past",
+      "src" : "5a2c2960c8f628d3"
     },
     "You" : {
       "back" : "you",
@@ -4466,6 +4526,10 @@
       "back" : "Visible %1$@ %2$@",
       "src" : "d71f957b7f24a884"
     },
+    "%@ and %@ are typing…" : {
+      "back" : "%1$@ and %2$@ are typing...",
+      "src" : "d493b44f88eb374f"
+    },
     "%@ and %@ here — see each one" : {
       "back" : "Look at %1$@ and %2$@ here - each one separately.",
       "src" : "754484d2fe449f4f"
@@ -4505,6 +4569,10 @@
     "%@ included in the rent" : {
       "back" : "%@ included in the rent.",
       "src" : "b82f9704195977f5"
+    },
+    "%@ is typing…" : {
+      "back" : "%@ is typing...",
+      "src" : "1b1a9339298c2b76"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -4577,6 +4645,10 @@
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
+    },
+    "%lld neighbors are typing…" : {
+      "back" : "%lld My neighbors are typing...",
+      "src" : "3135c5f1fa7a9570"
     },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is open.",
@@ -4789,6 +4861,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Lottery or subletting will only be sent when the rent of the complex is below your ceiling and your furniture income falls within one of the income ranges. Leave both blank to hear everything. Your income and household will also show which lottery and sublease benefits you can receive in the lottery tab.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A neighbor" : {
+      "back" : "the neighborhood",
+      "src" : "8a1b0af88df1be25"
     },
     "A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything." : {
       "back" : "Notice of Freehold Responsibility - Ellis Act, Owner Occupancy, Demolition - means that a tenant may be forced to leave without doing anything.",
@@ -5830,6 +5906,10 @@
       "back" : "Please find a rental office.",
       "src" : "ce86efbe57b0ad69"
     },
+    "findacrib.com" : {
+      "back" : "findacrib.com",
+      "src" : "e480e427e49b1500"
+    },
     "First come" : {
       "back" : "Please come first.",
       "src" : "e8149207419beec3"
@@ -5877,6 +5957,10 @@
     "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
       "back" : "Free: Crime alert within half a mile. Using Find A Crib Plus also applies to all new 311 phones for this building. Pests, heat, leaks, noise.",
       "src" : "96c2f8f5a0a55fc8"
+    },
+    "From" : {
+      "back" : "at",
+      "src" : "dcef3ebdb355b26a"
     },
     "From " : {
       "back" : "from",
@@ -6249,6 +6333,10 @@
     "Inspector could not get in to verify (2nd try)" : {
       "back" : "I couldn't enter the audit to check it (2nd attempt)",
       "src" : "3c11eee3369906db"
+    },
+    "iPhone app" : {
+      "back" : "iPhone app",
+      "src" : "14536ade71675316"
     },
     "Is it legal?" : {
       "back" : "Is that legal?",
@@ -7658,6 +7746,14 @@
       "back" : "Seniors",
       "src" : "4f35aa6873595eea"
     },
+    "Sent" : {
+      "back" : "Sent.",
+      "src" : "3d9152aa3055f8ff"
+    },
+    "Sent before this phone joined, so it can't be read here" : {
+      "back" : "This phone was sent before I subscribed, so I can't read it here.",
+      "src" : "3ab98e791ec939f6"
+    },
     "Set up" : {
       "back" : "establish",
       "src" : "b21a509db5a8b6ba"
@@ -7705,6 +7801,10 @@
     "Showing the newest %lld." : {
       "back" : "We are showing the latest %lld.",
       "src" : "daa5f33f75cba90f"
+    },
+    "Shows details" : {
+      "back" : "Show details.",
+      "src" : "87017ec8e68dca4a"
     },
     "Sign in" : {
       "back" : "Login",
@@ -7926,6 +8026,10 @@
       "back" : "Subsidy support / Voucher-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
+    "Tap a message to see when it was sent, or to report it." : {
+      "back" : "You can tap the message to check when it was sent or report it.",
+      "src" : "eb5a51e012bd32fd"
+    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap one star to rate it in the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -8138,6 +8242,10 @@
       "back" : "This PDF is a scan without text. Instead, please paste the text from the lease agreement or request a digital copy.",
       "src" : "99ff816496917107"
     },
+    "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at the time can read it." : {
+      "back" : "This phone joined after the message was sent, or it was sent with an old key. The message can only be read by the device that was chatting at the time.",
+      "src" : "1d66e2f93f977504"
+    },
     "this property" : {
       "back" : "This property",
       "src" : "1e1be15335512a21"
@@ -8157,6 +8265,10 @@
     "to" : {
       "back" : "oh",
       "src" : "10e05d95e6e3c184"
+    },
+    "Today" : {
+      "back" : "today",
+      "src" : "67637ca5b966dd09"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts - try it for an hour.",
@@ -8217,6 +8329,10 @@
     "typically %@ sq ft" : {
       "back" : "Generally %@ square feet",
       "src" : "fbd4aeec0e8b3c67"
+    },
+    "Typing" : {
+      "back" : "Typing",
+      "src" : "98273442af7d70d7"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 mile",
@@ -8485,6 +8601,10 @@
     "Yes" : {
       "back" : "you",
       "src" : "f85ada67100a471c"
+    },
+    "Yesterday" : {
+      "back" : "yesterday",
+      "src" : "5a2c2960c8f628d3"
     },
     "You" : {
       "back" : "you",
@@ -8780,6 +8900,10 @@
       "back" : "Visible %1$@ %2$@",
       "src" : "d71f957b7f24a884"
     },
+    "%@ and %@ are typing…" : {
+      "back" : "%1$@ and %2$@ are typing...",
+      "src" : "d493b44f88eb374f"
+    },
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - let's take a look at each one.",
       "src" : "754484d2fe449f4f"
@@ -8819,6 +8943,10 @@
     "%@ included in the rent" : {
       "back" : "%@ is included in the rent.",
       "src" : "b82f9704195977f5"
+    },
+    "%@ is typing…" : {
+      "back" : "%@ is typing...",
+      "src" : "1b1a9339298c2b76"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -8891,6 +9019,10 @@
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
+    },
+    "%lld neighbors are typing…" : {
+      "back" : "%lld neighbors are typing...",
+      "src" : "3135c5f1fa7a9570"
     },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
@@ -9103,6 +9235,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Only when the unit's rent reaches or falls below your upper limit, and your family income falls within one of the income ranges, will the lottery be sent or re-rented. Please leave both blank to understand all the information. Your income and family situation will also be displayed in the Lottery tab to show which lotteries and resales you are eligible for.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A neighbor" : {
+      "back" : "A neighbor",
+      "src" : "8a1b0af88df1be25"
     },
     "A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything." : {
       "back" : "Notice of no fault - Ellis Law, the owner moves in, demolition - means that the tenant can be forced to leave, and he did nothing.",
@@ -10144,6 +10280,10 @@
       "back" : "Find a rental office",
       "src" : "ce86efbe57b0ad69"
     },
+    "findacrib.com" : {
+      "back" : "findacrib.com website",
+      "src" : "e480e427e49b1500"
+    },
     "First come" : {
       "back" : "Come first.",
       "src" : "e8149207419beec3"
@@ -10191,6 +10331,10 @@
     "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
       "back" : "Free: Crime alarm within half a mile. Through Find A Crib Plus, every new 311 phone in the building will receive alarms - pests, high temperature, leakage, noise.",
       "src" : "96c2f8f5a0a55fc8"
+    },
+    "From" : {
+      "back" : "comes from",
+      "src" : "dcef3ebdb355b26a"
     },
     "From " : {
       "back" : "follow",
@@ -10563,6 +10707,10 @@
     "Inspector could not get in to verify (2nd try)" : {
       "back" : "The inspector cannot enter to verify (second attempt)",
       "src" : "3c11eee3369906db"
+    },
+    "iPhone app" : {
+      "back" : "iPhone application",
+      "src" : "14536ade71675316"
     },
     "Is it legal?" : {
       "back" : "Is this legal?",
@@ -11972,6 +12120,14 @@
       "back" : "senior citizen",
       "src" : "4f35aa6873595eea"
     },
+    "Sent" : {
+      "back" : "transmit by radio",
+      "src" : "3d9152aa3055f8ff"
+    },
+    "Sent before this phone joined, so it can't be read here" : {
+      "back" : "It was sent before joining this mobile phone, so it can't be read here.",
+      "src" : "3ab98e791ec939f6"
+    },
     "Set up" : {
       "back" : "set up",
       "src" : "b21a509db5a8b6ba"
@@ -12019,6 +12175,10 @@
     "Showing the newest %lld." : {
       "back" : "Show the latest %lld.",
       "src" : "daa5f33f75cba90f"
+    },
+    "Shows details" : {
+      "back" : "Show detailed information",
+      "src" : "87017ec8e68dca4a"
     },
     "Sign in" : {
       "back" : "enter",
@@ -12240,6 +12400,10 @@
       "back" : "Subsidies/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
+    "Tap a message to see when it was sent, or to report it." : {
+      "back" : "Tap the message to see when it was sent, or report the message.",
+      "src" : "eb5a51e012bd32fd"
+    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star on the App Store to rate it.",
       "src" : "fe3f2ad41d265ebe"
@@ -12452,6 +12616,10 @@
       "back" : "This PDF is scanned and there is no text in it. Please paste the text of the lease agreement, or ask for an electronic copy.",
       "src" : "99ff816496917107"
     },
+    "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at the time can read it." : {
+      "back" : "This mobile phone was added after sending the message, or it was sent to an old key. Only the device in the chat at that time can read it.",
+      "src" : "1d66e2f93f977504"
+    },
     "this property" : {
       "back" : "This property",
       "src" : "1e1be15335512a21"
@@ -12471,6 +12639,10 @@
     "to" : {
       "back" : "leave",
       "src" : "10e05d95e6e3c184"
+    },
+    "Today" : {
+      "back" : "today",
+      "src" : "67637ca5b966dd09"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts - give it an hour.",
@@ -12531,6 +12703,10 @@
     "typically %@ sq ft" : {
       "back" : "Usually 100 square feet.",
       "src" : "fbd4aeec0e8b3c67"
+    },
+    "Typing" : {
+      "back" : "type",
+      "src" : "98273442af7d70d7"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 miles",
@@ -12799,6 +12975,10 @@
     "Yes" : {
       "back" : "yes",
       "src" : "f85ada67100a471c"
+    },
+    "Yesterday" : {
+      "back" : "yesterday",
+      "src" : "5a2c2960c8f628d3"
     },
     "You" : {
       "back" : "you",
@@ -13094,6 +13274,10 @@
       "back" : "%1$@ %2$@ are in the field of view",
       "src" : "d71f957b7f24a884"
     },
+    "%@ and %@ are typing…" : {
+      "back" : "%1$@ and %2$@ are typing...",
+      "src" : "d493b44f88eb374f"
+    },
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - take a look at each one.",
       "src" : "754484d2fe449f4f"
@@ -13133,6 +13317,10 @@
     "%@ included in the rent" : {
       "back" : "%@ is included in the rent.",
       "src" : "b82f9704195977f5"
+    },
+    "%@ is typing…" : {
+      "back" : "%@ is typing...",
+      "src" : "1b1a9339298c2b76"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -13205,6 +13393,10 @@
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
+    },
+    "%lld neighbors are typing…" : {
+      "back" : "%lld neighbors are typing...",
+      "src" : "3135c5f1fa7a9570"
     },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
@@ -13417,6 +13609,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Only when the unit's rent reaches or falls below your upper limit, and your family income falls within one of its income ranges, will the lottery be sent or re-rented. Please leave both blank so that you can hear all the information. Your income and family situation will also indicate in the Lottery tab which lotteries and resales you are eligible for.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A neighbor" : {
+      "back" : "A neighbor",
+      "src" : "8a1b0af88df1be25"
     },
     "A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything." : {
       "back" : "No fault notice - Ellis Law, tenant's move-in, demolition - means that the tenant can be forced to leave, and he did nothing.",
@@ -14458,6 +14654,10 @@
       "back" : "Find the rental office",
       "src" : "ce86efbe57b0ad69"
     },
+    "findacrib.com" : {
+      "back" : "findacrib.com website",
+      "src" : "e480e427e49b1500"
+    },
     "First come" : {
       "back" : "First come, first served.",
       "src" : "e8149207419beec3"
@@ -14505,6 +14705,10 @@
     "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
       "back" : "Free: Crime alarm within half a mile. Through Find A Crib Plus, every new 311 phone on this building - pests, heat, leaks, noise.",
       "src" : "96c2f8f5a0a55fc8"
+    },
+    "From" : {
+      "back" : "From",
+      "src" : "dcef3ebdb355b26a"
     },
     "From " : {
       "back" : "From",
@@ -14877,6 +15081,10 @@
     "Inspector could not get in to verify (2nd try)" : {
       "back" : "The inspector cannot enter to perform the verification (second attempt)",
       "src" : "3c11eee3369906db"
+    },
+    "iPhone app" : {
+      "back" : "iPhone application",
+      "src" : "14536ade71675316"
     },
     "Is it legal?" : {
       "back" : "Is this legal?",
@@ -16286,6 +16494,14 @@
       "back" : "The elderly",
       "src" : "4f35aa6873595eea"
     },
+    "Sent" : {
+      "back" : "Send",
+      "src" : "3d9152aa3055f8ff"
+    },
+    "Sent before this phone joined, so it can't be read here" : {
+      "back" : "It was sent before adding it to this mobile phone, so it can't be read here.",
+      "src" : "3ab98e791ec939f6"
+    },
     "Set up" : {
       "back" : "Establish",
       "src" : "b21a509db5a8b6ba"
@@ -16333,6 +16549,10 @@
     "Showing the newest %lld." : {
       "back" : "Display the latest %lld.",
       "src" : "daa5f33f75cba90f"
+    },
+    "Shows details" : {
+      "back" : "Show detailed information",
+      "src" : "87017ec8e68dca4a"
     },
     "Sign in" : {
       "back" : "Sign in",
@@ -16554,6 +16774,10 @@
       "back" : "Subsidized/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
+    "Tap a message to see when it was sent, or to report it." : {
+      "back" : "Click on the message to view its sending time, or report it.",
+      "src" : "eb5a51e012bd32fd"
+    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Click a star to rate it on the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -16766,6 +16990,10 @@
       "back" : "This PDF is scanned and there is no text in it. Please paste the text of the lease agreement, or ask for a digital copy.",
       "src" : "99ff816496917107"
     },
+    "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at the time can read it." : {
+      "back" : "This phone was added after sending the message, or it was sent to an older password. Only the device in the chat at the time can read it.",
+      "src" : "1d66e2f93f977504"
+    },
     "this property" : {
       "back" : "This property",
       "src" : "1e1be15335512a21"
@@ -16785,6 +17013,10 @@
     "to" : {
       "back" : "Arrive",
       "src" : "10e05d95e6e3c184"
+    },
+    "Today" : {
+      "back" : "Today",
+      "src" : "67637ca5b966dd09"
     },
     "Too many tries — give it an hour." : {
       "back" : "I've tried too many times - give it an hour.",
@@ -16845,6 +17077,10 @@
     "typically %@ sq ft" : {
       "back" : "Usually %@ square feet",
       "src" : "fbd4aeec0e8b3c67"
+    },
+    "Typing" : {
+      "back" : "Typewriting",
+      "src" : "98273442af7d70d7"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 miles",
@@ -17113,6 +17349,10 @@
     "Yes" : {
       "back" : "Yes",
       "src" : "f85ada67100a471c"
+    },
+    "Yesterday" : {
+      "back" : "Yesterday",
+      "src" : "5a2c2960c8f628d3"
     },
     "You" : {
       "back" : "You",

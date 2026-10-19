@@ -731,6 +731,40 @@
         }
       }
     },
+    "%@ and %@ are typing…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ and %2$@ are typing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ y %2$@ están escribiendo…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@님과 %2$@님이 입력 중…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@和%2$@正在输入…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@和%2$@正在輸入…"
+          }
+        }
+      }
+    },
     "%@ and %@ here — see each one" : {
       "localizations" : {
         "en" : {
@@ -935,6 +969,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "租金中包含%@"
+          }
+        }
+      }
+    },
+    "%@ is typing…" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ está escribiendo…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@님이 입력 중…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@正在输入…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@正在輸入…"
           }
         }
       }
@@ -2258,6 +2320,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld 位鄰居"
+          }
+        }
+      }
+    },
+    "%lld neighbors are typing…" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld vecinos están escribiendo…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이웃 %lld명이 입력 중…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld位邻居正在输入…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld位鄰居正在輸入…"
           }
         }
       }
@@ -4616,6 +4706,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "只有當單位的租金達到或低於您的上限，並且您的家庭收入屬於其收入範圍之一時，才會發送抽籤或重新出租。請將兩者都留空，以便聽取所有資訊。您的收入和家庭狀況還會在「抽籤」選項卡中標明您有資格參加哪些抽籤和重新出租。"
+          }
+        }
+      }
+    },
+    "A neighbor" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un vecino"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이웃"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一位邻居"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一位鄰居"
           }
         }
       }
@@ -7644,34 +7762,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "我的房東能阻止我的伴侶搬進來嗎？"
-          }
-        }
-      }
-    },
-    "Can't be read on this phone" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede leer en este teléfono"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 휴대폰에서는 읽을 수 없음"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法在这部手机上读取"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無法在這支手機上讀取"
           }
         }
       }
@@ -12321,6 +12411,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "免費：半英里內的犯罪提醒。開通Find A Crib Plus，這棟樓每則新的311投訴（蟲害、供暖、漏水、噪音）也會提醒你。"
+          }
+        }
+      }
+    },
+    "From" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desde"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보낸 곳"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来源"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "來源"
           }
         }
       }
@@ -24741,6 +24859,62 @@
         }
       }
     },
+    "Sent" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviado"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보낸 시간"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送时间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傳送時間"
+          }
+        }
+      }
+    },
+    "Sent before this phone joined, so it can't be read here" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviado antes de que este teléfono se uniera; no se puede leer aquí"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 전화기가 가입하기 전에 보내졌기 때문에 여기서는 읽을 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在这台手机加入之前发送的，所以在这里无法阅读"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在這部手機加入之前發送的，所以這裡無法讀取"
+          }
+        }
+      }
+    },
     "Set up" : {
       "localizations" : {
         "es" : {
@@ -25079,6 +25253,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示最新的 %lld 條。"
+          }
+        }
+      }
+    },
+    "Shows details" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muestra detalles"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세부 정보 보기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "显示详细信息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "顯示詳細資訊"
           }
         }
       }
@@ -26744,6 +26946,34 @@
         }
       }
     },
+    "Tap a message to see when it was sent, or to report it." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toca un mensaje para ver cuándo se envió o para denunciarlo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "메시지를 탭하여 언제 전송되었는지 확인하거나 신고할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "轻点消息查看何时发送，或报告该消息。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "點擊訊息以檢視其發送時間，或報告其。"
+          }
+        }
+      }
+    },
     "Tap a star to rate it on the App Store." : {
       "localizations" : {
         "es" : {
@@ -28088,6 +28318,34 @@
         }
       }
     },
+    "This phone joined after the message was sent, or it was sent to an older key. Only devices in the chat at the time can read it." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Este teléfono se unió después de que se enviara el mensaje, o se envió a una clave más antigua. Solo los dispositivos en el chat en ese momento pueden leerlo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 전화기는 메시지가 전송된 후에 가입했거나, 오래된 키로 전송되었습니다. 해당 메시지는 당시 채팅 중인 기기만 읽을 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此手机是在发送消息后加入的，或者它被发送到一个旧的密钥上。只有当时聊天中的设备才能读取它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此電話是在發送訊息後加入的，或者它被發送到一個更舊的密碼上。只有當時聊天中的裝置才能讀取它。"
+          }
+        }
+      }
+    },
     "This replaces any borough alert already set up for this email on findacrib.com." : {
       "localizations" : {
         "es" : {
@@ -28224,6 +28482,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "通過房源代理"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hoy"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오늘"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "今天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "今天"
           }
         }
       }
@@ -28616,6 +28902,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "進入的典型等待時間：約%@（HUD）"
+          }
+        }
+      }
+    },
+    "Typing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribiendo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "입력 중"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在输入"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在輸入"
           }
         }
       }
@@ -30436,6 +30750,34 @@
         }
       }
     },
+    "Yesterday" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ayer"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "어제"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "昨天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "昨天"
+          }
+        }
+      }
+    },
     "You" : {
       "localizations" : {
         "es" : {
@@ -31845,6 +32187,34 @@
         }
       }
     },
+    "findacrib.com" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "findacrib.com"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "findacrib.com"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "findacrib.com"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "findacrib.com"
+          }
+        }
+      }
+    },
     "from %@" : {
       "localizations" : {
         "es" : {
@@ -31897,6 +32267,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "家庭收入"
+          }
+        }
+      }
+    },
+    "iPhone app" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "aplicación iPhone"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone 앱"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone App"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone App"
           }
         }
       }

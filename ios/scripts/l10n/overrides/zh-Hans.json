@@ -378,5 +378,14 @@
  "A notification and an email for every new 311 call. All part of Plus": "每条新的311投诉都会发送通知和电子邮件。均属于Plus",
  "Every 311 call back to 2010. Part of Plus": "2010年以来的所有311投诉。属于Plus",
  "Free: crime alerts within half a mile of your building": "免费：你所在楼半英里内的犯罪提醒",
- "Alerts for this building": "这栋楼的提醒"
+ "Alerts for this building": "这栋楼的提醒",
+ "%@ and %@ are typing…": "%1$@和%2$@正在输入…",
+ "%@ is typing…": "%@正在输入…",
+ "%lld neighbors are typing…": "%lld位邻居正在输入…",
+ "From": "来源",
+ "Sent": "发送时间",
+ "Typing": "正在输入",
+ "findacrib.com": "findacrib.com",
+ "A neighbor": "一位邻居",
+ "iPhone app": "iPhone App"
 }

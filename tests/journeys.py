@@ -306,6 +306,11 @@ class Runner:
             # the journey through the data it did not paint.
             if str(e).strip() == 'TypeError: Load failed' and not stack.strip():
                 return
+            # The same cut-off read, worded by WebKit's stream reader: "The I/O
+            # read operation failed." Stackless; failed ipad/phone:city_pages
+            # ~1 run in 3 on main (2026-10-19) and blocked two deploys.
+            if str(e).startswith('NotReadableError') and not stack.strip():
+                return
             where = stack.split('\n')[1].strip()[:120] if '\n' in stack else ''
             j.errors.append('pageerror: ' + str(e)[:200] + (' @ ' + where if where else ''))
         page.on('pageerror', on_pageerror)

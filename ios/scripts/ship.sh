@@ -77,6 +77,7 @@ MINI_SIM="${MINI_SIMULATOR_ID:-$(sim_named 'iPad mini')}"
 # five more times between them (owner, 2026-10-18).
 echo "==> building the app and tests once"
 source scripts/build_flags.sh
+mkdir -p build.nosync   # a fresh worktree has none; the log below needs it
 rm -rf build.nosync/tests/Build/Products/*.xctestrun
 xcodebuild -project "$PROJECT" -scheme "$SCHEME" -destination "generic/platform=iOS Simulator" \
   -derivedDataPath build.nosync/tests "${FAST_FLAGS[@]}" build-for-testing > build.nosync/build-for-testing.log 2>&1 \

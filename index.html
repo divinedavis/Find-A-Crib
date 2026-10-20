@@ -81,7 +81,48 @@
      exclusive inventory, so every trace of AdSense (the loader and the
      in-grid slot code) is gone; Mediavine places its own ads. Early in <head>
      on purpose: Mediavine says earlier execution bids better. -->
-<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>
+<script>
+/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner,
+   2026-09-29). fac.noads is set by index.html once Plus is confirmed and
+   cleared on sign-out/lapse.
+   PHONES load it later (owner, 2026-10-20: "lets load the mediavine ads later
+   on phones"). Page deaths on iPhones kept ending with 20-34 ad frames mounted
+   (ad22 + 2 videos on 10/20, the keyboard opening; ad26-ad34 in the 10/14-17
+   census) while the page itself was still building its list and map. On a
+   phone the tag now waits until the page has been open 8 s AND the visitor
+   has paused 1.5 s, never while the keyboard is up (a text field focused),
+   and goes by 30 s at the latest (still not mid-typing). Desktop and iPad
+   load it at once, as before. window.__mvLoaded says when and why. */
+(function () {
+  try { if (localStorage.getItem('fac.noads') === '1') return; } catch (e) {}
+  var MIN_MS = 8000, IDLE_MS = 1500, MAX_MS = 30000;
+  function load(why) {
+    if (window.__mvLoaded) return;
+    window.__mvLoaded = { why: why, at: Date.now() - start };
+    var s = document.createElement('script');
+    s.async = true; s.setAttribute('data-noptimize', '1'); s.setAttribute('data-cfasync', 'false');
+    s.src = '//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';
+    document.head.appendChild(s);
+    try { if (window.facTrace) window.facTrace('ads:load ' + why); } catch (e) {}
+  }
+  var start = Date.now(), phone = false;
+  try { phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600; } catch (e) {}
+  if (!phone) return load('now');
+  var last = start;
+  ['touchstart', 'touchmove', 'scroll', 'keydown', 'input'].forEach(function (t) {
+    addEventListener(t, function () { last = Date.now(); }, { passive: true, capture: true });
+  });
+  function typing() { var a = document.activeElement; return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable); }
+  (function check() {
+    var now = Date.now();
+    if (document.visibilityState === 'visible' && !typing()) {
+      if (now - start >= MAX_MS) return load('max');
+      if (now - start >= MIN_MS && now - last >= IDLE_MS) return load('idle');
+    }
+    setTimeout(check, 500);
+  })();
+})();
+</script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>

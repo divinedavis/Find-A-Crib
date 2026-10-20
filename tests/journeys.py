@@ -103,6 +103,7 @@ JOURNEY_EVENTS = {
     'search_area':          ['search'],
     'search_zip_and_miss':  ['search'],
     'search_intents':       ['search', 'search_intent'],
+    'ads_later_on_phones':  [],
     'pin_and_list':         ['building_view'],
     'filters_and_save':     ['save', 'unsave', 'saved_view'],
     'deep_links_and_view':  ['building_view'],
@@ -1715,6 +1716,34 @@ class Runner:
         self.ok(after != before, f'the list did not follow a 4-step zoom after a tap: still {after}', j)
         j.notes.append('list rebuilt after tap + zoom')
 
+    def j_ads_later_on_phones(self, page, j, device):
+        """Phones load Mediavine late (owner, 2026-10-20): not in the first
+        8 s, never while the keyboard is up, then once the visitor pauses.
+        Desktop and iPad load it at once."""
+        if device == 'ipad':
+            return
+        seen = []
+        page.on('request', lambda r: seen.append(time.time()) if 'scriptwrapper.com/tags/' in r.url else None)
+        t0 = time.time()
+        self.boot(page, wait_pins=False)
+        if device == 'desktop':
+            time.sleep(1)
+            why = page.evaluate("(window.__mvLoaded || {}).why")
+            self.ok(why == 'now' and seen, f'desktop should load Mediavine at once, got {why!r}', j)
+            return
+        time.sleep(max(0, 4 - (time.time() - t0)))
+        self.ok(not seen, 'a phone requested Mediavine in its first seconds', j)
+        page.focus('#q')                                  # keyboard up
+        time.sleep(max(0, 11 - (time.time() - t0)))
+        self.ok(not seen, 'a phone loaded Mediavine while a text field had focus', j)
+        page.evaluate("document.activeElement && document.activeElement.blur()")
+        time.sleep(3)
+        why = page.evaluate("(window.__mvLoaded || {}).why")
+        self.ok(why == 'idle' and seen, f'once the visitor paused, the phone should load Mediavine, got {why!r}', j)
+        traced = page.evaluate("(JSON.parse(localStorage.getItem(window.facTraceKey) || '{}').s || []).some(x => String(x[1]).startsWith('ads:load'))")
+        self.ok(traced, 'the trace should record when ads loaded', j)
+        j.notes.append(f"loaded at {page.evaluate('(window.__mvLoaded||{}).at')} ms")
+
     def j_plus_no_ads(self, page, j, device):
         """Plus includes no ads (owner, 2026-09-29): a device that has seen a
         confirmed Plus membership (fac.noads) must never request Mediavine's
@@ -2263,7 +2292,7 @@ class Runner:
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
-    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'pin_and_list',
+    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
                 'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']

@@ -2089,3 +2089,12 @@ final class EmailCheckTests: XCTestCase {
         XCTAssertNil(EmailCheck.problem("x@company.co"), ".co is a real ending outside gmail")
     }
 }
+
+/// Building card spacing (owner, 2026-10-20): one 8pt gap for every row and
+/// the buttons, and the neighborhood / address / price block 30% tighter.
+final class BuildingCardSpacingTests: XCTestCase {
+    func testRowsAndButtonsShareOneGapAndTheHeadIsTighter() {
+        XCTAssertEqual(BuildingCard.rowGap, 8)
+        XCTAssertEqual(BuildingCard.headGap, 5.6, accuracy: 0.001)
+    }
+}

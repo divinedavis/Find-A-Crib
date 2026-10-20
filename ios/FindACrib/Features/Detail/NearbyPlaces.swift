@@ -77,7 +77,7 @@ enum NearbyPlaces {
 struct NearbyPlacesRail: View {
     let title: String
     let icon: String
-    let note: String
+    var note: String? = nil
     let places: [NearbyPlace]
     let testID: String
 
@@ -100,7 +100,7 @@ struct NearbyPlacesRail: View {
                         }
                     }.padding(.horizontal, 16)
                 }
-                Text(note).font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16)
+                if let note { Text(note).font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16) }
             }
             .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
             .accessibilityIdentifier(testID)

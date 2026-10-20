@@ -836,8 +836,8 @@ struct BuildingDetailView: View {
     /// its borough in New York, Apple Maps' legal search elsewhere. Live
     /// Maps results are never stored (Apple's terms).
     @ViewBuilder private var nearbyRails: some View {
+        // No caption under the cafés (owner, 2026-10-20).
         NearbyPlacesRail(title: String(localized: "Cafés nearby"), icon: "cup.and.saucer",
-                         note: String(localized: "Cafés within about half a mile, from Apple Maps."),
                          places: cafesNearby, testID: "nearby-cafes")
         if store.city.isNYC {
             HousingLawFirmsRail(borough: b.borough, firms: HousingLawFirm.inBorough(b.borough, near: b.coordinate))
@@ -870,7 +870,6 @@ struct BuildingDetailView: View {
                         }
                     }.padding(.horizontal, 16)
                 }
-                Text("Nearest rent-stabilized buildings in the same neighborhood.").font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16)
             }
             .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
         }

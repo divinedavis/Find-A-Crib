@@ -59,7 +59,7 @@ DASHBOARD_RANGES = {"all", "6m", "3m", "month", "today"}
 DASHBOARD_READ_PATHS = frozenset({"/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings",
                                   "/dashboard-investor"})
 # The investor card's own window picker (db/0065): days, or None for all time.
-DASHBOARD_INVESTOR_DAYS = {"30": 30, "60": 60, "90": 90, "all": None}
+DASHBOARD_INVESTOR_DAYS = {"14": 14, "30": 30, "60": 60, "90": 90, "all": None}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
@@ -1966,8 +1966,8 @@ def _fac_conversion_trend():
 
 
 
-# The investor card's 30/60/90/all-time picker (owner, 2026-10-19). ~1.5 s of
-# SQL and the owner flips between four windows, so each is kept a minute.
+# The investor card's 14/30/60/90/all-time picker (owner, 2026-10-19/20). ~1.5 s of
+# SQL and the owner flips between five windows, so each is kept a minute.
 @_memo(60)
 def _fac_investor_rpc(days, builds):
     return rpc("dashboard_investor", {"p_days": days,

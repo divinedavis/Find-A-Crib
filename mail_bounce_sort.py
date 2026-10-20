@@ -123,11 +123,13 @@ def count(M, uids, dry):
         b = parse_bounce(d[0][1])
         if b:
             if dry:
-                print("would count", *b)
+                local, _, dom = b[0].partition("@")
+                print("would count", f"{local[:1]}***@{dom}", b[1])
             else:
                 stopped = record(*b)
                 if stopped:
-                    print(f"suppressed {b[0]} ({b[1]}): {b[2][:120]}")
+                    local, _, dom = b[0].partition("@")   # masked like emailkit.mask_email
+                    print(f"suppressed {local[:1]}***@{dom} ({b[1]}): {b[2][:120].replace(b[0], '***')}")
         if not dry:
             M.uid("STORE", uid, "+FLAGS", f"({COUNTED})")
         n += 1

@@ -2657,7 +2657,8 @@ function favActive() {
     '079': 'northern New Jersey',
     '115': 'Nassau County, Long Island', '116': 'Long Island',
     '117': 'Long Island', '118': 'Long Island', '119': 'Long Island',
-    '129': 'the Hudson Valley', '125': 'the Hudson Valley',
+    '129': 'the Hudson Valley', '125': 'the Hudson Valley', '126': 'Poughkeepsie and Dutchess County',
+    '122': 'Albany', '110': 'Nassau County, Long Island', '114': 'southeast Queens',
   };
   // ---------- New Jersey ----------
   // NJ gets an answer but not a map. Rent control there is municipal — ~120
@@ -2723,7 +2724,13 @@ function favActive() {
   // ZIPs that another Find A Crib map answers. Keyed the same way as
   // OUT_OF_AREA — full ZIP first, then 3-digit prefix.
   const COVERED_ELSEWHERE = {
+    // The Westchester map holds 105xx-108xx (Mount Vernon, New Rochelle,
+    // White Plains, Yonkers); only 107 was here, so "10550" said "not covered"
+    // to people the other map could answer (2026-10-19 search review).
+    '105': { href: '/westchester/', label: 'See the Yonkers & Westchester map' },
+    '106': { href: '/westchester/', label: 'See the Yonkers & Westchester map' },
     '107': { href: '/westchester/', label: 'See the Yonkers & Westchester map' },
+    '108': { href: '/westchester/', label: 'See the Yonkers & Westchester map' },
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
@@ -3536,7 +3543,13 @@ function favActive() {
   // typical-rent estimate (studio–2BR) for buildings with no active listing
   function estRent(rec) {
     const f = FMR[rec.z];
-    return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
+    if (!f) return '';
+    if (BEDS_SEL.length) {
+      const vals = BEDS_SEL.map(b => f[Math.min(b, f.length - 1)]), lo = Math.min(...vals), hi = Math.max(...vals);
+      const size = BEDS_SEL.length === 1 ? (BEDS_SEL[0] === 0 ? 'studio' : BEDS_SEL[0] >= 3 ? '3BR+' : BEDS_SEL[0] + 'BR') : 'your sizes';
+      return `Est. $${lo.toLocaleString()}${hi > lo ? '–$' + hi.toLocaleString() : ''}/mo for a ${size}`;
+    }
+    return `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo`;
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
   // No listing data (2026-10-06): the portal listing feeds were dropped
@@ -3560,7 +3573,18 @@ function favActive() {
   // on the record — SF's block median and DC's registered legal rent. Without
   // that fallback the price sort had nothing to read outside New York and
   // silently ranked every building equal.
-  const priceOf = r => (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
+  // The Bedrooms filter (2026-10-19) prices by the chosen size: with "2 beds"
+  // on, a building's price is its ZIP's 2BR rent, so "2 bedroom under $2,500"
+  // means what it says. It used to change nothing on the web — the checkboxes
+  // lit the pill and re-ran the filter, which never read them (the listing
+  // feed they once narrowed was dropped 10/06). HUD's array is studio..3BR.
+  let BEDS_SEL = [];
+  const priceOf = r => {
+    const f = FMR[r.z];
+    if (!f) return r.mr ?? null;
+    if (BEDS_SEL.length) return Math.min(...BEDS_SEL.map(b => f[Math.min(b, f.length - 1)]));
+    return (f[0] + f[2]) / 2;
+  };
   // Section 8 / voucher signals, keyed by BBL (s8.json):
   //   bldg  — subsidized building (flags: 1 = HPD city-financed, 2 = HUD project-based Section 8)
   //   avail — live listings on AffordableHousing.com (landlords soliciting voucher tenants)
@@ -5044,6 +5068,8 @@ function favActive() {
     LIC: ['Long Island City-Hunters Point'],
     BEDSTUY: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
     BEDFORDSTUYVESANT: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
+    BEDFORDSTUY: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
+    BEDSTUYVESANT: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
     STUYTOWN: ['Stuyvesant Town-Peter Cooper Village'],
     HELLSKITCHEN: ["Hell's Kitchen"],
     DUMBO: ['Downtown Brooklyn-DUMBO-Boerum Hill'],
@@ -5059,7 +5085,7 @@ function favActive() {
   const ALIAS_LABEL = {
     UES: 'Upper East Side', UWS: 'Upper West Side', LES: 'Lower East Side',
     FIDI: 'Financial District', LIC: 'Long Island City', BEDSTUY: 'Bed-Stuy',
-    BEDFORDSTUYVESANT: 'Bed-Stuy', LOWERMANHATTAN: 'Lower Manhattan',
+    BEDFORDSTUYVESANT: 'Bed-Stuy', BEDFORDSTUY: 'Bed-Stuy', BEDSTUYVESANT: 'Bed-Stuy', LOWERMANHATTAN: 'Lower Manhattan',
     DOWNTOWNMANHATTAN: 'Lower Manhattan', DOWNTOWNBROOKLYN: 'Downtown Brooklyn',
     MIDTOWN: 'Midtown', ROCKAWAYS: 'The Rockaways', THEROCKAWAYS: 'The Rockaways',
     QNS: 'Queens', MANH: 'Manhattan', BK: 'Brooklyn', BKLYN: 'Brooklyn',
@@ -5573,7 +5599,7 @@ function favActive() {
     positionAC();
     searchAC.hidden = false;
   }
-  let qTimer, qTrackTimer, qOrgTimer, qACTimer;
+  let qTimer, qTrackTimer, qOrgTimer, qACTimer, qIntentTimer;
   qInput.addEventListener('input', () => {
     setQueryNote('');
     keepFiltersFor = '';                 // a new keystroke re-arms the auto-relax
@@ -5601,6 +5627,22 @@ function favActive() {
     // person actually meant. `settled` marks the ones that are real.
     clearTimeout(qTrackTimer);
     qTrackTimer = setTimeout(trackSearch, 1200);
+    // "2 bedroom brooklyn", "studio under $2000", "voucher": once the typing
+    // pauses, turn those on as filters and search the place that is left.
+    // Waits longer than the search itself so "2 bed" is not acted on while
+    // "room" is still being typed.
+    clearTimeout(qIntentTimer);
+    qIntentTimer = setTimeout(() => {
+      const raw = qInput.value;
+      const it = IS_NYC ? searchIntent(raw) : null;
+      if (!it) return;
+      track('search_intent', { beds: it.beds.length, s8: it.s8, pmax: it.pmax != null, rest: !!it.rest });
+      applySearchIntent(it);
+      if (qInput.value !== raw) return;   // they kept typing
+      qInput.value = it.rest;
+      qInput.dispatchEvent(new Event('input', { bubbles: true }));
+      showPlusToast('Filter on: ' + it.said.join(' · ') + (it.rest ? ' — in ' + stripFiller(it.rest) : ''));
+    }, 900);
   });
   function trackSearch() {
     tr('trackSearch');
@@ -5661,6 +5703,7 @@ function favActive() {
     // removed 2026-09-06 (it sat over the list on a phone).
     if (st.relaxed || st.tier === 'kept') { searchHelper.hidden = true; return; }
     if (st.tier === 'zipmiss') {
+      q = (q.match(/\d{5}/) || [q])[0];   // "10550 ny" → 10550
       const where = st.label ? ` — that’s <b>${esc(st.label)}</b>` : '';
       // Some of these now have a home. A ZIP we cover on ANOTHER map should
       // send the person there, not tell them we don't have it — that was the
@@ -5698,6 +5741,25 @@ function favActive() {
       card(`<div class="sh-head">This map has no ZIP-level detail, so <b>${esc(q)}</b> can’t be looked up here.
         ${esc(CITY.name)}’s source records an address or block, not a ZIP — search a street instead.</div>
         <div class="sh-chips"><button data-sh="clear">← Show everything</button></div>`);
+      return;
+    }
+    // Words that only restate the map, a town another map covers, or one no
+    // map covers yet (2026-10-19 search review).
+    if (st.tier === 'filler') {
+      card(`<div class="sh-head">Every building on this map is ${IS_NYC ? 'rent-stabilized' : 'rent-regulated'} — that’s all it shows, so there’s nothing to narrow by “${esc(q)}”. Search an address, a neighborhood or a ZIP, or use <b>Filters</b> for bedrooms, price and vouchers.</div>
+        <div class="sh-chips"><button data-sh="beds">Bedrooms &amp; price</button><button data-sh="clear">Clear search</button></div>`);
+      return;
+    }
+    if (st.tier === 'elsewhere') {
+      const go = ELSEWHERE_WORDS.map(x => x[1]).find(w => w.place === st.label) || ELSEWHERE_WORDS[0][1];
+      const rest = stripFiller(q);
+      card(`<div class="sh-head"><b>${esc(st.label)}</b> isn’t on the ${esc(CITY.name)} map — but Find A Crib covers it.</div>
+        <div class="sh-chips"><a class="sh-go" href="${esc(go.href)}?q=${encodeURIComponent(rest)}">→ ${esc(go.label)}</a><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
+      return;
+    }
+    if (st.tier === 'outside') {
+      card(`<div class="sh-head">Find A Crib doesn’t cover <b>${esc(st.label)}</b> yet — today it covers New York City, Westchester, Los Angeles, San Francisco and Washington DC.</div>
+        <div class="sh-chips"><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
       return;
     }
     if (st.tier === 'pending') {
@@ -6011,7 +6073,85 @@ function favActive() {
   // they named, the landlord they named, the rest of their street. Half of all
   // settled searches used to end at zero results, and almost every one of them
   // had an honest answer one tier down.
+  // ---------- what people type that isn't a place (2026-10-19) ----------
+  // A month of searches: ~90 people typed "rent" / "rent stabilized" / "search
+  // only rent stabilized", ~30 typed "2 bedroom" or "studio", others "yonkers",
+  // "bronx ny", "bedford stuy", "voucher", "$1000". Each fell to nomatch and the
+  // map answered with every building in the city. Words that only restate what
+  // the map is (rent-stabilized apartments in NYC) are dropped before matching;
+  // bedrooms, vouchers and a price become the real filters (searchIntent);
+  // other towns get pointed at the map that covers them.
+  const FILLER_RE = /\b(?:please|search(?:ing)?|show(?: me)?|find(?: me)?|looking(?: for)?|i(?: am|'m)?|want|need|only|just|all|any|rent[\s-]*stab\w*|rent[\s-]*regulated|rent[\s-]*controll?ed|stabili[sz]ed|stabalized|rentals?|rent|for|apartments?|apts?|units?|homes?|buildings?|in|at|near(?: me)?|the|a|an|ny|nyc|new york(?: city)?|city|ny state)\b/gi;
+  function stripFiller(Q) {
+    return (Q || '').replace(/[,.!?]+/g, ' ').replace(FILLER_RE, ' ').replace(/\s+/g, ' ').trim();
+  }
+  // "bronx 10453", "brooklyn ny 11221": the ZIP is the precise part.
+  const BORO_WORDS_RE = /^(?:(?:the\s+)?bronx|brooklyn|bklyn|bk|queens|manhattan|staten island|si)$/i;
+  function zipFromPlace(S) {
+    const m = S.match(/\b(\d{5})\b/);
+    if (!m) return null;
+    const other = S.replace(m[0], ' ').replace(/\s+/g, ' ').trim();
+    return (!other || BORO_WORDS_RE.test(other)) ? m[1] : null;
+  }
+  // Towns another Find A Crib map covers, or that no map covers yet.
+  const ELSEWHERE_WORDS = IS_NYC ? [
+    [/\b(?:yonkers|mount vernon|mt\.? vernon|new rochelle|white plains|westchester|scarsdale|tarrytown|ossining|peekskill|port chester|mamaroneck)\b/i,
+     { href: '/westchester/', label: 'See the Yonkers & Westchester map', place: 'Westchester' }],
+  ] : [];
+  const OUTSIDE_WORDS = [
+    [/\b(?:poughkeepsie|albany|buffalo|rochester|syracuse|newburgh|kingston)\b/i, 'upstate New York'],
+    [/\b(?:long island|hempstead|freeport|hicksville|levittown|nassau|suffolk)\b/i, 'Long Island'],
+  ];
+  // Bedrooms, vouchers and a price cap typed into the box. Returns null when
+  // there is nothing to turn on, else { beds:[...], s8, pmax, rest, said:[] }.
+  function searchIntent(raw) {
+    let t = ' ' + (raw || '').toLowerCase() + ' ';
+    const beds = new Set(), said = [];
+    t = t.replace(/\b(\d)\s*-?\s*(?:br|bd|bdr|bdrm|bed|beds|bedroom|bedrooms|bedrm)\b/g, (_, n) => { beds.add(Math.min(+n, 4)); return ' '; });
+    t = t.replace(/\b(one|two|three|four)\s*-?\s*(?:bed|beds|bedroom|bedrooms|br)\b/g, (_, w) => { beds.add({ one: 1, two: 2, three: 3, four: 4 }[w]); return ' '; });
+    t = t.replace(/\bstudios?\b/g, () => { beds.add(0); return ' '; });
+    let s8 = false;
+    t = t.replace(/\b(?:section\s*8|sec\s*8|s8|vouchers?|cityfheps|fheps|hasa|hcv)\b/g, () => { s8 = true; return ' '; });
+    let pmax = null;
+    t = t.replace(/(?:\b(?:under|below|max|up to|less than|cheaper than|no more than)\s*\$?\s*(\d[\d,]{2,5})\b|\$\s*(\d[\d,]{2,5})\b|\b(\d[\d,]{2,5})\s*(?:\$|dollars|\/\s*mo(?:nth)?|a month|per month))/g,
+      (_, a, b, c) => { const v = +(a || b || c).replace(/,/g, ''); if (v >= 300 && v <= 20000) pmax = v; return ' '; });
+    if (!beds.size && !s8 && pmax == null) return null;
+    const bl = [...beds].sort((a, b) => a - b).map(b => b === 0 ? 'studio' : b === 4 ? '4+ beds' : b + (b === 1 ? ' bed' : ' beds'));
+    if (bl.length) said.push(bl.join(' or '));
+    if (s8) said.push('voucher-friendly');
+    if (pmax != null) said.push('under $' + pmax.toLocaleString());
+    return { beds: [...beds], s8, pmax, rest: t.replace(/\s+/g, ' ').trim(), said };
+  }
+  // Turn on ONLY what was asked for; the person's other filters stay as set.
+  function applySearchIntent(it) {
+    const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
+    if (it.beds.length) {
+      const want = new Set(it.beds.map(String));
+      document.querySelectorAll('input[name="beds"]').forEach(c => { const on = want.has(c.value); if (c.checked !== on) { c.checked = on; fire(c); } });
+    }
+    if (it.s8) { const r = document.querySelector('input[name="s8"][value="either"]'); if (r && !r.checked) { r.checked = true; fire(r); } }
+    if (it.pmax != null) {
+      const el = document.getElementById('price-max');
+      if (el) {
+        const opts = [...el.options].map(o => o.value).filter(Boolean).map(Number).sort((a, b) => a - b);
+        const pick = String(opts.find(o => o >= it.pmax) ?? opts[opts.length - 1] ?? '');
+        if (el.value !== pick) { el.value = pick; fire(el); }
+      }
+    }
+    updateFiltersCount();
+  }
+
   function buildQueryPlan(Q) {
+    // Words that only restate what the map is go first ("rent stabilized
+    // apartments in brooklyn ny" is a search for Brooklyn).
+    const S0 = stripFiller(Q).toUpperCase();
+    if (!S0) return { steps: [], pending: false, suggest: [], filler: true, q: '' };
+    const S = zipFromPlace(S0) || S0;
+    for (const [re, where] of ELSEWHERE_WORDS) if (re.test(S)) return { steps: [], pending: false, suggest: [], elsewhere: where, q: S };
+    for (const [re, label] of OUTSIDE_WORDS) if (re.test(S)) return { steps: [], pending: false, suggest: [], outside: label, q: S };
+    return buildPlaceQueryPlan(S);
+  }
+  function buildPlaceQueryPlan(Q) {
     const cq = canonAddr(Q);
     const area = resolveArea(Q);
     const org = orgCached(Q);
@@ -6056,6 +6196,7 @@ function favActive() {
       steps,
       pending: orgKey(Q).length >= 4 && ORG_CACHE.get(orgKey(Q)) === 'pending',
       suggest: area ? [] : bestAreaGuesses(flatName(Q)).map(g => g.name),
+      q: Q,
     };
   }
 
@@ -6161,6 +6302,7 @@ function favActive() {
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
     const s8Mode = document.querySelector('input[name="s8"]:checked').value;
+    BEDS_SEL = [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value);
     const priceMin = +document.getElementById('price-min').value || 0;
     const priceMax = +document.getElementById('price-max').value || Infinity;
     const priceSet = priceMin > 0 || priceMax < Infinity;
@@ -6245,14 +6387,21 @@ function favActive() {
         // answering with the whole borough.
         recs = [];
         tier = 'kept';
-      } else if (!recs && HAS_ZIPS && /^\d{5}$/.test(q) && !ZIP_INDEX.some(e => e.zip === q)) {
+      } else if (!recs && (plan.filler || plan.elsewhere || plan.outside)) {
+        // Only words that restate the map ("rent stabilized", "nyc"), or a
+        // town another map covers: everything stays browsable, and the helper
+        // card says which (renderSearchHelper).
+        recs = collect(null, false);
+        tier = plan.filler ? 'filler' : plan.elsewhere ? 'elsewhere' : 'outside';
+        label = plan.elsewhere ? plan.elsewhere.place : (plan.outside || '');
+      } else if (!recs && HAS_ZIPS && /^\d{5}$/.test(plan.q) && !ZIP_INDEX.some(e => e.zip === plan.q)) {
         // A full ZIP we hold no buildings for. The generic nomatch branch below
         // answers this with EVERY building in the city, which is how a search
         // for 10701 came back with 47,165 results — the worst possible reply to
         // "is my Yonkers apartment stabilized". Say we don't cover it instead.
         recs = [];
         tier = 'zipmiss';
-        label = OUT_OF_AREA[q] || OUT_OF_AREA[q.slice(0, 3)] || '';
+        label = OUT_OF_AREA[plan.q] || OUT_OF_AREA[plan.q.slice(0, 3)] || '';
       } else if (!recs) {
         // Nothing anywhere matches. An empty map reads as a broken site, so
         // show what is browsable and say in words that the query found nothing.

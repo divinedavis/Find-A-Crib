@@ -423,8 +423,6 @@ struct BuildingDetailView: View {
                 HStack(spacing: 0) {
                     estCell(String(localized: "Studio"), e[0]); estCell(String(localized: "1 bed"), e[1]); estCell(String(localized: "2 bed"), e[2]); estCell(String(localized: "3 bed"), e[3])
                 }
-                Text("HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it.")
-                    .font(.se(15)).foregroundStyle(SE.ink3)
             }
         }
         if store.city.isNYC && store.estimate(b) == nil {

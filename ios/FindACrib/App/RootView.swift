@@ -8,12 +8,21 @@ struct RootView: View {
         let _ = Perf.mark("RootView.body")
         @Bindable var nav = nav
         return ZStack(alignment: .bottom) {
+            // Search stays alive behind the other tabs, so coming back to it
+            // lands where you left off: same scroll spot in the results, same
+            // map (owner, 2026-10-20). The other tabs rebuild as before.
+            NavigationStack(path: $nav.searchPath) {
+                SearchHomeView().navigationDestination(for: Route.self) { RouteView(route: $0) }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .opacity(nav.tab == .search ? 1 : 0)
+            .allowsHitTesting(nav.tab == .search)
+            .accessibilityHidden(nav.tab != .search)
+
             Group {
                 switch nav.tab {
                 case .search:
-                    NavigationStack(path: $nav.searchPath) {
-                        SearchHomeView().navigationDestination(for: Route.self) { RouteView(route: $0) }
-                    }
+                    EmptyView()
                 case .activity:
                     NavigationStack(path: $nav.activityPath) {
                         MyActivityView().navigationDestination(for: Route.self) { RouteView(route: $0) }
@@ -39,6 +48,12 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        // Search no longer leaves the screen when another tab opens, so its
+        // building page's onDisappear doesn't run: set the bar per tab here.
+        // Back on Search, a building page on top still hides it.
+        .onChange(of: nav.tab) { _, t in
+            if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
+        }
         // A tapped alert notification opens here, on all of its items.
         .sheet(item: Binding(get: { PushService.shared.incoming }, set: { PushService.shared.incoming = $0 })) { push in
             AlertPushSheet(push: push)

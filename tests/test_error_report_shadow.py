@@ -39,6 +39,17 @@ def test_page_that_lived_past_a_tick_is_never_looked_up():
     assert out["la:mount 1/0"]["n"] == 1 and not calls
 
 
+def test_a_page_born_hidden_and_never_shown_is_not_a_death():
+    # 2026-10-20 digest: "adoptHome" / "vv-resize ad0" 0.4 s after boot, no tick.
+    hidden = ["boot hidden", "grid:done", "auth INITIAL_SESSION", "adoptHome"]
+    assert not er.crashes([trace("v1", hidden)], key="k", kept_going=lambda *a: False)
+
+
+def test_a_page_born_hidden_that_was_then_shown_still_counts():
+    shown = ["boot hidden", "vis visible", "tick", "grid:build 200", "la:mount 1/0"]
+    assert er.crashes([trace("v1", shown)], key="k", kept_going=lambda *a: False)["la:mount 1/0"]["n"] == 1
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

@@ -2446,7 +2446,11 @@ function favActive() {
   }
   if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height) + census()));
   document.addEventListener('visibilitychange', () => tr('vis ' + document.visibilityState));
-  tr('boot');
+  // Born hidden (a background tab, a prerender, Safari restoring tabs) says
+  // so: such a page can be discarded before anyone ever sees it, and without
+  // this its trace read as a death 0.4 s after boot (2026-10-20 digest: two
+  // "adoptHome" and a "vv-resize ad0", no tick, nobody looking).
+  tr(document.visibilityState === 'visible' ? 'boot' : 'boot ' + document.visibilityState);
   // stops early in the trace = the main thread hung before the kill. Once a
   // second, not every 250 ms: each tick is a synchronous localStorage write,
   // and four a second for the whole visit was jank of its own on the phones

@@ -275,6 +275,11 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
             after = labels[len(labels) - 1 - labels[::-1].index("vis hidden") + 1:]
             if all(x == "tick" or x.startswith("la:") for x in after):
                 continue
+        # Never on screen: booted hidden (background tab, prerender, tab
+        # restore) and never became visible. Discarding such a page is the
+        # browser tidying up, not a death anyone saw (2026-10-20).
+        if any(x.startswith("boot ") for x in labels) and "vis visible" not in labels:
+            continue
         last = labels[-1]
         if last in CLEAN_LAST_STEPS:
             continue

@@ -1297,8 +1297,19 @@ class Runner:
             self.click(page, '#menu-pop [data-menu="app"]')
             self.wait_until(page, "!document.getElementById('app-modal').hidden", 5000)
             panel = page.query_selector('#app-modal .qr-panel')
-            img = cv2.imdecode(np.frombuffer(panel.screenshot(), np.uint8), cv2.IMREAD_COLOR)
-            txt, _pts, _rect = cv2.QRCodeDetector().detectAndDecode(img)
+            # The read itself flakes (the modal still fading in, or OpenCV
+            # missing a clean code at 1x): blocked two deploys, 10/03 and
+            # 10/20, and passed 3/3 on re-run both times. Try a few frames,
+            # the last one upscaled, before calling the QR broken.
+            txt = ''
+            for attempt in range(4):
+                time.sleep(0.3)
+                img = cv2.imdecode(np.frombuffer(panel.screenshot(), np.uint8), cv2.IMREAD_COLOR)
+                if attempt == 3:
+                    img = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_NEAREST)
+                txt, _pts, _rect = cv2.QRCodeDetector().detectAndDecode(img)
+                if txt:
+                    break
             self.ok(txt == APP_STORE_URL, f'{theme}: the QR should decode to the App Store listing, got {txt!r}', j)
             box = page.evaluate("(()=>{const r=document.querySelector('#app-modal .qr-code').getBoundingClientRect();"
                                 "return {w:r.width, onscreen:r.top>=0&&r.bottom<=innerHeight}})()")

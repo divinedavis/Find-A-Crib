@@ -81,7 +81,48 @@
      exclusive inventory, so every trace of AdSense (the loader and the
      in-grid slot code) is gone; Mediavine places its own ads. Early in <head>
      on purpose: Mediavine says earlier execution bids better. -->
-<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>
+<script>
+/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner,
+   2026-09-29). fac.noads is set by index.html once Plus is confirmed and
+   cleared on sign-out/lapse.
+   PHONES load it later (owner, 2026-10-20: "lets load the mediavine ads later
+   on phones"). Page deaths on iPhones kept ending with 20-34 ad frames mounted
+   (ad22 + 2 videos on 10/20, the keyboard opening; ad26-ad34 in the 10/14-17
+   census) while the page itself was still building its list and map. On a
+   phone the tag now waits until the page has been open 8 s AND the visitor
+   has paused 1.5 s, never while the keyboard is up (a text field focused),
+   and goes by 30 s at the latest (still not mid-typing). Desktop and iPad
+   load it at once, as before. window.__mvLoaded says when and why. */
+(function () {
+  try { if (localStorage.getItem('fac.noads') === '1') return; } catch (e) {}
+  var MIN_MS = 8000, IDLE_MS = 1500, MAX_MS = 30000;
+  function load(why) {
+    if (window.__mvLoaded) return;
+    window.__mvLoaded = { why: why, at: Date.now() - start };
+    var s = document.createElement('script');
+    s.async = true; s.setAttribute('data-noptimize', '1'); s.setAttribute('data-cfasync', 'false');
+    s.src = '//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';
+    document.head.appendChild(s);
+    try { if (window.facTrace) window.facTrace('ads:load ' + why); } catch (e) {}
+  }
+  var start = Date.now(), phone = false;
+  try { phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600; } catch (e) {}
+  if (!phone) return load('now');
+  var last = start;
+  ['touchstart', 'touchmove', 'scroll', 'keydown', 'input'].forEach(function (t) {
+    addEventListener(t, function () { last = Date.now(); }, { passive: true, capture: true });
+  });
+  function typing() { var a = document.activeElement; return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable); }
+  (function check() {
+    var now = Date.now();
+    if (document.visibilityState === 'visible' && !typing()) {
+      if (now - start >= MAX_MS) return load('max');
+      if (now - start >= MIN_MS && now - last >= IDLE_MS) return load('idle');
+    }
+    setTimeout(check, 500);
+  })();
+})();
+</script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -2446,7 +2487,11 @@ function favActive() {
   }
   if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height) + census()));
   document.addEventListener('visibilitychange', () => tr('vis ' + document.visibilityState));
-  tr('boot');
+  // Born hidden (a background tab, a prerender, Safari restoring tabs) says
+  // so: such a page can be discarded before anyone ever sees it, and without
+  // this its trace read as a death 0.4 s after boot (2026-10-20 digest: two
+  // "adoptHome" and a "vv-resize ad0", no tick, nobody looking).
+  tr(document.visibilityState === 'visible' ? 'boot' : 'boot ' + document.visibilityState);
   // stops early in the trace = the main thread hung before the kill. Once a
   // second, not every 250 ms: each tick is a synchronous localStorage write,
   // and four a second for the whole visit was jank of its own on the phones
@@ -6122,6 +6167,25 @@ function favActive() {
     if (pmax != null) said.push('under $' + pmax.toLocaleString());
     return { beds: [...beds], s8, pmax, rest: t.replace(/\s+/g, ' ').trim(), said };
   }
+  // Sign-up address check (2026-10-20): domain typos and made-up test
+  // addresses. Same list as the app's EmailCheck.swift.
+  const EMAIL_DOMAIN_FIX = { 'gmail.ckm': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.co': 'gmail.com',
+    'gmail.om': 'gmail.com', 'gmail.comm': 'gmail.com', 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gnail.com': 'gmail.com',
+    'gmal.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gmaill.com': 'gmail.com', 'yahoo.con': 'yahoo.com', 'yaho.com': 'yahoo.com',
+    'yhoo.com': 'yahoo.com', 'hotmial.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'hotmal.com': 'hotmail.com',
+    'outlook.con': 'outlook.com', 'outlok.com': 'outlook.com', 'iclod.com': 'icloud.com', 'icloud.con': 'icloud.com',
+    'icoud.com': 'icloud.com', 'aol.con': 'aol.com' };
+  function emailFix(raw) {
+    const e = String(raw || '').trim().toLowerCase(), at = e.lastIndexOf('@');
+    if (at < 1) return null;
+    const local = e.slice(0, at); let dom = e.slice(at + 1);
+    const fixed = EMAIL_DOMAIN_FIX[dom] || (/\.(con|cmo|ckm|vom|xom|comm)$/.test(dom) ? dom.replace(/\.[a-z]+$/, '.com') : null);
+    if (fixed) return { to: local + '@' + fixed };
+    if (/^(test|tests|testing|tester|testers|asdf|example|fake|none|noemail|abc)\d*$/.test(local) || /^(example|test)\.(com|org|net)$/.test(dom))
+      return { msg: 'Use an email you check — alerts and your password reset go there.' };
+    return null;
+  }
+
   // Turn on ONLY what was asked for; the person's other filters stay as set.
   function applySearchIntent(it) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -9589,6 +9653,15 @@ function favActive() {
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;
       if (!email || pass.length < 8) { showAuthError('Enter an email and a password of at least 8 characters.'); return; }
+      // A typo'd or made-up address signs up fine and then bounces every alert
+      // forever (2026-10-20: gmail.ckm, testing@/tester@gmail.com).
+      const fix = authMode === 'signup' ? emailFix(email) : null;
+      if (fix) {
+        if (fix.to) { authEmail.value = fix.to; showAuthError(`Did you mean ${fix.to}? We fixed it — tap the button again.`); }
+        else showAuthError(fix.msg);
+        track('signup_email_fix', { kind: fix.to ? 'typo' : 'fake' });
+        return;
+      }
       if (authMode === 'signup' && pass !== authPass2.value) { showAuthError('Passwords do not match.'); return; }
       authSubmit.disabled = true; showAuthError('');
       try {

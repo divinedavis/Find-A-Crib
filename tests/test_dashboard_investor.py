@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The owner dashboard's investor card picks 30/60/90 days or all time
-(owner, 2026-10-19). The window is allowlisted before it reaches the SECURITY
+"""The owner dashboard's investor card picks 14/30/60/90 days or all time
+(owner, 2026-10-19; 14 days added 10-20). The window is allowlisted before it reaches the SECURITY
 DEFINER function, the route is behind the dashboard read key, and the
 function stays service-role only."""
 import os
@@ -18,7 +18,7 @@ class DashboardInvestor(unittest.TestCase):
     def test_route_is_keyed_and_allowlisted(self):
         src = read("api_server.py")
         self.assertIn('"/dashboard-investor"', src[src.index("DASHBOARD_READ_PATHS ="):src.index("EMAIL_RE =")])
-        self.assertIn('DASHBOARD_INVESTOR_DAYS = {"30": 30, "60": 60, "90": 90, "all": None}', src)
+        self.assertIn('DASHBOARD_INVESTOR_DAYS = {"14": 14, "30": 30, "60": 60, "90": 90, "all": None}', src)
         fn = src[src.index("def dashboard_investor():"):]
         fn = fn[:fn.index("\n\n\n")]
         self.assertIn('_dashboard_denial(_dashboard_auth(), ("ok",))', fn)

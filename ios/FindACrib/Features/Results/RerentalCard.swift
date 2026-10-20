@@ -60,19 +60,22 @@ struct RerentalCard: View {
                     .padding(12)
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
+            // The building card's spacing (owner, 2026-10-20): one 8pt gap for
+            // every row and button, the borough / address / price block 30%
+            // tighter.
+            VStack(alignment: .leading, spacing: BuildingCard.rowGap) {
+                VStack(alignment: .leading, spacing: BuildingCard.headGap) {
                     if let kicker { Text(kicker).font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85) }
                     Text(f.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(2).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("card-address")
-                }
 
-                let money = f.moneyLine
-                VStack(alignment: .leading, spacing: 2) {
-                    if let label = money.label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
-                    Text(money.text).font(.se(money.label == nil && f.moneyKind == "rent" ? 32 : 24, .bold)).foregroundStyle(SE.ink)
-                        .lineLimit(1).minimumScaleFactor(0.8)
+                    let money = f.moneyLine
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let label = money.label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
+                        Text(money.text).font(.se(money.label == nil && f.moneyKind == "rent" ? 32 : 24, .bold)).foregroundStyle(SE.ink)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
                 }
 
                 if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1) }
@@ -117,7 +120,6 @@ struct RerentalCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 10)
                 // Plus opens the sheet; anyone else sees the Plus page first,
                 // led by Help me apply, and lands in the sheet once they have it.
                 Button { if auth.hasPlus { showApply = true } else { showPlus = true } } label: {

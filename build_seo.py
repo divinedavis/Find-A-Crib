@@ -2882,11 +2882,39 @@ def building_facts(b, nb, norms):
             out.append(f"With about {apts} it is larger than {_floor_pct(below, peers)}% of {base}.")
         elif _floor_pct(above, peers) >= 60:
             out.append(f"With about {apts} it is smaller than {_floor_pct(above, peers)}% of {base}.")
-        elif norms.get("unit_med"):
+        elif norms.get("unit_med") and units != norms["unit_med"]:
             out.append(f"With about {apts} it sits near the middle of {base}, where the "
                        f"median building has {norms['unit_med']:,}.")
+        # units == unit_med falls through deliberately: see THE DEGENERATE
+        # COMPARISON note above sentence 2.
 
-    # 2. age, against the same set
+    # THE DEGENERATE COMPARISON, measured 2026-10-20 and the reason sentences 1
+    # and 2 can now decline to speak.
+    #
+    # A comparison sentence whose two numbers are the SAME number conveys
+    # nothing and reads as a template filling itself in: "Its 1931 construction
+    # date sits close to the 1931 median" is a number held up against itself.
+    # It is also, measurably, the template shape this whole block exists to
+    # undo. In Bushwick (West) — 1,197 tracked buildings, median year 1931,
+    # median size 6 — that exact sentence was emitted on 975 of them and "With
+    # about 6 apartments it sits near the middle ... where the median building
+    # has 6" on 791, each one word-for-word identical to the last. By
+    # t_page_uniqueness's own definition (a shingle carried by half the sample
+    # or more is boilerplate) those two sentences ARE boilerplate, and they were
+    # spending 2 of FACTS_MAX_SENTENCES slots to say "typical" twice.
+    #
+    # So the equal-to-median case emits nothing and the slot goes to a sentence
+    # that differs between neighbours — in practice sentence 3b, the open-
+    # violation grade. Rewording was not an option and the distinction matters:
+    # every 6-apartment building in a 6-apartment-median neighborhood really is
+    # identical in that respect, so any honest sentence about it is identical
+    # too. The fix for sibling duplication is to say something ELSE that is
+    # true, never to say the same thing in varied words.
+    #
+    # Only the exact tie is dropped. d of 1 or 2 years still earns its sentence:
+    # "Its 1933 construction date sits close to the 1931 median" is a real, if
+    # small, comparison, and suppressing a band rather than a tie would start
+    # withholding true comparisons to flatter a metric.
     if yr and big_enough and norms.get("year_med"):
         d = yr - norms["year_med"]
         if d <= -15:
@@ -2895,7 +2923,7 @@ def building_facts(b, nb, norms):
         elif d >= 15:
             out.append(f"It went up in {yr}, {d} years after the {norms['year_med']} median for "
                        f"stabilized buildings tracked in {{PLACE}}.")
-        else:
+        elif d:
             out.append(f"Its {yr} construction date sits close to the {norms['year_med']} median "
                        f"for stabilized buildings tracked in {{PLACE}}.")
 
@@ -2927,17 +2955,73 @@ def building_facts(b, nb, norms):
             out.append(f"HPD lists no open violations at this address — one of {norms['clean']:,} "
                        f"such buildings among the {norms['n']:,} this site tracks in {{PLACE}}.")
 
-    # 4. how severe the record is, in HPD's own vocabulary
+    # 4. how severe the record is, in HPD's own vocabulary — and how much of
+    #    that severity is STILL OPEN, which is the part a tenant deciding about
+    #    an address this week actually needs.
+    #
+    # `oc` counts the open class-C rows and `c` the whole lifetime class-C
+    # record, which includes rows HPD has already certified as corrected. Both
+    # numbers ride one sentence rather than two, because "class C — HPD's
+    # immediately hazardous grade" is a nine-word clause and saying it twice in
+    # one paragraph both reads like a template and hands t_page_uniqueness a
+    # shingle every sibling shares. One sentence, two independent numbers.
+    #
+    # The open count is clamped to the class-C record because oc > c is a data
+    # inconsistency rather than a real state, and "7 are class C, 9 of them
+    # still open" is the kind of arithmetic that costs a reader their trust in
+    # every other number on the page. Same judgement as the header note that
+    # keeps a+b+c from implying anything about total.
+    #
+    # Be honest about what the clamp earns today: the `ocv >= cv` branch below
+    # already catches every inconsistent pair and renders "all of them", so no
+    # input in the current corpus produces a different sentence with the min()
+    # than without it, and the test for that invariant passes on branch order
+    # alone. It stays because the invariant — this sentence never names more
+    # open rows than the record it draws them from — should not depend on two
+    # branches keeping their order, and the next edit here will not know that.
     total_v, cv = v.get("total") or 0, v.get("c") or 0
+    ocv = min(v.get("oc") or 0, cv)
     if cv and total_v:
         grade = "class C — HPD's immediately hazardous grade"
         if total_v == 1:
-            out.append(f"The one violation on record at the address is {grade}.")
+            s = f"The one violation on record at the address is {grade}"
         elif cv >= total_v:
-            out.append(f"All {total_v:,} violations on record at the address are {grade}.")
+            s = f"All {total_v:,} violations on record at the address are {grade}"
         else:
-            out.append(f"Of the {total_v:,} violations on record at the address, {cv:,} "
-                       f"{'is' if cv == 1 else 'are'} {grade}.")
+            s = (f"Of the {total_v:,} violations on record at the address, {cv:,} "
+                 f"{'is' if cv == 1 else 'are'} {grade}")
+        # Singular and plural are tracked separately all the way down because
+        # 'none of them still open' about a single violation reads as a
+        # different claim than it is.
+        if cv == 1:
+            s += ", and it is still open." if ocv else ", and it is no longer open."
+        elif ocv >= cv:
+            s += ", and all of them are still open."
+        elif ocv:
+            s += (f", and {ocv:,} of them {'is' if ocv == 1 else 'are'} still open.")
+        else:
+            s += ", and none of them are still open."
+        out.append(s)
+
+    # 4b. how recent the record is. `last_12mo` counts violations whose HPD
+    #     issue date (novissueddate) falls inside the last year — newly ISSUED,
+    #     not newly closed; fetch_hpd.py builds it from that column and
+    #     building_report.py already labels it "new violations, last 12 months",
+    #     so this sentence says the same thing in words and the two cannot
+    #     disagree. It is on file for 98.6% of the corpus and non-zero for
+    #     62.6%, and unlike a lifetime total it separates a building with a long
+    #     settled history from one with a live problem — two addresses with the
+    #     same 40-violation record and a different last twelve months are the
+    #     case the rest of this block cannot tell apart.
+    #     Deliberately self-contained, with no "of them" referring back to
+    #     sentence 4: that sentence is independently suppressed when the address
+    #     has no class-C record, and either sentence can be cut by the
+    #     FACTS_MAX_SENTENCES slice, so a pronoun here would sooner or later
+    #     point at nothing.
+    recent_v = v.get("last_12mo") or 0
+    if recent_v:
+        out.append(f"HPD issued {recent_v:,} new violation{'' if recent_v == 1 else 's'} "
+                   f"at the address in the last twelve months.")
 
     # 5. what tenants themselves reported
     ct = cm.get("total") or 0

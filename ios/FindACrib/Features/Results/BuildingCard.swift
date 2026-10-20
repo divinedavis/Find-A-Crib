@@ -22,6 +22,9 @@ struct BuildingImage: View {
 struct BuildingCard: View {
     /// The one vertical gap between rows of the card body.
     static let rowGap: CGFloat = 8
+    /// Neighborhood, address and price sit 30% closer than the other rows
+    /// (owner, 2026-10-20).
+    static let headGap: CGFloat = rowGap * 0.7
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
@@ -59,7 +62,7 @@ struct BuildingCard: View {
             VStack(alignment: .leading, spacing: Self.rowGap) {
                 // Neighborhood sits right on top of the address: the heart's
                 // 44pt frame was pushing the two apart by a full line.
-                VStack(alignment: .leading, spacing: Self.rowGap) {
+                VStack(alignment: .leading, spacing: Self.headGap) {
                     HStack(alignment: .center) {
                         // Outside New York the borough code is the city's own
                         // ("PHL"): say where in the city instead.
@@ -75,9 +78,9 @@ struct BuildingCard: View {
                         Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(2).minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.buttonStyle(.plain).accessibilityIdentifier("card-address")
-                }
 
-                priceLines
+                    priceLines
+                }
 
                 if !store.isSyntheticHCR(b) {
                 // Three facts on one row on a 390pt phone: at 20pt "Built 1908"

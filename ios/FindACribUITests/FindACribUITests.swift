@@ -274,7 +274,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["badge-rerental"].firstMatch.exists, "the tile is not flagged Rerental")
         XCTAssertTrue(app.descendants(matching: .any)["rerental-apply"].firstMatch.exists, "the tile has no hand-off button")
         // Just "Listed by <agent>", and no "First come, first served" (owner, 2026-10-20).
-        let says = { (s: String) in app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", s)).count }
+        let says = { [app] (s: String) in app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", s)).count }
         XCTAssertEqual(says("marketing agent"), 0, "the listed-by line should be just the agent name")
         XCTAssertEqual(says("first come"), 0, "cards should not say first come, first served")
         // Order: exactly two building cards come before it.

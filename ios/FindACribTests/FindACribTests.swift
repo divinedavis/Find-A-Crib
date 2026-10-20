@@ -2070,3 +2070,22 @@ final class SearchTextTests: XCTestCase {
         XCTAssertEqual(q.beds, [2]); XCTAssertEqual(q.minPrice, 1000); XCTAssertTrue(q.noOpenViolations)
     }
 }
+
+/// Sign-up catches addresses that would bounce every alert (2026-10-20).
+final class EmailCheckTests: XCTestCase {
+    func testTyposAreFixed() {
+        XCTAssertEqual(EmailCheck.problem("sebastian@gmail.ckm"), .typo("sebastian@gmail.com"))
+        XCTAssertEqual(EmailCheck.problem("Jo@Gmial.com"), .typo("jo@gmail.com"))
+        XCTAssertEqual(EmailCheck.problem("a@company.con"), .typo("a@company.com"))
+    }
+    func testMadeUpAddressesAreRefused() {
+        XCTAssertEqual(EmailCheck.problem("testing@gmail.com"), .fake)
+        XCTAssertEqual(EmailCheck.problem("tester2@gmail.com"), .fake)
+        XCTAssertEqual(EmailCheck.problem("maria@example.com"), .fake)
+    }
+    func testRealAddressesPass() {
+        XCTAssertNil(EmailCheck.problem("maria.lopez@gmail.com"))
+        XCTAssertNil(EmailCheck.problem("testa@icloud.com"), "a name that starts with test is fine")
+        XCTAssertNil(EmailCheck.problem("x@company.co"), ".co is a real ending outside gmail")
+    }
+}

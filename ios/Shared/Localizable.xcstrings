@@ -10626,6 +10626,34 @@
         }
       }
     },
+    "Did you mean %@? We fixed it — tap Create account again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Quisiste decir %@? Lo corregimos: toca Crear cuenta otra vez."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@을(를) 입력하려던 건가요? 고쳐 두었어요 — 계정 만들기를 다시 탭하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您是想输入%@吗？我们已帮您改好——请再点一次“创建帐户”。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您是想輸入%@嗎？我們已幫您改好——請再點一次「建立帳戶」。"
+          }
+        }
+      }
+    },
     "Directions" : {
       "localizations" : {
         "es" : {
@@ -29516,6 +29544,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "使用至少8個字元的密碼。"
+          }
+        }
+      }
+    },
+    "Use an email you check — alerts and your password reset go there." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un correo que revises: ahí llegan las alertas y el cambio de contraseña."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자주 확인하는 이메일을 쓰세요 — 알림과 비밀번호 재설정 메일이 그곳으로 갑니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请使用您常看的邮箱——提醒和重设密码邮件都会发到那里。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請使用您常看的電子郵件——提醒和重設密碼郵件都會寄到那裡。"
           }
         }
       }

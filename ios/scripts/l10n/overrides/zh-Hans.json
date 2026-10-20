@@ -393,5 +393,7 @@
  "under $%@": "低于$%@",
  "Nothing matches that. Try a borough, a neighborhood or a ZIP.": "没有匹配结果。试试行政区、街区或邮政编码。",
  "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com": "Westchester暂未收录在App中——请在findacrib.com查看扬克斯和Westchester地图",
- "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "这里的每栋楼都是租金稳定房——Find A Crib只显示这些。请在下方选择区域，或用“筛选”设置卧室数和价格。"
+ "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "这里的每栋楼都是租金稳定房——Find A Crib只显示这些。请在下方选择区域，或用“筛选”设置卧室数和价格。",
+ "Use an email you check — alerts and your password reset go there.": "请使用您常看的邮箱——提醒和重设密码邮件都会发到那里。",
+ "Did you mean %@? We fixed it — tap Create account again.": "您是想输入%@吗？我们已帮您改好——请再点一次“创建帐户”。"
 }

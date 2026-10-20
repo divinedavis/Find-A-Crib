@@ -187,6 +187,16 @@ struct EmailSignInView: View {
         guard password.count >= 8 else { auth.error = String(localized: "Use a password of at least 8 characters."); return }
         if creating {
             guard password == confirm else { auth.error = String(localized: "Passwords do not match."); return }
+            switch EmailCheck.problem(e) {
+            case .typo(let fixed):
+                email = fixed
+                auth.error = String(localized: "Did you mean \(fixed)? We fixed it — tap Create account again.")
+                return
+            case .fake:
+                auth.error = String(localized: "Use an email you check — alerts and your password reset go there.")
+                return
+            case nil: break
+            }
             await auth.signUp(email: e, password: password)
         } else {
             await auth.signIn(email: e, password: password)

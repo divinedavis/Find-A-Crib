@@ -525,13 +525,45 @@ def smtp_configured():
     return all(os.environ.get(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD"))
 
 
+# Addresses that bounced for good, or three times (db/0068, filled by
+# mail_bounce_sort.py). Owner, 2026-10-20, about the bounce notices filling
+# divine@findacrib.com: every alert job kept mailing testing@gmail.com,
+# a gmail.ckm typo and a dead maio.com address every single day.
+_SUPPRESSED = {"at": 0.0, "set": frozenset()}
+
+
+def suppressed(addr):
+    """True when `addr` is on the suppression list. Loaded once per 10 min per
+    process; with no Supabase env or no answer, nothing is suppressed."""
+    import json, time, urllib.request
+    now = time.time()
+    if now - _SUPPRESSED["at"] > 600:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        _SUPPRESSED["at"] = now
+        if url and key:
+            try:
+                req = urllib.request.Request(f"{url}/rest/v1/email_suppressions?select=email&suppressed=is.true&limit=10000",
+                                             headers={"apikey": key, "Authorization": f"Bearer {key}"})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    _SUPPRESSED["set"] = frozenset(row["email"] for row in json.load(r))
+            except Exception:
+                pass   # keep the last list we had
+    return (addr or "").strip().lower() in _SUPPRESSED["set"]
+
+
 def send(to, subject, html, text, unsub_url=None, from_name=BRAND):
     """multipart/alternative, with one-click unsubscribe headers when given.
 
     The text part goes first: multipart/alternative is ordered least- to
     most-preferred, so text-then-html is what tells a client the HTML is the
     richer alternative. Reversed, some clients show the raw markup.
+
+    Returns False without sending to a suppressed address (see suppressed()).
     """
+    if suppressed(to):
+        print(f"emailkit: skipped suppressed {mask_email(to)}")
+        return False
     host = os.environ.get("SMTP_HOST")
     user = os.environ.get("SMTP_USER")
     pw = os.environ.get("SMTP_PASSWORD")

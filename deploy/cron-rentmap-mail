@@ -5,4 +5,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-*/10 * * * * scraper cd /root/Find-A-Crib && fac-run smtp -- python3 mail_bounce_sort.py >> /var/log/rentmap-mail.log 2>&1
+*/10 * * * * scraper cd /root/Find-A-Crib && fac-run supabase,smtp -- python3 mail_bounce_sort.py >> /var/log/rentmap-mail.log 2>&1

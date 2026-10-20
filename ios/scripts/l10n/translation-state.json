@@ -1340,6 +1340,10 @@
       "back" : "API for developers",
       "src" : "b3bacdfb19539c07"
     },
+    "Did you mean %@? We fixed it — tap Create account again." : {
+      "back" : "Did you mean %@? We have fixed it, it's time to Create an account again.",
+      "src" : "2bf7b232484451a9"
+    },
     "Directions" : {
       "back" : "Instructions",
       "src" : "df4b951ebd4cca6e"
@@ -4048,6 +4052,10 @@
       "back" : "Use a password of at least 8 characters.",
       "src" : "eeddf18c1c072d96"
     },
+    "Use an email you check — alerts and your password reset go there." : {
+      "back" : "Use an email address you control: that's where the alerts and the resumption of your password go.",
+      "src" : "31ecbcbc3c75ca01"
+    },
     "Use the wheel" : {
       "back" : "Use the wheel",
       "src" : "09b73d6d0ed1d0e9"
@@ -5745,6 +5753,10 @@
     "Developer API" : {
       "back" : "Developer API",
       "src" : "b3bacdfb19539c07"
+    },
+    "Did you mean %@? We fixed it — tap Create account again." : {
+      "back" : "Did you mean %@? I've corrected it. Please tap the Create Account button again.",
+      "src" : "2bf7b232484451a9"
     },
     "Directions" : {
       "back" : "an indicator",
@@ -8454,6 +8466,10 @@
       "back" : "Please use a password of at least 8 characters.",
       "src" : "eeddf18c1c072d96"
     },
+    "Use an email you check — alerts and your password reset go there." : {
+      "back" : "Please use the email you used to confirm. Notifications and password resets are stored there.",
+      "src" : "31ecbcbc3c75ca01"
+    },
     "Use the wheel" : {
       "back" : "Please use the wheel.",
       "src" : "09b73d6d0ed1d0e9"
@@ -10151,6 +10167,10 @@
     "Developer API" : {
       "back" : "Developer API",
       "src" : "b3bacdfb19539c07"
+    },
+    "Did you mean %@? We fixed it — tap Create account again." : {
+      "back" : "Do you mean %@? We have fixed it - click Create Account again.",
+      "src" : "2bf7b232484451a9"
     },
     "Directions" : {
       "back" : "Directions",
@@ -12860,6 +12880,10 @@
       "back" : "Use a password with at least 8 characters.",
       "src" : "eeddf18c1c072d96"
     },
+    "Use an email you check — alerts and your password reset go there." : {
+      "back" : "Use the email you checked—reminders and password resets will be sent there.",
+      "src" : "31ecbcbc3c75ca01"
+    },
     "Use the wheel" : {
       "back" : "Use wheels",
       "src" : "09b73d6d0ed1d0e9"
@@ -14557,6 +14581,10 @@
     "Developer API" : {
       "back" : "Developer API",
       "src" : "b3bacdfb19539c07"
+    },
+    "Did you mean %@? We fixed it — tap Create account again." : {
+      "back" : "Do you mean %@? We have already fixed it - click \"Create Account\" again.",
+      "src" : "2bf7b232484451a9"
     },
     "Directions" : {
       "back" : "Route",
@@ -17265,6 +17293,10 @@
     "Use a password of at least 8 characters." : {
       "back" : "Use a password of at least 8 characters.",
       "src" : "eeddf18c1c072d96"
+    },
+    "Use an email you check — alerts and your password reset go there." : {
+      "back" : "Using the email you checked - the alert and password reset will be sent to that email.",
+      "src" : "31ecbcbc3c75ca01"
     },
     "Use the wheel" : {
       "back" : "Use wheels",

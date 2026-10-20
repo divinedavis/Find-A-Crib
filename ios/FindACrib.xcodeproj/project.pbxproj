@@ -44,6 +44,7 @@
 		404538B4A51B8B7155229E4E /* PrivateStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB75D955C24F7FCD5B5B08E /* PrivateStorageTests.swift */; };
 		4392AB92BF2A7ADBE5E3A2B9 /* s8.json in Resources */ = {isa = PBXBuildFile; fileRef = C2015DADE5A5CCF0E92E6795 /* s8.json */; };
 		450DC06AD2CF3E94D61F2252 /* PacketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AFD7E8CAEB3FACB26CA9C38 /* PacketView.swift */; };
+		4615F4CEFBAC495EBAA9C81E /* EmailCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C129B8E38CC7D7BB2E998606 /* EmailCheck.swift */; };
 		485DA3E559D8568E0A9F380A /* LotteryFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC2C16DFF4D97DB0D222348 /* LotteryFeed.swift */; };
 		4C60CA570B0FD87DBCAB3270 /* HPDRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */; };
 		4E4AAB3E52DFA41900C2AF65 /* RenterTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5158A8229A91965E3E09A79 /* RenterTools.swift */; };
@@ -242,6 +243,7 @@
 		BEB75D955C24F7FCD5B5B08E /* PrivateStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateStorageTests.swift; sourceTree = "<group>"; };
 		BF0E6DE346509DF0B51FC834 /* Featured.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Featured.swift; sourceTree = "<group>"; };
 		BFF3D4B68CACA452540E0DEC /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
+		C129B8E38CC7D7BB2E998606 /* EmailCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailCheck.swift; sourceTree = "<group>"; };
 		C2015DADE5A5CCF0E92E6795 /* s8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = s8.json; sourceTree = "<group>"; };
 		C5158A8229A91965E3E09A79 /* RenterTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenterTools.swift; sourceTree = "<group>"; };
 		C69876E034A5740AA9ED9874 /* OpeningsFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningsFeed.swift; sourceTree = "<group>"; };
@@ -268,7 +270,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_8725EE7C-1D55-4FDF-96F1-ED71B9E55BF5" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -586,6 +588,7 @@
 				5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */,
 				E1D26A69E307FE608B06AA79 /* BuildingRecord.swift */,
 				5EDD14746F84061336060AD5 /* City.swift */,
+				C129B8E38CC7D7BB2E998606 /* EmailCheck.swift */,
 				BF0E6DE346509DF0B51FC834 /* Featured.swift */,
 				3C5230FE7E960A89326516B1 /* SearchQuery.swift */,
 				74C8A25F75F7D8FF127974F6 /* SearchText.swift */,
@@ -593,10 +596,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_57A4161D-F65D-46D9-A6B5-88D8A25233A4" /* ios */ = {
+		"TEMP_9DC7E089-4DA8-4D95-9928-85D004C52F2D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */,
+				"TEMP_8725EE7C-1D55-4FDF-96F1-ED71B9E55BF5" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -805,6 +808,7 @@
 				07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */,
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
 				7DCDD03815DAEFAB4EE4257E /* DeepLink.swift in Sources */,
+				4615F4CEFBAC495EBAA9C81E /* EmailCheck.swift in Sources */,
 				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
 				AD0D5520554F07ECEE39F3C0 /* FastAnimations.swift in Sources */,
 				F01F8CC2D35CFD12A1556DFC /* Featured.swift in Sources */,
@@ -1008,7 +1012,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_8725EE7C-1D55-4FDF-96F1-ED71B9E55BF5" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1049,7 +1053,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_8725EE7C-1D55-4FDF-96F1-ED71B9E55BF5" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

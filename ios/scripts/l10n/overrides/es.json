@@ -509,5 +509,7 @@
  "Turn on: %@": "Activar: %@",
  "under $%@": "menos de $%@",
  "Nothing matches that. Try a borough, a neighborhood or a ZIP.": "No hay coincidencias. Prueba un distrito, un barrio o un código postal.",
- "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "Todos los edificios aquí tienen renta estabilizada: es todo lo que muestra Find A Crib. Elige una zona abajo o usa Filtros para habitaciones y precio."
+ "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "Todos los edificios aquí tienen renta estabilizada: es todo lo que muestra Find A Crib. Elige una zona abajo o usa Filtros para habitaciones y precio.",
+ "Use an email you check — alerts and your password reset go there.": "Usa un correo que revises: ahí llegan las alertas y el cambio de contraseña.",
+ "Did you mean %@? We fixed it — tap Create account again.": "¿Quisiste decir %@? Lo corregimos: toca Crear cuenta otra vez."
 }

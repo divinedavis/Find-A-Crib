@@ -6167,6 +6167,25 @@ function favActive() {
     if (pmax != null) said.push('under $' + pmax.toLocaleString());
     return { beds: [...beds], s8, pmax, rest: t.replace(/\s+/g, ' ').trim(), said };
   }
+  // Sign-up address check (2026-10-20): domain typos and made-up test
+  // addresses. Same list as the app's EmailCheck.swift.
+  const EMAIL_DOMAIN_FIX = { 'gmail.ckm': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.co': 'gmail.com',
+    'gmail.om': 'gmail.com', 'gmail.comm': 'gmail.com', 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gnail.com': 'gmail.com',
+    'gmal.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gmaill.com': 'gmail.com', 'yahoo.con': 'yahoo.com', 'yaho.com': 'yahoo.com',
+    'yhoo.com': 'yahoo.com', 'hotmial.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'hotmal.com': 'hotmail.com',
+    'outlook.con': 'outlook.com', 'outlok.com': 'outlook.com', 'iclod.com': 'icloud.com', 'icloud.con': 'icloud.com',
+    'icoud.com': 'icloud.com', 'aol.con': 'aol.com' };
+  function emailFix(raw) {
+    const e = String(raw || '').trim().toLowerCase(), at = e.lastIndexOf('@');
+    if (at < 1) return null;
+    const local = e.slice(0, at); let dom = e.slice(at + 1);
+    const fixed = EMAIL_DOMAIN_FIX[dom] || (/\.(con|cmo|ckm|vom|xom|comm)$/.test(dom) ? dom.replace(/\.[a-z]+$/, '.com') : null);
+    if (fixed) return { to: local + '@' + fixed };
+    if (/^(test|tests|testing|tester|testers|asdf|example|fake|none|noemail|abc)\d*$/.test(local) || /^(example|test)\.(com|org|net)$/.test(dom))
+      return { msg: 'Use an email you check — alerts and your password reset go there.' };
+    return null;
+  }
+
   // Turn on ONLY what was asked for; the person's other filters stay as set.
   function applySearchIntent(it) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -9634,6 +9653,15 @@ function favActive() {
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;
       if (!email || pass.length < 8) { showAuthError('Enter an email and a password of at least 8 characters.'); return; }
+      // A typo'd or made-up address signs up fine and then bounces every alert
+      // forever (2026-10-20: gmail.ckm, testing@/tester@gmail.com).
+      const fix = authMode === 'signup' ? emailFix(email) : null;
+      if (fix) {
+        if (fix.to) { authEmail.value = fix.to; showAuthError(`Did you mean ${fix.to}? We fixed it — tap the button again.`); }
+        else showAuthError(fix.msg);
+        track('signup_email_fix', { kind: fix.to ? 'typo' : 'fake' });
+        return;
+      }
       if (authMode === 'signup' && pass !== authPass2.value) { showAuthError('Passwords do not match.'); return; }
       authSubmit.disabled = true; showAuthError('');
       try {

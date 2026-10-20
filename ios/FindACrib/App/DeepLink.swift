@@ -6,6 +6,7 @@ import Foundation
 ///   findacrib://lotteries                  the Lotteries tab (NYC)
 ///   findacrib://building/<bbl>             a building's page
 ///   findacrib://tool/<repair|rent-increase|rights|renewal>
+///   findacrib://broker-fee                 the Broker fee check (Plus; June's moving-season event)
 ///   findacrib://search                     the Search home
 ///   findacrib://casa                       the Your Crib tab (NYC); its alerts link
 ///   https://findacrib.com/casa/            the same page on the website (Your Crib alerts link here)
@@ -20,6 +21,7 @@ enum DeepLink: Equatable {
     case tool(HomeTool)
     case search
     case casa
+    case brokerFee
 
     static let webBase = URL(string: "https://findacrib.com/")!
 
@@ -33,6 +35,7 @@ enum DeepLink: Equatable {
             let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
             if url.path.hasPrefix("/casa") || query.contains(where: { $0.name == "casa" }) { parts = ["casa"] }
             else if frag.hasPrefix("d=") { parts = ["building", String(frag.dropFirst(2))] }
+            else if frag == "broker-fee" { parts = ["broker-fee"] }
             else if let t = Self.webTools[frag] { parts = ["tool", t] }
             else if url.path.hasPrefix("/alerts") { parts = ["lotteries"] }
             else { parts = ["search"] }
@@ -41,6 +44,7 @@ enum DeepLink: Equatable {
         case "lotteries": self = .lotteries
         case "search": self = .search
         case "casa": self = .casa
+        case "broker-fee": self = .brokerFee
         case "building":
             let bbl = parts.dropFirst().first.map { $0.filter(\.isNumber) } ?? ""
             guard bbl.count == 10 else { return nil }
@@ -59,6 +63,7 @@ enum DeepLink: Equatable {
         case .lotteries: URL(string: "findacrib://lotteries")!
         case .search: URL(string: "findacrib://search")!
         case .casa: URL(string: "findacrib://casa")!
+        case .brokerFee: URL(string: "findacrib://broker-fee")!
         case .building(let b): URL(string: "findacrib://building/\(b)")!
         case .tool(let t): URL(string: "findacrib://tool/\(t.rawValue)")!
         }
@@ -70,6 +75,7 @@ enum DeepLink: Equatable {
         case .lotteries: URL(string: "https://findacrib.com/alerts/")!
         case .search: DeepLink.webBase
         case .casa: URL(string: "https://findacrib.com/casa/")!
+        case .brokerFee: URL(string: "https://findacrib.com/#broker-fee")!
         case .building(let b): URL(string: "https://findacrib.com/#d=\(b)")!
         case .tool(let t): URL(string: "https://findacrib.com/#\(t.rawValue)")!
         }
@@ -88,6 +94,8 @@ enum DeepLink: Equatable {
             nav.tab = .search; nav.searchPath = [.building(bbl)]
         case .tool(let t):
             nav.tab = .profile; nav.openTool = t
+        case .brokerFee:
+            nav.tab = .profile; nav.openBrokerFee = true
         }
     }
 }

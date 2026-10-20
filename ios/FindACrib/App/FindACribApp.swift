@@ -173,6 +173,8 @@ final class AppNav {
     var showAlerts = false
     /// A renter tool to open on Profile (deep link, Siri, widget).
     var openTool: HomeTool?
+    /// The Broker fee check, opened on Profile (findacrib://broker-fee).
+    var openBrokerFee = false
     /// The live navigator, for App Intents (Siri) that open the app.
     static weak var current: AppNav?
     /// A link that arrived before the buildings loaded: opened after.

@@ -8,6 +8,15 @@ Weekly (launchd, scripts/install_events_auto.sh), it:
      - every month, "<Month> Lottery Deadlines" (Housing Connect never stops);
      - every June, the Rent Guidelines Board vote;
      - every October, heat season;
+     NYC housing calendar added 2026-10-20 (owner: "lets do these"):
+     - December, landlords' annual bedbug filing (HPD, Local Law 69);
+     - January, the lead paint / window guard notice (due back Feb 15),
+       into the repair tool, which covers peeling paint and window guards;
+     - May, the Rent Guidelines Board's preliminary vote;
+     - June 11 - July 10, moving season under the FARE Act (Broker fee check,
+       findacrib://broker-fee, Plus);
+     - July, lease renewal season (Renewal coach, Plus);
+     - October, the new rent guidelines take effect (Oct 1);
   2. creates each one whose publish date is within HORIZON days, unless an
      event with the same name exists. When another event with the same deep
      link overlaps, the new one starts where that one ends, or is skipped if
@@ -56,12 +65,12 @@ def month_window(y, m):
     return start, end
 
 
-def spec(ref, name, short, long_, link, badge, purpose, start, end):
+def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COST_ASSOCIATED"):
     s, e = ny_midnight(start), ny_midnight(end + timedelta(days=1)) - timedelta(minutes=1)
     return {"referenceName": ref, "badge": badge, "purpose": purpose, "priority": "NORMAL",
             "territories": ["USA"], "publishStart": iso(s - timedelta(days=LEAD)),
             "eventStart": iso(s), "eventEnd": iso(e), "deepLink": link,
-            "purchaseRequirement": "NO_COST_ASSOCIATED",
+            "purchaseRequirement": cost,
             "name": name, "shortDescription": short, "longDescription": long_,
             "card": ART["card"], "details": ART["details"]}
 
@@ -87,6 +96,40 @@ def planned(today):
                             "NYC landlords must keep your apartment warm",
                             "Oct 1 to May 31, NYC landlords must provide heat. No heat? Get a repair letter and file with 311 in minutes.",
                             "findacrib://tool/repair", "NEW_SEASON", "APPROPRIATE_FOR_ALL_USERS", start, end))
+            out.append(spec(f"New rent guidelines {y}", "New Rent Guidelines Begin",
+                            "NYC's new stabilized rent increases start Oct 1",
+                            "From Oct 1, the Rent Guidelines Board's new increases apply to stabilized leases. Check if yours is legal.",
+                            "findacrib://tool/rent-increase", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
+        if m == 12:
+            # HPD: owners file the annual bedbug report Dec 1-31 (nyc.gov/hpd bedbugs).
+            out.append(spec(f"Bedbug reports {y}", "Bedbug Reports Are Due",
+                            "NYC landlords report bedbugs every December",
+                            "Every December, NYC landlords report bedbugs to the City. Check your building's bedbug and pest record.",
+                            "findacrib://casa", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
+        if m == 1:
+            # NYC Health: notice delivered Jan 1-15, tenants return it by Feb 15.
+            out.append(spec(f"Lead and window guard notice {y}", "Lead & Window Guard Notices",
+                            "Your landlord's yearly NYC safety notice is due",
+                            "NYC landlords must ask each January about kids, lead paint and window guards. Missing either? Get a repair letter.",
+                            "findacrib://tool/repair", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
+        if m == 5:
+            out.append(spec(f"Rent Guidelines first vote {y}", "Rent Guidelines First Vote",
+                            "NYC's first vote on stabilized rent increases",
+                            "NYC's Rent Guidelines Board takes its first vote on stabilized increases. See what it could mean for you.",
+                            "findacrib://tool/rent-increase", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
+        if m == 6:
+            # The FARE Act took effect June 11, 2025 (NYC DCWP).
+            out.append(spec(f"Moving season broker fees {y}", "Moving? Skip the Broker Fee",
+                            "FARE Act: the landlord's agent can't bill you",
+                            "Since June 2025, a landlord's broker can't charge NYC renters a fee. Check a fee you were asked to pay.",
+                            "findacrib://broker-fee", "SPECIAL_EVENT", "ATTRACT_NEW_USERS",
+                            date(y, 6, 11), date(y, 7, 10), cost="SUBSCRIPTION"))
+        if m == 7:
+            out.append(spec(f"Lease renewal season {y}", "Lease Renewal Season",
+                            "Plan your NYC lease renewal before you sign",
+                            "Most NYC leases renew in the fall. Know what your landlord can raise and what to ask for before you sign.",
+                            "findacrib://tool/renewal", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end,
+                            cost="SUBSCRIPTION"))
     return out
 
 
@@ -155,8 +198,8 @@ def main():
         pub = parse(s["publishStart"])
         if s["referenceName"] in names:
             continue
-        if parse(s["eventEnd"]) < today:
-            continue
+        if parse(s["eventEnd"]) - max(parse(s["eventStart"]), today) < timedelta(days=14):
+            continue   # over, or too little left to be worth a review (added 2026-10-20)
         if pub - today > timedelta(days=HORIZON):
             print(f"later    {s['referenceName']} (publishes {pub:%b %d})")
             continue

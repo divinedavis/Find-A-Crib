@@ -1898,6 +1898,9 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertEqual(DeepLink(URL(string: "findacrib://tool/rent-increase")!), .tool(.rentIncrease))
         XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/#d=1002990024")!), .building("1002990024"))
         XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/#rights")!), .tool(.rights))
+        XCTAssertEqual(DeepLink(URL(string: "findacrib://broker-fee")!), .brokerFee, "June's moving-season event lands on the Broker fee check")
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/#broker-fee")!), .brokerFee)
+        XCTAssertEqual(DeepLink.brokerFee.url.absoluteString, "findacrib://broker-fee")
         XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/alerts/")!), .lotteries)
     }
 

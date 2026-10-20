@@ -124,6 +124,7 @@ struct ProfileView: View {
                     }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     .onChange(of: nav.openTool) { _, t in if let t { homeTool = t; nav.openTool = nil } }
+                    .onChange(of: nav.openBrokerFee) { _, on in if on { showBrokerFee = true; nav.openBrokerFee = false } }
                     // The notifications card sends people here to set alerts up.
                     // Signed out, the sign-in sheet comes first and the alerts
                     // sheet follows once there is an account.
@@ -136,6 +137,7 @@ struct ProfileView: View {
                     .onAppear {
                         if nav.showPaywall { showPaywall = true; nav.showPaywall = false }
                         if let t = nav.openTool { homeTool = t; nav.openTool = nil }
+                        if nav.openBrokerFee { showBrokerFee = true; nav.openBrokerFee = false }
                         if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailSheet = .alerts } }
                     }
                     .alert(String(localized: "Delete your account?"), isPresented: $confirmDelete) {

@@ -131,6 +131,7 @@ final class AuthService {
                 ReviewPrompt.shared.signedIn = false
                 session = nil; hasPlus = false; plusKnown = false; contactsCache = [:]; phoneCache = [:]
                 await PushService.shared.sessionEnded()
+                await CasaWatch.shared.load(token: nil)   // forget this account's alert
             default: break
             }
         }

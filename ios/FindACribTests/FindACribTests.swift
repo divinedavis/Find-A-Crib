@@ -2098,3 +2098,17 @@ final class BuildingCardSpacingTests: XCTestCase {
         XCTAssertEqual(BuildingCard.headGap, 5.6, accuracy: 0.001)
     }
 }
+
+/// Your Crib remembers the alert on the phone so "Turn on alerts" never
+/// flashes for someone who has them on (owner, 2026-10-20); signing out
+/// forgets it.
+@MainActor
+final class CasaWatchMemoryTests: XCTestCase {
+    func testSigningOutForgetsTheSavedAlert() async {
+        UserDefaults.standard.set(try! JSONEncoder().encode(CasaWatch.Watch(bbl: "1", address: "x", crime_kinds: [])), forKey: "casa.watch")
+        await CasaWatch.shared.load(token: nil)
+        XCTAssertNil(CasaWatch.shared.watch)
+        XCTAssertTrue(CasaWatch.shared.known, "signed out, we know there's no alert")
+        XCTAssertNil(UserDefaults.standard.data(forKey: "casa.watch"), "and the phone's copy is gone")
+    }
+}

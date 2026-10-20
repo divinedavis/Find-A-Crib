@@ -141,7 +141,7 @@
       <div class="card"><div class="verdict"><span class="icon" id="v-icon"></span><div><b id="v-title"></b><span class="muted" id="v-sub"></span></div></div>
         <div id="v-kinds" class="muted" style="margin-top:8px"></div></div>
 
-      <div class="card" id="alerts">
+      <div class="card" id="alerts" hidden>
         <h2>Alerts for this building</h2>
         <p class="muted" id="a-text"></p>
         <button class="btn" id="a-on" type="button">🔔 Turn on alerts</button>
@@ -418,6 +418,9 @@
   });
 
   // ---- session (the map's, same origin) and the starting building
+  // The alerts card stays hidden until we know whether alerts are on, so
+  // someone who has them never sees "Turn on alerts" flash (owner, 2026-10-20).
+  function alertsKnown() { $('alerts').hidden = false; }
   try {
     if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
       sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
@@ -425,9 +428,9 @@
         var sess = r && r.data && r.data.session; if (!sess || !sess.access_token) return;
         token = sess.access_token;
         return api('GET').then(function (j) { plus = !!j.plus; watch = j.watch; renderAlerts(); resetOlder(); });
-      }).catch(function () {});
-    }
-  } catch (e) {}
+      }).catch(function () {}).then(alertsKnown);
+    } else alertsKnown();
+  } catch (e) { alertsKnown(); }
 
   // ---- building chat (static/chat/chat-ui.js)
   function openChat() {

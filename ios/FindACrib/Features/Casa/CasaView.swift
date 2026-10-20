@@ -41,6 +41,9 @@ struct CasaView: View {
     @State private var chatFor: Casa.Place?
     @FocusState private var typing: Bool
     private var watch: CasaWatch { CasaWatch.shared }
+    /// Signed out there is nothing to wait for; signed in, the alerts card
+    /// waits until we know whether alerts are on, so it never flashes.
+    private var alertsKnown: Bool { auth.session == nil || watch.known }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -76,9 +79,11 @@ struct CasaView: View {
         .background(SE.canvas)
         .task {
             if CommandLine.arguments.contains("--casa-demo") { showDemo(); return }
+            // Ask about alerts alongside the 311 load, not after it.
+            async let alerts: Void = watch.load(token: auth.session?.accessToken)
             if place == nil, let p = try? JSONDecoder().decode(Casa.Place.self, from: savedPlace) { await open(p) }
             else if interrupted, let p = place { await open(p) }
-            await watch.load(token: auth.session?.accessToken)
+            await alerts
         }
         .task(id: query) {
             guard typing else { return }
@@ -204,7 +209,7 @@ struct CasaView: View {
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
             .accessibilityIdentifier("casa-loading")
-            if watch.watch?.bbl != p.bbl { alertCard(p) }
+            if alertsKnown && watch.watch?.bbl != p.bbl { alertCard(p) }
             crimeCard
         } else if failed {
             note(String(localized: "Couldn't load 311 calls"), String(localized: "NYC's data service didn't answer. Check your connection and try again."))
@@ -215,7 +220,7 @@ struct CasaView: View {
             .accessibilityIdentifier("casa-retry").padding(.horizontal, 16)
         } else {
             pestCard
-            if watch.watch?.bbl != p.bbl { alertCard(p) }
+            if alertsKnown && watch.watch?.bbl != p.bbl { alertCard(p) }
             crimeCard
             callsCard
             olderCard

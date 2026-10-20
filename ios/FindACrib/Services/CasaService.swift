@@ -300,7 +300,7 @@ extension ISO8601DateFormatter {
 @Observable @MainActor
 final class CasaWatch {
     static let shared = CasaWatch()
-    struct Watch: Decodable, Hashable { let bbl: String; let address: String?; var crime_kinds: [String]? }
+    struct Watch: Codable, Hashable { let bbl: String; let address: String?; var crime_kinds: [String]? }
 
     /// The crime kinds a watch can pick, in chip order. casa_alerts.CRIME_KINDS
     /// and api_server.CASA_CRIME_KINDS use the same keys.
@@ -308,9 +308,25 @@ final class CasaWatch {
         ("shootings", String(localized: "Shootings")), ("robbery", String(localized: "Robbery")), ("burglary", String(localized: "Burglary")),
         ("assault", String(localized: "Assault")), ("theft", String(localized: "Theft")), ("car_theft", String(localized: "Car theft")),
         ("weapons", String(localized: "Weapons")), ("drugs", String(localized: "Drugs")), ("vandalism", String(localized: "Vandalism")), ("harassment", String(localized: "Harassment"))]
-    private(set) var watch: Watch?
+    /// The last answer is kept on the phone, so Your Crib opens already
+    /// knowing alerts are on instead of flashing "Turn on alerts" until the
+    /// server replies (owner, 2026-10-20).
+    private(set) var watch: Watch? = CasaWatch.saved
+    /// True once this launch knows whether there is a watch: from the phone's
+    /// copy or the server. Until then the alerts card stays hidden.
+    private(set) var known = CasaWatch.saved != nil
     private(set) var busy = false
     var error: String?
+
+    private static let savedKey = "casa.watch"
+    private static var saved: Watch? {
+        UserDefaults.standard.data(forKey: savedKey).flatMap { try? JSONDecoder().decode(Watch.self, from: $0) }
+    }
+    private func set(_ w: Watch?) {
+        watch = w; known = true
+        if let w, let d = try? JSONEncoder().encode(w) { UserDefaults.standard.set(d, forKey: Self.savedKey) }
+        else { UserDefaults.standard.removeObject(forKey: Self.savedKey) }
+    }
 
     private func request(_ method: String, token: String, body: [String: Any]? = nil) async -> (Int, Data?) {
         var req = URLRequest(url: Casa.watchURL, timeoutInterval: 15)
@@ -328,9 +344,10 @@ final class CasaWatch {
     private struct Reply: Decodable { let watch: Watch? }
 
     func load(token: String?) async {
-        guard let token else { watch = nil; return }
+        guard let token else { set(nil); return }
         let (code, data) = await request("GET", token: token)
-        if code == 200, let data, let r = try? JSONDecoder().decode(Reply.self, from: data) { watch = r.watch }
+        if code == 200, let data, let r = try? JSONDecoder().decode(Reply.self, from: data) { set(r.watch) }
+        else { known = true }   // offline: show what we have rather than nothing
     }
 
     /// Watch `place` (or update its crime kinds). Re-posting the same building
@@ -340,7 +357,7 @@ final class CasaWatch {
         let (code, data) = await request("POST", token: token, body: [
             "bbl": place.bbl, "address": place.short, "lat": place.lat, "lng": place.lng, "crime_kinds": crimeKinds])
         if code == 200, let data, let r = try? JSONDecoder().decode(Reply.self, from: data) {
-            watch = r.watch; error = nil
+            set(r.watch); error = nil
             Analytics.shared.track("casa_watch_on", ["bbl": place.bbl])
         } else {
             error = code == 402 ? String(localized: "Alerts are part of Find A Crib Plus.") : String(localized: "Couldn't turn on alerts. Try again in a minute.")
@@ -350,7 +367,7 @@ final class CasaWatch {
     func stop(token: String) async {
         busy = true; defer { busy = false }
         let (code, _) = await request("DELETE", token: token)
-        if code == 200 { watch = nil; error = nil; Analytics.shared.track("casa_watch_off") }
+        if code == 200 { set(nil); error = nil; Analytics.shared.track("casa_watch_off") }
         else { error = String(localized: "Couldn't turn off alerts. Try again in a minute.") }
     }
 }

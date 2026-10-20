@@ -1139,7 +1139,9 @@ class Runner:
         self.ok(page.evaluate("document.querySelectorAll('#chart circle').length") == 12, 'six months, two lines', j)
         self.ok('every three months' in page.evaluate("document.getElementById('crime-note').textContent"), 'the chart should say the NYPD publishes quarterly', j)
         self.ok('🔒' in page.evaluate("document.getElementById('older-btn').textContent"), 'older calls are locked for a signed-out visitor', j)
-        self.ok(page.evaluate("!document.getElementById('a-on').hidden"), 'the alert button should show', j)
+        # The card waits until the page knows whether alerts are on (no
+        # "Turn on alerts" flash, 2026-10-20); signed out, that's right away.
+        self.ok(page.evaluate("!document.getElementById('a-on').hidden && !document.getElementById('alerts').hidden"), 'the alert button should show', j)
         self.ok(page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), 'no sideways scroll', j)
         r = page.request.get(LIVE + '/api/casa/watch')
         self.ok(r.status in (401, 429), f'/api/casa/watch without a session should be refused, got {r.status}', j)

@@ -284,6 +284,30 @@ final class FindACribUITests: XCTestCase {
         }
     }
 
+    /// Search keeps its place (owner, 2026-10-20): scroll the results, visit
+    /// My Activity, come back, and the same building is on screen, not the top.
+    func testSearchTabKeepsItsScrollAfterAnotherTab() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        for _ in 0..<4 { app.swipeUp() }
+        let onScreen = { [app] in
+            app.descendants(matching: .any).matching(identifier: "card-address").allElementsBoundByIndex
+                .filter { $0.isHittable }.map(\.label)
+        }
+        let before = onScreen()
+        XCTAssertFalse(before.isEmpty, "a building should be on screen after scrolling")
+        XCTAssertFalse(app.staticTexts["results-count"].isHittable, "scrolled past the top")
+        app.buttons["tab-My Activity"].tap()
+        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 10))
+        app.buttons["tab-Search"].tap()
+        let card = app.descendants(matching: .any).matching(identifier: "card-address").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["results-count"].isHittable, "back on Search, the list should not jump to the top")
+        XCTAssertFalse(Set(before).isDisjoint(with: onScreen()), "the same buildings are still on screen: \(before) vs \(onScreen())")
+    }
+
     /// The list follows the map: pan or zoom, and the count pill reads what
     /// is in view; "List" then opens on that area — no "Search this area" tap
     /// (removed 2026-09-16 at the owner's request, from a recording of the

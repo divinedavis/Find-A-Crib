@@ -5471,15 +5471,15 @@ function favActive() {
   try { QUAL = JSON.parse(localStorage.getItem('fac.qualify') || 'null'); } catch (e) {}
   if (IS_NYC) fetch('/featured_units.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null)
     .then(d => { if (d && d.listings) { UNITS = d.listings; paintQualify(); } }).catch(() => {});
-  // What the flyer reader found on each re-rental's own page: first come,
-  // first served, a deadline, and any scam-rule warning (2026-10-03).
+  // What the flyer reader found on each re-rental's own page: a deadline and
+  // any scam-rule warning (2026-10-03). "First come, first served" left the
+  // cards 2026-10-20 (owner).
   function paintFlyerFacts() {
     document.querySelectorAll('.feat-card').forEach(card => {
       if (card.querySelector('.feat-facts')) return;
       const t = UNITS[card.dataset.featHref];
       if (!t) return;
       const bits = [];
-      if (t.first_come_first_served) bits.push('⏱ First come, first served');
       if (t.deadline) bits.push('Apply by ' + esc(t.deadline));
       const warn = (t.flags || []).map(f => esc(f.why));
       if (!bits.length && !warn.length) return;
@@ -6547,7 +6547,7 @@ function favActive() {
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
   // Since 2026-10-06 alerts arrive in a daily 8 AM digest; real-time is Plus.
   // Someone already subscribed (and without Plus) sees the real-time offer
-  // instead — "re-rentals go first come, first served" — until they dismiss it,
+  // instead until they dismiss it,
   // which is for good. ALERT_SUB: null until known, then {subscribed}.
   let ALERT_SUB = null;
   function rtDismissed() {
@@ -6561,7 +6561,7 @@ function favActive() {
     const data = `data-al-boro="${esc(borough || '')}" data-al-kind="${kind}" data-al-src="${src}" data-al-short="${short ? 1 : ''}"`;
     if (ALERT_SUB && ALERT_SUB.subscribed) {
       if (plusActive || rtDismissed()) return `<span class="alert-link alert-on" ${data}>🔔 Your ${plusActive ? 'real-time' : 'daily 8 AM'} alerts are on</span>`;
-      return `<span class="alert-link alert-rt" ${data}><a href="#" data-rt="open">⚡ Re-rentals go first come, first served — get real-time alerts, not 8 AM</a>`
+      return `<span class="alert-link alert-rt" ${data}><a href="#" data-rt="open">⚡ Get real-time re-rental alerts, not 8 AM</a>`
            + `<button type="button" class="rt-x" data-rt="dismiss" aria-label="Don't show this again">✕</button></span>`;
     }
     const text = short ? `🔔 Daily 8 AM alerts for new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
@@ -6708,7 +6708,7 @@ function favActive() {
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
         ${featMoneyHtml(f)}
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
-        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — ${/Housing Development Corporation/i.test(f.agent || '') ? "the city's affordable-housing finance agency" : 'an HPD-approved marketing agent'}</div>
+        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b></div>
         <div class="actions">
           <!-- A few agents (Clinton Management) publish a board with no page
                per apartment, so the link can only be that board. Saying "Apply"

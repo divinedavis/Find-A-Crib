@@ -127,6 +127,33 @@ final class FindACribUITests: XCTestCase {
         XCTAssertLessThan(beds.frame.minY, search.frame.minY, "Bedrooms must come before the Search button")
     }
 
+    /// Real no-match searches (2026-10-19): filter words become filters,
+    /// "rent" says what the app is, Bed-Stuy's nickname works, Yonkers points
+    /// at the Westchester map.
+    func testLocationPickerReadsWhatPeopleType() throws {
+        app.launch()
+        let field = app.descendants(matching: .any)["location-field"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 20))
+        field.tap()
+        let search = app.textFields["location-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap(); search.typeText("rent stabilized")
+        XCTAssertTrue(app.staticTexts["location-filler"].waitForExistence(timeout: 5), "\"rent stabilized\" says what the app is")
+        XCTAssertTrue(app.buttons["loc-Brooklyn"].exists, "and still lists the places")
+        search.clearAndType("bedford stuy")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'loc-Bed-Stuy'")).firstMatch.waitForExistence(timeout: 5), "the nickname finds Bed-Stuy")
+        search.clearAndType("yonkers")
+        XCTAssertTrue(app.descendants(matching: .any)["location-westchester"].waitForExistence(timeout: 5), "Yonkers points at the Westchester map")
+        search.clearAndType("2 bedroom brooklyn")
+        let intent = app.buttons["location-intent"]
+        XCTAssertTrue(intent.waitForExistence(timeout: 5), "\"2 bedroom\" offers the filter")
+        intent.tap()
+        XCTAssertEqual(search.value as? String, "brooklyn", "and leaves the place to pick")
+        XCTAssertTrue(app.buttons["loc-Brooklyn"].waitForExistence(timeout: 5))
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "location-intent"; add(shot)
+        app.buttons["location-done"].tap()
+    }
+
     func testLocationPickerFiltersResults() throws {
         app.launch()
         let field = app.descendants(matching: .any)["location-field"].firstMatch
@@ -1691,5 +1718,16 @@ final class ReviewPromptUITests: XCTestCase {
         let rate = app.descendants(matching: .any)["profile-rate"].firstMatch
         for _ in 0..<6 where !rate.exists { app.swipeUp() }
         XCTAssertTrue(rate.waitForExistence(timeout: 10), "Profile has no Rate Find A Crib row")
+    }
+}
+
+extension XCUIElement {
+    /// Replaces a text field's contents (location search, 2026-10-19).
+    func clearAndType(_ text: String) {
+        tap()
+        if let v = value as? String, !v.isEmpty, v != placeholderValue {
+            typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: v.count))
+        }
+        typeText(text)
     }
 }

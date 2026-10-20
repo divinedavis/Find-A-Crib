@@ -228,6 +228,10 @@
       "back" : "%lld bedrooms",
       "src" : "2e323e3e7181e7c9"
     },
+    "%lld beds" : {
+      "back" : "%lld beds",
+      "src" : "e98e5743a756be98"
+    },
     "%lld buildings" : {
       "error" : "placeholders or terms lost: 0 edificios",
       "src" : "a4f231e674743c96"
@@ -1444,6 +1448,10 @@
       "back" : "Every 311 call from your building to 2010, not just last year",
       "src" : "b5daf33853b206f1"
     },
+    "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : {
+      "back" : "Each building here has a stabilized rent, that's all Find A Crib shows. Choose a area below or use the filters for bedrooms and price.",
+      "src" : "1e4d2b04e446d452"
+    },
     "Every building on the DHCR register" : {
       "back" : "Each building in the DHCR register",
       "src" : "1d7b0b247cb5089c"
@@ -1519,6 +1527,10 @@
     "Find A Crib %@ (%@) · Not a broker. Building data from NYS HCR and NYC HPD open data." : {
       "back" : "Find A Crib %1$@ (%2$@) · It is not a runner. Building data from NYS HCR and NYC open data from HPD.",
       "src" : "37a86f56d721a21e"
+    },
+    "Find A Crib doesn’t cover %@ yet." : {
+      "back" : "Find A Crib does not yet cover %@.",
+      "src" : "80fca0739aa639e7"
     },
     "FIND A CRIB PLUS" : {
       "back" : "FIND A CRIB PLUS",
@@ -2663,6 +2675,10 @@
     "Nothing matches that." : {
       "back" : "Nothing compares to that.",
       "src" : "6fa9d00e1bdc77ab"
+    },
+    "Nothing matches that. Try a borough, a neighborhood or a ZIP." : {
+      "back" : "Nothing matches that. Try a borough, a neighborhood or a zip code.",
+      "src" : "ddf236c6d1060af8"
     },
     "Nothing open right now" : {
       "back" : "Nothing open right now",
@@ -3928,6 +3944,10 @@
       "back" : "Activate the phone alerts",
       "src" : "6bcc7b72fe6c43f0"
     },
+    "Turn on: %@" : {
+      "back" : "Turn on: %@",
+      "src" : "75d4170f99c57892"
+    },
     "Type" : {
       "back" : "guy",
       "src" : "83ed190817781715"
@@ -3959,6 +3979,10 @@
     "Typing" : {
       "back" : "typing",
       "src" : "98273442af7d70d7"
+    },
+    "under $%@" : {
+      "back" : "Below $%@",
+      "src" : "2f75778651298604"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 mile",
@@ -4076,6 +4100,10 @@
       "back" : "Coupon lists",
       "src" : "4fd253fa447530bc"
     },
+    "voucher-friendly" : {
+      "back" : "Compatible with coupons",
+      "src" : "bee14f52f2038033"
+    },
     "voucher-friendly building" : {
       "back" : "Building friendly with coupons",
       "src" : "a00fd7552bc40175"
@@ -4115,6 +4143,10 @@
     "Weapons" : {
       "back" : "Weapons",
       "src" : "ce46fe2aa6485c6b"
+    },
+    "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
+      "back" : "Westchester is not yet in the application, check the map of Yonkers and Westchester at findacrib.com",
+      "src" : "829b6dee537c6fd0"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -4601,6 +4633,10 @@
     "%lld bedrooms" : {
       "back" : "%lld bedroom",
       "src" : "2e323e3e7181e7c9"
+    },
+    "%lld beds" : {
+      "back" : "%lld bed",
+      "src" : "e98e5743a756be98"
     },
     "%lld buildings" : {
       "back" : "%lld buildings",
@@ -5818,6 +5854,10 @@
       "back" : "Not only in the past year, but since 2010, all 311 calls in the building",
       "src" : "b5daf33853b206f1"
     },
+    "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : {
+      "back" : "All buildings here are rented stabilized. That's all Find A Crib shows. Please select the area below or use the filters for bedrooms and price.",
+      "src" : "1e4d2b04e446d452"
+    },
     "Every building on the DHCR register" : {
       "back" : "All buildings in the DHCR registry",
       "src" : "1d7b0b247cb5089c"
@@ -5893,6 +5933,10 @@
     "Find A Crib %@ (%@) · Not a broker. Building data from NYS HCR and NYC HPD open data." : {
       "back" : "Find A Crib %1$@ (%2$@) · Not a broker. Build building data from NYS HCR and NYC HPD open data.",
       "src" : "37a86f56d721a21e"
+    },
+    "Find A Crib doesn’t cover %@ yet." : {
+      "back" : "Find A Crib does not include %@ yet.",
+      "src" : "80fca0739aa639e7"
     },
     "FIND A CRIB PLUS" : {
       "back" : "Find Crive Plus",
@@ -7037,6 +7081,10 @@
     "Nothing matches that." : {
       "back" : "There is nothing that matches it.",
       "src" : "6fa9d00e1bdc77ab"
+    },
+    "Nothing matches that. Try a borough, a neighborhood or a ZIP." : {
+      "back" : "Nothing matches that. Try a city, neighborhood or zip code.",
+      "src" : "ddf236c6d1060af8"
     },
     "Nothing open right now" : {
       "back" : "Nothing is open right now.",
@@ -8302,6 +8350,10 @@
       "back" : "Turn on phone notifications.",
       "src" : "6bcc7b72fe6c43f0"
     },
+    "Turn on: %@" : {
+      "back" : "Turn on: %@",
+      "src" : "75d4170f99c57892"
+    },
     "Type" : {
       "back" : "materiality",
       "src" : "83ed190817781715"
@@ -8333,6 +8385,10 @@
     "Typing" : {
       "back" : "Typing",
       "src" : "98273442af7d70d7"
+    },
+    "under $%@" : {
+      "back" : "Less than $%@",
+      "src" : "2f75778651298604"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 mile",
@@ -8450,6 +8506,10 @@
       "back" : "Recommended list",
       "src" : "4fd253fa447530bc"
     },
+    "voucher-friendly" : {
+      "back" : "Barcode friendly",
+      "src" : "bee14f52f2038033"
+    },
     "voucher-friendly building" : {
       "back" : "Barcode-friendly building",
       "src" : "a00fd7552bc40175"
@@ -8489,6 +8549,10 @@
     "Weapons" : {
       "back" : "a weapon",
       "src" : "ce46fe2aa6485c6b"
+    },
+    "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
+      "back" : "Westchester is not yet on the app - check the Yonkers and Westchester maps on findacrib.com.",
+      "src" : "829b6dee537c6fd0"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -8975,6 +9039,10 @@
     "%lld bedrooms" : {
       "back" : "%lld bedroom",
       "src" : "2e323e3e7181e7c9"
+    },
+    "%lld beds" : {
+      "back" : "%lld beds",
+      "src" : "e98e5743a756be98"
     },
     "%lld buildings" : {
       "back" : "%lld building",
@@ -10192,6 +10260,10 @@
       "back" : "Since 2010, every 311 phone in your building has not only been the past year.",
       "src" : "b5daf33853b206f1"
     },
+    "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : {
+      "back" : "Every building here has stable rent - this is all that Find A Crib shows. Select the area below, or use the filters for bedrooms and prices.",
+      "src" : "1e4d2b04e446d452"
+    },
     "Every building on the DHCR register" : {
       "back" : "Each building on the DHCR register",
       "src" : "1d7b0b247cb5089c"
@@ -10267,6 +10339,10 @@
     "Find A Crib %@ (%@) · Not a broker. Building data from NYS HCR and NYC HPD open data." : {
       "back" : "Find A Crib %1$@ (%2$@) · Not an agent. Data is built from public data of NYS HCR and NYC HPD.",
       "src" : "37a86f56d721a21e"
+    },
+    "Find A Crib doesn’t cover %@ yet." : {
+      "back" : "Find A Crib does not cover %@ yet.",
+      "src" : "80fca0739aa639e7"
     },
     "FIND A CRIB PLUS" : {
       "back" : "Looking for a crib PLUS",
@@ -11411,6 +11487,10 @@
     "Nothing matches that." : {
       "back" : "Nothing can be compared with it.",
       "src" : "6fa9d00e1bdc77ab"
+    },
+    "Nothing matches that. Try a borough, a neighborhood or a ZIP." : {
+      "back" : "Nothing else can be compared to it. Try a district, a block or a postal code.",
+      "src" : "ddf236c6d1060af8"
     },
     "Nothing open right now" : {
       "back" : "Nothing is open now.",
@@ -12676,6 +12756,10 @@
       "back" : "Open the mobile phone reminder",
       "src" : "6bcc7b72fe6c43f0"
     },
+    "Turn on: %@" : {
+      "back" : "Open: %@",
+      "src" : "75d4170f99c57892"
+    },
     "Type" : {
       "back" : "type",
       "src" : "83ed190817781715"
@@ -12707,6 +12791,10 @@
     "Typing" : {
       "back" : "type",
       "src" : "98273442af7d70d7"
+    },
+    "under $%@" : {
+      "back" : "Lower than %@",
+      "src" : "2f75778651298604"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 miles",
@@ -12824,6 +12912,10 @@
       "back" : "Coupon list",
       "src" : "4fd253fa447530bc"
     },
+    "voucher-friendly" : {
+      "back" : "Coupon friendly",
+      "src" : "bee14f52f2038033"
+    },
     "voucher-friendly building" : {
       "back" : "Coupon-friendly architecture",
       "src" : "a00fd7552bc40175"
@@ -12863,6 +12955,10 @@
     "Weapons" : {
       "back" : "weapon",
       "src" : "ce46fe2aa6485c6b"
+    },
+    "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
+      "back" : "West Chester is not yet in the application - please check the map of York and West Chester on findacrib.com.",
+      "src" : "829b6dee537c6fd0"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -13349,6 +13445,10 @@
     "%lld bedrooms" : {
       "back" : "%lld bedroom",
       "src" : "2e323e3e7181e7c9"
+    },
+    "%lld beds" : {
+      "back" : "%lld bed",
+      "src" : "e98e5743a756be98"
     },
     "%lld buildings" : {
       "back" : "%lld building",
@@ -14566,6 +14666,10 @@
       "back" : "Every 311 phone in your building can be traced back to 2010, not just the past year.",
       "src" : "b5daf33853b206f1"
     },
+    "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : {
+      "back" : "Every building here has stable rent - that's all Find A Crib shows. Select the area below, or use the filters for bedrooms and prices.",
+      "src" : "1e4d2b04e446d452"
+    },
     "Every building on the DHCR register" : {
       "back" : "Each building on the DHCR registration form",
       "src" : "1d7b0b247cb5089c"
@@ -14641,6 +14745,10 @@
     "Find A Crib %@ (%@) · Not a broker. Building data from NYS HCR and NYC HPD open data." : {
       "back" : "Find A Crib %1$@ (%2$@) · Not a broker. Data is constructed from NYS HCR and NYC HPD open data.",
       "src" : "37a86f56d721a21e"
+    },
+    "Find A Crib doesn’t cover %@ yet." : {
+      "back" : "Find A Crib does not cover %@ yet.",
+      "src" : "80fca0739aa639e7"
     },
     "FIND A CRIB PLUS" : {
       "back" : "Looking for a crib PLUS",
@@ -15785,6 +15893,10 @@
     "Nothing matches that." : {
       "back" : "There is nothing comparable to it.",
       "src" : "6fa9d00e1bdc77ab"
+    },
+    "Nothing matches that. Try a borough, a neighborhood or a ZIP." : {
+      "back" : "Nothing can match it. Try a district, a block or a postal code.",
+      "src" : "ddf236c6d1060af8"
     },
     "Nothing open right now" : {
       "back" : "Nothing is open now.",
@@ -17050,6 +17162,10 @@
       "back" : "Turn on the mobile phone reminder",
       "src" : "6bcc7b72fe6c43f0"
     },
+    "Turn on: %@" : {
+      "back" : "Open: %@",
+      "src" : "75d4170f99c57892"
+    },
     "Type" : {
       "back" : "Type",
       "src" : "83ed190817781715"
@@ -17081,6 +17197,10 @@
     "Typing" : {
       "back" : "Typewriting",
       "src" : "98273442af7d70d7"
+    },
+    "under $%@" : {
+      "back" : "Lower than %@ dollars",
+      "src" : "2f75778651298604"
     },
     "Under 0.1 mi" : {
       "back" : "Less than 0.1 miles",
@@ -17198,6 +17318,10 @@
       "back" : "List of coupons",
       "src" : "4fd253fa447530bc"
     },
+    "voucher-friendly" : {
+      "back" : "Coupon friendly type",
+      "src" : "bee14f52f2038033"
+    },
     "voucher-friendly building" : {
       "back" : "Coupon-friendly architecture",
       "src" : "a00fd7552bc40175"
@@ -17237,6 +17361,10 @@
     "Weapons" : {
       "back" : "Weapons",
       "src" : "ce46fe2aa6485c6b"
+    },
+    "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
+      "back" : "Westchester is not yet in the app - please check the map of Yorkers and Westchester on findacrib.com.",
+      "src" : "829b6dee537c6fd0"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",

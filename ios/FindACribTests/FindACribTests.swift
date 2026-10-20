@@ -2019,3 +2019,54 @@ final class ChatLayoutTests: XCTestCase {
         XCTAssertEqual(chat.typing.count, 1, "a bubble older than the window is gone")
     }
 }
+
+/// What people typed into search that matched nothing (a month of real
+/// queries, 2026-10-19): the same rules as the web's searchIntent/stripFiller.
+final class SearchTextTests: XCTestCase {
+    func testFillerOnlyRestatesTheApp() {
+        for s in ["rent", "Rent stabilized", "search only rent stabalized", "only rent stabilized apartments", "NYC"] {
+            XCTAssertEqual(SearchText.stripFiller(s), "", s)
+        }
+        XCTAssertEqual(SearchText.stripFiller("rent stabilized apartments in brooklyn ny").lowercased(), "brooklyn")
+        XCTAssertEqual(SearchText.stripFiller("bronx ny").lowercased(), "bronx")
+    }
+
+    func testBoroughPlusZipReadsAsTheZip() {
+        XCTAssertEqual(SearchText.zipFromPlace("bronx 10453"), "10453")
+        XCTAssertEqual(SearchText.zipFromPlace("10453"), "10453")
+        XCTAssertNil(SearchText.zipFromPlace("118 erie street"))
+        XCTAssertNil(SearchText.zipFromPlace("2783 ocean ave 11229"), "an address keeps its number")
+    }
+
+    func testNicknamesReachTheNeighborhood() {
+        XCTAssertEqual(SearchText.aliases[SearchText.flat("bedford stuy")], ["Bed-Stuy (East)", "Bed-Stuy (West)"])
+        XCTAssertEqual(SearchText.boroughAliases[SearchText.flat("BK")], "Bk")
+    }
+
+    func testOtherTownsAreNamed() {
+        XCTAssertEqual(SearchText.elsewhere("yonkers"), .westchester)
+        XCTAssertEqual(SearchText.elsewhere("10550"), .westchester)
+        XCTAssertEqual(SearchText.elsewhere("poughkeepsie"), .outside("upstate New York"))
+        XCTAssertNil(SearchText.elsewhere("bushwick"))
+        XCTAssertNil(SearchText.elsewhere("10453"), "a Bronx ZIP is home")
+    }
+
+    func testBedroomsVouchersAndRentBecomeFilters() {
+        let a = SearchText.intent("2 bedroom brooklyn")
+        XCTAssertEqual(a?.beds, [2]); XCTAssertEqual(a?.rest, "brooklyn")
+        XCTAssertEqual(SearchText.intent("studio")?.beds, [0])
+        XCTAssertEqual(SearchText.intent("3 bedr")?.beds, nil, "half-typed words wait")
+        XCTAssertEqual(SearchText.intent("4 bedroom")?.beds, [4])
+        let v = SearchText.intent("section 8 voucher under $2,500")
+        XCTAssertEqual(v?.vouchers, true); XCTAssertEqual(v?.maxRent, 2500)
+        XCTAssertEqual(SearchText.intent("1000$")?.maxRent, 1000)
+        XCTAssertNil(SearchText.intent("10550"), "a ZIP is not a price")
+        XCTAssertNil(SearchText.intent("bushwick"))
+    }
+
+    func testIntentOnlyChangesWhatWasAsked() {
+        var q = SearchQuery(); q.minPrice = 1000; q.noOpenViolations = true
+        q.apply(SearchText.intent("2 bedroom")!)
+        XCTAssertEqual(q.beds, [2]); XCTAssertEqual(q.minPrice, 1000); XCTAssertTrue(q.noOpenViolations)
+    }
+}

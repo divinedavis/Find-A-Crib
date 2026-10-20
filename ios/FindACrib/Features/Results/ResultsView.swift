@@ -278,7 +278,7 @@ struct ResultsView: View {
             onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true },
             edit: $query) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
-        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
+        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations, applyIntent: { query.apply($0) }) }
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
         .sheet(isPresented: $showSignIn, onDismiss: {
             if auth.isSignedIn { showAlerts = true }

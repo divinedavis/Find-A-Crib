@@ -80,7 +80,7 @@ struct MapResultsView: View {
             onFilter: { Analytics.shared.track("filters_open", ["src": "map"]); showFilters = true },
             edit: $query) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
-        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
+        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations, applyIntent: { query.apply($0) }) }
         .task(id: query) {
             // A map area only says where to LOOK. The pins cover the whole
             // search so panning past the box keeps showing buildings, and the

@@ -102,6 +102,7 @@ JOURNEY_EVENTS = {
                              'evictions_open', 'litigations_open', 'pests_open', 'bedbugs_open', 'rodents_open'],
     'search_area':          ['search'],
     'search_zip_and_miss':  ['search'],
+    'search_intents':       ['search', 'search_intent'],
     'pin_and_list':         ['building_view'],
     'filters_and_save':     ['save', 'unsave', 'saved_view'],
     'deep_links_and_view':  ['building_view'],
@@ -676,6 +677,44 @@ class Runner:
         self.typeq(page, 'Clinton Management', settle=2.5)
         h = page.evaluate("document.getElementById('search-helper').innerText")
         self.ok('landlord' in h.lower() and 'account' in h.lower(), f'signed-out landlord search should point at sign-in, got {h[:120]!r}', j)
+
+    def j_search_intents(self, page, j, device):
+        # A month of real no-match searches (2026-10-19): "rent", "2 bedroom",
+        # "yonkers", "bronx ny", "bedford stuy", "voucher", "10550".
+        if device != 'desktop':
+            return
+        self.boot(page)
+        total = lambda: int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))
+        helper = lambda: page.evaluate("document.getElementById('search-helper').innerText")
+        everything = total()
+        self.typeq(page, 'rent')
+        h = helper()
+        self.ok('Every building on this map is rent-stabilized' in h and 'Tremont' not in h, f'"rent" should say what the map is, got {h[:90]!r}', j)
+        self.ok(not page.evaluate("document.getElementById('q').classList.contains('q-nomatch')"), '"rent" is not a miss', j)
+        self.typeq(page, 'search only rent stabilized apartments in brooklyn ny')
+        self.ok(0 < total() < everything, 'filler words around a borough should still find the borough', j)
+        for q in ('bronx ny', 'bronx 10453', 'bedford stuy'):
+            self.typeq(page, q)
+            n = total()
+            self.ok(0 < n < everything, f'{q!r} should narrow the map, got {n} of {everything}', j)
+        for q in ('yonkers', '10550', 'new rochelle'):
+            self.typeq(page, q)
+            h = helper()
+            self.ok('Westchester' in h and page.evaluate("!!document.querySelector('#search-helper a.sh-go[href^=\"/westchester/\"]')"),
+                    f'{q!r} should hand off to the Westchester map, got {h[:90]!r}', j)
+        self.typeq(page, 'poughkeepsie')
+        self.ok('doesn’t cover' in helper(), f'"poughkeepsie" should say it is not covered, got {helper()[:90]!r}', j)
+        # Bedrooms and vouchers typed into the box become the filters.
+        self.typeq(page, '2 bedroom brooklyn', settle=2.2)
+        beds = page.evaluate("[...document.querySelectorAll('input[name=beds]:checked')].map(c=>c.value)")
+        self.ok(beds == ['2'], f'"2 bedroom" should turn on the 2-bed filter, got {beds}', j)
+        self.ok(page.evaluate("document.getElementById('q').value") == 'brooklyn', 'and leave the place in the box', j)
+        self.ok(0 < total() < everything, '"2 bedroom brooklyn" should narrow to Brooklyn', j)
+        est = page.evaluate("(document.querySelector('#grid .card .price.est')||{}).textContent||''")
+        self.ok(not est or 'for a 2BR' in est, f'with 2 beds on, the estimate is the 2BR rent, got {est!r}', j)
+        self.typeq(page, 'voucher', settle=2.2)
+        self.ok(page.evaluate("document.querySelector('input[name=s8]:checked').value") == 'either', '"voucher" should turn on the voucher filter', j)
+        page.evaluate("document.querySelectorAll('input[name=beds]:checked').forEach(c=>{c.checked=false}); document.querySelector('input[name=beds]').dispatchEvent(new Event('change',{bubbles:true})); const a=document.querySelector('input[name=s8][value=any]'); a.checked=true; a.dispatchEvent(new Event('change',{bubbles:true}))")
 
     def j_pin_and_list(self, page, j, device):
         self.boot(page, f'/#b={BBL}')
@@ -2224,7 +2263,7 @@ class Runner:
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
-    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
+    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
                 'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']

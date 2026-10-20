@@ -1622,6 +1622,34 @@
         }
       }
     },
+    "%lld beds" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld habitaciones"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "침실 %lld개"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld室"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld房"
+          }
+        }
+      }
+    },
     "%lld buildings" : {
       "localizations" : {
         "es" : {
@@ -11442,6 +11470,34 @@
         }
       }
     },
+    "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos los edificios aquí tienen renta estabilizada: es todo lo que muestra Find A Crib. Elige una zona abajo o usa Filtros para habitaciones y precio."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이곳의 모든 건물은 임대료 안정화 건물입니다 — Find A Crib는 이런 건물만 보여 줍니다. 아래에서 지역을 고르거나 필터로 침실 수와 가격을 정하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这里的每栋楼都是租金稳定房——Find A Crib只显示这些。请在下方选择区域，或用“筛选”设置卧室数和价格。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這裡的每棟樓都是租金穩定房——Find A Crib只顯示這些。請在下方選擇區域，或用「篩選」設定臥室數和價格。"
+          }
+        }
+      }
+    },
     "Every building on the DHCR register" : {
       "localizations" : {
         "es" : {
@@ -12019,6 +12075,34 @@
     },
     "Find A Crib Plus" : {
       "shouldTranslate" : false
+    },
+    "Find A Crib doesn’t cover %@ yet." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Find A Crib aún no cubre %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find A Crib는 아직 %@ 지역을 지원하지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Find A Crib还没有涵盖%@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Find A Crib還沒有涵蓋%@。"
+          }
+        }
+      }
     },
     "Find A Crib. %@" : {
       "shouldTranslate" : false
@@ -20040,6 +20124,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "沒有匹配結果。"
+          }
+        }
+      }
+    },
+    "Nothing matches that. Try a borough, a neighborhood or a ZIP." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay coincidencias. Prueba un distrito, un barrio o un código postal."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일치하는 결과가 없습니다. 자치구, 동네 또는 우편번호로 찾아보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有匹配结果。试试行政区、街区或邮政编码。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合的結果。試試行政區、街區或郵遞區號。"
           }
         }
       }
@@ -28738,6 +28850,34 @@
         }
       }
     },
+    "Turn on: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activar: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 켜기: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启筛选：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟篩選：%@"
+          }
+        }
+      }
+    },
     "Type" : {
       "localizations" : {
         "es" : {
@@ -30046,6 +30186,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "武器"
+          }
+        }
+      }
+    },
+    "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Westchester aún no está en la aplicación, consulta el mapa de Yonkers y Westchester en findacrib.com"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "웨스트체스터는 아직 앱에 없습니다 — findacrib.com에서 용커스·웨스트체스터 지도를 보세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Westchester暂未收录在App中——请在findacrib.com查看扬克斯和Westchester地图"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Westchester尚未收錄在App中——請在findacrib.com查看揚克斯和Westchester地圖"
           }
         }
       }
@@ -33195,6 +33363,34 @@
         }
       }
     },
+    "under $%@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "menos de $%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "$%@ 미만"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低于$%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低於$%@"
+          }
+        }
+      }
+    },
     "up to %@" : {
       "localizations" : {
         "es" : {
@@ -33275,6 +33471,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "接受住房券的房源"
+          }
+        }
+      }
+    },
+    "voucher-friendly" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "compatible con vales"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "바우처 친화적"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "住房券友好"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "住房券友好型"
           }
         }
       }

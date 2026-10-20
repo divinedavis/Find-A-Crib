@@ -387,5 +387,11 @@
  "Typing": "正在输入",
  "findacrib.com": "findacrib.com",
  "A neighbor": "一位邻居",
- "iPhone app": "iPhone App"
+ "iPhone app": "iPhone App",
+ "%lld beds": "%lld室",
+ "Turn on: %@": "开启筛选：%@",
+ "under $%@": "低于$%@",
+ "Nothing matches that. Try a borough, a neighborhood or a ZIP.": "没有匹配结果。试试行政区、街区或邮政编码。",
+ "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com": "Westchester暂未收录在App中——请在findacrib.com查看扬克斯和Westchester地图",
+ "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "这里的每栋楼都是租金稳定房——Find A Crib只显示这些。请在下方选择区域，或用“筛选”设置卧室数和价格。"
 }

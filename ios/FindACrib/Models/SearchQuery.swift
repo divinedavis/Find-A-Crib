@@ -98,6 +98,14 @@ struct SearchQuery: Codable, Hashable {
         q.mode = .stabilized
         return q
     }
+    /// Filters typed as words in the location search (SearchText.intent).
+    /// Only what was asked for changes; the rest of the query stays.
+    mutating func apply(_ i: SearchText.Intent) {
+        if !i.beds.isEmpty { beds = i.beds }
+        if i.vouchers { vouchersOnly = true }
+        if let m = i.maxRent { maxPrice = m }
+    }
+
     /// A query only makes sense in the city it was built for. Restoring one
     /// from disk, or carrying it across a city switch, has to drop whatever
     /// that city cannot answer — otherwise the filter silently matches nothing

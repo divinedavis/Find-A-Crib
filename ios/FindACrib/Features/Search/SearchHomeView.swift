@@ -173,7 +173,7 @@ struct SearchHomeView: View {
             if auth.isSignedIn { showAlerts = true }
         }) { EmailSignInView(offersSocialSignIn: true, forAlerts: true) }
         .sheet(isPresented: $showLocation) {
-            LocationPickerView(selected: $query.locations)
+            LocationPickerView(selected: $query.locations, applyIntent: { query.apply($0) })
         }
         .sheet(isPresented: $showCity) {
             CityPickerView { c in

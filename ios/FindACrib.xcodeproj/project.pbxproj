@@ -53,6 +53,7 @@
 		54D6A47D8C4E582C0633D8CE /* AlertsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B079F80D171436B72B29BA21 /* AlertsSheet.swift */; };
 		55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */; };
 		57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86217F159AB095139ABEE8D /* BuildingCard.swift */; };
+		58385DF8B3BDCC6B51FFCB86 /* SearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C8A25F75F7D8FF127974F6 /* SearchText.swift */; };
 		58CAB38824EAA30FEBA746A7 /* FindACribWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58AD482B77F78BE6A10E4BC9 /* FindACribWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5A7A1667675127A9949CA796 /* MarketingCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 406F8902B7D2F575042D1011 /* MarketingCapture.swift */; };
 		5AADE69C9E3977379357BD03 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E00E8B958A850F1443D5FC /* SecureStore.swift */; };
@@ -197,6 +198,7 @@
 		71591CE242BD5799D49A3AFC /* FindACribTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FindACribTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		734C7CC668EBF4DFC68A2444 /* FastAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastAnimations.swift; sourceTree = "<group>"; };
 		74C65B96332BA9B081E02255 /* Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metrics.swift; sourceTree = "<group>"; };
+		74C8A25F75F7D8FF127974F6 /* SearchText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchText.swift; sourceTree = "<group>"; };
 		785068564CE6917829662E1D /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecordsView.swift; sourceTree = "<group>"; };
 		7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = buildings.slim.json.gz; sourceTree = "<group>"; };
@@ -266,7 +268,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_1BA13E59-889D-436F-AF99-37771892B54C" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -586,14 +588,15 @@
 				5EDD14746F84061336060AD5 /* City.swift */,
 				BF0E6DE346509DF0B51FC834 /* Featured.swift */,
 				3C5230FE7E960A89326516B1 /* SearchQuery.swift */,
+				74C8A25F75F7D8FF127974F6 /* SearchText.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_763C5E68-3B07-4871-B589-834CACA94790" /* ios */ = {
+		"TEMP_57A4161D-F65D-46D9-A6B5-88D8A25233A4" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_1BA13E59-889D-436F-AF99-37771892B54C" /* Secrets.xcconfig */,
+				"TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -848,6 +851,7 @@
 				F352BA38267B7AE6FEB41498 /* SearchHomeView.swift in Sources */,
 				7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */,
 				F8E66AAED7013FC25552B3B1 /* SearchSnapshot.swift in Sources */,
+				58385DF8B3BDCC6B51FFCB86 /* SearchText.swift in Sources */,
 				5AADE69C9E3977379357BD03 /* SecureStore.swift in Sources */,
 				998ACE221DD3F1BF469FAB69 /* SiriIntents.swift in Sources */,
 				6DE31757CEBB12EC458D69FC /* SwipeBack.swift in Sources */,
@@ -1004,7 +1008,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1BA13E59-889D-436F-AF99-37771892B54C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1045,7 +1049,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1BA13E59-889D-436F-AF99-37771892B54C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1B6B6924-CBC4-46B6-80D6-74EC00EB2A2E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

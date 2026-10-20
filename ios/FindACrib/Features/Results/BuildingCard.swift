@@ -20,6 +20,8 @@ struct BuildingImage: View {
 /// status badge, grey kicker, royal-blue address, price line, facts row,
 /// attribution, Share (or pests / owner phone in New York) + primary action.
 struct BuildingCard: View {
+    /// The one vertical gap between rows of the card body.
+    static let rowGap: CGFloat = 8
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
@@ -51,12 +53,13 @@ struct BuildingCard: View {
                 statusBadge
             }
 
-            // One vertical gap everywhere in the card body (10pt); no row adds
-            // its own padding on top of it.
-            VStack(alignment: .leading, spacing: 10) {
+            // One vertical gap everywhere in the card body, labels and buttons
+            // alike: 8pt (owner, 2026-10-20: same spacing for both, 20% less
+            // than the old 10pt). No row adds its own padding on top of it.
+            VStack(alignment: .leading, spacing: Self.rowGap) {
                 // Neighborhood sits right on top of the address: the heart's
                 // 44pt frame was pushing the two apart by a full line.
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Self.rowGap) {
                     HStack(alignment: .center) {
                         // Outside New York the borough code is the city's own
                         // ("PHL"): say where in the city instead.
@@ -142,7 +145,6 @@ struct BuildingCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 10)
             }
             .padding(18)
         }

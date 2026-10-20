@@ -79,13 +79,12 @@ struct RerentalCard: View {
 
                 if let v = Qualify.shared.verdict(for: f) { QualifyBadge(verdict: v) }
                 if let t = Qualify.shared.units[f.href] {
-                    if t.first_come_first_served == true { Text("⏱ First come, first served").font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
                     if let d = t.deadline { Text("Apply by \(d)").font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
                     ForEach(t.flags ?? [], id: \.code) { fl in
                         Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
                     }
                 }
-                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(f.agent.localizedCaseInsensitiveContains("Housing Development Corporation") ? String(localized: " — the city's affordable-housing finance agency") : String(localized: " — an HPD-approved marketing agent")).font(.se(18)))
+                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)))
                     .foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {

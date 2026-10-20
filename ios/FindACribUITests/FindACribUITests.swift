@@ -273,6 +273,10 @@ final class FindACribUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-tile"; shot.lifetime = .keepAlways; add(shot)
         XCTAssertTrue(app.descendants(matching: .any)["badge-rerental"].firstMatch.exists, "the tile is not flagged Rerental")
         XCTAssertTrue(app.descendants(matching: .any)["rerental-apply"].firstMatch.exists, "the tile has no hand-off button")
+        // Just "Listed by <agent>", and no "First come, first served" (owner, 2026-10-20).
+        let says = { (s: String) in app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", s)).count }
+        XCTAssertEqual(says("marketing agent"), 0, "the listed-by line should be just the agent name")
+        XCTAssertEqual(says("first come"), 0, "cards should not say first come, first served")
         // Order: exactly two building cards come before it.
         let all = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'building-card' OR identifier == 'rerental-card'")).allElementsBoundByIndex
         if let i = all.firstIndex(where: { $0.identifier == "rerental-card" }) {
@@ -999,7 +1003,7 @@ final class FindACribUITests: XCTestCase {
     }
 
     /// Real-time alerts are Plus (owner, 2026-10-06). A subscriber without Plus
-    /// (--lotteries-demo) sees "Re-rentals go first come, first served" instead
+    /// (--lotteries-demo) sees the real-time alerts offer instead
     /// of the alerts prompt; it opens the Plus page on real-time alerts, and
     /// its ✕ hides it for good.
     func testSubscriberSeesRealtimeUpsellAndCanDismissIt() throws {

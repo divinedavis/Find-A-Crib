@@ -1452,8 +1452,15 @@ class Runner:
         feat = page.evaluate("""(() => {
             const c = document.querySelector('#grid .card.feat-card');
             if (!c) return null;
-            return {agent: c.dataset.featAgent || '', addr: c.dataset.featAddr || '', flag: !!c.querySelector('.feat-flag')};
+            return {agent: c.dataset.featAgent || '', addr: c.dataset.featAddr || '', flag: !!c.querySelector('.feat-flag'),
+                    text: c.textContent};
         })()""")
+        # Cards say only "Listed by <agent>" and never "first come, first
+        # served" (owner, 2026-10-20).
+        if feat:
+            self.ok('marketing agent' not in feat['text'] and 'finance agency' not in feat['text'],
+                    'the listed-by line should be just the agent name', j)
+            self.ok('first come' not in feat['text'].lower(), 'cards should not say first come, first served', j)
         hc = page.evaluate("""(() => {
             const c = document.querySelector('#grid .card.hc-card');
             if (!c) return null;

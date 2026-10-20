@@ -148,6 +148,11 @@ final class FindACribUITests: XCTestCase {
         let intent = app.buttons["location-intent"]
         XCTAssertTrue(intent.waitForExistence(timeout: 5), "\"2 bedroom\" offers the filter")
         intent.tap()
+        // With the keyboard up, the first tap in the list can be spent
+        // dismissing it (failed twice in the full ship run, 10/20): wait for
+        // the box to change, and tap again once if it didn't.
+        let placeLeft = NSPredicate(format: "value == %@", "brooklyn")
+        if XCTWaiter.wait(for: [expectation(for: placeLeft, evaluatedWith: search)], timeout: 3) != .completed, intent.exists { intent.tap() }
         XCTAssertEqual(search.value as? String, "brooklyn", "and leaves the place to pick")
         XCTAssertTrue(app.buttons["loc-Brooklyn"].waitForExistence(timeout: 5))
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "location-intent"; add(shot)

@@ -10,3 +10,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # NIGHTLY (04:15 UTC): live voucher listings from AffordableHousing.com
 # -> the "avail" half of s8.json. Plain JSON POSTs, ~85 requests, 1s apart.
 15 4 * * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1
+# NIGHTLY (05:40 UTC): rebuild the 6 /section8/ pages from that feed while the
+# growth engine is paused (2026-10-12). 373 hub pages promise /section8/ is
+# rebuilt nightly; this keeps that true with no LLM, IndexNow or ledger writes.
+# Remove when rentmap-growth's 05:40 build is un-paused (it does the same job).
+40 5 * * * scraper cd /root/Find-A-Crib && GROWTH_DOCROOT=/var/www/rent-map fac-run none -- python3 growth/section8_refresh.py >> /var/log/rentmap-s8.log 2>&1

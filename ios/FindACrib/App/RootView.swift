@@ -12,11 +12,14 @@ struct RootView: View {
             // lands where you left off: same scroll spot in the results, same
             // map (owner, 2026-10-20). The other tabs rebuild as before.
             NavigationStack(path: $nav.searchPath) {
-                // Hidden per screen, not on the stack: each pushed screen is
-                // its own hosting controller, and VoiceOver (and the audit)
-                // still read them through an .accessibilityHidden on the stack.
-                SearchHomeView().accessibilityHidden(nav.tab != .search)
-                    .navigationDestination(for: Route.self) { RouteView(route: $0).accessibilityHidden(nav.tab != .search) }
+                // Opacity per screen, not just on the stack: each pushed screen
+                // is its own hosting controller, so VoiceOver (and the audit)
+                // read straight through the stack's opacity and
+                // .accessibilityHidden. SwiftUI drops a zero-opacity view from
+                // accessibility itself; an .accessibilityHidden(false) here
+                // would instead un-hide each screen's decorative views.
+                SearchHomeView().opacity(nav.tab == .search ? 1 : 0)
+                    .navigationDestination(for: Route.self) { RouteView(route: $0).opacity(nav.tab == .search ? 1 : 0) }
             }
             .toolbar(.hidden, for: .navigationBar)
             .opacity(nav.tab == .search ? 1 : 0)

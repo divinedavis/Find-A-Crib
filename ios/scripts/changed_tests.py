@@ -59,7 +59,9 @@ def changed_lines():
 def ui_tests():
     """[(id, file, first line, last line, body)] for every UI test function."""
     tests = []
-    for f in sorted(glob.glob(f"{UI}/*.swift", root_dir=ROOT)):
+    # Relative paths without glob(root_dir=), which needs Python 3.10; ship.sh
+    # runs the system python3 (3.9).
+    for f in sorted(os.path.relpath(g, ROOT) for g in glob.glob(os.path.join(ROOT, UI, "*.swift"))):
         lines = open(os.path.join(ROOT, f), encoding="utf-8").read().splitlines()
         cls, cur = None, None
         for i, line in enumerate(lines, 1):

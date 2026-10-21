@@ -3298,8 +3298,51 @@ def building_meta_desc(addr, nb, units, yr, open_viol, voucher=False,
     return out
 
 
+# The DHCR building file's own STATUS1/STATUS2/STATUS3 columns, as
+# parse_pdfs.py lifts them verbatim from the borough PDFs. 88 distinct values
+# appear across the 47,165 rows and only these 18 are well-formed; the rest of
+# the tail is parse noise, and it is recognisable as noise rather than as rare
+# programs. The PDF column truncates at seven characters ("OWNER O",
+# "MORTGAG", "REG AGM", "6 APT B", "3 FAMIL", "RENT CO"), the text layer
+# mis-reads some rows ("GLASS A" for CLASS A, "MULTII", "STABLIL", "RENTSTA"),
+# and a few cells hold a bare number or a shrug ("000", "3", "2522.6", "X",
+# "N/A", "NONE"). Those ~70 values account for ~110 of ~62,000 code instances.
+#
+# Naming a code in prose is a claim that DHCR records it, so the prose names
+# only what is unambiguously DHCR's own vocabulary and says nothing about the
+# rest. Every one of the 47,165 rows carries at least one code from this set
+# today, so the silent branch below is insurance against a future parse or a
+# future file, not a path any current building takes.
+DHCR_STATUS_CODES = {
+    "MULTIPLE DWELLING A", "MULTIPLE DWELLING B", "GARDEN COMPLEX",
+    "421-A (1-15)", "421-A (16)", "421-G", "J-51",
+    "NON-EVICT COOP/CONDO", "EVICT COOP/CONDO", "COOP/CONDO PLAN FILE",
+    "SECTION 610 OF PHFL", "ARTICLE 11", "ARTICLES 14 & 15", "SEC 608",
+    "ROOMING HOUSE", "HOTEL", "420C", "ART V",
+}
+
+
+def dhcr_status_phrase(codes):
+    """'its stabilization code is J-51' / '…codes are J-51 and GARDEN COMPLEX'.
+
+    None when this building carries no code from DHCR's own vocabulary, so the
+    answer can leave the clause out rather than name a truncated cell.
+
+    Deliberately the same words as the facts table's "Stabilization code" row,
+    which renders the same field for the same building: a reader who compares
+    the prose with the table must not find two different labels for one cell.
+    """
+    known = [c for c in (codes or []) if c in DHCR_STATUS_CODES]
+    if not known:
+        return None
+    if len(known) == 1:
+        return f"its stabilization code is {known[0]}"
+    return (f"its stabilization codes are {', '.join(known[:-1])} "
+            f"and {known[-1]}")
+
+
 def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
-                 voucher=None, voucher_asof=None):
+                 voucher=None, voucher_asof=None, codes=None):
     """The Q&A pairs for one building page, for faq_html AND faq_jsonld.
 
     WHY THIS EXISTS, 2026-10-11, and it is two defects in one string.
@@ -3346,6 +3389,19 @@ def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
     of voucher_html, narrowed the same way: a listing is the landlord's own
     statement and silence is not a refusal.
 
+    WHAT 2026-10-21 CHANGED, and why it is the same argument one tier down.
+    Measured over the 185 neighborhoods with enough blocks to compare, with
+    t_page_uniqueness's own 8-word shingles and half-the-sample bar, this
+    block was 70.0% shared with its siblings at the median — worst 77.8%, and
+    above 60% in 185 of 185 groups, against 22.4% for the computed comparison
+    block after its own 2026-10-20 repair. 37.4% of its shingles were present
+    on every page sampled across the whole corpus. The caveats are the reason
+    and they are NOT the thing to cut: this block exists because the sentence
+    it replaced carried none. So the two edits are the two that cost nothing —
+    one duplicated caveat removed (see the apartments answer below), and the
+    per-building DHCR status code added, which is text that genuinely differs
+    between neighbours. 27.8% of buildings carry more than one code.
+
     A question is asked ONLY where this record answers it. A page with no unit
     count gets no apartments question rather than an empty slot, for the same
     reason building_meta_desc degrades instead of emitting one: 0.4% of the
@@ -3356,21 +3412,55 @@ def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
     escapes it and faq_jsonld hands it to json.dumps, so an escaped string
     would be double-escaped into the rendered page and the markup both.
     """
+    # The recorded code rides in the first answer because that answer is the
+    # extraction unit: a retrieved passage is scored and handed to a model on
+    # its own, and "which DHCR status is this building in the file under" is
+    # the one fact about its registration that differs between neighbours. It
+    # was already on the page as a bare facts-table cell and nowhere in the
+    # marked-up answer — the same gap the 2026-10-20 recency sentence closed
+    # for violations.last_12mo, and closed the same way.
+    #
+    # VERBATIM, WITH NO GLOSS, AND THAT IS A DELIBERATE LIMIT. 421-a and J-51
+    # are tax-benefit codes and the obvious next sentence — that stabilization
+    # tied to a benefit ends when the benefit does — is WRONG as a flat claim.
+    # The Rent Guidelines Board's position is that expiry does not by itself
+    # deregulate: it turns on the 12-point notice in the lease and each
+    # renewal, on whether the building was stabilized before the benefit, and
+    # on pre/post-1984 occupancy. A tenant who read "your stabilization has
+    # ended" and stopped asserting a right they still hold would be harmed by
+    # this page, which is the one failure this site cannot afford. The primary
+    # sources could not be read from the environment this was written in, so
+    # the prose states the file's own value and leaves the consequence to the
+    # caveat that follows it and to DHCR.
+    code_txt = dhcr_status_phrase(codes)
+    where = f", where {code_txt}" if code_txt else ""
     faq = [(f"Is {addr} rent stabilized?",
             f"{addr} in {nb}, {boro} is registered as rent stabilized in the New York "
-            f"State DHCR 2024 rent-stabilized building files. Registration is recorded "
+            f"State DHCR 2024 rent-stabilized building files{where}. Registration is "
+            f"recorded "
             f"for the building, not for each apartment in it, so an individual unit "
             f"here can still have been deregulated — ask the landlord or DHCR for that "
             f"apartment's rent history before relying on it.")]
     bbl_txt = f" (BBL {bbl})" if bbl else ""
     if units:
         built = f" and was built in {yr}" if yr else ""
+        # The trailing clause here used to add "and the DHCR files this site is
+        # built on register the building rather than its individual
+        # apartments", which is the caveat the FIRST answer already makes, in
+        # the same block, in stronger terms (it names the consequence and the
+        # action). Said twice it was ~20 words identical on 46,981 of 47,165
+        # pages, and the 2026-10-20 class-C rule applies unchanged: a clause
+        # repeated inside one block reads like a template and hands
+        # t_page_uniqueness a shingle every sibling shares. Dropped here and
+        # not there, because the first answer is unconditional and this one is
+        # not, so the caveat cannot be lost. The PLUTO-specific half STAYS —
+        # that PLUTO's unit count is not a count of stabilized units is a
+        # different point, and the only place on the page that makes it.
         faq.append((f"How many apartments are at {addr}?",
                     f"{addr}{bbl_txt} has about {units} residential "
                     f"apartment{'' if units == 1 else 's'}{built}, from NYC PLUTO. "
                     f"PLUTO counts the building's units; it does not say how many of "
-                    f"them are rent stabilized, and the DHCR files this site is built "
-                    f"on register the building rather than its individual apartments."))
+                    f"them are rent stabilized."))
     elif yr:
         # No unit count, so the year cannot ride along in the answer above. It
         # is still the second-most-asked fact about an address and it is on the
@@ -3885,7 +3975,7 @@ def main():
         # this site already had.
         faq_pairs = building_faq(addr, nb, boro, units=units, yr=yr,
                                  bbl=b["bbl"], voucher=vch,
-                                 voucher_asof=voucher_asof)
+                                 voucher_asof=voucher_asof, codes=b.get("s"))
         faq = faq_jsonld(faq_pairs)
         crumb = breadcrumb([
             ("Home", SITE + "/"),

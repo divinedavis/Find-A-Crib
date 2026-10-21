@@ -212,3 +212,102 @@ class ReadsAsWritten(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheRecordedStatusCodeRidesInTheAnswer(unittest.TestCase):
+    """2026-10-21. The DHCR file's own STATUS columns were on the page as a
+    bare facts-table cell and nowhere in the marked-up answer — the same gap
+    the 2026-10-20 recency sentence closed for violations.last_12mo.
+
+    Measured first: this block was 70.0% shared with its siblings at the
+    median (worst 77.8%, above 60% in 185 of 185 neighborhoods) against 22.4%
+    for the computed comparison block. The caveats are why, and they are not
+    the thing to cut, so the code — which differs between neighbours on 27.8%
+    of buildings that carry more than one — is what got added.
+    """
+
+    def test_singular_code_is_named(self):
+        a = faq(codes=["J-51"])[0][1]
+        self.assertIn("its stabilization code is J-51", a)
+
+    def test_several_codes_read_as_a_list(self):
+        a = faq(codes=["MULTIPLE DWELLING A", "421-A (1-15)"])[0][1]
+        self.assertIn("its stabilization codes are MULTIPLE DWELLING A "
+                      "and 421-A (1-15)", a)
+
+    def test_three_codes_keep_their_commas(self):
+        a = faq(codes=["MULTIPLE DWELLING A", "J-51", "GARDEN COMPLEX"])[0][1]
+        self.assertIn("codes are MULTIPLE DWELLING A, J-51 and GARDEN COMPLEX", a)
+
+    def test_the_label_is_the_one_the_facts_table_uses(self):
+        # The table renders the same field for the same building as
+        # "Stabilization code". Two labels for one cell is how a reader
+        # concludes they are two different facts.
+        self.assertIn("stabilization code", faq(codes=["HOTEL"])[0][1])
+
+    def test_parse_noise_is_dropped_and_the_real_code_kept(self):
+        # 88 distinct values appear in the corpus; the tail is a seven-character
+        # truncation ("OWNER O") or a bad text layer ("GLASS A" for CLASS A).
+        a = faq(codes=["MULTIPLE DWELLING A", "HPD"])[0][1]
+        self.assertIn("its stabilization code is MULTIPLE DWELLING A", a)
+        self.assertNotIn("HPD", a)
+
+    def test_a_truncated_cell_is_never_named(self):
+        for junk in ("OWNER O", "GLASS A", "STABLIL", "000", "N/A", "X", "2522.6"):
+            self.assertIsNone(B.dhcr_status_phrase([junk]), junk)
+
+    def test_no_recognised_code_leaves_the_clause_out_entirely(self):
+        # Insurance, not a live path: every one of the 47,165 rows carries at
+        # least one recognised code today. It must still read as written.
+        a = faq(codes=["000"])[0][1]
+        self.assertNotIn("where", a)
+        self.assertNotIn("  ", a)
+        self.assertIn("building files. Registration is recorded", a)
+
+    def test_missing_and_empty_codes_behave_the_same(self):
+        for c in (None, [], ["NONE"]):
+            self.assertIsNone(B.dhcr_status_phrase(c), repr(c))
+        self.assertIn("building files. Registration", faq()[0][1])
+
+    def test_the_code_never_carries_a_legal_consequence(self):
+        # 421-a/J-51 stabilization does NOT automatically end when the benefit
+        # does: it turns on the 12-point lease notice, on whether the building
+        # was stabilized beforehand, and on pre/post-1984 occupancy. A tenant
+        # who read "your stabilization ended" and stopped asserting a right
+        # they still hold would be harmed by this page.
+        a = faq(codes=["421-A (1-15)"])[0][1]
+        for claim in ("expire", "expires", "no longer rent stabilized",
+                      "ends when", "tax benefit ends", "will end"):
+            self.assertNotIn(claim, a.lower(), claim)
+
+    def test_the_answer_stays_plain_text(self):
+        # ARTICLES 14 & 15 is the one recognised code with an ampersand;
+        # faq_html escapes and faq_jsonld json.dumps, so pre-escaping here
+        # would double-escape into both.
+        a = faq(codes=["ARTICLES 14 & 15"])[0][1]
+        self.assertIn("ARTICLES 14 & 15", a)
+        self.assertNotIn("&amp;", a)
+
+
+class TheCaveatIsMadeOnceNotTwice(unittest.TestCase):
+    """2026-10-21. The apartments answer used to end "...and the DHCR files
+    this site is built on register the building rather than its individual
+    apartments", which the FIRST answer already says in the same block and in
+    stronger terms. ~20 identical words on 46,981 of 47,165 pages.
+    """
+
+    def test_the_apartments_answer_no_longer_restates_it(self):
+        a = faq(units=48)[1][1]
+        self.assertNotIn("register the building rather than", a)
+
+    def test_but_the_block_still_makes_the_caveat(self):
+        # Dropped from the conditional pair, kept in the unconditional one, so
+        # no degradation can lose it.
+        for kw in ({"units": 48}, {"yr": 1910}, {"units": 1, "yr": 1910}, {}):
+            self.assertIn("not for each apartment", answers(faq(**kw)), kw)
+
+    def test_the_pluto_specific_half_survives(self):
+        # A different point from the one above, and the only place on the page
+        # that makes it.
+        a = faq(units=48)[1][1]
+        self.assertIn("does not say how many of them are rent stabilized", a)

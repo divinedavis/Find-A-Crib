@@ -45,6 +45,8 @@ python3 scripts/check_test_coverage.py
 # Korean; see scripts/l10n/).
 echo "==> translations safe in every language"
 python3 -c "import sys; sys.path.insert(0, 'scripts'); import test_localizable_catalog as t; [getattr(t, n)() for n in dir(t) if n.startswith('test_')]"
+echo "==> quick-pass test picker"
+python3 scripts/test_changed_tests.py >/dev/null
 echo "==> MetricKit still wired (metrics + crash/hang diagnostics)"
 for want in "MXMetricManager.shared.add" "didReceive(_ payloads: \[MXMetricPayload\])" "didReceive(_ payloads: \[MXDiagnosticPayload\])"; do
   grep -rq "$want" FindACrib/Services/Metrics.swift || { echo "error: Metrics.swift lost: $want" >&2; exit 1; }
@@ -88,25 +90,43 @@ if [[ "${SHIP_UNIT_ONLY:-0}" == "1" ]]; then
   echo "==> SHIP_UNIT_ONLY: unit tests only on iPhone (no XCUITest, no iPad)"
   SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribTests
 else
+  # Quick pass first: unit tests, the accessibility audit and the UI tests
+  # that touch what changed since the last ship, so a likely failure shows in
+  # minutes instead of 17-20 in (build 153 failed that late twice, 2026-10-21).
+  QUICK=(); while IFS= read -r t; do QUICK+=("$t"); done < <(python3 scripts/changed_tests.py)
+  echo "==> quick pass on iPhone: ${#QUICK[@]} groups most likely to fail on this change"
+  RETRY=1 SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh "${QUICK[@]}"
   echo "==> running every test on iPhone ($IPHONE_SIM)"
-  RETRY=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
+  RETRY=1 SHUTDOWN_AFTER=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
   grep -qE "Test run with [1-9][0-9]* tests? .*passed" "build.nosync/test-$IPHONE_SIM.log" \
     || { echo "error: no Swift Testing tests ran (expected the @Test suites in FindACribTests)" >&2; exit 1; }
   grep -q "AccessibilityAuditTests" "build.nosync/test-$IPHONE_SIM.log" \
     || { echo "error: the accessibility audit did not run" >&2; exit 1; }
   [[ -n "$IPAD_SIM" ]] || { echo "error: no iPad simulator installed — the iPad gate cannot run" >&2; exit 1; }
   echo "==> running every test on iPad ($IPAD_SIM)"
-  RETRY=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
+  RETRY=1 SHUTDOWN_AFTER=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
   if [[ -n "$MINI_SIM" ]]; then
     echo "==> iPad tour on iPad mini ($MINI_SIM)"
-    SIMULATOR_ID="$MINI_SIM" ./scripts/run_tests.sh FindACribUITests/IPadTourTests
+    SHUTDOWN_AFTER=1 SIMULATOR_ID="$MINI_SIM" ./scripts/run_tests.sh FindACribUITests/IPadTourTests
   fi
 fi
 
 if [[ "${SHIP_UNIT_ONLY:-0}" != "1" ]]; then
-  echo "==> performance tests on iPhone ($IPHONE_SIM)"
-  RESULT_BUNDLE=build.nosync/perf.xcresult SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribUITests/PerformanceTests
-  python3 scripts/perf_gate.py build.nosync/perf.xcresult --record
+  # Measure on a quiet Mac, and measure twice before failing: build 153's
+  # launch read 2.05 s vs 0.91 s while another session's build had the load
+  # average at ~90 (2026-10-21), a Mac problem and not an app one. A real
+  # regression fails both runs.
+  perf_run() {
+    echo "==> waiting for a quiet Mac + simulator"; SIM_UDID="$IPHONE_SIM" ./scripts/wait_sim_quiet.sh 900
+    echo "==> performance tests on iPhone ($IPHONE_SIM)$1"
+    RESULT_BUNDLE=build.nosync/perf.xcresult SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribUITests/PerformanceTests
+  }
+  perf_run ""
+  if ! python3 scripts/perf_gate.py build.nosync/perf.xcresult --record; then
+    perf_run " — second measurement before failing"
+    python3 scripts/perf_gate.py build.nosync/perf.xcresult --record
+  fi
+  xcrun simctl shutdown "$IPHONE_SIM" 2>/dev/null || true
 fi
 echo "==> Xcode Organizer: what real phones reported for recent builds"
 "${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/organizer_report.py || echo "warning: Organizer report unavailable (App Store Connect API)"
@@ -150,6 +170,24 @@ IPA=$(find "$EXPORT_DIR" -maxdepth 1 -name '*.ipa' | head -1)
 echo "==> uploading to TestFlight"
 xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
 echo "==> shipped build $next"
+
+# Commit what the ship itself changed (2026-10-21): the build bump, the
+# regenerated project, the refreshed seed data and the perf baseline used to be
+# left uncommitted, and the next rebase onto origin/main had to work around
+# them. Only these paths; anything else in the tree is left alone. The push is
+# best effort: a rejected or failed push leaves the commit for the next push.
+echo "==> committing the ship's own changes (build $next)"
+SHIP_PATHS=(project.yml FindACrib.xcodeproj FindACrib/Resources/Data scripts/perf_baseline.json)
+if [[ -n "$(git status --porcelain -- "${SHIP_PATHS[@]}")" ]]; then
+  git add -- "${SHIP_PATHS[@]}"
+  if git commit -q -m "iOS: build $next (seed data, perf baseline)" \
+       -m "Committed by ship.sh after the TestFlight upload." \
+       -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- "${SHIP_PATHS[@]}"; then
+    git push -q origin HEAD:main 2>&1 | tail -2 || echo "warning: build $next commit not pushed; push it by hand"
+  else
+    echo "warning: could not commit build $next's changes; commit them by hand"
+  fi
+fi
 
 echo "==> verifying internal tester auto-distribution"
 "${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/configure_internal_testers.py || echo "warning: configure_internal_testers.py reported a problem"

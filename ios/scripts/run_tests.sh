@@ -20,7 +20,9 @@ xcrun simctl uninstall "$SIMULATOR_ID" com.divinedavis.findacrib 2>/dev/null || 
 # same one.
 xcrun simctl spawn "$SIMULATOR_ID" defaults write com.apple.keyboard.preferences \
   AutomaticMinimizationEnabled -bool false >/dev/null 2>&1 || true
-ONLY="${1:-}"
+# Arguments: test ids for -only-testing (one or more, e.g. the quick first pass
+# from changed_tests.py); none = everything.
+ONLY_FLAGS=(); for o in "$@"; do ONLY_FLAGS+=(-only-testing:"$o"); done
 # SKIP="Target/Class ..." skips those tests (ship.sh keeps the performance
 # tests out of the regular passes); RESULT_BUNDLE=path keeps the .xcresult for
 # scripts that read it (perf_gate.py).
@@ -49,8 +51,9 @@ else
 fi
 set +e
 xcodebuild -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
-  ${ONLY:+-only-testing:"$ONLY"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} "${ACTION[@]}" 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
-status=${PIPESTATUS[0]}
+  ${ONLY_FLAGS[@]+"${ONLY_FLAGS[@]}"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} "${ACTION[@]}" > "$LOG.raw" 2>&1
+status=$?
+grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" "$LOG.raw" > "$LOG" || true
 set -e
 tail -60 "$LOG"
 if [[ "${RETRY:-0}" == "1" ]] && grep -qE "' failed \(" "$LOG"; then
@@ -60,5 +63,15 @@ fi
 if [ "$status" -ne 0 ]; then
   echo "---- every failure in this run ($LOG) ----"
   grep -E "error:|' failed \(" "$LOG" || true
+  # A failure's message often runs over several lines (the accessibility audit
+  # lists one issue per line) and the filtered log keeps only the first, so
+  # build 153's "Results: 1 accessibility issue(s)" arrived with no issue and
+  # needed a separate run to read (2026-10-21). Print each one whole.
+  echo "---- failure details ----"
+  awk '/: error: /{n=12} n&&!/^ *t = /{print; n--}' "$LOG.raw" | grep -v "coretelephony" | head -120 || true
 fi
+# One simulator at a time (2026-10-21: a ship was killed for low memory on this
+# 16 GB Mac). ship.sh sets SHUTDOWN_AFTER=1 so each pass frees its simulator
+# before the next boots one; the global close-simulators hook is the backstop.
+[[ "${SHUTDOWN_AFTER:-0}" == "1" ]] && xcrun simctl shutdown "$SIMULATOR_ID" 2>/dev/null || true
 exit "$status"

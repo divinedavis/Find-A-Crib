@@ -30,6 +30,21 @@ PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}
 BACKUPS=/var/backups/findacrib-app
 # Everything the copy below replaces, relative to $DOC. Keep in step with it.
+# Re-run a step when it failed on the network rather than on the page: up to
+# two more tries, 15 s apart, only if its output shows a dropped connection.
+# "Connection reset by peer" stopped web_chat_e2e and a live journey several
+# times in October 2026, each a full redeploy to get past; a real failure
+# still fails at once. Prints the step's output either way.
+NET_ERR='Connection reset|reset by peer|ECONNRESET|RemoteDisconnected|Network is unreachable|net::ERR_|URLError|timed out|Temporary failure in name resolution'
+net_retry() {
+  local out; out=$(mktemp)
+  for try in 1 2 3; do
+    if "$@" >"$out" 2>&1; then cat "$out"; rm -f "$out"; return 0; fi
+    cat "$out"
+    grep -qE "$NET_ERR" "$out" && [ "$try" -lt 3 ] || { rm -f "$out"; return 1; }
+    echo "== network drop, retrying ($((try + 1))/3): $*"; sleep 15
+  done
+}
 SHIPPED="index.html housing_law_firms.json casa/index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css"
 
 if [ "$SKIP" != "--skip-tests" ]; then
@@ -45,7 +60,7 @@ if [ "$SKIP" != "--skip-tests" ]; then
   "$PY" tests/street_view.py
   # Building chat: browser <-> iPhone crypto, then two real accounts chatting.
   python3 tests/chat_crypto_interop.py
-  "$PY" tests/web_chat_e2e.py --engine webkit
+  net_retry "$PY" tests/web_chat_e2e.py --engine webkit
   echo "== journeys against the local build"
   # One re-run for a journey that fails, as the live pass already does: four
   # deploys on 2026-10-03 stopped on a different one-off flake each time
@@ -56,7 +71,7 @@ if [ "$SKIP" != "--skip-tests" ]; then
   if ! "$PY" tests/journeys.py --target local --failed-out "$LFAILED"; then
     echo "== re-running the failed local journeys once: $(tr '\n' ' ' <"$LFAILED")"
     while read -r name; do
-      "$PY" tests/journeys.py --target local --only "$name" || { echo "!! $name failed twice on the local build"; exit 1; }
+      net_retry "$PY" tests/journeys.py --target local --only "$name" || { echo "!! $name failed twice on the local build"; exit 1; }
     done <"$LFAILED"
   fi
 fi
@@ -95,7 +110,7 @@ if [ "$SKIP" != "--skip-tests" ]; then
     echo "== re-running the failed journeys once: $(tr '\n' ' ' <"$FAILED")"
     STILL=0
     while read -r name; do
-      "$PY" tests/journeys.py --target live --only "$name" || STILL=1
+      net_retry "$PY" tests/journeys.py --target live --only "$name" || STILL=1
     done <"$FAILED"
     if [ "$STILL" = 1 ]; then
       echo "!! live journeys still failing — rolling back to $SNAP"
@@ -105,5 +120,5 @@ if [ "$SKIP" != "--skip-tests" ]; then
   fi
   rm -f "$FAILED"
   echo "== building chat against the live site"
-  "$PY" tests/web_chat_e2e.py --engine webkit --target live || { echo "!! live chat failed — rolling back to $SNAP"; scripts/rollback_app.sh "$SNAP"; exit 1; }
+  net_retry "$PY" tests/web_chat_e2e.py --engine webkit --target live || { echo "!! live chat failed — rolling back to $SNAP"; scripts/rollback_app.sh "$SNAP"; exit 1; }
 fi

@@ -12,7 +12,11 @@ struct RootView: View {
             // lands where you left off: same scroll spot in the results, same
             // map (owner, 2026-10-20). The other tabs rebuild as before.
             NavigationStack(path: $nav.searchPath) {
-                SearchHomeView().navigationDestination(for: Route.self) { RouteView(route: $0) }
+                // Hidden per screen, not on the stack: each pushed screen is
+                // its own hosting controller, and VoiceOver (and the audit)
+                // still read them through an .accessibilityHidden on the stack.
+                SearchHomeView().accessibilityHidden(nav.tab != .search)
+                    .navigationDestination(for: Route.self) { RouteView(route: $0).accessibilityHidden(nav.tab != .search) }
             }
             .toolbar(.hidden, for: .navigationBar)
             .opacity(nav.tab == .search ? 1 : 0)

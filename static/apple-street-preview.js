@@ -13,9 +13,11 @@
   // fatal on a phone: of 13 iPhone pages that died after the crash trace
   // learned to count them (2026-09-22), 12 had previews running, most with
   // 8–12 mounted. A touch device keeps only what is on screen, at most
-  // MAX_MOUNTED, loads two at a time and never warms the next row.
+  // MAX_MOUNTED, loads one at a time and never warms the next row. Loading
+  // is the costly part: 2026-10-21 a phone in the Google app died at
+  // "la:mount 2/1", a third WebGL document starting while two were loading.
   const TOUCH = (navigator.maxTouchPoints || 0) > 0 || matchMedia('(pointer: coarse)').matches;
-  const MAX_LOADING = TOUCH ? 2 : 5;
+  const MAX_LOADING = TOUCH ? 1 : 5;
   const MAX_MOUNTED = TOUCH ? 3 : 12;
   let loading = 0;
   // Circuit breaker (2026-10-13). An iPhone page died after one photo mounted

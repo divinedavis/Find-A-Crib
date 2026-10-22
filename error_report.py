@@ -257,6 +257,17 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
     """Traces that look like the page died mid-work (see the module docstring)."""
     lookups = 0
     out = defaultdict(lambda: {"n": 0, "people": set(), "uas": Counter(), "last": ""})
+    boot_only = defaultdict(list)
+
+    def count(r, last):
+        e = out[last or "(no step)"]
+        e["n"] += 1
+        e["people"].add(r["visitor_id"])
+        ua = (r.get("props") or {}).get("ua") or ""
+        e["uas"][("iPhone" if "iPhone" in ua else "iPad" if "iPad" in ua else
+                  "Android" if "Android" in ua else "Desktop")] += 1
+        e["last"] = r["created_at"]
+
     for r in rows:
         if r["event"] != "crash_trace":
             continue
@@ -271,9 +282,13 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
         # the 1s tick and the street photos finishing on their own. iOS taking
         # a hidden tab's memory back is normal, not a page that died on the
         # visitor (2026-09-23).
+        # Any page whose last visibility change was "vis hidden" ended in the
+        # background, whatever ran there: 2026-10-22's digest counted a Chrome
+        # tab that refreshed its feeds (grid:feeds, grid:build) while hidden,
+        # then lost a street photo to a timeout, then was reclaimed.
         if "vis hidden" in labels:
-            after = labels[len(labels) - 1 - labels[::-1].index("vis hidden") + 1:]
-            if all(x == "tick" or x.startswith("la:") for x in after):
+            last_hidden = len(labels) - 1 - labels[::-1].index("vis hidden")
+            if "vis visible" not in labels[last_hidden:]:
                 continue
         # Never on screen: booted hidden (background tab, prerender, tab
         # restore) and never became visible. Discarding such a page is the
@@ -282,6 +297,13 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
             continue
         last = labels[-1]
         if last in CLEAN_LAST_STEPS:
+            continue
+        # A lone "boot" died before its first step, so it says nothing about
+        # what to fix; it is nearly always a tap away in the first second
+        # (2026-10-22: the visitor was on a building page 1 s later). Only a
+        # visitor who keeps dying at boot is news; see the loop's end.
+        if labels == ["boot"]:
+            boot_only[r.get("visitor_id")].append(r)
             continue
         # A trace is only sent on the visitor's NEXT boot, which can be days
         # later — so a death on code since replaced read as today's news
@@ -300,13 +322,11 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
             lookups += 1
             if kept_going(key, r.get("visitor_id"), booted):
                 continue
-        e = out[last or "(no step)"]
-        e["n"] += 1
-        e["people"].add(r["visitor_id"])
-        ua = p.get("ua") or ""
-        e["uas"][("iPhone" if "iPhone" in ua else "iPad" if "iPad" in ua else
-                  "Android" if "Android" in ua else "Desktop")] += 1
-        e["last"] = r["created_at"]
+        count(r, last)
+    for traces in boot_only.values():
+        if len(traces) >= 2:
+            for r in traces:
+                count(r, "boot")
     return out
 
 

@@ -48,4 +48,4 @@ it does not open the keyboard until the user selects an email field.
 After successful authentication, alert preferences open only after sign-in
 has dismissed. Cancelling returns to results without opening preferences.
 
-Ship with `scripts/ship.sh` (tests, simulator smoke launch, archive, TestFlight).
+TestFlight builds go out once a day, bundled (owner, 2026-10-21): merge finished iOS work to main and `scripts/daily_ship.sh` (launchd com.findacrib.daily-ship, 03:05, from the dedicated worktree ~/projects/dhcr-map-daily; install with `scripts/install_daily_ship.sh`) ships what main gained since the last `iOS: build N` commit. Run `scripts/ship.sh` (tests, simulator smoke launch, archive, TestFlight) by hand only for an urgent fix or an App Store submission the owner asks for.

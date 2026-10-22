@@ -6687,8 +6687,8 @@ function favActive() {
     const where = [named ? f.title : null, f.borough].filter(Boolean).join(' · ');
     const bits = [];
     if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
-    if (f.units) bits.push(f.units + (f.units === 1 ? ' unit' : ' units'));
-    if (f.zip) bits.push('ZIP ' + esc(f.zip));
+    // No unit count or ZIP (owner, 2026-10-22): the ZIP is already in the
+    // address, and "1 unit" told a renter nothing.
     return `<div class="card feat-card" data-feat-href="${esc(f.href || '')}" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
          data-feat-boro="${esc(f.borough || '')}" data-feat-kind="${esc(f.href_kind || 'listing')}" data-feat-slot="${slot}">
       <span class="feat-flag">Featured</span>

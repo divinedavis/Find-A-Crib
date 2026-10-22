@@ -277,6 +277,8 @@ final class FindACribUITests: XCTestCase {
         let says = { [app] (s: String) in app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", s)).count }
         XCTAssertEqual(says("marketing agent"), 0, "the listed-by line should be just the agent name")
         XCTAssertEqual(says("first come"), 0, "cards should not say first come, first served")
+        // No "1 unit · ZIP 11238" row: the ZIP is in the address (owner, 2026-10-22).
+        XCTAssertEqual(card.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ZIP ' OR label CONTAINS ' · ZIP '")).count, 0, "the tile repeats its ZIP")
         // Order: exactly two building cards come before it.
         let all = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'building-card' OR identifier == 'rerental-card'")).allElementsBoundByIndex
         if let i = all.firstIndex(where: { $0.identifier == "rerental-card" }) {

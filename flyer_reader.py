@@ -160,6 +160,9 @@ NEXT_ADDRESS = re.compile(r"(?:^|\n|\|)\s*(\d+(?:-\d+)?\s+[A-Z][\w.]*(?:\s+[\w.]
 def read_one(listing):
     href = listing["href"]
     meta = {k: listing.get(k) for k in ("agent", "title", "address", "borough", "beds", "money_kind", "money_low", "money_high")}
+    # The agent's own words, unit and all: "962 Bushwick Avenue. Unit 2A" is
+    # what tells one unit of a building from the four after it on the board.
+    meta["address"] = listing.get("address_src") or listing.get("address")
     pdf, text, board = None, "", on_board(listing)
     if href.lower().split("?")[0].endswith(".pdf") or listing.get("href_kind") == "flyer":
         text, pdf = pdf_source(href)

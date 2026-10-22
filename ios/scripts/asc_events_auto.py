@@ -5,7 +5,10 @@
 
 Weekly (launchd, scripts/install_events_auto.sh), it:
   1. lays out the events due in the next weeks from a fixed calendar:
-     - every month, "<Month> Lottery Deadlines" (Housing Connect never stops);
+     - NO monthly "<Month> Lottery Deadlines": App Review rejected November
+       2026's under 2.3.13 (2026-10-20, "does not introduce new features or
+       content, or recurs too frequently"). Every event must be a yearly
+       moment that changes something for renters;
      - every June, the Rent Guidelines Board vote;
      - every October, heat season;
      NYC housing calendar added 2026-10-20 (owner: "lets do these"):
@@ -22,9 +25,10 @@ Weekly (launchd, scripts/install_events_auto.sh), it:
      link overlaps, the new one starts where that one ends, or is skipped if
      under a week would be left (the hand-made "Fall 2026 lottery deadlines"
      runs Oct 17-Nov 16: October 2026 is skipped, November starts Nov 16);
-  3. sends every DRAFT event to App Review in a submission of its own — or,
-     when a version's submission is open, leaves them for submit_for_review.py,
-     which adds drafts to the next one (Apple allows one open submission).
+  3. sends every DRAFT event to App Review in a submission of its own, or
+     waits a week when any submission is open (Apple allows one). Events
+     never ride with a version: a rejected event holds an accepted version
+     back from release until it is removed (1.3.3, Oct 2026).
 
 Apple's rules (developer.apple.com/help/app-store-connect, checked
 2026-10-17): an event runs at most 31 days, shows at most 14 days before
@@ -81,11 +85,6 @@ def planned(today):
     for k in range(0, 3):
         y, m = today.year + (today.month - 1 + k) // 12, (today.month - 1 + k) % 12 + 1
         start, end = month_window(y, m)
-        mon = calendar.month_name[m]
-        out.append(spec(f"Lottery deadlines {mon} {y}", f"{mon} Lottery Deadlines",
-                        "NYC housing lotteries closing this month",
-                        f"Every NYC housing lottery closing in {mon}, with its rent, income limits and deadline.",
-                        "findacrib://lotteries", "SPECIAL_EVENT", "ATTRACT_NEW_USERS", start, end))
         if m == 6:
             out.append(spec(f"Rent Guidelines vote {y}", "Rent Guidelines Vote",
                             "What NYC's vote means for your lease",
@@ -169,8 +168,7 @@ def submit_drafts(apply):
     sid, st = open_submission()
     if sid:
         # A version (or another event) is already with App Review; Apple
-        # allows one open submission, and submit_for_review.py adds drafts
-        # to the next one. Re-checked next week.
+        # allows one open submission. Re-checked next week.
         print(f"wait     {names}: submission {sid[:8]} is {st}")
         return
     if not apply:

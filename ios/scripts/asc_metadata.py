@@ -88,14 +88,19 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Building chat: in Your Crib, talk with neighbors in your building in real time. Messages are end-to-end encrypted.
-• Lotteries: a single Filter button holds boroughs and bedroom sizes.
-• Owner Phone on a building card now opens the building right at its managing agent and phone number.
-• Your Crib no longer says you're offline when you're connected; if NYC's 311 data is down, it says that instead.
+WHATS_NEW = """• Your Crib: crime alerts near your building are now free. 311 alerts stay with Plus.
+• Building chat: see when a neighbor is typing.
+• Search understands more of what you type, not just place names.
+• Search keeps your place when you switch tabs and come back.
+• Cleaner building cards and building pages.
+• Cancelling Google sign-in no longer shows an error.
 • Smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.3.3 (build __BUILD__) — NEW: BUILDING CHAT (user-generated content, guideline 1.2)
+REVIEW_NOTES = """VERSION 1.3.4 (build __BUILD__)
+What changed since 1.3.3: crime alerts near your building are free (311 alerts stay Plus); a typing indicator in Building chat; Search reads words that aren't place names; layout polish on cards and building pages. No new permissions, SDKs or data collection.
+
+BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 
 Where: Your Crib tab > set an address (e.g. 90 Atlantic Ave, Brooklyn) > "Building chat" under the address. Signed in (the demo account works), it asks for a display name and agreement to the conduct rules before joining.
 - Terms: no harassment, hate, threats, spam or personal information about others; zero tolerance, violators are removed.

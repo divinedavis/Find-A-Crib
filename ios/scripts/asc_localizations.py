@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Teléfono del dueño en una tarjeta ahora abre el edificio directamente en el agente administrador y su número.\n• Your Crib ya no dice que estás sin conexión cuando sí tienes conexión; si los datos del 311 de NYC fallan, lo dice.\n• Otras mejoras.",
-    "zh-Hans": "• 点楼盘卡片上的“业主电话”，现在会直接打开该楼的管理代理和电话号码。\n• Your Crib 联网时不再误显示“离线”；纽约市 311 数据无响应时会如实说明。\n• 其他改进。",
-    "zh-Hant": "• 點樓盤卡片上的「業主電話」，現在會直接打開該樓的管理代理和電話號碼。\n• Your Crib 連網時不再誤顯示「離線」；紐約市 311 資料無回應時會如實說明。\n• 其他改進。",
-    "ru": "• Кнопка «Телефон владельца» на карточке теперь открывает дом сразу на управляющем агенте и его номере.\n• Your Crib больше не пишет «Нет сети», когда интернет есть; если данные 311 Нью-Йорка недоступны, так и говорит.\n• Небольшие исправления.",
-    "ko": "• 건물 카드의 소유주 전화를 누르면 이제 건물의 관리 대리인과 전화번호로 바로 이동합니다.\n• Your Crib이 인터넷에 연결되어 있을 때 더 이상 오프라인이라고 표시하지 않으며, NYC 311 데이터가 응답하지 않으면 그렇게 알려 줍니다.\n• 기타 개선.",
+    "es-MX": "• Your Crib: las alertas de delitos cerca de tu edificio ahora son gratis. Las alertas del 311 siguen en Plus.\n• Chat del edificio: ves cuando un vecino está escribiendo.\n• La búsqueda entiende más de lo que escribes, no solo nombres de lugares.\n• La búsqueda guarda tu lugar al cambiar de pestaña.\n• Tarjetas y páginas de edificios más limpias.\n• Otras mejoras.",
+    "zh-Hans": "• Your Crib：楼宇附近的犯罪提醒现在免费，311 提醒仍属 Plus。\n• 楼宇聊天：可以看到邻居正在输入。\n• 搜索能理解更多输入内容，不只是地名。\n• 切换标签后再回来，搜索会停在原来的位置。\n• 楼盘卡片和楼宇页面更简洁。\n• 其他改进。",
+    "zh-Hant": "• Your Crib：大樓附近的犯罪提醒現在免費，311 提醒仍屬 Plus。\n• 大樓聊天：可以看到鄰居正在輸入。\n• 搜尋能理解更多輸入內容，不只是地名。\n• 切換分頁後再回來，搜尋會停在原來的位置。\n• 樓盤卡片和大樓頁面更簡潔。\n• 其他改進。",
+    "ru": "• Your Crib: оповещения о преступлениях рядом с вашим домом теперь бесплатны. Оповещения 311 остаются в Plus.\n• Чат дома: видно, когда сосед печатает.\n• Поиск понимает больше, чем названия мест.\n• Поиск сохраняет место при смене вкладок.\n• Карточки и страницы домов стали чище.\n• Небольшие исправления.",
+    "ko": "• Your Crib: 건물 주변 범죄 알림이 이제 무료입니다. 311 알림은 Plus에 그대로 있습니다.\n• 건물 채팅: 이웃이 입력 중인지 볼 수 있습니다.\n• 검색이 장소 이름 외의 입력도 더 잘 이해합니다.\n• 탭을 바꿨다 돌아와도 검색 위치가 유지됩니다.\n• 더 깔끔한 건물 카드와 건물 페이지.\n• 기타 개선.",
 }
 
 

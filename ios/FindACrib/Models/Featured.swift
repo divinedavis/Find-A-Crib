@@ -101,7 +101,10 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
 
     /// The money line, with what it IS: "$3,423–$4,376/mo", or the income
     /// ceiling when no rent is published — that answers "can I even apply?".
-    var moneyLine: (label: String?, text: String) {
+    /// nil when the feed has neither: no "Income-restricted · see agent for
+    /// rent" line (owner, 2026-10-22); the card shows the unit table's
+    /// household income instead, when there is one.
+    var moneyLine: (label: String?, text: String)? {
         let n = { (v: Int) in "$" + v.formatted() }
         if moneyKind == "rent", let lo = moneyLow {
             if let hi = moneyHigh, hi != lo { return (nil, "\(n(lo))–\(n(hi))/mo") }
@@ -109,7 +112,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         }
         if let cap = income1pMax { return (String(localized: "Income limit · 1 person"), String(localized: "up to \(n(cap))/yr")) }
         if moneyKind == "income", let lo = moneyLow, let hi = moneyHigh { return (String(localized: "Household income"), "\(n(lo))–\(n(hi))/yr") }
-        return (nil, String(localized: "Income-restricted · see agent for rent"))
+        return nil
     }
 
     /// The button says where the link goes: "Apply" onto a board of other

@@ -23,7 +23,7 @@ the run stops at 90% of the cap.
 
   /root/findacrib-api/venv/bin/python flyer_reader.py [--docroot DIR] [--limit N] [--dry-run]
 """
-import argparse, base64, datetime, hashlib, json, os, re, sys, urllib.request
+import argparse, base64, datetime, hashlib, json, os, re, sys, urllib.parse, urllib.request
 
 import claude_features as cf
 import listing_page
@@ -123,16 +123,54 @@ def pdf_source(url):
     return text.strip()[:20000], data
 
 
+def on_board(listing):
+    """An agent's whole board, linked to this listing's spot on it with a
+    text fragment ("…/projects-8#:~:text=2187%20Ryer"). Read since 2026-10-22
+    (owner: every re-rental card shows its household income); the bare board
+    links stay skipped, there is no one listing to read."""
+    return listing.get("href_kind") == "agent_page" and "#:~:text=" in (listing.get("href") or "")
+
+
+def board_slice(listing, size=1500):
+    """This listing's block of its agent's board: from its address (or the
+    link's text fragment) on. Taxace lists Unit 6D, 3C and 8A of 2187 Ryer
+    one after another, so the full address is tried before the fragment."""
+    url, frag = listing["href"].split("#:~:text=", 1)
+    text = listing_page.text_of(url, render=True) or ""
+    low = text.lower()
+    for needle in (listing.get("address") or "", urllib.parse.unquote(frag).split(",")[0]):
+        i = low.find(needle.lower().strip()) if needle.strip() else -1
+        if i >= 0:
+            block = text[i:i + size]
+            # Stop at the next listing: an address line that is not this one.
+            # The same building's other units (Fifth Ave's 551 Warren 2H, 2J,
+            # 3G) stay, they are one table.
+            own = re.sub(r"[^a-z0-9]", "", (listing.get("address") or needle).lower())[:10]
+            for m in NEXT_ADDRESS.finditer(block, 40):
+                if re.sub(r"[^a-z0-9]", "", m.group(1).lower())[:10] != own:
+                    return block[:m.start()]
+            return block
+    return ""
+
+
+NEXT_ADDRESS = re.compile(r"(?:^|\n|\|)\s*(\d+(?:-\d+)?\s+[A-Z][\w.]*(?:\s+[\w.]+){0,3}\s+"
+                          r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Place|Pl\.?|Boulevard|Blvd\.?|Drive|Dr\.?|Parkway|Court|Terrace|Lane)\b)")
+
+
 def read_one(listing):
     href = listing["href"]
     meta = {k: listing.get(k) for k in ("agent", "title", "address", "borough", "beds", "money_kind", "money_low", "money_high")}
-    pdf, text = None, ""
+    pdf, text, board = None, "", on_board(listing)
     if href.lower().split("?")[0].endswith(".pdf") or listing.get("href_kind") == "flyer":
         text, pdf = pdf_source(href)
+    elif board:
+        text = board_slice(listing)
     else:
         text = listing_page.text_of(href, render=True)
-    if len(text) >= 200:
-        content = f"<listing>\n{json.dumps(meta, sort_keys=True)}\n</listing>\n<source>\n{text}\n</source>"
+    if len(text) >= (120 if board else 200):     # one board unit is ~200 characters
+        note = ("\nThe source is a slice of the agent's board starting at this listing; later listings may follow. "
+                "Read only the unit at the listing's address.") if board else ""
+        content = f"<listing>\n{json.dumps(meta, sort_keys=True)}\n</listing>\n<source>\n{text}\n</source>{note}"
         verified = True
     elif pdf:
         content = [{"type": "document", "source": {"type": "base64", "media_type": "application/pdf",
@@ -176,7 +214,7 @@ def main():
     table, read, spent, skipped = {}, 0, 0, 0
     for l in listings:
         href = l.get("href")
-        if not href or l.get("href_kind") == "agent_page":
+        if not href or (l.get("href_kind") == "agent_page" and not on_board(l)):
             continue
         key = hashlib.sha1(href.encode()).hexdigest()
         rows = rest(f"ai_cache?feature=eq.flyer&key=eq.{key}&created_at=gte.{since}&select=payload")

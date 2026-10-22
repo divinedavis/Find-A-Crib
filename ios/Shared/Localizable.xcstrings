@@ -14941,34 +14941,6 @@
         }
       }
     },
-    "Income-restricted · see agent for rent" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ingresos restringidos · consulte al agente para alquilar"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "소득 제한 · 임대료에 대한 에이전트를 참조하세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "收入受限·见代理商租房"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "收入受限·見代理人租賃"
-          }
-        }
-      }
-    },
     "Increments" : {
       "localizations" : {
         "es" : {
@@ -32463,6 +32435,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@起"
+          }
+        }
+      }
+    },
+    "from %@/yr" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "desde %@/año"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@/년부터"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@/年起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@/年起"
           }
         }
       }

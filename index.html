@@ -5474,10 +5474,28 @@ function favActive() {
   // What the flyer reader found on each re-rental's own page: a deadline and
   // any scam-rule warning (2026-10-03). "First come, first served" left the
   // cards 2026-10-20 (owner).
+  // Every re-rental card carries a household income (owner, 2026-10-22), in
+  // the same labelled style as an agent who prints only income: from the
+  // card's own unit table, lowest minimum to highest maximum across its rows.
+  function unitsIncome(t) {
+    const rows = (t && t.units) || [];
+    const lo = rows.map(r => r.income_min).filter(v => v != null), hi = rows.map(r => r.income_max).filter(v => v != null);
+    if (!lo.length && !hi.length) return null;
+    return [lo.length ? Math.min(...lo) : null, hi.length ? Math.max(...hi) : null];
+  }
+  function featIncomeHtml(range) {
+    const n = v => '$' + Number(v).toLocaleString();
+    const [lo, hi] = range;
+    const amt = lo != null && hi != null && lo !== hi ? n(lo) + '–' + n(hi) : lo != null && hi == null ? 'from ' + n(lo) : 'up to ' + n(hi);
+    return `<div class="price income feat-income"><span class="lab">Household income</span>${amt}/yr</div>`;
+  }
   function paintFlyerFacts() {
     document.querySelectorAll('.feat-card').forEach(card => {
-      if (card.querySelector('.feat-facts')) return;
       const t = UNITS[card.dataset.featHref];
+      const price = card.querySelector('.price');
+      const range = unitsIncome(t);
+      if (range && price && !price.classList.contains('income') && !card.querySelector('.feat-income')) price.insertAdjacentHTML('afterend', featIncomeHtml(range));
+      if (card.querySelector('.feat-facts')) return;
       if (!t) return;
       const bits = [];
       if (t.deadline) bits.push('Apply by ' + esc(t.deadline));
@@ -6650,7 +6668,10 @@ function favActive() {
       return `<div class="price income"><span class="lab">Household income</span>` +
              `${n(f.money_low)}–${n(f.money_high)}/yr</div>`;
     }
-    return '<div class="price est">Income-restricted · see agent for rent</div>';
+    // No rent and no income on the feed: no line at all (owner, 2026-10-22,
+    // "remove the income restricted see agent text"). The hidden slot is
+    // where paintFlyerFacts puts the unit table's household income.
+    return '<div class="price est" hidden></div>';
   }
 
   // Swipe through a re-rental's photos (owner, 2026-10-04): a scroll-snap

@@ -96,6 +96,25 @@ final class Qualify {
         }
     }
 
+    /// The household income a re-rental's unit table asks for, lowest minimum
+    /// to highest maximum across its rows; nil when the flyer gave none.
+    nonisolated static func incomeRange(rows: [Row]) -> (low: Int?, high: Int?)? {
+        let lo = rows.compactMap(\.income_min).min(), hi = rows.compactMap(\.income_max).max()
+        return lo == nil && hi == nil ? nil : (lo, hi)
+    }
+
+    /// "$54,960–$68,040/yr" for a card, from its unit table.
+    func incomeLine(for f: FeaturedListing) -> String? {
+        guard let rows = units[f.href]?.units, let r = Self.incomeRange(rows: rows) else { return nil }
+        let n = { (v: Int) in "$" + v.formatted() }
+        switch (r.low, r.high) {
+        case let (lo?, hi?) where lo != hi: return "\(n(lo))–\(n(hi))/yr"
+        case let (lo?, _): return r.high == nil ? String(localized: "from \(n(lo))/yr") : "\(n(lo))/yr"
+        case let (nil, hi?): return String(localized: "up to \(n(hi))/yr")
+        default: return nil
+        }
+    }
+
     nonisolated static func verdict(rows: [Row], household hh: Int, income inc: Int) -> Verdict {
         let forHh = rows.filter { (($0.household_size_min ?? 0) <= hh) && (hh <= ($0.household_size_max ?? 99)) }
         let pool = (forHh.isEmpty ? rows : forHh).filter { $0.income_min != nil || $0.income_max != nil }

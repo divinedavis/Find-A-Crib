@@ -796,7 +796,9 @@ final class RerentalFeedTests: XCTestCase {
         }
         let blob = try JSONDecoder().decode(FeaturedBlob.self, from: Data(contentsOf: url))
         XCTAssertGreaterThan(blob.listings.count, 5)
-        XCTAssertTrue(blob.listings.contains { $0.moneyKind == "rent" && $0.moneyLine.text.hasSuffix("/mo") })
+        XCTAssertTrue(blob.listings.contains { $0.moneyKind == "rent" && $0.moneyLine?.text.hasSuffix("/mo") == true })
+        // No rent and no income: no money line at all (owner, 2026-10-22).
+        XCTAssertNil(FeaturedListing(agent: "A", address: "1 Main St", borough: nil, href: "https://x.test").moneyLine)
         XCTAssertTrue(blob.listings.allSatisfy { !$0.href.isEmpty && !$0.address.isEmpty })
         XCTAssertTrue(blob.listings.contains { $0.imageExterior },
                       "the sweep marks the outside-of-the-building photos (photo_kind.py) — the banner needs one")
@@ -1767,6 +1769,15 @@ final class QualifyAndAITests: XCTestCase {
         XCTAssertEqual(Qualify.verdict(rows: rows, household: 4, income: 140_000), .yes)
         XCTAssertEqual(Qualify.verdict(rows: rows, household: 2, income: 50_000), .low)
         XCTAssertEqual(Qualify.verdict(rows: [], household: 2, income: 50_000), .unknown)
+    }
+
+    func testIncomeRangeSpansEveryRow() {
+        // Fifth Ave's 551 Warren: one studio at three income ceilings.
+        let rows = [Qualify.Row(beds: 0, rent: 1374, household_size_min: 1, household_size_max: 1, income_min: 54960, income_max: 68040),
+                    Qualify.Row(beds: 0, rent: 1374, household_size_min: 1, household_size_max: 1, income_min: 54960, income_max: 59400)]
+        let r = Qualify.incomeRange(rows: rows)
+        XCTAssertEqual(r?.low, 54960); XCTAssertEqual(r?.high, 68040)
+        XCTAssertNil(Qualify.incomeRange(rows: [Qualify.Row(beds: 1, rent: 2000, household_size_min: nil, household_size_max: nil, income_min: nil, income_max: nil)]))
     }
 
     @MainActor

@@ -71,10 +71,23 @@ struct RerentalCard: View {
                         .accessibilityIdentifier("card-address")
 
                     let money = f.moneyLine
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let label = money.label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
-                        Text(money.text).font(.se(money.label == nil && f.moneyKind == "rent" ? 32 : 24, .bold)).foregroundStyle(SE.ink)
-                            .lineLimit(1).minimumScaleFactor(0.8)
+                    if let money {
+                        VStack(alignment: .leading, spacing: 2) {
+                            if let label = money.label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
+                            Text(money.text).font(.se(money.label == nil && f.moneyKind == "rent" ? 32 : 24, .bold)).foregroundStyle(SE.ink)
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                    }
+                    // Every card carries a household income (owner, 2026-10-22),
+                    // in the same labelled style as a card whose agent prints
+                    // only income; from the listing's unit table.
+                    if money?.label == nil, let income = Qualify.shared.incomeLine(for: f) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Household income").font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase)
+                            Text(income).font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("rerental-income")
                     }
                 }
 

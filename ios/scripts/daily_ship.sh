@@ -16,6 +16,10 @@
 #
 #   scripts/daily_ship.sh [--dry-run]     (DAILY_SHIP_NOW=1: run after 09:00 too)
 set -euo pipefail
+# A build runs 40+ minutes; on battery this Mac idle-sleeps after 1 minute
+# (pmset sleep 1), so hold the Mac awake for the whole run. Closing the lid
+# still sleeps it.
+[[ -n "${DAILY_SHIP_AWAKE:-}" ]] || exec env DAILY_SHIP_AWAKE=1 /usr/bin/caffeinate -i "$0" "$@"
 cd "$(dirname "$0")/.."
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 APP_PATHS=(FindACrib FindACribTests FindACribUITests FindACribWidgets Shared project.yml)

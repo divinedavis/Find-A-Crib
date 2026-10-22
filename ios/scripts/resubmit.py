@@ -26,13 +26,23 @@ import register_in_asc as asc  # noqa: E402
 P = lambda p: p.replace("/v1", "", 1) if asc.API_BASE.endswith("/v1") else p  # noqa: E731
 
 
+def marketing_version():
+    """MARKETING_VERSION from project.yml: the version the new build is stamped
+    with. The old "1.0" default aimed at the live version (409 on 10/22)."""
+    for line in (Path(__file__).resolve().parent.parent / "project.yml").read_text().splitlines():
+        if line.strip().startswith("MARKETING_VERSION:"):
+            return line.split(":", 1)[1].strip().strip('"')
+    sys.exit("MARKETING_VERSION not found in project.yml; pass --version")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--build", required=True, help="build number as uploaded (CURRENT_PROJECT_VERSION)")
-    ap.add_argument("--version", default="1.0", help="app version string")
+    ap.add_argument("--version", default=None, help="app version string (default: MARKETING_VERSION)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--wait", type=int, default=1800, help="seconds to wait for processing")
     a = ap.parse_args()
+    a.version = a.version or marketing_version()
     cfg = asc.load_config()
     tok = asc.make_token(cfg)
     app = cfg["ASC_APP_ID"]

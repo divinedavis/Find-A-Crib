@@ -40,6 +40,11 @@ BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
              "Bx": "bronx", "SI": "staten-island"}
 
+# Fewest matched listings that earns a borough its own /section8/<boro>/ page.
+# It gates CREATING one, never whether a page already live keeps telling the
+# truth — see the note over the borough loop in t_fresh_section8.
+BORO_MIN_LISTINGS = 3
+
 
 # --------------------------------------------------------------- the context
 
@@ -544,9 +549,22 @@ def t_fresh_section8(ctx):
     for r in rows:
         by_boro.setdefault(r["boro"], []).append(r)
 
+    # Which boroughs will have a page after this run, richest first. Decided
+    # here rather than in the loop below because the hub links them, and the two
+    # have to agree: the old code linked every borough in the feed and built a
+    # page only above the threshold, so a borough with one or two listings and
+    # no page yet was advertised to readers and crawlers as a URL that 404s.
+    # A borough kept alive below the threshold IS linked — the page is live
+    # either way, and dropping its only inbound link orphans it, not retires it.
+    boro_pages = sorted(
+        ((k, by_boro.get(k, [])) for k in BORO_SLUG
+         if len(by_boro.get(k, [])) >= BORO_MIN_LISTINGS
+         or ctx.live_or_staged(f"section8/{BORO_SLUG[k]}/index.html")),
+        key=lambda kv: -len(kv[1]))
+
     boro_links = "".join(
         f"<a href='/section8/{BORO_SLUG[k]}/'>{_esc(BORO_NAME[k])} ({len(v)})</a>"
-        for k, v in sorted(by_boro.items(), key=lambda kv: -len(kv[1])) if k in BORO_SLUG)
+        for k, v in boro_pages)
 
     body = (
         f"<h1>Section 8 &amp; voucher-friendly apartments in NYC — "
@@ -631,43 +649,105 @@ def t_fresh_section8(ctx):
     made.append((st, url))
 
     # ---- one page per borough
-    for k, brows in by_boro.items():
-        if k not in BORO_SLUG or len(brows) < 3:
-            continue
+    #
+    # BORO_MIN_LISTINGS gates CREATING a borough page. Until 2026-10-22 it also
+    # gated REBUILDING one, because the loop ran over by_boro and `continue`d
+    # below the threshold — and a page that is not rebuilt keeps last night's
+    # count, last night's listing table, and the fresh-path wording ("have an
+    # apartment listed right now", "Updated daily."). Nothing lands on top of
+    # it either: both deploy paths on this droplet are `rsync -a` with no
+    # --delete (see Context.unstage), so the stale copy stays live until
+    # something overwrites it, and below the threshold nothing ever does.
+    #
+    # That is precisely the condition the note over FEED_STALE_HOURS exists to
+    # prevent — a live page asserting a present-tense count over data that no
+    # longer supports it — arriving by a route that note does not cover. Its fix
+    # makes every claim derive from the FEED's timestamp, which degrades the
+    # whole tier the moment the feed stops. This case has a perfectly fresh
+    # feed; one borough simply emptied out, so the degradation never gets a
+    # chance to run, because the page is not rendered at all.
+    #
+    # No instrument on the box can see it. error_report.stale_claims() dates the
+    # section from its FRESHEST claiming page on purpose (2026-10-17), so a hub
+    # rebuilt tonight hides a frozen borough page behind it; t_frozen_pages
+    # measures age against the newest page in the docroot and so is blind to the
+    # same thing; and stale_feeds() watches s8.json, which is fine here.
+    #
+    # So: below the threshold, a page that ALREADY EXISTS is still rebuilt from
+    # tonight's rows, with submit=False. write_page's own docstring names this
+    # case — "a hub that has dropped below its tier's publishing threshold is
+    # live and must not go on asserting a stale count" — and a shrinking page
+    # does not get to spend crawl budget on a domain this starved of it. A
+    # borough with no page yet is still skipped, so no thin URL is created that
+    # was not there before.
+    for k, brows in boro_pages:
+        n = len(brows)
+        thin = n < BORO_MIN_LISTINGS
         name = BORO_NAME[k]
         slug = BORO_SLUG[k]
         disp = name if name.startswith("the ") else name
         crumbs = (f"<div class='crumbs'><a href='/'>Home</a> › "
                   f"<a href='/section8/'>Voucher listings</a> › {_esc(disp)}</div>")
+        if n:
+            verb = "had" if stale else ("has" if n == 1 else "have")
+            lead = (f"<p class='sub'>{n} rent-stabilized {_esc(disp)} building"
+                    f"{'' if n == 1 else 's'} {verb} an apartment listed for voucher holders "
+                    f"{_esc(now_phrase)}.</p>")
+        else:
+            # The only honest thing to put on a page that is already live and
+            # has nothing to list: say so, drop the empty table and the stats
+            # block over an empty set, and point at the two places that do still
+            # have data. "No ... right now" degrades to "as of <date>" with the
+            # feed exactly like every other claim on this tier, and the second
+            # sentence is here so a reader does not read an empty night as the
+            # buildings having lost their stabilization.
+            lead = (f"<p class='sub'>No rent-stabilized {_esc(disp)} buildings "
+                    f"{'had' if stale else 'have'} an apartment listed for voucher holders "
+                    f"{_esc(now_phrase)}. Listings for voucher holders turn over quickly and "
+                    f"this page is rebuilt from the feed every night, so check back — the "
+                    f"buildings themselves are registered rent-stabilized either way.</p>")
         bbody = (
             crumbs
             + f"<h1>Section 8 apartments in {_esc(disp)} — "
               f"{'listings as of' if stale else 'updated'} {_esc(when)}</h1>"
             + caveat
-            + f"<p class='sub'>{len(brows)} rent-stabilized {_esc(disp)} buildings "
-              f"{'had' if stale else 'have'} an apartment listed for voucher holders "
-              f"{_esc(now_phrase)}.</p>"
-            + _stats_block(brows, stats_label) + SOI_NOTE
-            + _listing_table(brows, show_boro=False)
+            + lead
+            + (_stats_block(brows, stats_label) if n else "")
+            + SOI_NOTE
+            + (_listing_table(brows, show_boro=False) if n else "")
             + f"<div class='note'><a href='/borough/{slug}/'>Every rent-stabilized building in "
-              f"{_esc(disp)} →</a></div>")
+              f"{_esc(disp)} →</a></div>"
+            + ("" if n else "<div class='note'><a href='/section8/'>Voucher listings in every "
+                            "borough →</a></div>"))
         bjsonld = [
             _breadcrumb([("Home", SITE + "/"), ("Voucher listings", SITE + "/section8/"),
                          (disp, f"{SITE}/section8/{slug}/")]),
-            _dataset_jsonld(
-                f"Rent-stabilized {disp} buildings with live Section 8 / voucher listings",
-                f"{len(brows)} {disp} buildings registered rent-stabilized with DHCR that "
-                f"{'had' if stale else 'currently have'} an apartment listed on "
-                f"AffordableHousing.com, {refreshed}.",
-                f"{SITE}/section8/{slug}/", date_modified, disp, len(brows)),
         ]
+        # No Dataset node on an empty night. The markup describes a dataset of
+        # buildings, and tonight there is not one to describe; declaring it with
+        # zero records would hand an answer engine a citable "0 buildings in
+        # <borough>" that reads as a finding about the borough rather than about
+        # one night's listings.
+        if n:
+            bjsonld.append(_dataset_jsonld(
+                f"Rent-stabilized {disp} buildings with live Section 8 / voucher listings",
+                f"{n} {disp} building{'' if n == 1 else 's'} registered rent-stabilized with "
+                f"DHCR that {'had' if stale else 'currently have'} an apartment listed on "
+                f"AffordableHousing.com, {refreshed}.",
+                f"{SITE}/section8/{slug}/", date_modified, disp, n))
         st, url, _ = ctx.write_page(
             f"section8/{slug}/index.html",
-            _page(f"Section 8 apartments in {disp} — {len(brows)} stabilized buildings "
-                  f"listed {'as of ' + when if stale else 'now'}",
-                  f"Rent-stabilized buildings in {disp} with apartments listed for Section 8 and "
-                  f"other voucher holders {now_phrase}.{cadence}",
-                  f"{SITE}/section8/{slug}/", bbody, bjsonld))
+            _page(f"Section 8 apartments in {disp} — "
+                  + (f"{n} stabilized building{'' if n == 1 else 's'} "
+                     f"listed {'as of ' + when if stale else 'now'}" if n
+                     else f"none listed {'as of ' + when if stale else 'right now'}"),
+                  (f"Rent-stabilized buildings in {disp} with apartments listed for Section 8 and "
+                   f"other voucher holders {now_phrase}.{cadence}" if n
+                   else f"No rent-stabilized {disp} buildings {'had' if stale else 'have'} an "
+                        f"apartment listed for Section 8 or other voucher holders "
+                        f"{now_phrase}.{cadence}"),
+                  f"{SITE}/section8/{slug}/", bbody, bjsonld),
+            submit=not thin)
         made.append((st, url))
 
     counts = {}

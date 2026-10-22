@@ -23,6 +23,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -124,8 +125,32 @@ class LivenessWording(unittest.TestCase):
         # A pause left running for a month must not read like a fresh one.
         s = self._summary(PAUSED)
         self.assertIn("1.1 days", s)
-        self.assertIn("nothing pushed here reaches production", s)
         self.assertIn("deploy_jobs.sh", s)
+
+    def test_paused_names_the_growth_code_a_live_cron_still_runs(self):
+        # This test used to pin "nothing pushed here reaches production", which
+        # was true when it was written on 2026-10-13 and false from 2026-10-21,
+        # when growth/section8_refresh.py went onto cron-rentmap-scrape. The
+        # headline is read every morning and that sentence had already talked
+        # nine reviews out of shipping a page change, so it is derived from the
+        # cron files now and this pins the derivation, not the sentence.
+        s = self._summary(PAUSED)
+        self.assertIn("the growth build publishes nothing", s)
+        self.assertIn("growth/section8_refresh.py is live on cron-rentmap-scrape", s)
+        self.assertIn("DOES reach readers", s)
+        self.assertNotIn("nothing pushed here reaches production", s)
+
+    def test_paused_with_no_live_growth_script_says_nothing_gets_through(self):
+        # The old sentence is still the right one when it is true, so it has to
+        # remain makeable: a deploy dir with no live growth/ script restores it.
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "cron-rentmap-scrape").write_text(
+                "15 4 * * * scraper python3 scrape_affordablehousing.py\n")
+            with mock.patch.object(growth_daily, "DEPLOY_DIR", d):
+                s = self._summary(PAUSED)
+        self.assertIn("nothing pushed here reaches production", s)
+        self.assertNotIn("DOES reach readers", s)
 
     def test_paused_still_carries_the_last_real_outcome(self):
         self.assertIn("last run ok (build --deploy)", self._summary(PAUSED))
@@ -170,3 +195,62 @@ class TrackedCronMatchesReality(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LivePathsOutsideThePause(unittest.TestCase):
+    """growth_live_paths(): growth code a NON-growth cron still runs.
+
+    2026-10-22. The pause headline asserted "nothing pushed here reaches
+    production" from 2026-10-12. On 2026-10-21 the owner put
+    growth/section8_refresh.py on cron-rentmap-scrape (5ceeb4d) so /section8/
+    keeps being rebuilt while the engine is off, which made that sentence false
+    — and nine reviews had already deferred page changes on the strength of it.
+    """
+
+    def setUp(self):
+        import tempfile
+        self._td = tempfile.TemporaryDirectory()
+        self.tmp = self._td.name
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def _deploy(self, files):
+        d = Path(self.tmp) / "deploy"
+        d.mkdir(exist_ok=True)
+        for name, text in files.items():
+            (d / name).write_text(text)
+        return str(d)
+
+    def test_the_real_deploy_dir_reports_the_section8_refresh_line(self):
+        found = growth_daily.growth_live_paths()
+        self.assertIn(("cron-rentmap-scrape", "growth/section8_refresh.py"), found)
+
+    def test_a_commented_out_line_is_not_live(self):
+        d = self._deploy({"cron-rentmap-x":
+                          "#40 5 * * * scraper python3 growth/section8_refresh.py\n"})
+        self.assertEqual(growth_daily.growth_live_paths(d), [])
+
+    def test_growth_run_is_excluded_because_growth_paused_reports_it(self):
+        # The engine's own line carries no growth/<x>.py token, so the token
+        # filter alone would drop it. The guard earns its place only on a line
+        # that runs growth_run.sh AND a growth/ script, which is what this pins:
+        # a live growth_run line means the engine is not paused, and
+        # growth_paused() is what reports that.
+        d = self._deploy({"cron-rentmap-growth":
+                          "40 5 * * * scraper cd /root/Find-A-Crib && "
+                          "./growth_run.sh build && python3 growth/section8_refresh.py\n"})
+        self.assertEqual(growth_daily.growth_live_paths(d), [])
+
+    def test_a_live_growth_script_is_reported_with_its_cron_file(self):
+        d = self._deploy({"cron-rentmap-scrape":
+                          "# a comment naming growth/other.py\n"
+                          "40 5 * * * scraper python3 growth/section8_refresh.py >> /l 2>&1\n"})
+        self.assertEqual(growth_live := growth_daily.growth_live_paths(d),
+                         [("cron-rentmap-scrape", "growth/section8_refresh.py")])
+        self.assertEqual(len(growth_live), 1)
+
+    def test_a_missing_deploy_dir_reports_nothing_rather_than_raising(self):
+        self.assertEqual(
+            growth_daily.growth_live_paths(str(Path(self.tmp) / "nope")), [])
+

@@ -350,6 +350,58 @@ def growth_paused(path=None):
     return True, marker
 
 
+# Scripts under growth/ that a LIVE cron line runs: growth code with a path to
+# production while growth_run.sh itself is paused.
+#
+# Why this exists, 2026-10-22. The pause headline used to end "and nothing pushed
+# here reaches production". That was true on 2026-10-12 and false from 2026-10-21,
+# when the owner put growth/section8_refresh.py on cron-rentmap-scrape (5ceeb4d)
+# to keep /section8/ rebuilt while the engine is off. That script calls
+# t_fresh_section8 straight out of growth/techniques.py, and rerental_daily.sh
+# pulls origin/main into /root/Find-A-Crib at 06:45 UTC and every two hours from
+# 09:00, so a commit pushed here is executing on the droplet within hours. Nine
+# consecutive reviews deferred page changes on the strength of that sentence, so
+# it has to be DERIVED from the cron files rather than remembered.
+DEPLOY_DIR = os.path.join(DEFAULT_BUILD, "deploy")
+
+
+def growth_live_paths(deploy_dir=None):
+    """Live cron lines running a script under growth/. Returns [(cron file, script)].
+
+    Reads the TRACKED cron files, exactly as growth_paused() does, and claims
+    nothing about the box; the two can drift until deploy_jobs.sh runs.
+    growth_run.sh is deliberately excluded — growth_paused() reports that one,
+    and a live growth_run line means the engine is not paused at all.
+
+    The honest limit: a path is recognised as a bare whitespace-delimited token
+    starting "growth/" and ending ".py", so an invocation wrapped in shell
+    quotes (sh -c '... growth/x.py') is MISSED. Every cron line in deploy/ is
+    written plainly today and a quoted one would have to be added by hand; the
+    cost of missing it is this headline understating what reaches production,
+    which is the direction the sentence already erred in.
+    """
+    found = []
+    try:
+        names = sorted(os.listdir(deploy_dir or DEPLOY_DIR))
+    except OSError:
+        return found
+    for name in names:
+        if not name.startswith("cron-"):
+            continue
+        try:
+            with open(os.path.join(deploy_dir or DEPLOY_DIR, name)) as f:
+                lines = f.read().splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            if not line.strip() or line.lstrip().startswith("#") or "growth_run.sh" in line:
+                continue
+            for tok in line.split():
+                if tok.startswith("growth/") and tok.endswith(".py"):
+                    found.append((name, tok))
+    return found
+
+
 def cron_liveness(path=HEARTBEAT_PATH, now=None):
     """Has the droplet's cron actually been running?
 
@@ -396,12 +448,20 @@ def cron_liveness(path=HEARTBEAT_PATH, now=None):
             # Switched off, not broken. Still lead with the pause AND the age:
             # a pause nobody meant to leave running looks exactly like a healthy
             # one, so the number of quiet days stays in the headline.
+            live = growth_live_paths()
+            # The pause stops the growth BUILD. It does not stop a script under
+            # growth/ that some other, un-paused cron runs — and since 2026-10-21
+            # one does, so this must not go on saying nothing gets through.
+            reach = ("and nothing pushed here reaches production" if not live else
+                     "and the growth build publishes nothing — but "
+                     + ", ".join(f"{script} is live on {cron}" for cron, script in live)
+                     + ", run from the droplet checkout rerental_daily.sh pulls "
+                       "origin/main into, so code pushed here DOES reach readers")
             state = (f"PAUSED ON PURPOSE — no live growth_run line in the tracked "
                      f"deploy/cron-rentmap-growth"
                      f"{f' ({marker})' if marker else ''}, so no measurement has "
-                     f"landed for {hours / 24:.1f} days and nothing pushed here "
-                     f"reaches production. Resume: drop the prefix and run "
-                     f"scripts/deploy_jobs.sh. " + state)
+                     f"landed for {hours / 24:.1f} days {reach}. Resume: drop the "
+                     f"prefix and run scripts/deploy_jobs.sh. " + state)
         else:
             state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
     return f"{state}; last record {age}", rows

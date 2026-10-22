@@ -131,7 +131,7 @@ def on_board(listing):
     return listing.get("href_kind") == "agent_page" and "#:~:text=" in (listing.get("href") or "")
 
 
-def board_slice(listing, size=1500):
+def board_slice(listing, size=3500):
     """This listing's block of its agent's board: from its address (or the
     link's text fragment) on. Taxace lists Unit 6D, 3C and 8A of 2187 Ryer
     one after another, so the full address is tried before the fragment."""
@@ -148,13 +148,31 @@ def board_slice(listing, size=1500):
             own = re.sub(r"[^a-z0-9]", "", (listing.get("address_src") or listing.get("address") or needle).lower())[:10]
             for m in NEXT_ADDRESS.finditer(block, 40):
                 if re.sub(r"[^a-z0-9]", "", m.group(1).lower())[:10] != own:
-                    return block[:m.start()]
-            return block
+                    block = block[:m.start()]
+                    break
+            # ...or at a heading for the agent's other buildings, which may
+            # name no street (K&G's "Additional Opportunities (BRONX)").
+            m = NEXT_SECTION.search(block, 40)
+            return block[:m.start()] if m else block
     return ""
 
 
+# 3500, not 1500, since 2026-10-22: K&G's income table for 240 Willoughby
+# runs ~2,900 characters from the address and was cut mid-table.
+NEXT_SECTION = re.compile(r"(?im)^\s*(?:additional|other|more)\s+(?:opportunities|listings|vacancies|apartments)\b")
 NEXT_ADDRESS = re.compile(r"(?:^|\n|\|)\s*(\d+(?:-\d+)?\s+[A-Z][\w.]*(?:\s+[\w.]+){0,3}\s+"
                           r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Place|Pl\.?|Boulevard|Blvd\.?|Drive|Dr\.?|Parkway|Court|Terrace|Lane)\b)")
+
+
+def source_numbers(meta, text):
+    """Every number the model may quote from this listing.
+
+    Some flyers print "$83, 315" (HDC's Spring Creek 4C, 2026-10-22): the
+    stray space split it into 83 and 315, so every income row was dropped as
+    ungrounded. The joined form counts too; the raw parts stay.
+    """
+    joined = re.sub(r"(\d),\s+(\d{3})(?!\d)", r"\1,\2", text or "")
+    return cf.record_numbers({"listing": meta, "source": text, "joined": joined})
 
 
 def read_one(listing):
@@ -191,7 +209,7 @@ def read_one(listing):
         return None, usage
     out = json.loads(out_text)
     if verified:
-        nums = cf.record_numbers({"listing": meta, "source": text})
+        nums = source_numbers(meta, text)
         keep = []
         for u in out["units"]:
             vals = [v for k, v in u.items() if isinstance(v, int) and k not in ("beds", "household_size_min", "household_size_max")]

@@ -35,6 +35,20 @@ def test_only_fragment_links_count_as_board_listings():
     assert not fr.on_board({"href_kind": "listing", "href": "https://example.com/a#:~:text=b"})
 
 
+def test_slice_stops_at_other_buildings_heading():
+    import flyer_reader as fr
+    page = ("240 Willoughby Street, Brooklyn, New York 11201\nIncome Limits\n1 people $107,383 - $154,440\n"
+            " Additional Opportunities (BRONX) \n Diego Beekman\n Studio: $2,525.00\n")
+    orig = fr.listing_page.text_of
+    fr.listing_page.text_of = lambda url, render=False: page
+    try:
+        sl = fr.board_slice({"href": "https://x.test/v#:~:text=240%20Willoughby", "address": "240 Willoughby Street, Brooklyn, NY 11201",
+                             "address_src": "240 Willoughby Street, Brooklyn, New York 11201"})
+    finally:
+        fr.listing_page.text_of = orig
+    assert "$154,440" in sl and "Beekman" not in sl, sl
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

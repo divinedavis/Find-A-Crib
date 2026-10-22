@@ -61,6 +61,11 @@ def _static_text(url, timeout):
             raw = r.read(2_000_000).decode("utf-8", "replace")
     except Exception:
         return ""
+    # Text in an inline frame is the page's text too: K&G's Verdant Fort Greene
+    # prints its whole income table in an <iframe srcdoc> (2026-10-22), which
+    # the tag strip below would drop with the attribute. Read it in place.
+    raw = re.sub(r"""(?is)<iframe\b[^>]*?\ssrcdoc=(["'])(.*?)\1[^>]*>""",
+                 lambda m: " " + html.unescape(m.group(2)) + " ", raw)
     raw = re.sub(r"(?is)<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>", " ", raw)
     raw = re.sub(r"(?i)<br\s*/?>|</(p|div|li|tr|h\d)>", "\n", raw)
     t = html.unescape(re.sub(r"<[^>]+>", " ", raw))

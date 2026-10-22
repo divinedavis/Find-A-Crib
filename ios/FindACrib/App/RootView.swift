@@ -121,8 +121,8 @@ struct RouteView: View {
     }
 }
 
-/// The floating pill tab bar: white capsule, three items, the selected one
-/// sitting in a grey disc with royal-blue icon and label.
+/// The floating pill tab bar: a clear glass capsule (owner, 2026-10-22), the
+/// selected item sitting in a frosted white disc with royal-blue icon and label.
 struct PillTabBar: View {
     @Binding var selected: Tab
     @Environment(DataStore.self) private var store
@@ -145,7 +145,7 @@ struct PillTabBar: View {
                     }
                     .foregroundStyle(on ? SE.royal : SE.ink)
                     .frame(width: itemWidth, height: 66)
-                    .background(on ? SE.badge : .clear)
+                    .background(on ? Color.white.opacity(0.7) : .clear)
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -154,8 +154,6 @@ struct PillTabBar: View {
             }
         }
         .padding(4)
-        .background(Color.white)
-        .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.16), radius: 10, y: 3)
+        .lightGlass(in: Capsule())
     }
 }

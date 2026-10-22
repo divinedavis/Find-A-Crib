@@ -797,6 +797,8 @@ final class RerentalFeedTests: XCTestCase {
         let blob = try JSONDecoder().decode(FeaturedBlob.self, from: Data(contentsOf: url))
         XCTAssertGreaterThan(blob.listings.count, 5)
         XCTAssertTrue(blob.listings.contains { $0.moneyKind == "rent" && $0.moneyLine?.text.hasSuffix("/mo") == true })
+        // Rent carries its own label, under the household income (MGNY format, 2026-10-22).
+        XCTAssertTrue(blob.listings.filter { $0.moneyKind == "rent" && $0.moneyLow != nil }.allSatisfy { $0.moneyLine?.label == "Rent" })
         // No rent and no income: no money line at all (owner, 2026-10-22).
         XCTAssertNil(FeaturedListing(agent: "A", address: "1 Main St", borough: nil, href: "https://x.test").moneyLine)
         XCTAssertTrue(blob.listings.allSatisfy { !$0.href.isEmpty && !$0.address.isEmpty })

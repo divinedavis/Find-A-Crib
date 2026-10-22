@@ -106,9 +106,11 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// household income instead, when there is one.
     var moneyLine: (label: String?, text: String)? {
         let n = { (v: Int) in "$" + v.formatted() }
+        // Rent is labelled too (owner, 2026-10-22: every card in the MGNY
+        // format), and sits under the household income on the card.
         if moneyKind == "rent", let lo = moneyLow {
-            if let hi = moneyHigh, hi != lo { return (nil, "\(n(lo))–\(n(hi))/mo") }
-            return (nil, "\(n(lo))/mo")
+            if let hi = moneyHigh, hi != lo { return (String(localized: "Rent"), "\(n(lo))–\(n(hi))/mo") }
+            return (String(localized: "Rent"), "\(n(lo))/mo")
         }
         if let cap = income1pMax { return (String(localized: "Income limit · 1 person"), String(localized: "up to \(n(cap))/yr")) }
         if moneyKind == "income", let lo = moneyLow, let hi = moneyHigh { return (String(localized: "Household income"), "\(n(lo))–\(n(hi))/yr") }

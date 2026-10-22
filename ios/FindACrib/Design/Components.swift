@@ -252,12 +252,34 @@ struct FloatingPill: View {
             }
             .foregroundStyle(ink)
             .padding(.horizontal, 22).frame(height: 56)
-            .background(fill)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+            .modifier(PillFill(fill: fill))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("pill-\(title)")
+    }
+}
+
+/// A white pill is clear glass (owner, 2026-10-22: "light glass" for the Map
+/// pill and tab bar); a coloured one (the navy Lottery Alerts pill) keeps its
+/// fill. Liquid Glass from iOS 26, the system's thin material before that.
+private struct PillFill: ViewModifier {
+    let fill: Color
+    func body(content: Content) -> some View {
+        if fill == .white { content.lightGlass(in: Capsule()) }
+        else { content.background(fill).clipShape(Capsule()).shadow(color: .black.opacity(0.18), radius: 8, y: 3) }
+    }
+}
+
+extension View {
+    /// Clear Liquid Glass with a white tint so dark text stays readable over photos.
+    @ViewBuilder func lightGlass<S: Shape>(in shape: S) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.tint(.white.opacity(0.35)).interactive(), in: shape)
+        } else {
+            self.background(.ultraThinMaterial, in: shape)
+                .overlay(shape.stroke(.white.opacity(0.6), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
+        }
     }
 }
 

@@ -5492,9 +5492,9 @@ function favActive() {
   function paintFlyerFacts() {
     document.querySelectorAll('.feat-card').forEach(card => {
       const t = UNITS[card.dataset.featHref];
-      const price = card.querySelector('.price');
+      const slot = card.querySelector('.feat-income-slot');
       const range = unitsIncome(t);
-      if (range && price && !price.classList.contains('income') && !card.querySelector('.feat-income')) price.insertAdjacentHTML('afterend', featIncomeHtml(range));
+      if (range && slot) slot.outerHTML = featIncomeHtml(range);
       if (card.querySelector('.feat-facts')) return;
       if (!t) return;
       const bits = [];
@@ -6650,10 +6650,14 @@ function favActive() {
   // most expensive studio in New York.
   function featMoneyHtml(f) {
     const n = v => '$' + Number(v).toLocaleString();
+    // Every card in the MGNY format (owner, 2026-10-22): the labelled
+    // household income leads, then rent under its own label. The income slot
+    // is filled from the unit table by paintFlyerFacts.
     if (f.money_kind === 'rent') {
       const amt = f.money_high && f.money_high !== f.money_low
         ? n(f.money_low) + '–' + n(f.money_high) : n(f.money_low);
-      return `<div class="price">${amt}/mo</div>`;
+      return `<div class="price income feat-income-slot" hidden></div>` +
+             `<div class="price income feat-rent"><span class="lab">Rent</span>${amt}/mo</div>`;
     }
     // No rent published. The most useful thing left is the ceiling a
     // single-person household may earn — it answers "can I even apply?", which
@@ -6671,7 +6675,7 @@ function favActive() {
     // No rent and no income on the feed: no line at all (owner, 2026-10-22,
     // "remove the income restricted see agent text"). The hidden slot is
     // where paintFlyerFacts puts the unit table's household income.
-    return '<div class="price est" hidden></div>';
+    return '<div class="price income feat-income-slot" hidden></div>';
   }
 
   // Swipe through a re-rental's photos (owner, 2026-10-04): a scroll-snap

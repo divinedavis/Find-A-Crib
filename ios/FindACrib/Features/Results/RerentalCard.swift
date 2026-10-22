@@ -70,25 +70,17 @@ struct RerentalCard: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("card-address")
 
+                    // Every card in the MGNY format (owner, 2026-10-22): the
+                    // labelled household income first, from the feed when the
+                    // agent prints only income, else from the listing's unit
+                    // table; then rent under its own label.
                     let money = f.moneyLine
-                    if let money {
-                        VStack(alignment: .leading, spacing: 2) {
-                            if let label = money.label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
-                            Text(money.text).font(.se(money.label == nil && f.moneyKind == "rent" ? 32 : 24, .bold)).foregroundStyle(SE.ink)
-                                .lineLimit(1).minimumScaleFactor(0.8)
-                        }
+                    let feedIncome = f.moneyKind == "income" || f.income1pMax != nil
+                    if !feedIncome, let income = Qualify.shared.incomeLine(for: f) {
+                        moneyBlock(label: String(localized: "Household income"), text: income)
+                            .accessibilityIdentifier("rerental-income")
                     }
-                    // Every card carries a household income (owner, 2026-10-22),
-                    // in the same labelled style as a card whose agent prints
-                    // only income; from the listing's unit table.
-                    if money?.label == nil, let income = Qualify.shared.incomeLine(for: f) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Household income").font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase)
-                            Text(income).font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityIdentifier("rerental-income")
-                    }
+                    if let money { moneyBlock(label: money.label, text: money.text) }
                 }
 
                 if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1) }
@@ -156,6 +148,15 @@ struct RerentalCard: View {
         .accessibilityIdentifier("rerental-card")
         .onAppear { Analytics.shared.tileSeen(f, slot: slot) }
         .task { await Qualify.shared.loadUnits() }
+    }
+
+    /// One labelled money line, the style MGNY's income-only cards set.
+    private func moneyBlock(label: String?, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let label { Text(label).font(.se(15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
+            Text(text).font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     /// A building name above the address, when it adds something ("Forten at

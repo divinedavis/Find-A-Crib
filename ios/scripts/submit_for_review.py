@@ -68,6 +68,19 @@ def ensure_no_phased_release(asc, ids):
         asc.delete(f"/appStoreVersionPhasedReleases/{have['id']}")
         print("  phased release: removed (releases to everyone at once)")
 
+def ensure_current_creatives():
+    """The version being submitted shows the current header video and search
+    image. A new version copies the previous one's placements, and 1.3.4 went
+    live on 2026-10-22 with the cropped header video because 1.3.3 still had
+    it. Best-effort: a failure here never blocks a submission."""
+    try:
+        import asc_swap_creatives as cr
+        rc = cr.swap(cr.CURRENT, False)
+        print("  header + search placements:", {0: "current", None: "waiting (asset review or A/B test)"}.get(rc, f"problem ({rc})"))
+    except BaseException as e:      # SystemExit from its API helper included
+        print("  header + search placements: not checked:", str(e)[:120])
+
+
 def submit(asc, app_id, ids):
     subs = asc.get("/reviewSubmissions", **{"filter[app]": app_id, "filter[platform]": "IOS", "limit": 10})["data"]
     bad = [s for s in subs if s["attributes"]["state"] == "UNRESOLVED_ISSUES"]
@@ -87,6 +100,7 @@ def submit(asc, app_id, ids):
             "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": draft["id"]}},
             "appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
         print("  added version", ids["version_string"], "to the submission")
+    ensure_current_creatives()
     # In-App Events never ride along (they did from 2026-10-16): App Review
     # judges each item separately, and one rejected event held the accepted
     # 1.3.3 back from release for days. asc_events_auto.py submits events

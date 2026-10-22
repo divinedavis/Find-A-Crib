@@ -116,17 +116,36 @@ def submit(prefix):
 
 def live_version():
     vs = call("GET", f"/v1/apps/{APP}/appStoreVersions?filter[appStoreState]=READY_FOR_SALE&filter[platform]=IOS")["data"]
+    vs.sort(key=lambda v: v["attributes"].get("createdDate") or "", reverse=True)
     return vs[0]["attributes"]["versionString"] if vs else None
 
 
+# A version can still take new placements in these states. A new version
+# copies the previous one's placements when it is created, so 1.3.4 went live
+# on 2026-10-22 with the cropped fac-2026-10b header video: the poller that
+# was meant to swap 1.3.3 had died. Swapping the next version while it is
+# still being prepared closes that gap (new_version.py and
+# submit_for_review.py both run it).
+EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY")
+# The approved set every placement should carry; bump it with the next set.
+CURRENT = "fac-2026-10d"
+
+
 def parents():
-    """(label, relationship, type, id) for the live version's and each approved CPP's localizations."""
-    vs = call("GET", f"/v1/apps/{APP}/appStoreVersions?filter[appStoreState]=READY_FOR_SALE&filter[platform]=IOS")["data"]
+    """(label, relationship, type, id) for the live and in-preparation versions'
+    and each approved CPP's localizations."""
+    vs = call("GET", f"/v1/apps/{APP}/appStoreVersions?filter[platform]=IOS&limit=20")["data"]
+    vs.sort(key=lambda v: v["attributes"].get("createdDate") or "", reverse=True)
+    # The live version is the newest READY_FOR_SALE one (the API reports every
+    # superseded version as READY_FOR_SALE too), plus the newest version if it
+    # is still being prepared.
+    live = next((v for v in vs if v["attributes"]["appStoreState"] == "READY_FOR_SALE"), None)
+    vs = [v for i, v in enumerate(vs) if v is live or (i == 0 and v["attributes"]["appStoreState"] in EDITABLE)]
     if not vs:
-        sys.exit("no live iOS version")
-    out = [("v" + vs[0]["attributes"]["versionString"] + " " + loc["attributes"]["locale"],
+        sys.exit("no live or editable iOS version")
+    out = [("v" + v["attributes"]["versionString"] + " " + loc["attributes"]["locale"],
             "appStoreVersionLocalization", "appStoreVersionLocalizations", loc["id"])
-           for loc in call("GET", f"/v1/appStoreVersions/{vs[0]['id']}/appStoreVersionLocalizations")["data"]]
+           for v in vs for loc in call("GET", f"/v1/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"]]
     for p in call("GET", f"/v1/apps/{APP}/appCustomProductPages?limit=50")["data"]:
         for v in call("GET", f"/v1/appCustomProductPages/{p['id']}/appCustomProductPageVersions")["data"]:
             if v["attributes"].get("state") != "APPROVED":
@@ -201,7 +220,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["upload-video", "submit", "swap"])
     ap.add_argument("file", nargs="?")
-    ap.add_argument("--prefix", required=True)
+    ap.add_argument("--prefix", default=CURRENT)
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--wait", action="store_true", help="swap: poll every 15 min for up to --days days")

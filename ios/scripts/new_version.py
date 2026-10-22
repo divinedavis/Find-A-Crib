@@ -69,6 +69,9 @@ def main():
         "relationships": {"app": {"data": {"type": "apps", "id": app_id}}},
     }})["data"]
     print(f"\ncreated {a.version} ({created['id']}) — {created['attributes']['appStoreState']}")
+    # It copied the previous version's header video and search image; put the
+    # current ones on it now (1.3.4 went live with a stale, cropped header).
+    import submit_for_review; submit_for_review.ensure_current_creatives()
     print("next: scripts/asc_metadata.py, then attach_build.py, then submit_for_review.py")
     return 0
 

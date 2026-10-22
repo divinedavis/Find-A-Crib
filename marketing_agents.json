@@ -682,7 +682,7 @@
     "title": "Listings",
     "units_seen": true,
     "last_ok": "2026-10-22",
-    "unit_count": 29,
+    "unit_count": 27,
     "checked": "2026-10-22"
    },
    "buildings": [
@@ -1201,7 +1201,7 @@
     "unit_count": 1,
     "found": "2026-09-29",
     "source": "owner research (2026-09-29)",
-    "last_ok": "2026-10-21",
+    "last_ok": "2026-10-22",
     "checked": "2026-10-22"
    }
   },

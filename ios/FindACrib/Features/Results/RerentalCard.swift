@@ -66,7 +66,7 @@ struct RerentalCard: View {
             VStack(alignment: .leading, spacing: BuildingCard.rowGap) {
                 VStack(alignment: .leading, spacing: BuildingCard.headGap) {
                     if let kicker { Text(kicker).font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85) }
-                    Text(f.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(2).minimumScaleFactor(0.8)
+                    Text(f.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(3).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("card-address")
 

@@ -138,14 +138,14 @@ def board_slice(listing, size=1500):
     url, frag = listing["href"].split("#:~:text=", 1)
     text = listing_page.text_of(url, render=True) or ""
     low = text.lower()
-    for needle in (listing.get("address") or "", urllib.parse.unquote(frag).split(",")[0]):
+    for needle in (listing.get("address_src") or listing.get("address") or "", urllib.parse.unquote(frag).split(",")[0]):
         i = low.find(needle.lower().strip()) if needle.strip() else -1
         if i >= 0:
             block = text[i:i + size]
             # Stop at the next listing: an address line that is not this one.
             # The same building's other units (Fifth Ave's 551 Warren 2H, 2J,
             # 3G) stay, they are one table.
-            own = re.sub(r"[^a-z0-9]", "", (listing.get("address") or needle).lower())[:10]
+            own = re.sub(r"[^a-z0-9]", "", (listing.get("address_src") or listing.get("address") or needle).lower())[:10]
             for m in NEXT_ADDRESS.finditer(block, 40):
                 if re.sub(r"[^a-z0-9]", "", m.group(1).lower())[:10] != own:
                     return block[:m.start()]

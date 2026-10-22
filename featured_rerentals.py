@@ -40,6 +40,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import rerental_address
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 RERENTALS = os.path.join(HERE, "rerental_pages.json")
 OUT = os.path.join(HERE, "featured.json")
@@ -1171,6 +1173,10 @@ def main():
     kept_img = save_images(records, args.apply)
     records = rank(records)[:args.limit]
     dropped_img = prune_images(records, args.apply)
+    # One card format: "Arris Grand · Brooklyn" / "445 Grand Avenue, Brooklyn,
+    # NY 11238" (owner, 2026-10-22). After every step above that matches on
+    # the agent's own address text, which stays in address_src.
+    rerental_address.tidy(records)
 
     today = datetime.date.today().isoformat()
     data = {"generated": today,

@@ -150,7 +150,7 @@ AGE_RATING = {
     "unrestrictedWebAccess": False, "userGeneratedContent": True,
     "ageRatingOverride": "NONE",
 }
-EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED")
+EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY")
 
 
 def refuse_if_frozen() -> None:

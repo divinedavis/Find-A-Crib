@@ -14,11 +14,11 @@ endpoint is gone): find or create the draft submission for iOS, add the
 version as an item, PATCH submitted=true. A version with an existing
 submission in UNRESOLVED_ISSUES is a rejection — use resubmit.py for that.
 
-Ship a new version without a rebuild: POST /appStoreVersions with the new
-versionString, then attach the newest TestFlight build. Proved 2026-09-09:
-1.0.1 accepted build 24 whose CFBundleShortVersionString is still 1.0, and
-Apple copied description, keywords, screenshots and the review contact from
-1.0 onto it.
+A build must carry the version's own CFBundleShortVersionString. 1.0.1
+once took build 24 (still 1.0) on 2026-09-09, but only because 1.0 was
+never approved; 1.3.4 with build 153 (1.3.3) was rejected within a minute,
+2026-10-21: ITMS-90062, "must contain a higher version than that of the
+previously approved version [1.3.3]". Bump MARKETING_VERSION and rebuild.
 """
 from __future__ import annotations
 import sys
@@ -37,6 +37,8 @@ def preflight(asc, ids):
     b = asc.get(f"/appStoreVersions/{ids['version']}/build").get("data")
     row(b and b["attributes"]["processingState"] == "VALID", f"build attached ({b['attributes']['version'] if b else '-'})")
     row(b and b["attributes"].get("usesNonExemptEncryption") is not None, "export compliance answered on the build")
+    pre = asc.get(f"/builds/{b['id']}/preReleaseVersion")["data"]["attributes"]["version"] if b else None
+    row(pre == ids["version_string"], f"build is stamped {pre}, the version being submitted (ITMS-90062 otherwise)")
     loc = asc.get(f"/appStoreVersionLocalizations/{ids['version_loc']}")["data"]["attributes"]
     for k in ("description", "keywords", "supportUrl"):
         row(loc.get(k), k)

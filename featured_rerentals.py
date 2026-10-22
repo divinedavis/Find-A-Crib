@@ -506,7 +506,7 @@ def looks_like(address, text):
     return hits >= 2 or (hits >= 1 and num and num in low)
 
 
-def resolve_by_click(page, records, page_url, limit=10):
+def resolve_by_click(page, records, page_url, limit=30):
     """Cards with no link anywhere: press one and see where the site goes.
 
     afny.org and iaffordny.com render their boards as an Angular grid — the card
@@ -518,6 +518,9 @@ def resolve_by_click(page, records, page_url, limit=10):
 
     Each click is verified against the address and rolled back, and the whole
     thing is best-effort: anything unexpected leaves the record on its board.
+    The cap was 10 until 2026-10-22, when iAfford's board had 15 tiles and the
+    last ones (465 West 163, 654 Madison) stayed on the board with no income;
+    each click is ~4 s, so 30 costs about two minutes on a full board.
     """
     todo = [r for r in records if r["href_kind"] == "agent_page" and r.get("probe")][:limit]
     fixed = 0

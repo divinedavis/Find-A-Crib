@@ -132,8 +132,11 @@ echo "==> Xcode Organizer: what real phones reported for recent builds"
 "${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/organizer_report.py || echo "warning: Organizer report unavailable (App Store Connect API)"
 
 if [[ "${SHIP_SKIP_SMOKE:-0}" == "1" ]]; then echo "==> skipping smoke test"; else
+  # One sim at a time: shut each smoke sim before booting the next.
   echo "==> smoke-testing a launch on iPhone"; SIMULATOR_ID="$IPHONE_SIM" ./scripts/smoke_test.sh
+  xcrun simctl shutdown "$IPHONE_SIM" 2>/dev/null || true
   echo "==> smoke-testing a launch on iPad"; SIMULATOR_ID="$IPAD_SIM" ./scripts/smoke_test.sh
+  xcrun simctl shutdown "$IPAD_SIM" 2>/dev/null || true
 fi
 
 current=$(grep -m1 'CURRENT_PROJECT_VERSION:' "$PROJECT_YML" | sed -E 's/.*"([0-9]+)".*/\1/')

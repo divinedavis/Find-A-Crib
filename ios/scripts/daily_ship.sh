@@ -33,7 +33,9 @@ notify() {
 }
 # Any other project's or session's build. Bracketed patterns so this script
 # never matches itself.
-busy() { ps -axo command | grep -qE "[x]codebuild (test|archive|build|-)|[s]cripts/ship\.sh|[a]ltool --upload"; }
+# No grep -q: under pipefail it exits on the first match, ps dies of SIGPIPE
+# and busy reads "not busy" (both nightly builds ran at once, 2026-10-23).
+busy() { ps -axo command | grep -E "[x]codebuild (test|archive|build|-)|[s]cripts/ship\.sh|[a]ltool --upload" >/dev/null; }
 past_cutoff() { (( 10#$(date +%H) >= 9 )); }
 
 say "=== daily build"

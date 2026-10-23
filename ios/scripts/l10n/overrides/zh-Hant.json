@@ -395,5 +395,12 @@
   "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : "Westchester尚未收錄在App中——請在findacrib.com查看揚克斯和Westchester地圖",
   "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price." : "這裡的每棟樓都是租金穩定房——Find A Crib只顯示這些。請在下方選擇區域，或用「篩選」設定臥室數和價格。",
   "Use an email you check — alerts and your password reset go there." : "請使用您常看的電子郵件——提醒和重設密碼郵件都會寄到那裡。",
-  "Did you mean %@? We fixed it — tap Create account again." : "您是想輸入%@嗎？我們已幫您改好——請再點一次「建立帳戶」。"
+  "Did you mean %@? We fixed it — tap Create account again." : "您是想輸入%@嗎？我們已幫您改好——請再點一次「建立帳戶」。",
+  "%@ at %@" : "%1$@ %2$@",
+  "Delete for you" : "僅為自己刪除",
+  "More reactions" : "更多回應",
+  "React %@" : "用%@回應",
+  "Reactions" : "回應",
+  "Reactions: %@" : "回應：%@",
+  "Unsend" : "收回"
 }

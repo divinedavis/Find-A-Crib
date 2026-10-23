@@ -529,5 +529,14 @@
  "Every building here is rent-stabilized — that’s all Find A Crib shows. Pick an area below, or use Filters for bedrooms and price.": "이곳의 모든 건물은 임대료 안정화 건물입니다 — Find A Crib는 이런 건물만 보여 줍니다. 아래에서 지역을 고르거나 필터로 침실 수와 가격을 정하세요.",
  "Find A Crib doesn’t cover %@ yet.": "Find A Crib는 아직 %@ 지역을 지원하지 않습니다.",
  "Use an email you check — alerts and your password reset go there.": "자주 확인하는 이메일을 쓰세요 — 알림과 비밀번호 재설정 메일이 그곳으로 갑니다.",
- "Did you mean %@? We fixed it — tap Create account again.": "%@을(를) 입력하려던 건가요? 고쳐 두었어요 — 계정 만들기를 다시 탭하세요."
+ "Did you mean %@? We fixed it — tap Create account again.": "%@을(를) 입력하려던 건가요? 고쳐 두었어요 — 계정 만들기를 다시 탭하세요.",
+ "%@ at %@": "%1$@ %2$@",
+ "Delete for you": "나에게서 삭제",
+ "React %@": "%@ 반응 남기기",
+ "Reactions": "반응",
+ "Replied to %@": "%@에게 답장함",
+ "Unsend": "전송 취소",
+ "You replied to %@": "내가 %@에게 답장함",
+ "You replied to yourself": "내가 나에게 답장함",
+ "you": "나"
 }

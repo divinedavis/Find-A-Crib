@@ -396,62 +396,6 @@
         }
       }
     },
-    " — an HPD-approved marketing agent" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " — un agente de marketing aprobado por HPD"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " — HPD에 승인된 마케팅 에이전트"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " — HPD批准的营销代理商"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " — HPD批准的營銷代理"
-          }
-        }
-      }
-    },
-    " — the city's affordable-housing finance agency" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " — la agencia de financiación de viviendas asequibles de la ciudad"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " - 도시의 저렴한 주택 금융 기관"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " —该市的负担得起的住房金融机构"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " —該市的負擔得起的住房金融機構"
-          }
-        }
-      }
-    },
     "$%@ is %@%% %@ HUD's typical rent of $%@ for a %@ in %@." : {
       "localizations" : {
         "en" : {
@@ -795,6 +739,40 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "這裡是%1$@和%2$@——看看每個"
+          }
+        }
+      }
+    },
+    "%@ at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ at %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ a las %2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
           }
         }
       }
@@ -4738,6 +4716,34 @@
         }
       }
     },
+    "A message this phone can't read" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un mensaje que este teléfono no puede leer"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 전화로 읽을 수 없는 메시지"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "此手机无法读取此消息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "這部手機無法讀取的訊息"
+          }
+        }
+      }
+    },
     "A neighbor" : {
       "localizations" : {
         "es" : {
@@ -6188,6 +6194,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "公寓"
+          }
+        }
+      }
+    },
+    "App icon" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Icono de la aplicación"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "앱 아이콘"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "应用程序图标"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "應用程式圖示"
           }
         }
       }
@@ -7682,34 +7716,6 @@
         }
       }
     },
-    "Cafés within about half a mile, from Apple Maps." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cafés a menos de una milla y media, desde Apple Maps."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Apple 지도에서 약 반 마일 이내의 카페들."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "距离Apple地图约半英里内的咖啡馆。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "從Apple地圖開始，距離約半英里內的咖啡館。"
-          }
-        }
-      }
-    },
     "Call" : {
       "localizations" : {
         "es" : {
@@ -7874,6 +7880,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "取消"
+          }
+        }
+      }
+    },
+    "Cancel reply" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cancelar respuesta"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "답변 취소"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "取消回复"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "取消回覆"
           }
         }
       }
@@ -9836,6 +9870,34 @@
         }
       }
     },
+    "Couldn't unsend. Check your connection and try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo cancelar el envío. Comprueba tu conexión y inténtalo de nuevo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "송장을 취소할 수 없습니다. 연결 상태를 확인하고 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法取消发送。请检查您的连接，然后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "無法取消發送。請檢查您的連線並重試。"
+          }
+        }
+      }
+    },
     "County" : {
       "localizations" : {
         "es" : {
@@ -10402,6 +10464,34 @@
         }
       }
     },
+    "Delete for you" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar para ti"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나에게서 삭제"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅为自己删除"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅為自己刪除"
+          }
+        }
+      }
+    },
     "Delete my packet" : {
       "localizations" : {
         "es" : {
@@ -10594,6 +10684,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "描述你想要的公寓"
+          }
+        }
+      }
+    },
+    "Details" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Información interna"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상세 내용"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "内部消息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "細節"
           }
         }
       }
@@ -13563,34 +13681,6 @@
         }
       }
     },
-    "HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HUD FY2026 Alquileres de mercado justo en áreas pequeñas: la tarifa de referencia del vecindario, no el alquiler regulado de este edificio. Los alquileres estabilizados suelen estar mucho por debajo de ella."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HUD FY2026 소규모 지역 공정한 시장 임대료 - 이 건물의 규제된 임대료가 아니라 이웃의 통상적인 임대료입니다. 안정화된 임대료는 종종 그보다 훨씬 낮습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HUD FY2026小区域公平市场租金——这是附近地区的行情价格，而不是这栋楼的监管租金。稳定租金通常远低于这个价格。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "HUD FY2026小面積公平市場租金——該街區的行情價格，而不是這棟建築的監管租金。穩定的租金通常低於它。"
-          }
-        }
-      }
-    },
     "Harassment" : {
       "localizations" : {
         "es" : {
@@ -13895,6 +13985,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "隱藏回覆"
+          }
+        }
+      }
+    },
+    "Holiday app icons" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Iconos de aplicaciones de vacaciones"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "휴일 앱 아이콘"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "假期应用程序图标"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "假日應用程式圖示"
           }
         }
       }
@@ -15351,6 +15469,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在%@之前加入候選名單"
+          }
+        }
+      }
+    },
+    "Jump to the newest message" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ir al mensaje más reciente"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "최신 메시지로 건너뛰기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "跳转到最新的消息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "跳轉到最新訊息"
           }
         }
       }
@@ -17260,30 +17406,30 @@
         }
       }
     },
-    "Message your building" : {
+    "Message..." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escribe a tu edificio"
+            "state" : "needs_review",
+            "value" : "Mensaje..."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "건물에 메시지 보내기"
+            "state" : "needs_review",
+            "value" : "메시지..."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "给楼里的人发消息"
+            "state" : "needs_review",
+            "value" : "消息......"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "給樓裡的人傳訊息"
+            "state" : "needs_review",
+            "value" : "訊息..."
           }
         }
       }
@@ -17480,6 +17626,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "月租金"
+          }
+        }
+      }
+    },
+    "More reactions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Más reacciones"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "더 많은 반응들"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多回应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多回應"
           }
         }
       }
@@ -17875,34 +18049,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在%@附近"
-          }
-        }
-      }
-    },
-    "Nearest rent-stabilized buildings in the same neighborhood." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Los edificios más cercanos con alquiler estabilizado en el mismo barrio."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "같은 동네에서 가장 가까운 임대 안정화 건물들."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "同一街区的最近的租金稳定建筑。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "同一街區最近的租金穩定建築。"
           }
         }
       }
@@ -22470,6 +22616,118 @@
         }
       }
     },
+    "React %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reaccionar con %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 반응 남기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用%@回应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用%@回應"
+          }
+        }
+      }
+    },
+    "React with a heart" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reacciona con un corazón"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "하트 모양으로 반응하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用一颗心做出反应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用愛心回應"
+          }
+        }
+      }
+    },
+    "Reactions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reacciones"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "반응"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回應"
+          }
+        }
+      }
+    },
+    "Reactions: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reacciones: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "반응: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回应：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回應：%@"
+          }
+        }
+      }
+    },
     "Reading the listing…" : {
       "localizations" : {
         "es" : {
@@ -23562,6 +23820,34 @@
         }
       }
     },
+    "Replied to %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respondió a %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@에게 답장함"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "回复了%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "回覆了%@"
+          }
+        }
+      }
+    },
     "Reply" : {
       "localizations" : {
         "es" : {
@@ -23614,6 +23900,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "回覆%@"
+          }
+        }
+      }
+    },
+    "Replying to yourself" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Respondiendo a ti mismo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "자신에게 답장하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "回答自己"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "回覆自己"
           }
         }
       }
@@ -25369,34 +25683,6 @@
         }
       }
     },
-    "Shows details" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Muestra detalles"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "세부 정보 보기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "显示详细信息"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "顯示詳細資訊"
-          }
-        }
-      }
-    },
     "Sign in" : {
       "localizations" : {
         "es" : {
@@ -27058,34 +27344,6 @@
         }
       }
     },
-    "Tap a message to see when it was sent, or to report it." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Toca un mensaje para ver cuándo se envió o para denunciarlo."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "메시지를 탭하여 언제 전송되었는지 확인하거나 신고할 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "轻点消息查看何时发送，或报告该消息。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "點擊訊息以檢視其發送時間，或報告其。"
-          }
-        }
-      }
-    },
     "Tap a star to rate it on the App Store." : {
       "localizations" : {
         "es" : {
@@ -27166,6 +27424,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "點選任何建築物的心臟以將其保留在此處。"
+          }
+        }
+      }
+    },
+    "Tap to remove" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toca para eliminar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "클릭하여 제거하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "轻点以删除"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "點選以移除"
           }
         }
       }
@@ -27904,6 +28190,34 @@
         }
       }
     },
+    "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "El icono en tu pantalla de inicio muestra los colores de cada festividad, luego vuelve a la pantalla de inicio. iOS te indica cada vez que cambia."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "홈 화면의 아이콘은 각 휴일의 색상을 착용한 다음 다시 돌아갑니다. iOS는 변경되는 각 시점을 알려줍니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "主屏幕上的图标会显示每个节日的颜色，然后返回。iOS会告诉您每次更改的时间。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "主螢幕上的圖示會穿上每個節日的顏色，然後返回。iOS會告訴您每次更改時。"
+          }
+        }
+      }
+    },
     "The increase" : {
       "localizations" : {
         "es" : {
@@ -28598,30 +28912,30 @@
         }
       }
     },
-    "Today" : {
+    "Today %@" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Hoy"
+            "value" : "Hoy %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "오늘"
+            "value" : "오늘 %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "今天"
+            "value" : "今天%@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "今天"
+            "value" : "今天%@"
           }
         }
       }
@@ -29348,6 +29662,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "取消保存"
+          }
+        }
+      }
+    },
+    "Unsend" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anular envío"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전송 취소"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤回"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收回"
           }
         }
       }
@@ -30946,30 +31288,30 @@
         }
       }
     },
-    "Yesterday" : {
+    "Yesterday %@" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Ayer"
+            "value" : "Ayer %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "어제"
+            "value" : "어제 %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "昨天"
+            "value" : "昨天%@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "昨天"
+            "value" : "昨天%@"
           }
         }
       }
@@ -31082,6 +31424,62 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你有資格"
+          }
+        }
+      }
+    },
+    "You replied to %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Respondiste a %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내가 %@에게 답장함"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你回复了%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你回覆了%@"
+          }
+        }
+      }
+    },
+    "You replied to yourself" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Respondiste a ti mismo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내가 나에게 답장함"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你回答了自己"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你回答了自己"
           }
         }
       }
@@ -32456,13 +32854,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "%@/年起"
+            "value" : "从%@/年开始"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "%@/年起"
+            "value" : "從%@/年開始"
           }
         }
       }
@@ -33643,6 +34041,34 @@
         }
       }
     },
+    "you" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "tú"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你"
+          }
+        }
+      }
+    },
     "your account email" : {
       "localizations" : {
         "es" : {
@@ -33956,34 +34382,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "...或貼上租約的文字"
-          }
-        }
-      }
-    },
-    "⏱ First come, first served" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "⏱ Primero que llegues, primero que sirvas"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "⏱ 먼저 오시면 먼저 드립니다"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "⏱先到先得"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "⏱先到先得"
           }
         }
       }

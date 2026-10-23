@@ -1260,11 +1260,10 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
-    /// Building chat room (owner, 2026-10-19): day dividers, one header per
-    /// sender run, your runs on the left with the time in the trailing slot
-    /// and neighbors' on the right with it in the leading one (2026-10-23),
-    /// no "You" label, a typing bubble, and a
-    /// tap that reveals a message's details in a sheet — never a new page.
+    /// Building chat room in Instagram's layout (owner, 2026-10-23, from a
+    /// screen recording): yours on the right, neighbors' on the left; centred
+    /// time lines; a reply quote and a reaction; hold for reactions + menu;
+    /// swipe right to reply; Unsend; typing bubble; details in a sheet.
     func testBuildingChatRoomLayoutAndTyping() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo", "--chat-demo", "--tab", "casa"]
@@ -1275,22 +1274,55 @@ final class FindACribUITests: XCTestCase {
         let typing = app.descendants(matching: .any)["chat-typing"]
         XCTAssertTrue(typing.waitForExistence(timeout: 5), "someone typing shows a bubble")
         XCTAssertTrue(typing.label.contains("is typing"), typing.label)
-        let days = app.descendants(matching: .any).matching(identifier: "chat-day")
-        XCTAssertGreaterThanOrEqual(days.count, 2, "Yesterday and Today get dividers")
-        let times = app.descendants(matching: .any).matching(identifier: "chat-time").allElementsBoundByIndex
-        XCTAssertGreaterThanOrEqual(times.count, 3)
-        let right = times.map(\.frame.maxX).max() ?? 0, left = times.map(\.frame.minX).min() ?? 0
-        for t in times {
-            XCTAssertTrue(abs(t.frame.maxX - right) < 2 || abs(t.frame.minX - left) < 2,
-                          "every time sits in one of two slots: trailing (yours) or leading (a neighbor's)")
+        let stamps = app.descendants(matching: .any).matching(identifier: "chat-stamp")
+        XCTAssertGreaterThanOrEqual(stamps.count, 2, "Yesterday and Today get centred time lines")
+        func message(_ text: String) -> XCUIElement {
+            app.descendants(matching: .any).matching(identifier: "chat-message").matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
         }
-        XCTAssertFalse(app.staticTexts["You"].exists, "your messages carry no \"You\" label: the left side is yours")
+        let mine = message("Back on here"), theirs = message("Radiators are cold")
+        XCTAssertTrue(mine.exists && theirs.exists)
+        let mid = app.windows.firstMatch.frame.midX
+        XCTAssertGreaterThan(mine.frame.minX, mid - 60, "yours sit on the right: \(mine.frame)")
+        XCTAssertLessThan(theirs.frame.minX, 70, "a neighbor's sit on the left: \(theirs.frame)")
+        XCTAssertTrue(app.descendants(matching: .any)["chat-quote"].exists, "a reply shows what it answers")
+        XCTAssertTrue(app.buttons["chat-reactions"].exists, "a reaction sits under its bubble")
+        XCTAssertFalse(app.staticTexts["You"].exists, "your messages carry no \"You\" label")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "building-chat-room"; shot.lifetime = .keepAlways; add(shot)
-        app.descendants(matching: .any).matching(identifier: "chat-message").element(boundBy: 0).tap()
-        let detail = app.descendants(matching: .any)["chat-detail"]
-        XCTAssertTrue(detail.waitForExistence(timeout: 5), "tapping a message reveals its details")
+
+        // Hold a neighbor's message: reactions above, actions below.
+        theirs.press(forDuration: 0.6)
+        XCTAssertTrue(app.descendants(matching: .any)["chat-hold-menu"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["chat-menu-reply"].exists && app.buttons["chat-menu-report"].exists)
+        XCTAssertFalse(app.buttons["chat-menu-unsend"].exists, "only your own messages can be unsent")
+        let held = XCTAttachment(screenshot: app.screenshot()); held.name = "building-chat-hold"; held.lifetime = .keepAlways; add(held)
+        app.buttons["chat-react-😂"].tap()
+        XCTAssertTrue(app.buttons["chat-reactions"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.buttons.matching(identifier: "chat-reactions").count, 2, "the new reaction joins the earlier one")
+
+        // Swipe right to reply, then send.
+        let start = theirs.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 160, dy: 0)))
+        XCTAssertTrue(app.descendants(matching: .any)["chat-replying"].waitForExistence(timeout: 3), "swiping right starts a reply")
+        let input = app.textFields["chat-input"].exists ? app.textFields["chat-input"] : app.textViews["chat-input"]
+        input.tap(); input.typeText("Mine too")
+        app.buttons["chat-send"].tap()
+        let sent = message("Mine too")
+        XCTAssertTrue(sent.waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["chat-replying"].exists, "the reply bar clears once sent")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "chat-quote").count, 2)
+
+        // Unsend it.
+        sent.press(forDuration: 0.6)
+        XCTAssertTrue(app.buttons["chat-menu-unsend"].waitForExistence(timeout: 3))
+        app.buttons["chat-menu-unsend"].tap()
+        XCTAssertTrue(sent.waitForNonExistence(timeout: 3), "unsent messages leave the room")
+
+        // Details stay one sheet away.
+        theirs.press(forDuration: 0.6)
+        XCTAssertTrue(app.buttons["chat-menu-details"].waitForExistence(timeout: 3))
+        app.buttons["chat-menu-details"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["chat-detail"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["chat-detail-report"].exists, "with Report")
-        XCTAssertTrue(app.buttons["Close"].exists, "in a sheet over the room, not a new page")
     }
 
     /// Violations & inspections leads and About is the last section (owner,

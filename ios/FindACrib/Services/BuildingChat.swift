@@ -75,9 +75,33 @@ final class BuildingChat {
         let at: Date
         var mine: Bool
         var fromWeb = false        // sealed by a browser (findacrib.com), not a phone
+        var reply: Quote? = nil    // the message this one answers
     }
-    /// What travels inside the ciphertext.
-    struct Payload: Codable { let t: String; let n: String }
+    /// A neighbor's emoji on a message (owner, 2026-10-23, Instagram's
+    /// long-press reactions). One per person per message; the newest wins.
+    struct Reaction: Identifiable, Equatable {
+        let id: Int                // its own row, so its sender can delete it
+        let sender: String
+        let name: String
+        let emoji: String
+        var mine: Bool
+    }
+    /// What a reply carries of the message it answers, inside the ciphertext.
+    struct Quote: Codable, Equatable { let id: Int; let n: String; let t: String }
+    /// What travels inside the ciphertext. A reaction is a message of its
+    /// own (k = "react", to = the message, e = the emoji), so the server
+    /// can't tell it from text either; its `t` reads sensibly on builds
+    /// from before reactions, which show it as a line.
+    struct Payload: Codable {
+        let t: String
+        let n: String
+        var k: String? = nil
+        var to: Int? = nil
+        var e: String? = nil
+        var r: Quote? = nil
+    }
+    static let quickReactions = ["❤️", "😂", "😮", "😢", "🔥", "👍"]
+    static let moreReactions = ["🙏", "👏", "💯", "😍", "🎉", "😡", "🤔", "👀", "🙌", "😅", "🫶", "👎"]
 
     private struct Row: Codable {
         let id: Int
@@ -96,6 +120,11 @@ final class BuildingChat {
 
     let bbl: String
     private(set) var messages: [Message] = []
+    /// Reactions by the message they're on.
+    private(set) var reactionRows: [Reaction] = []
+    private var reactionTarget: [Int: Int] = [:]   // reaction row -> message
+    /// Messages this person hid with "Delete for you". Only on this phone.
+    private(set) var hidden: Set<Int> = []
     private(set) var joined = false
     private(set) var loading = false
     private(set) var memberCount = 0
@@ -125,7 +154,11 @@ final class BuildingChat {
     static var savedName: String { UserDefaults.standard.string(forKey: nameKey) ?? "" }
     static func termsKey(_ bbl: String) -> String { "chat.terms.\(bbl)" }
 
-    init(bbl: String) { self.bbl = bbl }
+    init(bbl: String) {
+        self.bbl = bbl
+        hidden = Set(UserDefaults.standard.array(forKey: Self.hiddenKey(bbl)) as? [Int] ?? [])
+    }
+    static func hiddenKey(_ bbl: String) -> String { "chat.hidden.\(bbl)" }
 
     private var me: String? { auth?.session?.user.id.uuidString.lowercased() }
     private var db: SupabaseClient? { auth?.client }
@@ -152,9 +185,12 @@ final class BuildingChat {
             Message(id: 1, sender: "a", name: "Maria, 4B", text: "Is the heat out for anyone else?", at: at(y, 19, 2), mine: false),
             Message(id: 2, sender: "a", name: "Maria, 4B", text: "Radiators are cold on the 4th floor.", at: at(y, 19, 3), mine: false),
             Message(id: 3, sender: "b", name: "Devon", text: "Same in 2A. I called 311.", at: at(y, 19, 20), mine: false, fromWeb: true),
-            Message(id: 4, sender: "me", name: "You", text: "Back on here this morning 👍", at: now.addingTimeInterval(-600), mine: true),
+            Message(id: 4, sender: "me", name: "You", text: "Back on here this morning 👍", at: now.addingTimeInterval(-600), mine: true,
+                    reply: Quote(id: 3, n: "Devon", t: "Same in 2A. I called 311.")),
             Message(id: 5, sender: "c", name: "Neighbor", text: nil, at: now.addingTimeInterval(-300), mine: false),
         ]
+        reactionRows = [Reaction(id: 6, sender: "a", name: "Maria, 4B", emoji: "❤️", mine: false)]
+        reactionTarget = [6: 4]
         joined = true; memberCount = 4
         typing = ["Maria, 4B"]
     }
@@ -218,8 +254,9 @@ final class BuildingChat {
             let bl: [B] = (try? await db.from("chat_blocks").select("blocked").execute().value) ?? []
             blocked = Set(bl.map { $0.blocked.lowercased() })
             let rows: [Row] = try await db.from("chat_messages").select().eq("bbl", value: bbl)
-                .order("id", ascending: false).limit(100).execute().value
-            messages = rows.reversed().map(decode)
+                .order("id", ascending: false).limit(150).execute().value
+            messages = []; reactionRows = []; reactionTarget = [:]
+            for r in rows.reversed() { take(r) }
             error = nil
         } catch { self.error = String(localized: "Couldn't load messages. Pull down to try again.") }
     }
@@ -233,32 +270,78 @@ final class BuildingChat {
         device.map { "\(sender.lowercased()):\($0)" } ?? sender.lowercased()
     }
 
-    private func decode(_ r: Row) -> Message {
+    /// Opens a row and files it as a message or a reaction.
+    private func take(_ r: Row) {
         let sender = r.sender.lowercased()
-        var text: String?, name = String(localized: "Neighbor")
+        var p: Payload?
         if let me, let pub = keys[Self.senderKeyID(sender: sender, device: r.sender_device)],
            let data = try? ChatCrypto.open(.init(salt: r.salt, ciphertext: r.ciphertext, keys: r.keys), bbl: bbl,
-                                           myID: me, mine: ChatCrypto.identity(), senderKey: pub),
-           let p = try? JSONDecoder().decode(Payload.self, from: data) {
-            text = p.t; name = p.n.isEmpty ? name : p.n
+                                           myID: me, mine: ChatCrypto.identity(), senderKey: pub) {
+            p = try? JSONDecoder().decode(Payload.self, from: data)
         }
-        return Message(id: r.id, sender: sender, name: name, text: text, at: r.created_at, mine: sender == me,
-                       fromWeb: r.sender_device != nil)
+        let name = p.map { $0.n.isEmpty ? String(localized: "Neighbor") : String($0.n.prefix(40)) } ?? String(localized: "Neighbor")
+        if let p, p.k == "react", let to = p.to, let e = p.e, Self.isReaction(e) {
+            addReaction(Reaction(id: r.id, sender: sender, name: name, emoji: e, mine: sender == me), to: to)
+            return
+        }
+        guard !messages.contains(where: { $0.id == r.id }) else { return }
+        messages.append(Message(id: r.id, sender: sender, name: name, text: p?.t, at: r.created_at, mine: sender == me,
+                                fromWeb: r.sender_device != nil, reply: p?.r.map { Quote(id: $0.id, n: String($0.n.prefix(40)), t: String($0.t.prefix(160))) }))
+    }
+
+    /// One emoji, nothing else: a reaction can't smuggle a sentence.
+    nonisolated static func isReaction(_ e: String) -> Bool {
+        e.count == 1 && e.unicodeScalars.contains { $0.properties.isEmojiPresentation || $0.properties.isEmoji && $0.value > 0xFF }
+    }
+
+    private func addReaction(_ x: Reaction, to message: Int) {
+        // The newest from each person wins; an older one left behind is ignored.
+        if let old = reactionRows.firstIndex(where: { $0.sender == x.sender && reactionTarget[$0.id] == message }) {
+            guard reactionRows[old].id < x.id else { return }
+            reactionTarget[reactionRows[old].id] = nil
+            reactionRows.remove(at: old)
+        }
+        reactionRows.append(x); reactionTarget[x.id] = message
+    }
+
+    /// The reactions on a message, people you blocked left out.
+    func reactions(on id: Int) -> [Reaction] {
+        reactionRows.filter { reactionTarget[$0.id] == id && !blocked.contains($0.sender) }
+    }
+
+    /// A row is gone: an unsent message or a taken-back reaction.
+    func removed(_ id: Int) {
+        messages.removeAll { $0.id == id }
+        if reactionTarget[id] != nil { reactionTarget[id] = nil; reactionRows.removeAll { $0.id == id } }
     }
 
     private func goLive() async {
         guard let db, channel == nil else { return }
         let ch = db.channel("chat-\(bbl)")
         let inserts = ch.postgresChange(InsertAction.self, schema: "public", table: "chat_messages", filter: "bbl=eq.\(bbl)")
+        // Unsent messages and taken-back reactions. Realtime can't filter
+        // deletes and sends only the row id, so ids we don't hold are ignored.
+        let deletes = ch.postgresChange(DeleteAction.self, schema: "public", table: "chat_messages")
         channel = ch
         do { try await ch.subscribeWithError() } catch { return }
         listen = Task { [weak self] in
-            for await ins in inserts {
-                guard let self, let row = try? ins.decodeRecord(as: Row.self, decoder: Self.decoder) else { continue }
-                // A sender we don't have a key for yet joined after our last look.
-                if self.keys[Self.senderKeyID(sender: row.sender, device: row.sender_device)] == nil { await self.refresh(); continue }
-                if !self.messages.contains(where: { $0.id == row.id }) { self.messages.append(self.decode(row)) }
-                self.stoppedTyping(row.sender.lowercased())
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { @MainActor [weak self] in
+                    for await ins in inserts {
+                        guard let self, let row = try? ins.decodeRecord(as: Row.self, decoder: Self.decoder) else { continue }
+                        // A sender we don't have a key for yet joined after our last look.
+                        if self.keys[Self.senderKeyID(sender: row.sender, device: row.sender_device)] == nil { await self.refresh(); continue }
+                        self.take(row)
+                        self.stoppedTyping(row.sender.lowercased())
+                    }
+                }
+                group.addTask { @MainActor [weak self] in
+                    for await del in deletes {
+                        let v = del.oldRecord["id"]
+                        guard let self, let id = v?.intValue ?? v?.doubleValue.map({ Int($0) }) else { continue }
+                        self.removed(id)
+                    }
+                }
             }
         }
     }
@@ -332,23 +415,74 @@ final class BuildingChat {
         messages.last(where: { $0.sender == sender && $0.text != nil })?.name ?? String(localized: "A neighbor")
     }
 
-    /// Sends to everyone in the chat right now.
-    func send(_ text: String, name: String) async -> Bool {
+    /// Sends to everyone in the chat right now, as a reply when `replyTo` is set.
+    func send(_ text: String, name: String, replyTo: Message? = nil) async -> Bool {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty, t.count <= 2000, let db, me != nil else { return false }
+        guard !t.isEmpty, t.count <= 2000 else { return false }
         if ChatFilter.blocks(t) { error = String(localized: "That message breaks the chat rules and wasn't sent."); return false }
-        await refresh()   // every current member's key, so a newcomer can read it
+        let quote = replyTo.flatMap { m in m.text.map { Quote(id: m.id, n: m.mine ? String(name.prefix(40)) : m.name, t: String($0.prefix(160))) } }
+        if Self.isDemo {
+            messages.append(Message(id: (messages.map(\.id).max() ?? 0) + 100, sender: "me", name: name, text: t, at: Date(), mine: true, reply: quote))
+            return true
+        }
+        guard db != nil, me != nil else { return false }
         do {
-            let payload = try JSONEncoder().encode(Payload(t: t, n: String(name.prefix(40))))
-            let s = try ChatCrypto.seal(payload, bbl: bbl, from: ChatCrypto.identity(), to: keys)
-            try await db.from("chat_messages").insert(NewRow(bbl: bbl, salt: s.salt, ciphertext: s.ciphertext, keys: s.keys)).execute()
+            try await seal(Payload(t: t, n: String(name.prefix(40)), r: quote))
             userTyped("")
-            Analytics.shared.track("chat_send", ["bbl": bbl, "members": keys.count])
+            Analytics.shared.track("chat_send", ["bbl": bbl, "members": keys.count, "reply": quote != nil])
             return true
         } catch {
             self.error = String(localized: "Couldn't send. Check your connection and try again.")
             return false
         }
+    }
+
+    private func seal(_ p: Payload) async throws {
+        guard let db else { return }
+        await refresh()   // every current member's key, so a newcomer can read it
+        let s = try ChatCrypto.seal(try JSONEncoder().encode(p), bbl: bbl, from: ChatCrypto.identity(), to: keys)
+        try await db.from("chat_messages").insert(NewRow(bbl: bbl, salt: s.salt, ciphertext: s.ciphertext, keys: s.keys)).execute()
+    }
+
+    /// Reacts with `emoji`, replacing your earlier one; the same emoji again takes it back.
+    func react(_ m: Message, emoji: String, name: String) async {
+        guard Self.isReaction(emoji) else { return }
+        let old = reactions(on: m.id).first(where: \.mine)
+        if Self.isDemo {
+            if let old { removed(old.id) }
+            if old?.emoji != emoji {
+                addReaction(Reaction(id: (reactionRows.map(\.id).max() ?? 1000) + 1, sender: "me", name: name, emoji: emoji, mine: true), to: m.id)
+            }
+            return
+        }
+        guard let db else { return }
+        do {
+            if let old {
+                try await db.from("chat_messages").delete().eq("id", value: old.id).execute()
+                removed(old.id)
+            }
+            guard old?.emoji != emoji else { return }
+            try await seal(Payload(t: "Reacted \(emoji) to a message", n: String(name.prefix(40)), k: "react", to: m.id, e: emoji))
+            Analytics.shared.track("chat_react", ["bbl": bbl])
+        } catch { self.error = String(localized: "Couldn't send. Check your connection and try again.") }
+    }
+
+    /// Takes back one of your messages for everyone: the row is deleted on the server.
+    func unsend(_ m: Message) async {
+        guard m.mine else { return }
+        if Self.isDemo { removed(m.id); return }
+        guard let db, let me else { return }
+        do {
+            try await db.from("chat_messages").delete().eq("id", value: m.id).eq("sender", value: me).execute()
+            removed(m.id)
+            Analytics.shared.track("chat_unsend", ["bbl": bbl])
+        } catch { self.error = String(localized: "Couldn't unsend. Check your connection and try again.") }
+    }
+
+    /// Hides a message on this phone only; everyone else still sees it.
+    func hideForMe(_ m: Message) {
+        hidden.insert(m.id)
+        UserDefaults.standard.set(Array(hidden.suffix(500)), forKey: Self.hiddenKey(bbl))
     }
 
     /// Sends the plaintext of this one message to Find A Crib for review.

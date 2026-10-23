@@ -1982,31 +1982,62 @@ final class ChatCryptoTests: XCTestCase {
     }
 }
 
-/// Building chat layout + typing (owner, 2026-10-19): the six table rules
-/// applied to the room, and typing bubbles that come and go.
+/// Building chat layout + typing (owner, 2026-10-19; Instagram layout
+/// 2026-10-23): runs, time lines, reactions, typing bubbles.
 final class ChatLayoutTests: XCTestCase {
     private func msg(_ id: Int, _ sender: String, _ at: Date, text: String? = "hi") -> BuildingChat.Message {
         .init(id: id, sender: sender, name: sender.uppercased(), text: text, at: at, mine: false)
     }
 
-    func testRunsStackASendersMessagesAndSplitOnDays() {
+    func testRunsStackASendersMessagesAndStampGapsAndDays() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
         let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 12))!
         let y = cal.date(byAdding: .day, value: -1, to: now)!
         let ms = [msg(1, "a", y), msg(2, "a", y.addingTimeInterval(60)),          // one run
-                  msg(3, "a", y.addingTimeInterval(60 + 301)),                     // > 5 min: new header
+                  msg(3, "a", y.addingTimeInterval(60 + 301)),                     // > 5 min: new run, no time line
                   msg(4, "b", y.addingTimeInterval(400)),                          // other sender
-                  msg(5, "b", now)]                                                // new day
+                  msg(5, "b", now),                                                // new day: time line
+                  msg(6, "b", now.addingTimeInterval(3600))]                       // an hour's gap: time line
         let runs = ChatLayout.runs(ms, calendar: cal, now: now)
-        XCTAssertEqual(runs.map { $0.messages.map(\.id) }, [[1, 2], [3], [4], [5]])
-        XCTAssertEqual(runs.map(\.dayLabel), ["Yesterday", nil, nil, "Today"])
+        XCTAssertEqual(runs.map { $0.messages.map(\.id) }, [[1, 2], [3], [4], [5], [6]])
+        XCTAssertEqual(runs.map { $0.stamp != nil }, [true, false, false, true, true])
+        XCTAssertTrue(runs[0].stamp!.hasPrefix("Yesterday "), runs[0].stamp!)
+        XCTAssertTrue(runs[3].stamp!.hasPrefix("Today "), runs[3].stamp!)
     }
 
-    func testOlderDaysGetADateNotAWeekdayGuess() {
+    func testOlderStampsNameTheWeekdayThenTheDate() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
         let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 12))!
+        let wed = cal.date(from: DateComponents(year: 2026, month: 10, day: 15, hour: 22, minute: 7))!
+        XCTAssertTrue(ChatLayout.stamp(wed, calendar: cal, now: now).hasPrefix("Thu"), "this week: the weekday")
+        let sep = cal.date(from: DateComponents(year: 2026, month: 9, day: 22, hour: 3, minute: 35))!
+        XCTAssertTrue(ChatLayout.stamp(sep, calendar: cal, now: now).contains("Sep 22 at"))
         let old = cal.date(from: DateComponents(year: 2025, month: 12, day: 30, hour: 9))!
-        XCTAssertTrue(ChatLayout.dayLabel(old, calendar: cal, now: now).contains("2025"), "another year names the year")
+        XCTAssertTrue(ChatLayout.stamp(old, calendar: cal, now: now).contains("2025"), "another year names the year")
+    }
+
+    /// Reactions are sealed messages too (2026-10-23): one emoji only, and an
+    /// older build that only knows text + name still opens the payload.
+    func testReactionsAreOneEmojiAndOlderBuildsStillReadThem() throws {
+        for e in ["❤️", "😂", "👍", "🫶", "‼️"] { XCTAssertTrue(BuildingChat.isReaction(e), e) }
+        for e in ["", "a", "1", "❤️❤️", "hi ❤️", "#"] { XCTAssertFalse(BuildingChat.isReaction(e), e) }
+        let p = BuildingChat.Payload(t: "Reacted ❤️ to a message", n: "Maria", k: "react", to: 42, e: "❤️")
+        struct Old: Decodable { let t: String; let n: String }
+        let old = try JSONDecoder().decode(Old.self, from: JSONEncoder().encode(p))
+        XCTAssertEqual(old.t, "Reacted ❤️ to a message")
+        let reply = BuildingChat.Payload(t: "Same here", n: "Devon", r: .init(id: 7, n: "Maria", t: "Heat's out"))
+        XCTAssertEqual(try JSONDecoder().decode(Old.self, from: JSONEncoder().encode(reply)).t, "Same here")
+        let plain = String(decoding: try JSONEncoder().encode(BuildingChat.Payload(t: "hi", n: "A")), as: UTF8.self)
+        XCTAssertFalse(plain.contains("\"k\""), "plain text carries no reaction fields: \(plain)")
+    }
+
+    @MainActor func testDeleteForYouStaysOnThisPhone() {
+        let bbl = "3999999999"
+        UserDefaults.standard.removeObject(forKey: BuildingChat.hiddenKey(bbl))
+        let chat = BuildingChat(bbl: bbl)
+        chat.hideForMe(msg(9, "a", Date()))
+        XCTAssertEqual(BuildingChat(bbl: bbl).hidden, [9], "hidden again on the next open")
+        UserDefaults.standard.removeObject(forKey: BuildingChat.hiddenKey(bbl))
     }
 
     func testInitialsAndTypingLine() {

@@ -85,7 +85,7 @@ struct FindACribApp: App {
                 // rating ask; .inactive alone (a sign-in sheet, Control Center) does not.
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .background { wasBackgrounded = true }
-                    if phase == .active { KeyboardDismiss.install() }
+                    if phase == .active { KeyboardDismiss.install(); HolidayIcon.apply() }
                     if phase == .active, wasBackgrounded {
                         wasBackgrounded = false
                         Task { await LotteryFeed.shared.refresh() }

@@ -169,8 +169,17 @@ enum Skyline {
 
     static var skyTop: Color    { daytime ? Color(hex: 0x5AA6D1) : SE.navyDeep }
     static var skyBottom: Color { daytime ? Color(hex: 0xB4DDEE) : SE.navy }
-    static var far: Color       { daytime ? Color(hex: 0x9DBFC9) : Color(hex: 0x214F5C) }
-    static var near: Color      { daytime ? Color(hex: 0x4F8596) : SE.royal }
+    static var far: Color       { holidayFar ?? (daytime ? Color(hex: 0x9DBFC9) : Color(hex: 0x214F5C)) }
+    static var near: Color      { holiday?.accent ?? (daytime ? Color(hex: 0x4F8596) : SE.royal) }
+
+    /// On a holiday the landmarks are drawn in the day's colours: the front
+    /// row in the first colour that reads on the sky, the back row in the
+    /// next one (HolidayTheme.swift). Read once at launch.
+    static let holiday = HolidayCalendar.today
+    private static let holidayFar: Color? = holiday.map { h in
+        let dark = h.tab.filter { UIColor(hexString: $0).luminance < 0.7 }
+        return dark.count > 1 ? Color(hexString: dark[1]) : h.accent.opacity(0.6)
+    }
     /// Windows: lamps at night, glass catching the sky by day.
     static var lit: Color       { daytime ? Color.white.opacity(0.55) : SE.paleBlue }
     static var ground: Color    { daytime ? Color(hex: 0x6E97A3) : Color(hex: 0x1B4653) }

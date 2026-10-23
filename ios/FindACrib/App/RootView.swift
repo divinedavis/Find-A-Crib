@@ -143,9 +143,9 @@ struct PillTabBar: View {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
                         Text(tab.title).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(on ? SE.royal : SE.ink)
+                    .foregroundStyle(on ? (holiday?.onFill ?? SE.royal) : SE.ink)
                     .frame(width: itemWidth, height: 66)
-                    .background(on ? Color.white.opacity(0.7) : .clear)
+                    .background { if on { selectedFill } }
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -155,5 +155,16 @@ struct PillTabBar: View {
         }
         .padding(4)
         .lightGlass(in: Capsule())
+    }
+
+    /// Frosted white every day; on a holiday the day's colours fill the
+    /// selected pill (Marracat's tab bar, style B).
+    private let holiday = Skyline.holiday
+    @ViewBuilder private var selectedFill: some View {
+        if let holiday {
+            LinearGradient(colors: holiday.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+        } else {
+            Color.white.opacity(0.7)
+        }
     }
 }

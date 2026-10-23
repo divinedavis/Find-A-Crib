@@ -102,6 +102,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.divinedavis.findacrib
+        # The holiday Home Screen icons (AppIcon-<id>, scripts/holiday_app_icons.py
+        # --xcassets) go in as alternates; the App Store keeps AppIcon.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         # iPhone + iPad, one app (owner, 2026-09-22). Once an App Store
         # version ships with iPad, later versions cannot drop it (QA1623).
         TARGETED_DEVICE_FAMILY: "1,2"

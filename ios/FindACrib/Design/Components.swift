@@ -265,7 +265,7 @@ struct FloatingPill: View {
 private struct PillFill: ViewModifier {
     let fill: Color
     func body(content: Content) -> some View {
-        if fill == .white { content.lightGlass(in: Capsule()) }
+        if fill == .white { content.lightGlass(in: Capsule()).holidayGlow(in: Capsule()) }
         else { content.background(fill).clipShape(Capsule()).shadow(color: .black.opacity(0.18), radius: 8, y: 3) }
     }
 }
@@ -274,11 +274,27 @@ extension View {
     /// Clear Liquid Glass with a white tint so dark text stays readable over photos.
     @ViewBuilder func lightGlass<S: Shape>(in shape: S) -> some View {
         if #available(iOS 26.0, *) {
-            self.glassEffect(.regular.tint(.white.opacity(0.35)).interactive(), in: shape)
+            // Not .interactive(): on the tab bar that glass took the taps meant
+            // for its buttons, and Search/Profile stopped switching (daily
+            // build, 2026-10-23: testTabsSwitch and four more failed).
+            self.glassEffect(.regular.tint(.white.opacity(0.35)), in: shape)
         } else {
             self.background(.ultraThinMaterial, in: shape)
                 .overlay(shape.stroke(.white.opacity(0.6), lineWidth: 0.5))
                 .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
+        }
+    }
+}
+
+extension View {
+    /// On a holiday, a 2 pt ring in the day's colours round a glass pill and a
+    /// soft glow in its first colour, like Marracat's search bar.
+    @ViewBuilder func holidayGlow<S: Shape>(in shape: S) -> some View {
+        if let h = Skyline.holiday {
+            self.overlay(shape.strokeBorder(AngularGradient(colors: h.colors + [h.colors[0]], center: .center), lineWidth: 2).allowsHitTesting(false))
+                .shadow(color: h.accent.opacity(0.45), radius: 9)
+        } else {
+            self
         }
     }
 }

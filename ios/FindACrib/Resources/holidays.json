@@ -1,0 +1,802 @@
+{
+ "_about": "Holidays Find A Crib dresses up for: a copy of Marracat's list (scripts/sync_holidays.py), so both apps match on the same day. date: month + day, or the nth ISO weekday (1 = Monday) of the month (nth -1 = last), plus offset days. theme: the days around it (from/to) the splash, skyline, Map pill, tab bar and icon wear it; on overlapping days the shortest theme wins. icon_bands: [colour, weight] stripes behind the house on the Home Screen icon (AppIcon-<id>).",
+ "holidays": [
+  {
+   "id": "halloween",
+   "name": "Halloween",
+   "kind": "Holiday",
+   "rule": "October 31",
+   "date": {
+    "month": 10,
+    "day": 31
+   },
+   "theme": {
+    "from": -6,
+    "to": 0
+   },
+   "line": "HAPPY HALLOWEEN",
+   "disc": "#0A0A0A",
+   "mark": "moon.stars.fill",
+   "tab": [
+    "#F26B1D",
+    "#B84A0E"
+   ],
+   "icon_bands": [
+    [
+     "#F26B1D",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#F26B1D",
+     1
+    ]
+   ],
+   "icon": "AppIcon-halloween"
+  },
+  {
+   "id": "veterans",
+   "name": "Veterans Day",
+   "kind": "Federal holiday",
+   "rule": "November 11",
+   "date": {
+    "month": 11,
+    "day": 11
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "VETERANS DAY",
+   "disc": "#00205B",
+   "mark": "star.fill",
+   "tab": [
+    "#BF0A30",
+    "#00205B"
+   ],
+   "icon_bands": [
+    [
+     "#00205B",
+     1
+    ],
+    [
+     "#FFFFFF",
+     0.5
+    ],
+    [
+     "#BF0A30",
+     2
+    ],
+    [
+     "#FFFFFF",
+     0.5
+    ],
+    [
+     "#00205B",
+     1
+    ]
+   ],
+   "icon": "AppIcon-veterans"
+  },
+  {
+   "id": "thanksgiving",
+   "name": "Thanksgiving",
+   "kind": "Federal holiday",
+   "rule": "Fourth Thursday in November",
+   "date": {
+    "month": 11,
+    "weekday": 4,
+    "nth": 4
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "THANKSGIVING",
+   "disc": "#8A3B12",
+   "mark": "leaf.fill",
+   "tab": [
+    "#E8B000",
+    "#8A3B12",
+    "#C8781E"
+   ],
+   "icon_bands": [
+    [
+     "#E8B000",
+     1
+    ],
+    [
+     "#8A3B12",
+     2
+    ],
+    [
+     "#C8781E",
+     1
+    ]
+   ],
+   "icon": "AppIcon-thanksgiving"
+  },
+  {
+   "id": "black-friday",
+   "name": "Black Friday",
+   "kind": "Shopping day",
+   "rule": "Day after Thanksgiving",
+   "date": {
+    "month": 11,
+    "weekday": 4,
+    "nth": 4,
+    "offset": 1
+   },
+   "theme": {
+    "from": 0,
+    "to": 2
+   },
+   "line": "BLACK FRIDAY",
+   "disc": "#0A0A0A",
+   "mark": "tag.fill",
+   "tab": [
+    "#F2F2F2",
+    "#8C8C8C",
+    "#F2F2F2",
+    "#5A5A5A"
+   ],
+   "icon_bands": [
+    [
+     "#0A0A0A",
+     1
+    ]
+   ],
+   "icon": "AppIcon-black-friday"
+  },
+  {
+   "id": "cyber-monday",
+   "name": "Cyber Monday",
+   "kind": "Shopping day",
+   "rule": "Monday after Thanksgiving",
+   "date": {
+    "month": 11,
+    "weekday": 4,
+    "nth": 4,
+    "offset": 4
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "CYBER MONDAY",
+   "disc": "#1D4ED8",
+   "mark": "tag.fill",
+   "tab": [
+    "#1D4ED8",
+    "#60A5FA",
+    "#22D3EE"
+   ],
+   "icon_bands": [
+    [
+     "#1D4ED8",
+     1
+    ]
+   ],
+   "icon": "AppIcon-cyber-monday"
+  },
+  {
+   "id": "gift-guide",
+   "name": "Holiday Gift Guide",
+   "kind": "Season (Thanksgiving theme)",
+   "rule": "Nov 20 – Dec 20",
+   "date": {
+    "month": 11,
+    "day": 20
+   },
+   "theme": {
+    "from": 0,
+    "to": 28
+   },
+   "line": "GIFT GUIDE",
+   "disc": "#8A3B12",
+   "mark": "leaf.fill",
+   "tab": [
+    "#E8B000",
+    "#8A3B12",
+    "#C8781E"
+   ],
+   "icon_bands": [
+    [
+     "#E8B000",
+     1
+    ],
+    [
+     "#8A3B12",
+     2
+    ],
+    [
+     "#C8781E",
+     1
+    ]
+   ],
+   "icon": "AppIcon-gift-guide"
+  },
+  {
+   "id": "christmas",
+   "name": "Christmas",
+   "kind": "Federal holiday",
+   "rule": "December 25",
+   "date": {
+    "month": 12,
+    "day": 25
+   },
+   "theme": {
+    "from": -6,
+    "to": 0
+   },
+   "line": "HAPPY HOLIDAYS",
+   "disc": "#0F5132",
+   "mark": "gift.fill",
+   "tab": [
+    "#0F5132",
+    "#B3001B"
+   ],
+   "icon_bands": [
+    [
+     "#B3001B",
+     1
+    ],
+    [
+     "#0F5132",
+     2
+    ],
+    [
+     "#B3001B",
+     1
+    ]
+   ],
+   "icon": "AppIcon-christmas"
+  },
+  {
+   "id": "kwanzaa",
+   "name": "Kwanzaa",
+   "kind": "Cultural holiday",
+   "rule": "December 26 – January 1",
+   "date": {
+    "month": 12,
+    "day": 26
+   },
+   "theme": {
+    "from": 0,
+    "to": 4
+   },
+   "line": "KWANZAA",
+   "disc": "#0A0A0A",
+   "mark": "kinara",
+   "tab": [
+    "#C8102E",
+    "#3A3A3A",
+    "#007A3D"
+   ],
+   "icon_bands": [
+    [
+     "#C8102E",
+     1
+    ],
+    [
+     "#0A0A0A",
+     1
+    ],
+    [
+     "#007A3D",
+     1
+    ]
+   ],
+   "icon": "AppIcon-kwanzaa"
+  },
+  {
+   "id": "watch-night",
+   "name": "Watch Night / Freedom's Eve",
+   "kind": "Observance",
+   "rule": "December 31",
+   "date": {
+    "month": 12,
+    "day": 31
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "FREEDOM'S EVE",
+   "disc": "#141B3C",
+   "mark": "flame.fill",
+   "tab": [
+    "#2A3570",
+    "#141B3C",
+    "#E8B000"
+   ],
+   "icon_bands": [
+    [
+     "#2A3570",
+     1
+    ],
+    [
+     "#141B3C",
+     2
+    ],
+    [
+     "#E8B000",
+     1
+    ]
+   ],
+   "icon": "AppIcon-watch-night"
+  },
+  {
+   "id": "new-year",
+   "name": "New Year's Day",
+   "kind": "Federal holiday",
+   "rule": "January 1",
+   "date": {
+    "month": 1,
+    "day": 1
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "HAPPY NEW YEAR",
+   "disc": "#0A0A0A",
+   "mark": "sparkle",
+   "tab": [
+    "#C9A227",
+    "#3A3A3A"
+   ],
+   "icon_bands": [
+    [
+     "#C9A227",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#C9A227",
+     1
+    ]
+   ],
+   "effect": "fireworks",
+   "icon": "AppIcon-new-year"
+  },
+  {
+   "id": "mlk",
+   "name": "Martin Luther King Jr. Day",
+   "kind": "Federal holiday",
+   "rule": "Third Monday in January",
+   "date": {
+    "month": 1,
+    "weekday": 1,
+    "nth": 3
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "MLK DAY",
+   "disc": "#0A0A0A",
+   "mark": "bird.fill",
+   "tab": [
+    "#FFFFFF",
+    "#9A9A9A",
+    "#5A5A5A"
+   ],
+   "icon_bands": [
+    [
+     "#2B2B2B",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#2B2B2B",
+     1
+    ]
+   ],
+   "icon": "AppIcon-mlk"
+  },
+  {
+   "id": "bhm",
+   "name": "Black History Month",
+   "kind": "Observance",
+   "rule": "February",
+   "date": {
+    "month": 2,
+    "day": 1
+   },
+   "theme": {
+    "from": 0,
+    "to": 27
+   },
+   "line": "BLACK HISTORY MONTH",
+   "disc": "#0A0A0A",
+   "mark": null,
+   "tab": [
+    "#C8102E",
+    "#3A3A3A",
+    "#007A3D",
+    "#E8B000"
+   ],
+   "icon_bands": [
+    [
+     "#C8102E",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#007A3D",
+     1
+    ],
+    [
+     "#E8B000",
+     1
+    ]
+   ],
+   "icon": "AppIcon-bhm"
+  },
+  {
+   "id": "presidents",
+   "name": "Washington's Birthday (Presidents' Day)",
+   "kind": "Federal holiday",
+   "rule": "Third Monday in February",
+   "date": {
+    "month": 2,
+    "weekday": 1,
+    "nth": 3
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "PRESIDENTS' DAY",
+   "disc": "#00205B",
+   "mark": "star.fill",
+   "tab": [
+    "#BF0A30",
+    "#00205B"
+   ],
+   "icon_bands": [
+    [
+     "#BF0A30",
+     1
+    ],
+    [
+     "#00205B",
+     2
+    ],
+    [
+     "#BF0A30",
+     1
+    ]
+   ],
+   "icon": "AppIcon-presidents"
+  },
+  {
+   "id": "emancipation",
+   "name": "Emancipation Day (DC)",
+   "kind": "Observance",
+   "rule": "April 16",
+   "date": {
+    "month": 4,
+    "day": 16
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "EMANCIPATION DAY",
+   "disc": "#0A0A0A",
+   "mark": null,
+   "tab": [
+    "#C8102E",
+    "#3A3A3A",
+    "#C9A227"
+   ],
+   "icon_bands": [
+    [
+     "#C8102E",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#C9A227",
+     1
+    ]
+   ],
+   "icon": "AppIcon-emancipation"
+  },
+  {
+   "id": "malcolm-x",
+   "name": "Malcolm X Day",
+   "kind": "Observance",
+   "rule": "May 19",
+   "date": {
+    "month": 5,
+    "day": 19
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "MALCOLM X DAY",
+   "disc": "#0A0A0A",
+   "mark": null,
+   "tab": [
+    "#C8102E",
+    "#3A3A3A"
+   ],
+   "icon_bands": [
+    [
+     "#C8102E",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#C8102E",
+     1
+    ]
+   ],
+   "icon": "AppIcon-malcolm-x"
+  },
+  {
+   "id": "ald",
+   "name": "African Liberation Day",
+   "kind": "Observance",
+   "rule": "May 25",
+   "date": {
+    "month": 5,
+    "day": 25
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "AFRICA DAY",
+   "disc": "#0A0A0A",
+   "mark": null,
+   "tab": [
+    "#007A3D",
+    "#3A3A3A",
+    "#E8B000",
+    "#C8102E"
+   ],
+   "icon_bands": [
+    [
+     "#007A3D",
+     1
+    ],
+    [
+     "#0A0A0A",
+     2
+    ],
+    [
+     "#E8B000",
+     1
+    ],
+    [
+     "#C8102E",
+     1
+    ]
+   ],
+   "icon": "AppIcon-ald"
+  },
+  {
+   "id": "memorial",
+   "name": "Memorial Day",
+   "kind": "Federal holiday",
+   "rule": "Last Monday in May",
+   "date": {
+    "month": 5,
+    "weekday": 1,
+    "nth": -1
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "MEMORIAL DAY",
+   "disc": "#00205B",
+   "mark": "star.fill",
+   "tab": [
+    "#BF0A30",
+    "#00205B"
+   ],
+   "icon_bands": [
+    [
+     "#BF0A30",
+     0.4
+    ],
+    [
+     "#FFFFFF",
+     0.8
+    ],
+    [
+     "#00205B",
+     2
+    ],
+    [
+     "#FFFFFF",
+     0.8
+    ],
+    [
+     "#BF0A30",
+     0.4
+    ]
+   ],
+   "icon": "AppIcon-memorial"
+  },
+  {
+   "id": "juneteenth",
+   "name": "Juneteenth",
+   "kind": "Federal holiday",
+   "rule": "June 19",
+   "date": {
+    "month": 6,
+    "day": 19
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "JUNETEENTH",
+   "disc": "#3C3B6E",
+   "mark": "sun.max.fill",
+   "tab": [
+    "#3C3B6E",
+    "#B22234"
+   ],
+   "icon_bands": [
+    [
+     "#3C3B6E",
+     1
+    ],
+    [
+     "#B22234",
+     2
+    ],
+    [
+     "#3C3B6E",
+     1
+    ]
+   ],
+   "icon": "AppIcon-juneteenth"
+  },
+  {
+   "id": "july4",
+   "name": "Independence Day",
+   "kind": "Federal holiday",
+   "rule": "July 4",
+   "date": {
+    "month": 7,
+    "day": 4
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "FOURTH OF JULY",
+   "disc": "#00205B",
+   "mark": "sparkle",
+   "tab": [
+    "#BF0A30",
+    "#00205B"
+   ],
+   "icon_bands": [
+    [
+     "#BF0A30",
+     1
+    ],
+    [
+     "#FFFFFF",
+     0.5
+    ],
+    [
+     "#00205B",
+     2
+    ],
+    [
+     "#FFFFFF",
+     0.5
+    ],
+    [
+     "#BF0A30",
+     1
+    ]
+   ],
+   "icon": "AppIcon-july4"
+  },
+  {
+   "id": "labor",
+   "name": "Labor Day",
+   "kind": "Federal holiday",
+   "rule": "First Monday in September",
+   "date": {
+    "month": 9,
+    "weekday": 1,
+    "nth": 1
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "LABOR DAY",
+   "disc": "#00205B",
+   "mark": null,
+   "tab": [
+    "#BF0A30",
+    "#00205B"
+   ],
+   "icon_bands": [
+    [
+     "#BF0A30",
+     1
+    ],
+    [
+     "#00205B",
+     2
+    ],
+    [
+     "#BF0A30",
+     1
+    ]
+   ],
+   "icon": "AppIcon-labor"
+  },
+  {
+   "id": "indigenous",
+   "name": "Indigenous Peoples' Day",
+   "kind": "Federal holiday (Columbus Day)",
+   "rule": "Second Monday in October",
+   "date": {
+    "month": 10,
+    "weekday": 1,
+    "nth": 2
+   },
+   "theme": {
+    "from": 0,
+    "to": 0
+   },
+   "line": "INDIGENOUS PEOPLES' DAY",
+   "disc": "#0E7C7B",
+   "mark": null,
+   "tab": [
+    "#B5532F",
+    "#0E7C7B",
+    "#E8B000"
+   ],
+   "icon_bands": [
+    [
+     "#B5532F",
+     1
+    ],
+    [
+     "#0E7C7B",
+     2
+    ],
+    [
+     "#E8B000",
+     1
+    ]
+   ],
+   "icon": "AppIcon-indigenous"
+  }
+ ]
+}

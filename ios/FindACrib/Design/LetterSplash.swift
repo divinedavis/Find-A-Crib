@@ -23,6 +23,9 @@ struct LetterSplash: View {
     var holdUntil: () -> Bool = { true }
     /// Reduce Motion from the caller, so a launch flag can force it in tests.
     var forceReducedMotion = false
+    /// On a holiday (HolidayTheme.swift) the field takes the day's colour, the
+    /// letters glow in it and the day's line fades in under the word.
+    var holiday: Holiday? = HolidayCalendar.today
     static let readyTimeout = 3.5
 
     private static let word = Array("FIND A CRIB")
@@ -52,7 +55,8 @@ struct LetterSplash: View {
         GeometryReader { screen in
             let fit: CGFloat = wordWidth > 0 ? min(1.4, max(0.4, screen.size.width * Self.widthShare / wordWidth)) : 0.001
             ZStack {
-                Color("LaunchNavy").ignoresSafeArea()
+                (holiday?.background ?? Color("LaunchNavy")).ignoresSafeArea()
+                if holiday?.effect == "fireworks", !reduceMotion { Fireworks(colors: holiday!.colors + [.white]).ignoresSafeArea() }
                 HStack(spacing: 0) {
                     ForEach(Array(Self.word.enumerated()), id: \.offset) { i, ch in
                         letter(ch, index: i)
@@ -65,6 +69,14 @@ struct LetterSplash: View {
                 .scaleEffect(fit * (leaving ? 1.06 : 1))
                 .opacity(leaving ? 0 : 1)
                 .frame(width: screen.size.width, height: screen.size.height)
+                if let holiday {
+                    HolidayLine(holiday: holiday, size: min(16, screen.size.width * 0.04))
+                        .frame(width: screen.size.width * 0.86)
+                        .position(x: screen.size.width / 2, y: screen.size.height / 2 + 62)
+                        .opacity(shown == Self.word.count && !leaving ? 1 : 0)
+                        .animation(.easeOut(duration: 0.5), value: shown)
+                        .animation(.easeIn(duration: 0.35), value: leaving)
+                }
             }
         }
         .dynamicTypeSize(.large)
@@ -90,11 +102,14 @@ struct LetterSplash: View {
             .foregroundStyle(on ? Color.white : Color.white.opacity(0))
             // The glow is what makes a letter look struck rather than faded
             // in: teal at full strength as it lands, gone once it settles.
-            .shadow(color: SE.royal.opacity(on ? 0.35 : 0.95), radius: on ? 6 : 22)
+            .shadow(color: glow.opacity(on ? 0.35 : 0.95), radius: on ? 6 : 22)
             .offset(y: on ? 0 : 14)
             .scaleEffect(on ? 1 : 0.88, anchor: .bottom)
             .animation(.easeOut(duration: Self.letterDuration), value: on)
     }
+
+    /// Teal every day; the day's own colour on a holiday.
+    private var glow: Color { holiday.map { Color(hexString: $0.tab[0]) } ?? SE.royal }
 
     private func play() async {
         repeat {

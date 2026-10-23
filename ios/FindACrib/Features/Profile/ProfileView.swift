@@ -25,6 +25,7 @@ struct ProfileView: View {
     @State private var homeTool: HomeTool?
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
+    @AppStorage(HolidayIcon.settingKey) private var holidayIcons = true
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
     @State private var refreshing = false
     @State private var shareUsage = Analytics.shared.enabled
@@ -301,6 +302,23 @@ struct ProfileView: View {
                             Analytics.shared.enabled = on
                             if on { Analytics.shared.track("usage_optin") }
                         }
+                    }
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
+
+                    // The Home Screen icon in the day's colours on holidays,
+                    // on by default as on Marracat (owner, 2026-10-23).
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("App icon").font(.se(22, .bold))
+                        Toggle(isOn: $holidayIcons) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Holiday app icons").font(.se(18)).foregroundStyle(SE.ink)
+                                Text("The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                            }
+                        }
+                        .tint(SE.royal)
+                        .accessibilityIdentifier("profile-holiday-icons")
+                        .onChange(of: holidayIcons) { _, _ in HolidayIcon.apply() }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
 

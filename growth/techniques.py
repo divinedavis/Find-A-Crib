@@ -3649,6 +3649,41 @@ FROZEN_MAX_DEPTH = 3
 # truncated docroot reads NOT MEASURED here and is caught by
 # derived_building_facts and hub_direct_answers, which fail outright on one.
 FROZEN_FLOOR = 1_000
+# ── when "wholly frozen" stops meaning "retired" ────────────────────────────
+# A wholly-frozen tier is normally benign, which is why the class above is
+# counted and left green: on 2026-10-12, a healthy night, it held 23 of 49,323
+# pages — 0.05% — across 7 of 32 tiers (brief/ retired 2026-08-16; alerts/,
+# brand/, directory/, report-ready/, reset/, support/, which only
+# scripts/deploy_app.sh reaches). building/ was not among them, so the corpus
+# really is rewritten nightly and a frozen building/ means something.
+#
+# That stays true only while the class stays SMALL, and on 2026-10-21 it stopped
+# being guaranteed. This audit measures every page against the NEWEST page in
+# the docroot rather than against today, so that a night the whole pipeline
+# failed reports no freezes instead of 49,000 of them. That guard assumes ONE
+# whole-corpus writer: if it does not run, nothing is newer than anything else
+# and the spread collapses. growth/section8_refresh.py (commit 5ceeb4d) is a
+# SECOND writer — live on cron-rentmap-scrape while the growth build carries
+# #PAUSED-20261012 — and it writes six URLs under /section8/ every night. It
+# holds `newest` at tonight on its own, so the corpus the main build has stopped
+# writing gets measured against it and comes back as tens of thousands of
+# permanently-frozen pages: green, and labelled as retired sections and app
+# shells that nothing ever checked.
+#
+# Reproduced against this function before it was fixed: 1,200 building pages at
+# 2026-10-12 beside six /section8/ pages at 2026-10-23 returned ok True,
+# abandoned_tiers 0, and "wholly frozen, nothing rebuilds these at all (retired
+# tiers and the app shells this loop cannot deploy): building/ 1200 of 1,200".
+#
+# So the SHARE of the corpus decides which sentence is true, and the margin is
+# wide on purpose: 0.05% observed on a healthy night against the ~96% a stopped
+# corpus build produces. Above this, a mostly-frozen corpus beside a handful of
+# fresh pages is not a set of retired sections — the build that writes it has
+# stopped, and that is a finding that fails. Below it, the old label is accurate
+# and nothing changes. A permanently red audit still carries no information,
+# and this cannot become one: the total-failure case is unreachable here,
+# because when nothing wrote tonight nothing is stale and this never fires.
+FROZEN_CORPUS_PCT = 25
 
 
 def _loc_path(loc):
@@ -3949,6 +3984,11 @@ def t_frozen_pages(ctx):
     tonight, or not written tonight. Either way a page's age is measured against
     the newest page in the docroot, never against today's date, so a night the
     whole pipeline failed reports no freezes rather than 49,000 of them.
+    THAT GUARD HOLDS ONLY WHILE ONE WRITER
+    OWNS THE WHOLE CORPUS, and since 2026-10-21 a second, narrow one does not:
+    see FROZEN_CORPUS_PCT for the share that tells a stopped build apart from a
+    set of retired sections, which is the difference between this audit's two
+    sentences and between green and red.
     """
     pages = _dup_docroot_pages(ctx.docroot)
     deep = notindex = 0
@@ -4002,9 +4042,30 @@ def t_frozen_pages(ctx):
     partial.sort(key=lambda r: (-r[0], r[1]))
     whole.sort(key=lambda r: (-r[0], r[1]))
 
+    # Read before the detail line is built, because it decides which of this
+    # audit's two explanations for a frozen tier is true. See FROZEN_CORPUS_PCT.
+    frozen_n = sum(r[0] for r in partial + whole)
+    frozen_pct = round(100.0 * frozen_n / len(seen), 1)
+    stopped = frozen_pct >= FROZEN_CORPUS_PCT
+
     detail = (f"page ages across {len(seen):,} published pages in {len(tiers)} tier"
               f"{'' if len(tiers) == 1 else 's'} (newest written {newest.isoformat()}; "
               f"frozen = older than {cutoff.isoformat()})")
+    if stopped:
+        fresh = sorted(name for name, t in tiers.items() if not t["stale"])
+        # The last night the stopped build ran: the freshest page in any tier it
+        # has abandoned. Read off the frozen tiers rather than from a clock, for
+        # the same reason `newest` is — nothing here trusts today's date.
+        built = max(t["newest"] for t in tiers.values() if t["stale"])
+        detail += (f" — THE BUILD THAT WRITES THIS CORPUS HAS STOPPED: {frozen_n:,} of "
+                   f"{len(seen):,} pages ({frozen_pct}%) were last written "
+                   f"{built.isoformat()}, {(newest - built).days}d before the newest page "
+                   f"on the site. Still written since: "
+                   + (", ".join(fresh[:FROZEN_SHOW])
+                      + (f", +{len(fresh) - FROZEN_SHOW} more"
+                         if len(fresh) > FROZEN_SHOW else "")
+                      if fresh else "nothing")
+                   + " — a pipeline failure, not a set of retired sections")
     if partial:
         detail += (" — TIERS BEING SILENTLY ABANDONED, some pages rebuilt tonight and some "
                    "months old: " + "; ".join(r[2] for r in partial[:FROZEN_SHOW]))
@@ -4027,8 +4088,10 @@ def t_frozen_pages(ctx):
                        + (f", +{len(partial_urls) - len(named)} more"
                           if len(partial_urls) > len(named) else ""))
     if whole:
-        detail += (" — wholly frozen, nothing rebuilds these at all (retired tiers and the "
-                   "app shells this loop cannot deploy): "
+        detail += ((" — wholly frozen, and NOT because these are retired sections: "
+                    if stopped else
+                    " — wholly frozen, nothing rebuilds these at all (retired tiers and the "
+                    "app shells this loop cannot deploy): ")
                    + "; ".join(r[2] for r in whole[:FROZEN_SHOW]))
         if len(whole) > FROZEN_SHOW:
             detail += f", +{len(whole) - FROZEN_SHOW} more"
@@ -4042,8 +4105,8 @@ def t_frozen_pages(ctx):
     if skipped:
         detail += " — skipped: " + ", ".join(skipped)
 
-    frozen_n = sum(r[0] for r in partial + whole)
-    return {"ok": not partial, "pages": len(seen), "frozen": frozen_n,
+    return {"ok": not partial and not stopped, "pages": len(seen), "frozen": frozen_n,
+            "frozen_pct": frozen_pct, "corpus_stopped": stopped,
             "abandoned_tiers": len(partial),
             # The evidence, not just the count — read by the daily review from
             # last_run.json. Capped the same way the detail line is.

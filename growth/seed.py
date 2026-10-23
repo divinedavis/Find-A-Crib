@@ -972,7 +972,31 @@ SEEDS = [
                "at FROZEN_NAME=10 because this detail is served in a web-facing report. Wholly "
                "frozen tiers are still counted and not named — 17 /brief/ URLs nightly would "
                "bury the one actionable line. Same defect class, same fix, as index_evicted on "
-               "2026-09-30: an instrument that counts a loss without naming it."),
+               "2026-09-30: an instrument that counts a loss without naming it.\n"
+               "2026-10-23 — REVISIT: CHANGED, because the guard that made the wholly-frozen "
+               "class safe to ignore stopped holding on 2026-10-21. Age is measured against the "
+               "NEWEST page in the docroot, never today, so a night the whole pipeline failed "
+               "reports no freezes instead of 49,000. That assumes ONE whole-corpus writer. "
+               "growth/section8_refresh.py (commit 5ceeb4d) is a second, narrow one: six URLs "
+               "under /section8/ every night from a live cron while the growth build carries "
+               "#PAUSED-20261012. Six fresh pages hold `newest` at tonight by themselves, so "
+               "the corpus the main build stopped writing is measured against them. Reproduced "
+               "against the function: 1,200 building pages at 2026-10-12 beside six /section8/ "
+               "pages at 2026-10-23 returned ok True, abandoned_tiers 0, and \'wholly frozen, "
+               "nothing rebuilds these at all (retired tiers and the app shells this loop "
+               "cannot deploy): building/ 1200 of 1,200\' — a cause the audit had never "
+               "checked, asserted over 99.5% of the corpus, in green. The hypothesis still "
+               "earns its place (it is the only instrument that reads page AGE, and it cashed "
+               "its pre-registration on 2026-09-28), so this is a change and not a "
+               "replacement: FROZEN_CORPUS_PCT=25 now tells the two sentences apart. Calibrated "
+               "against the real baseline in last_run.json for 2026-10-12, the last night the "
+               "engine ran — 23 frozen pages of 49,323 across 7 of 32 tiers, building/ absent, "
+               "0.05% — against the ~96% a stopped corpus build produces. It does not make the "
+               "audit permanently red: when nothing wrote tonight nothing is stale and this "
+               "never fires, so the total-failure case the original guard protects is "
+               "unreachable from here. The general lesson is the 10-22 one arriving from the "
+               "other side: a guard built on \'nothing else writes here\' is defeated by the "
+               "first thing that does, and the loop added that writer itself."),
     dict(slug="voucher_reach", status="active", kind="indexing",
          name="Put the nightly voucher feed on the pages Google actually crawls",
          prefixes=[], metric="organic_visitors",

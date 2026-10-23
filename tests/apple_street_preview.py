@@ -136,6 +136,22 @@ def main():
    page.goto('https://unrelated.example/')
    assert not page.evaluate('AppleStreetPreview.enabled')
    assert not errors, errors
-   print(f'PASS {name}: token setup, isolated frames, lazy initialization, concurrency, cleanup, coverage errors, hostname gating',flush=True)
+   # A phone that churns through DIFFERENT photos (2026-10-23: five previews
+   # in 3.3 s, a fresh WebGL document each, and the page died) starts at
+   # most three in ten seconds, whichever photos they are.
+   phone=browser.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True) if name=='chromium' else None
+   if phone:
+    tp=phone.new_page();tp.route('http://localhost/**',app);tp.route('https://cdn.apple-mapkit.com/**',sdk)
+    tp.add_init_script("window.APPLE_MAPS_TOKEN='test.web.token'")
+    tp.goto('http://localhost/?photos=apple')
+    tp.evaluate("()=>{window.steps=[];window.facTrace=s=>steps.push(s);}")
+    for i in range(5):
+     tp.evaluate("""(i)=>{const host=document.getElementById('tiles');host.innerHTML=[0,1].map(k=>'<div class="tile">'+AppleStreetPreview.html({lat:40+(i*2+k)/100,lng:-73,a:'Churn'})+'</div>').join('');AppleStreetPreview.watch(host);}""",i)
+     tp.wait_for_timeout(250)
+    mounts=tp.evaluate("steps.filter(s=>s.startsWith('la:mount')).length")
+    assert mounts<=3, f'a phone should start at most 3 previews in 10 s, got {mounts}: {tp.evaluate("steps")}'
+    assert tp.evaluate("steps.some(s=>s.startsWith('la:budget'))"), tp.evaluate('steps')
+    phone.close()
+   print(f'PASS {name}: token setup, isolated frames, lazy initialization, concurrency, cleanup, coverage errors, hostname gating{", phone mount budget" if phone else ""}',flush=True)
    browser.close()
 if __name__=='__main__':main()

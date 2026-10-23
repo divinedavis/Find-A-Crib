@@ -369,11 +369,21 @@ USER_SIGNIN_MISTAKES = re.compile(r"invalid login credentials", re.I)
 # Cancel on Google's consent page: GoTrue gets access_denied with no
 # description and builds before the 10/19 fix showed it as an error.
 GOOGLE_DECLINED = re.compile(r"unspecified error_description", re.I)
+APPLE_UNAVAILABLE = re.compile(r"AuthorizationError error 1000\b")
 
 
 def app_failures(rows, skip_builds=frozenset()):
     """iPhone app rows that record a failure the user saw."""
     out = defaultdict(lambda: {"n": 0, "people": set(), "last": ""})
+    # Apple's 1000 after the app's own retry is the phone, not the app: no
+    # Apple Account in Settings or Screen Time limits, and the app already
+    # says so and offers Google or email. One person tapping three times
+    # (2026-10-22, build 154, while others signed in with Apple fine) was the
+    # whole of a digest's "app failures". Two or more people is a pattern
+    # worth reading (2026-09-19's half-presented sheet), so it stays.
+    apple_1000 = {r["visitor_id"] for r in rows
+                  if r["event"] == "signin" and (r.get("props") or {}).get("provider") == "apple"
+                  and APPLE_UNAVAILABLE.search((r.get("props") or {}).get("text") or "")}
     for r in rows:
         p = r.get("props") or {}
         if p.get("platform") != "ios":
@@ -390,6 +400,9 @@ def app_failures(rows, skip_builds=frozenset()):
             if USER_SIGNIN_MISTAKES.search(p.get("text") or ""):
                 continue
             if p.get("provider") == "google" and GOOGLE_DECLINED.search(p.get("text") or ""):
+                continue
+            if (len(apple_1000) == 1 and p.get("provider") == "apple"
+                    and APPLE_UNAVAILABLE.search(p.get("text") or "")):
                 continue
             label = f"Sign-in failed ({p.get('provider') or '?'})"
         elif ev == "purchase" and p.get("result") in ("error", "unverified"):

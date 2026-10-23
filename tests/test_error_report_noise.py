@@ -47,3 +47,21 @@ def test_cancel_on_googles_consent_page_is_not_an_app_failure():
     r = signin("Error in URL with unspecified error_description.")
     r["props"]["provider"] = "google"
     assert not E.app_failures([r])
+
+
+APPLE_1000 = "The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"
+
+
+def apple(visitor):
+    r = signin(APPLE_1000)
+    r["props"]["provider"], r["visitor_id"] = "apple", visitor
+    return r
+
+
+def test_one_phone_without_sign_in_with_apple_is_not_an_app_failure():
+    assert not E.app_failures([apple("v1"), apple("v1"), apple("v1")])
+
+
+def test_two_people_with_apple_1000_still_count():
+    out = E.app_failures([apple("v1"), apple("v2")])
+    assert out["Sign-in failed (apple)"]["n"] == 2

@@ -27,6 +27,13 @@
   // mounts MAX_REMOUNTS times inside REMOUNT_WINDOW sits out PARK_MS, then
   // gets a fresh try.
   const MAX_REMOUNTS = 4, REMOUNT_WINDOW = 10000, PARK_MS = 15000;
+  // The same loop spread over several photos (2026-10-23): a phone scrolling
+  // its results mounted five different previews in 3.3 s, each torn down the
+  // moment it was ready, and died on the fifth. Per-photo counting never saw
+  // it. A touch device starts at most TOUCH_BUDGET previews per window,
+  // whichever photos they are; the rest wait for the window to roll.
+  const TOUCH_BUDGET = 3, TOUCH_WINDOW = 10000;
+  let touchMounts = [], budgetTimer = null;
   const observers = new Map();
   // Steps for index.html's crash trace: how many previews were live when a
   // page died. Absent (tests, other pages) it is a no-op.
@@ -46,9 +53,13 @@
     // detail sheet's one photo is left to its own teardown (release() after
     // the sheet closes); pruning it here got there first.
     const mounted = [...records.values()].filter(r => r.view);
+    // Torn down once it leaves the observer's margin, not the moment it is
+    // off screen: a photo that loaded just below the fold and was destroyed
+    // on "ready" reloaded on the next scroll, a fresh WebGL document each
+    // time (2026-10-23). MAX_MOUNTED still caps how many stay.
     if (TOUCH) {
       for (const record of mounted) {
-        if (record.root && !onScreen(record) && !record.loading && !record.view.openDialog) destroy(record);
+        if (record.root && !record.visible && !onScreen(record) && !record.loading && !record.view.openDialog) destroy(record);
       }
     }
     // Elsewhere, retain a few offscreen previews so small scrolls don't
@@ -159,8 +170,18 @@
       // scroll rather than taking a slot again.
       if (prefetch && (record.needsVisible
           || [...records.values()].filter(r => r.loading && !onScreen(r)).length >= 2)) break;
-      queue.shift(); record.queued = false;
       const now = Date.now();
+      if (TOUCH) {
+        touchMounts = touchMounts.filter(t => now - t < TOUCH_WINDOW);
+        if (touchMounts.length >= TOUCH_BUDGET) {
+          if (!budgetTimer) {
+            trace('la:budget ' + live());
+            budgetTimer = setTimeout(() => { budgetTimer = null; drain(); }, TOUCH_WINDOW - (now - touchMounts[0]) + 50);
+          }
+          break;
+        }
+      }
+      queue.shift(); record.queued = false;
       record.mounts = (record.mounts || []).filter(t => now - t < REMOUNT_WINDOW);
       if (record.mounts.length >= MAX_REMOUNTS) {
         record.parked = true;
@@ -173,6 +194,7 @@
         continue;
       }
       record.mounts.push(now);
+      if (TOUCH) touchMounts.push(now);
       loading++;
       // Safari does not run an iframe that is off screen: a preview started
       // below the fold never reports back, held its slot until the 45 s

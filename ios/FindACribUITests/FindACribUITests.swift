@@ -1261,7 +1261,9 @@ final class FindACribUITests: XCTestCase {
     }
 
     /// Building chat room (owner, 2026-10-19): day dividers, one header per
-    /// sender run with the time in the trailing slot, a typing bubble, and a
+    /// sender run, your runs on the left with the time in the trailing slot
+    /// and neighbors' on the right with it in the leading one (2026-10-23),
+    /// no "You" label, a typing bubble, and a
     /// tap that reveals a message's details in a sheet — never a new page.
     func testBuildingChatRoomLayoutAndTyping() throws {
         app.terminate()
@@ -1277,8 +1279,12 @@ final class FindACribUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(days.count, 2, "Yesterday and Today get dividers")
         let times = app.descendants(matching: .any).matching(identifier: "chat-time").allElementsBoundByIndex
         XCTAssertGreaterThanOrEqual(times.count, 3)
-        let right = times.map { $0.frame.maxX }
-        XCTAssertLessThan((right.max() ?? 0) - (right.min() ?? 0), 2, "every time sits in the same trailing slot")
+        let right = times.map(\.frame.maxX).max() ?? 0, left = times.map(\.frame.minX).min() ?? 0
+        for t in times {
+            XCTAssertTrue(abs(t.frame.maxX - right) < 2 || abs(t.frame.minX - left) < 2,
+                          "every time sits in one of two slots: trailing (yours) or leading (a neighbor's)")
+        }
+        XCTAssertFalse(app.staticTexts["You"].exists, "your messages carry no \"You\" label: the left side is yours")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "building-chat-room"; shot.lifetime = .keepAlways; add(shot)
         app.descendants(matching: .any).matching(identifier: "chat-message").element(boundBy: 0).tap()
         let detail = app.descendants(matching: .any)["chat-detail"]

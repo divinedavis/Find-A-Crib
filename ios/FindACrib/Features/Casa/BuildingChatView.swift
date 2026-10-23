@@ -207,24 +207,33 @@ struct BuildingChatView: View {
         .accessibilityIdentifier("chat-day")
     }
 
-    /// RANK + STACK + SLOT: one header per run — initials, name, then the
-    /// time in the trailing slot — and the run's messages below it.
+    /// RANK + STACK + SLOT: one header per run and the run's messages below
+    /// it. Yours sit on the left with no name or initials and the time in the
+    /// trailing slot; a neighbor's sit on the right under their initials and
+    /// name, with the time in the leading slot (owner, 2026-10-23: "I
+    /// understand that bubbles on the left are from me").
     private func runView(_ run: ChatLayout.Run, wide: Bool) -> some View {
         let first = run.messages[0]
-        return VStack(alignment: .leading, spacing: 4) {
+        let time = Text(first.at.formatted(date: .omitted, time: .shortened))
+            .font(.se(13)).monospacedDigit().foregroundStyle(SE.ink3)
+            .accessibilityIdentifier("chat-time")
+        return VStack(alignment: first.mine ? .leading : .trailing, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(ChatLayout.initials(first.mine ? String(localized: "You") : first.name))
-                    .font(.se(12, .bold)).foregroundStyle(first.mine ? .white : SE.royal)
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(first.mine ? SE.royal : SE.royal.opacity(0.12)))
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
-                    .accessibilityHidden(true)
-                Text(first.mine ? String(localized: "You") : first.name)
-                    .font(.se(15, .semibold)).foregroundStyle(SE.ink).lineLimit(1)
-                Spacer(minLength: 8)
-                Text(first.at.formatted(date: .omitted, time: .shortened))
-                    .font(.se(13)).monospacedDigit().foregroundStyle(SE.ink3)
-                    .accessibilityIdentifier("chat-time")
+                if first.mine {
+                    Spacer(minLength: 8)
+                    time
+                } else {
+                    time
+                    Spacer(minLength: 8)
+                    Text(first.name)
+                        .font(.se(15, .semibold)).foregroundStyle(SE.ink).lineLimit(1)
+                    Text(ChatLayout.initials(first.name))
+                        .font(.se(12, .bold)).foregroundStyle(SE.royal)
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(SE.royal.opacity(0.12)))
+                        .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+                        .accessibilityHidden(true)
+                }
             }
             ForEach(run.messages) { m in bubble(m, wide: wide).id(m.id) }
         }
@@ -244,8 +253,9 @@ struct BuildingChatView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(detail?.id == m.id && wide ? SE.royal : .clear, lineWidth: 2))
         }
         .buttonStyle(.plain)
-        .padding(.leading, 34)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(m.mine ? .trailing : .leading, 60)
+        .padding(.trailing, m.mine ? 0 : 34)
+        .frame(maxWidth: .infinity, alignment: m.mine ? .leading : .trailing)
         .contextMenu {
             if !m.mine {
                 Button(String(localized: "Report"), systemImage: "flag") { reporting = m }
@@ -260,13 +270,15 @@ struct BuildingChatView: View {
 
     /// Someone is writing: their bubble shows up before their message does.
     private var typingBubble: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        // A neighbor typing: on their side, the right.
+        VStack(alignment: .trailing, spacing: 4) {
             TypingDots()
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
             Text(ChatLayout.typingLine(chat.typing)).font(.se(13)).foregroundStyle(SE.ink3)
         }
-        .padding(.leading, 34).padding(.top, 10)
+        .padding(.trailing, 34).padding(.top, 10)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("chat-typing")

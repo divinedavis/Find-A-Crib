@@ -4,7 +4,8 @@
 Two throwaway accounts (internal, deleted at the end — that cascades their
 members/devices/messages rows) open the same building's chat in two browsers:
 both join, A types and B sees A's typing bubble, A sends and B reads it
-(decrypted in B's browser with B's own device key), B replies and A reads it.
+(decrypted in B's browser with B's own device key), B replies and A reads it;
+B reacts, A replies with a quote, A unsends it and it leaves B's room live.
 The page under test is the LOCAL casa/index.html + static/chat/*, routed in
 place of findacrib.com, against the live database and Realtime.
 
@@ -127,11 +128,46 @@ def main():
                 check(True, "A reads B's reply")
             except Exception:
                 check(False, "A reads B's reply")
-            names = pa.locator(".fc-name").all_inner_texts()
-            check("You" in names and "Bea" in names, f"run headers name the sender and 'You' ({names})")
-            check(pa.locator("[data-testid=chat-day]").first.inner_text() == "Today", "today's messages sit under a Today divider")
-            pa.locator("[data-testid=chat-message]", has_text="hi Alex").click()
-            check(pa.locator("[data-testid=chat-detail]").is_visible(), "tapping a message reveals its details")
+            # Instagram layout (2026-10-23): yours right, theirs left, no "You".
+            mine = pa.locator("[data-testid=chat-message]", has_text="hey neighbor").bounding_box()
+            theirs = pa.locator("[data-testid=chat-message]", has_text="hi Alex").bounding_box()
+            check(mine and theirs and mine["x"] > theirs["x"] + 100, "yours sit right, a neighbor's left")
+            whos = pa.locator(".fc-who").all_inner_texts()
+            check("Bea" in whos and "You" not in whos, f"a neighbor's run is named, yours isn't ({whos})")
+            check(pa.locator("[data-testid=chat-stamp]").first.inner_text().lower().startswith("today"), "a centred Today time line")
+            # B reacts to A's message from the hold menu; A sees it live.
+            pb.locator("[data-testid=chat-message]", has_text="hey neighbor").click(button="right")
+            pb.locator("[data-testid=chat-react-🔥]").click()
+            try:
+                pa.locator("[data-testid=chat-reactions]").wait_for(timeout=15000)
+                check("🔥" in pa.locator("[data-testid=chat-reactions]").first.inner_text(), "A sees B's reaction under the message")
+            except Exception:
+                check(False, "A sees B's reaction under the message")
+            check(pb.locator("[data-testid=chat-message]").count() == 2, "a reaction isn't a message of its own")
+            # A replies to B's message; B sees the quote.
+            pa.locator("[data-testid=chat-message]", has_text="hi Alex").click(button="right")
+            pa.locator("[data-testid=chat-menu-reply]").click()
+            check(pa.locator("[data-testid=chat-replying]").is_visible(), "Reply opens the Replying to bar")
+            pa.locator("[data-testid=chat-input]").fill("same here")
+            pa.locator("[data-testid=chat-input]").press("Enter")
+            try:
+                pb.locator("[data-testid=chat-quote]", has_text="hi Alex").wait_for(timeout=15000)
+                check(True, "B sees A's reply quoting B's message")
+            except Exception:
+                check(False, "B sees A's reply quoting B's message")
+            # A unsends it; it leaves B's room live.
+            pa.locator("[data-testid=chat-message]", has_text="same here").click(button="right")
+            check(pa.locator("[data-testid=chat-menu-unsend]").is_visible(), "Unsend on your own message")
+            pa.locator("[data-testid=chat-menu-unsend]").click()
+            try:
+                pb.locator("[data-testid=chat-message]", has_text="same here").wait_for(state="detached", timeout=15000)
+                check(True, "an unsent message leaves the other browser live")
+            except Exception:
+                check(False, "an unsent message leaves the other browser live")
+            # Details from the menu: a side panel when wide, a sheet when narrow.
+            pa.locator("[data-testid=chat-message]", has_text="hi Alex").click(button="right")
+            pa.locator("[data-testid=chat-menu-details]").click()
+            check(pa.locator("[data-testid=chat-detail]").is_visible(), "Details reveals a message's details")
             check(pa.locator("[data-testid=chat-detail-report]").is_visible(), "with Report, for someone else's message")
             box = pa.locator("[data-testid=chat-detail]").bounding_box()
             check(box and box["width"] <= 320 and box["x"] > 600, "a wide chat shows details in a side panel")

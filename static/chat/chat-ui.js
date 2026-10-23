@@ -7,11 +7,20 @@
  *   FacBuildingChat.open({ bbl, address, client })   // client = supabase-js
  *
  * Everything people typed is put on the page with textContent, never HTML.
+ *
+ * Instagram's direct-message layout (owner, 2026-10-23, from a screen
+ * recording), in Find A Crib's colours, the same as the app: yours on the
+ * right, neighbors' on the left; centred time lines; hold (or right-click)
+ * a bubble for reactions + Reply / Copy / Details / Delete for you / Unsend;
+ * double-click hearts it; swipe right on a phone to reply, left for times.
+ * Reactions and reply quotes ride inside the sealed payload (k/to/e, r).
  */
 (function () {
   'use strict';
   var C = window.FacChatCrypto;
-  var TYPING_EVERY = 2500, TYPING_SHOWN = 5000, RUN_GAP = 5 * 60 * 1000;
+  var TYPING_EVERY = 2500, TYPING_SHOWN = 5000, RUN_GAP = 5 * 60 * 1000, STAMP_GAP = 60 * 60 * 1000;
+  var QUICK = ['❤️', '😂', '😮', '😢', '🔥', '👍'];                       // = BuildingChat.quickReactions
+  var MORE = ['🙏', '👏', '💯', '😍', '🎉', '😡', '🤔', '👀', '🙌', '😅', '🫶', '👎'];
   var BLOCKED_WORDS = ['nigger', 'nigga', 'faggot', 'fag', 'kike', 'spic', 'chink', 'tranny', 'retard',
                        'kill yourself', 'kys', 'i will kill you', "i'll kill you"];   // = ChatFilter in BuildingChat.swift
   var REPORT_REASONS = ['Harassment or hate', 'Threat or violence', 'Spam or scam', 'Something else'];
@@ -35,25 +44,37 @@
 
   /* ---- layout rules (exported for tests) ---- */
   function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
-  function dayLabel(d, now) {
+  /* Instagram's time lines, as ChatLayout.stamp in the app. */
+  function stamp(d, now) {
     now = now || new Date();
-    if (sameDay(d, now)) return 'Today';
+    var time = clock(d);
+    if (sameDay(d, now)) return 'Today ' + time;
     var y = new Date(now); y.setDate(y.getDate() - 1);
-    if (sameDay(d, y)) return 'Yesterday';
-    var o = d.getFullYear() === now.getFullYear() ? { weekday: 'short', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' };
-    return d.toLocaleDateString('en-US', o);
+    if (sameDay(d, y)) return 'Yesterday ' + time;
+    var week = new Date(now); week.setHours(0, 0, 0, 0); week.setDate(week.getDate() - 6);
+    if (d >= week) return d.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' + time;
+    var o = d.getFullYear() === now.getFullYear() ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' };
+    return d.toLocaleDateString('en-US', o) + ' at ' + time;
   }
+  /* A sender's messages within 5 minutes stack as one run; a new day or an
+     hour's gap gets a centred time line. */
   function runs(ms, now) {
-    var out = [], cur = null, lastDay = null;
+    var out = [], cur = null, prev = null;
     ms.forEach(function (m) {
-      var day = m.at.toDateString(), label = null;
-      if (day !== lastDay) { label = dayLabel(m.at, now); lastDay = day; cur = null; }
+      var label = null;
+      if (!prev || !sameDay(prev.at, m.at) || m.at - prev.at >= STAMP_GAP) { label = stamp(m.at, now); cur = null; }
       if (!cur || cur.sender !== m.sender || m.at - cur.messages[cur.messages.length - 1].at > RUN_GAP) {
-        cur = { sender: m.sender, mine: m.mine, messages: [], dayLabel: label }; out.push(cur);
+        cur = { sender: m.sender, mine: m.mine, messages: [], stamp: label }; out.push(cur);
       }
-      cur.messages.push(m);
+      cur.messages.push(m); prev = m;
     });
     return out;
+  }
+  /* One emoji and nothing else, so a reaction can't carry a sentence. */
+  function isReaction(e) {
+    if (typeof e !== 'string' || !e || e.length > 16) return false;
+    var n = window.Intl && Intl.Segmenter ? Array.from(new Intl.Segmenter().segment(e)).length : Array.from(e).length;
+    return n === 1 && /\p{Extended_Pictographic}/u.test(e);
   }
   function initials(name) {
     var w = (name || '').split(/[^\p{L}\p{N}]+/u).filter(Boolean).slice(0, 2);
@@ -66,12 +87,15 @@
     return names.length + ' neighbors are typing…';
   }
   function clock(d) { return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
+  function hiddenKey(bbl) { return 'fac.chat.hidden.' + bbl; }
 
   /* ---- the chat ---- */
   function open(opts) {
     var sb = opts.client, bbl = opts.bbl, address = opts.address || 'your building';
-    var state = { me: null, myKey: null, ident: null, keys: {}, messages: [], blocked: {}, joined: false,
-                  members: 0, typers: {}, lastTyping: 0, detail: null, ch: null, typingCh: null, timer: null };
+    var state = { me: null, myKey: null, ident: null, keys: {}, messages: [], reactions: [], blocked: {}, joined: false,
+                  members: 0, typers: {}, lastTyping: 0, detail: null, ch: null, typingCh: null, timer: null,
+                  hidden: {}, replyTo: null, menu: null };
+    try { (JSON.parse(localStorage.getItem(hiddenKey(bbl)) || '[]') || []).forEach(function (id) { state.hidden[id] = true; }); } catch (e) {}
 
     var root = el('div', { class: 'fc-chat', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Building chat', 'data-testid': 'chat-sheet' });
     var back = el('div', { class: 'fc-chat-backdrop' }, [root]);
@@ -84,7 +108,10 @@
     var prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
     back.addEventListener('click', function (e) { if (e.target === back) close(); });
     document.addEventListener('keydown', onKey);
-    function onKey(e) { if (e.key === 'Escape') { if (state.detail) showDetail(null); else close(); } }
+    function onKey(e) {
+      if (e.key !== 'Escape') return;
+      if (state.menu) closeMenu(); else if (state.detail) showDetail(null); else if (state.replyTo) setReply(null); else close();
+    }
 
     function close() {
       stopLive(); document.removeEventListener('keydown', onKey);
@@ -180,10 +207,13 @@
           (rs[2].data || []).forEach(function (x) { state.blocked[x.blocked.toLowerCase()] = true; });
         });
       }).then(function () {
-        return sb.from('chat_messages').select('*').eq('bbl', bbl).order('id', { ascending: false }).limit(100);
+        return sb.from('chat_messages').select('*').eq('bbl', bbl).order('id', { ascending: false }).limit(150);
       }).then(function (r) {
         if (r.error) throw r.error;
-        return Promise.all(r.data.reverse().map(decode)).then(function (ms) { state.messages = ms; });
+        return Promise.all(r.data.reverse().map(decode)).then(function (ms) {
+          state.messages = []; state.reactions = [];
+          ms.forEach(take);
+        });
       });
     }
 
@@ -191,7 +221,8 @@
 
     function decode(row) {
       var sender = row.sender.toLowerCase();
-      var m = { id: row.id, sender: sender, name: 'Neighbor', text: null, at: new Date(row.created_at), mine: sender === state.me, fromWeb: !!row.sender_device };
+      var m = { id: row.id, sender: sender, name: 'Neighbor', text: null, at: new Date(row.created_at), mine: sender === state.me,
+                fromWeb: !!row.sender_device, reply: null, react: null };
       var pub = state.keys[senderKeyId(row)];
       if (!pub) return Promise.resolve(m);
       return C.open({ salt: row.salt, ciphertext: row.ciphertext, keys: row.keys }, bbl, state.myKey, state.ident.privateKey, pub)
@@ -199,62 +230,85 @@
           var p = JSON.parse(new TextDecoder().decode(bytes));
           if (typeof p.t === 'string') m.text = p.t;
           if (typeof p.n === 'string' && p.n) m.name = p.n.slice(0, 40);
+          if (p.k === 'react' && typeof p.to === 'number' && isReaction(p.e)) m.react = { to: p.to, emoji: p.e };
+          if (p.r && typeof p.r.id === 'number' && typeof p.r.t === 'string')
+            m.reply = { id: p.r.id, n: String(p.r.n || '').slice(0, 40), t: p.r.t.slice(0, 160) };
           return m;
         }, function () { return m; });
     }
 
+    /* A decoded row is either a message or a reaction on one. */
+    function take(m) {
+      if (m.react) {
+        // The newest from each person on a message wins.
+        var old = state.reactions.filter(function (x) { return x.sender === m.sender && x.to === m.react.to; })[0];
+        if (old && old.id > m.id) return;
+        if (old) state.reactions.splice(state.reactions.indexOf(old), 1);
+        state.reactions.push({ id: m.id, to: m.react.to, sender: m.sender, name: m.name, emoji: m.react.emoji, mine: m.mine });
+        return;
+      }
+      if (!state.messages.some(function (x) { return x.id === m.id; })) state.messages.push(m);
+    }
+    function reactionsOn(id) {
+      return state.reactions.filter(function (x) { return x.to === id && !state.blocked[x.sender]; });
+    }
+    /* A row is gone: an unsent message or a taken-back reaction. */
+    function removed(id) {
+      state.messages = state.messages.filter(function (m) { return m.id !== id; });
+      state.reactions = state.reactions.filter(function (x) { return x.id !== id; });
+      if (state.replyTo && state.replyTo.id === id) setReply(null);
+    }
+
     /* ---- the room ---- */
-    var scroll, col, typingBox, composer, input, sendBtn, errLine, detail, barCount;
+    var scroll, col, typingBox, composer, input, sendBtn, errLine, detail, barCount, replyBar, jump, roomEl;
     function room() {
       leaveBtn.hidden = false;
       barCount = el('span');
       scroll = el('div', { class: 'fc-scroll' });
       col = el('div', { class: 'fc-col' });
       scroll.appendChild(col);
-      input = el('textarea', { rows: '1', maxlength: '2000', placeholder: 'Message your building', 'aria-label': 'Message', 'data-testid': 'chat-input' });
-      sendBtn = el('button', { class: 'fc-send', type: 'button', 'aria-label': 'Send', 'data-testid': 'chat-send', disabled: true, text: '↑' });
+      input = el('textarea', { rows: '1', maxlength: '2000', placeholder: 'Message...', 'aria-label': 'Message', 'data-testid': 'chat-input' });
+      sendBtn = el('button', { class: 'fc-send', type: 'button', 'aria-label': 'Send', 'data-testid': 'chat-send', hidden: true, text: '↑' });
       errLine = el('div', { class: 'fc-err', hidden: true });
-      composer = el('div', { class: 'fc-compose' }, [input, sendBtn]);
+      replyBar = el('div', { class: 'fc-replying', hidden: true, 'data-testid': 'chat-replying' });
+      composer = el('div', { class: 'fc-compose' }, [el('div', { class: 'fc-field-wrap' }, [input, sendBtn])]);
+      jump = el('button', { class: 'fc-jump', type: 'button', hidden: true, 'aria-label': 'Jump to the newest message', 'data-testid': 'chat-jump', text: '↓',
+                            on: { click: function () { scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'smooth' }); } } });
       detail = el('aside', { class: 'fc-detail', hidden: true, 'aria-label': 'Message details', 'data-testid': 'chat-detail' });
-      var r = el('div', { class: 'fc-room' }, [
-        el('div', { class: 'fc-chat-bar' }, [lockLine(), barCount]), scroll, errLine, composer]);
-      setBody(el('div', { class: 'fc-chat-body', style: 'flex:1;min-height:0;position:relative' }, [r, detail]));
+      roomEl = el('div', { class: 'fc-room' }, [
+        el('div', { class: 'fc-chat-bar' }, [lockLine(), barCount]), scroll, jump, errLine, replyBar, composer]);
+      setBody(el('div', { class: 'fc-chat-body', style: 'flex:1;min-height:0;position:relative' }, [roomEl, detail]));
       input.addEventListener('input', function () {
         input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px';
-        sendBtn.disabled = !input.value.trim();
+        sendBtn.hidden = !input.value.trim();
         typed(input.value);
       });
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
       sendBtn.addEventListener('click', send);
+      scroll.addEventListener('scroll', function () { jump.hidden = nearBottom(); });
+      swipes();
       render(true);
       input.focus();
     }
 
-    function visible() { return state.messages.filter(function (m) { return !state.blocked[m.sender]; }); }
+    function nearBottom() { return scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 80; }
+    function visible() { return state.messages.filter(function (m) { return !state.blocked[m.sender] && !state.hidden[m.id]; }); }
+    function byId(id) { return state.messages.filter(function (m) { return m.id === id; })[0]; }
 
     function render(toBottom) {
       if (!col) return;
-      var nearBottom = toBottom || scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 80;
+      var stay = toBottom || nearBottom();
       barCount.textContent = state.members === 1 ? 'Just you so far' : state.members + ' neighbors';
       col.textContent = '';
       var ms = visible();
       if (!ms.length) col.appendChild(el('p', { class: 'fc-empty', 'data-testid': 'chat-empty', text: 'No messages yet. Say hello to your neighbors.' }));
       runs(ms).forEach(function (run) {
-        if (run.dayLabel) col.appendChild(el('div', { class: 'fc-day', 'data-testid': 'chat-day', role: 'separator', text: run.dayLabel }));
-        var first = run.messages[0], who = first.mine ? 'You' : first.name;
-        var box = el('div', { class: 'fc-run' + (first.mine ? ' mine' : '') }, [
-          el('div', { class: 'fc-run-head' }, [
-            el('span', { class: 'fc-av', 'aria-hidden': 'true', text: initials(who) }),
-            el('span', { class: 'fc-name', text: who }),
-            el('time', { class: 'fc-time', 'data-testid': 'chat-time', datetime: first.at.toISOString(), text: clock(first.at) })
-          ])
-        ]);
-        run.messages.forEach(function (m) {
-          var b = el('button', { type: 'button', class: 'fc-msg' + (m.text === null ? ' locked' : ''), 'data-testid': 'chat-message',
-                                 'aria-current': state.detail && state.detail.id === m.id ? 'true' : null,
-                                 text: m.text === null ? 'Sent before this browser joined, so it can’t be read here' : m.text });
-          b.addEventListener('click', function () { showDetail(m); });
-          box.appendChild(b);
+        if (run.stamp) col.appendChild(el('div', { class: 'fc-stamp', 'data-testid': 'chat-stamp', role: 'separator', text: run.stamp }));
+        var first = run.messages[0];
+        var box = el('div', { class: 'fc-run' + (first.mine ? ' mine' : '') });
+        if (!first.mine && !first.reply) box.appendChild(el('div', { class: 'fc-who', text: first.name }));
+        run.messages.forEach(function (m, i) {
+          box.appendChild(row(m, i === 0 && !m.reply, i === run.messages.length - 1));
         });
         col.appendChild(box);
       });
@@ -262,12 +316,188 @@
       var names = typingNames();
       if (names.length) {
         typingBox = el('div', { class: 'fc-typing', 'data-testid': 'chat-typing' }, [
-          el('span', { class: 'fc-dots', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]),
-          el('div', { class: 'fc-typing-line', text: typingLine(names) })
+          el('span', { class: 'fc-av', 'aria-hidden': 'true', text: initials(names[0]) }),
+          el('div', null, [
+            el('span', { class: 'fc-dots', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]),
+            el('div', { class: 'fc-typing-line', text: typingLine(names) })])
         ]);
         col.appendChild(typingBox);
       }
-      if (nearBottom) scroll.scrollTop = scroll.scrollHeight;
+      if (stay) scroll.scrollTop = scroll.scrollHeight;
+      jump.hidden = nearBottom();
+    }
+
+    /* One message: quote, bubble, reactions; initials beside a neighbor's
+       last bubble; hover tools; the time it slides out to. */
+    function row(m, first, last) {
+      var r = el('div', { class: 'fc-row' + (m.mine ? ' mine' : ''), 'data-id': String(m.id) });
+      if (!m.mine) r.appendChild(last ? el('span', { class: 'fc-av', 'aria-hidden': 'true', text: initials(m.name) }) : el('span', { class: 'fc-av-gap' }));
+      var stack = el('div', { class: 'fc-stack' });
+      if (m.reply) stack.appendChild(quote(m));
+      var b = el('button', { type: 'button', class: 'fc-msg' + (m.text === null ? ' locked' : '') + (first ? ' first' : '') + (last ? ' last' : ''),
+                             'data-testid': 'chat-message', 'aria-haspopup': 'menu',
+                             'aria-current': state.detail && state.detail.id === m.id ? 'true' : null,
+                             text: m.text === null ? 'Sent before this browser joined, so it can’t be read here' : m.text });
+      b.addEventListener('click', function (e) { if (e.detail === 0) openMenu(m, b); });   // keyboard Enter/Space
+      b.addEventListener('dblclick', function (e) { e.preventDefault(); if (m.text !== null) react(m, '❤️'); });
+      b.addEventListener('contextmenu', function (e) { e.preventDefault(); openMenu(m, b); });
+      holdToOpen(b, m);
+      stack.appendChild(b);
+      var rs = reactionsOn(m.id);
+      if (rs.length) {
+        var seen = {}, faces = rs.map(function (x) { return x.emoji; }).filter(function (x) { return seen[x] ? false : (seen[x] = true); }).slice(0, 3);
+        stack.appendChild(el('button', { type: 'button', class: 'fc-pill', 'data-testid': 'chat-reactions',
+                                         'aria-label': 'Reactions: ' + rs.map(function (x) { return x.emoji; }).join(' '),
+                                         on: { click: function () { showReactions(m); } } },
+                             [faces.join(''), rs.length > 1 ? el('span', { text: String(rs.length) }) : null]));
+      }
+      r.appendChild(stack);
+      if (m.text !== null) {
+        r.appendChild(el('div', { class: 'fc-tools' }, [
+          el('button', { type: 'button', 'aria-label': 'React', title: 'React', text: '☺', on: { click: function () { openMenu(m, b); } } }),
+          el('button', { type: 'button', 'aria-label': 'Reply', title: 'Reply', 'data-testid': 'chat-tool-reply', text: '↩', on: { click: function () { setReply(m); } } }),
+          el('button', { type: 'button', 'aria-label': 'More', title: 'More', 'data-testid': 'chat-tool-more', text: '⋯', on: { click: function () { openMenu(m, b); } } })
+        ]));
+      }
+      r.appendChild(el('time', { class: 'fc-stime', 'data-testid': 'chat-time', datetime: m.at.toISOString(), text: clock(m.at) }));
+      return r;
+    }
+
+    function quote(m) {
+      var orig = byId(m.reply.id), to = orig && orig.mine ? 'you' : (orig ? orig.name : m.reply.n);
+      var cap = m.mine ? (orig && orig.mine ? 'You replied to yourself' : 'You replied to ' + to) : 'Replied to ' + to;
+      return el('div', { class: 'fc-quote', 'data-testid': 'chat-quote' }, [
+        el('div', { class: 'fc-quote-cap', text: '↩ ' + cap }),
+        el('button', { type: 'button', class: 'fc-quote-text', text: m.reply.t, on: { click: function () {
+          var t = col.querySelector('.fc-row[data-id="' + m.reply.id + '"]');
+          if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('flash'); setTimeout(function () { t.classList.remove('flash'); }, 900); }
+        } } })
+      ]);
+    }
+
+    /* Touch: hold half a second for the menu. */
+    function holdToOpen(b, m) {
+      var t = null;
+      b.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'touch') return;
+        t = setTimeout(function () { t = null; if (navigator.vibrate) navigator.vibrate(10); openMenu(m, b); }, 450);
+      });
+      ['pointerup', 'pointercancel', 'pointerleave', 'pointermove'].forEach(function (ev) {
+        b.addEventListener(ev, function (e) { if (ev === 'pointermove' && Math.abs(e.movementX) + Math.abs(e.movementY) < 3) return; clearTimeout(t); t = null; });
+      });
+    }
+
+    /* Touch: swipe a bubble right to reply, the room left to see times. */
+    function swipes() {
+      var s = null;
+      scroll.addEventListener('touchstart', function (e) {
+        var r = e.target.closest && e.target.closest('.fc-row');
+        s = { x: e.touches[0].clientX, y: e.touches[0].clientY, row: r, dx: 0, horiz: null };
+      }, { passive: true });
+      scroll.addEventListener('touchmove', function (e) {
+        if (!s) return;
+        var dx = e.touches[0].clientX - s.x, dy = e.touches[0].clientY - s.y;
+        if (s.horiz === null && Math.abs(dx) + Math.abs(dy) > 10) s.horiz = Math.abs(dx) > Math.abs(dy) * 1.4;
+        if (!s.horiz) return;
+        s.dx = dx;
+        if (dx > 0 && s.row) s.row.style.transform = 'translateX(' + Math.min(dx * 0.75, 72) + 'px)';
+        else if (dx < 0) col.style.setProperty('--shift', Math.max(dx * 0.8, -64) + 'px');
+      }, { passive: true });
+      scroll.addEventListener('touchend', function () {
+        if (!s) return;
+        if (s.horiz && s.dx * 0.75 >= 56 && s.row) {
+          var m = byId(+s.row.dataset.id);
+          if (m && m.text !== null) { if (navigator.vibrate) navigator.vibrate(8); setReply(m); }
+        }
+        if (s.row) s.row.style.transform = '';
+        col.style.removeProperty('--shift');
+        s = null;
+      });
+    }
+
+    function setReply(m) {
+      state.replyTo = m;
+      if (!replyBar) return;
+      replyBar.textContent = '';
+      replyBar.hidden = !m;
+      if (!m) return;
+      replyBar.appendChild(el('div', { class: 'fc-replying-text' }, [
+        el('strong', { text: m.mine ? 'Replying to yourself' : 'Replying to ' + m.name }),
+        el('span', { text: m.text || '' })]));
+      replyBar.appendChild(el('button', { type: 'button', class: 'fc-replying-x', 'aria-label': 'Cancel reply', 'data-testid': 'chat-reply-cancel', text: '✕',
+                                          on: { click: function () { setReply(null); } } }));
+      input.focus();
+    }
+
+    /* Instagram's hold menu: the room blurs; reactions above the bubble,
+       actions below it. */
+    function openMenu(m, b) {
+      closeMenu();
+      var rect = b.getBoundingClientRect(), base = root.getBoundingClientRect();
+      var mineNow = reactionsOn(m.id).filter(function (x) { return x.mine; })[0];
+      var back = el('div', { class: 'fc-menu-back', 'data-testid': 'chat-hold-menu' });
+      var menu = el('div', { class: 'fc-menu' + (m.mine ? ' mine' : ''), role: 'menu', 'aria-label': 'Message actions' });
+      var more = el('div', { class: 'fc-emoji-more', hidden: true });
+      function face(e) {
+        return el('button', { type: 'button', role: 'menuitem', class: mineNow && mineNow.emoji === e ? 'on' : null,
+                              'aria-label': (mineNow && mineNow.emoji === e ? 'Remove ' : 'React ') + e, 'data-testid': 'chat-react-' + e, text: e,
+                              on: { click: function () { closeMenu(); react(m, e); } } });
+      }
+      if (m.text !== null) {
+        var bar = el('div', { class: 'fc-emoji' }, QUICK.map(face).concat([
+          el('button', { type: 'button', class: 'plus', 'aria-label': 'More reactions', 'data-testid': 'chat-react-more', text: '+',
+                         on: { click: function () { more.hidden = !more.hidden; } } })]));
+        MORE.forEach(function (e) { more.appendChild(face(e)); });
+        menu.appendChild(bar); menu.appendChild(more);
+      }
+      menu.appendChild(el('div', { class: 'fc-menu-bubble' + (m.mine && m.text !== null ? ' mine' : ''), text: m.text === null ? 'Sent before this browser joined' : m.text }));
+      var list = el('div', { class: 'fc-menu-list' }, [el('div', { class: 'fc-menu-time', text: stamp(m.at).toUpperCase() })]);
+      function item(label, id, fn, danger) {
+        list.appendChild(el('button', { type: 'button', role: 'menuitem', class: danger ? 'danger' : null, 'data-testid': id, text: label,
+                                        on: { click: function () { closeMenu(); fn(); } } }));
+      }
+      if (m.text !== null) {
+        item('Reply', 'chat-menu-reply', function () { setReply(m); });
+        if (navigator.clipboard) item('Copy', 'chat-menu-copy', function () { navigator.clipboard.writeText(m.text); });
+      }
+      item('Details', 'chat-menu-details', function () { showDetail(m); });
+      item('Delete for you', 'chat-menu-delete', function () { hideForMe(m); });
+      if (m.mine) item('Unsend', 'chat-menu-unsend', function () { unsend(m); }, true);
+      else {
+        item('Report', 'chat-menu-report', function () { showDetail(m); reportFlow(m); }, true);
+        item('Block ' + m.name, 'chat-menu-block', function () { block(m); }, true);
+      }
+      menu.appendChild(list);
+      back.appendChild(menu);
+      back.addEventListener('click', function (e) { if (e.target === back) closeMenu(); });
+      root.appendChild(back);
+      // Sit the bubble copy where the bubble was, kept on screen.
+      var top = rect.top - base.top - 60, h = menu.offsetHeight;
+      top = Math.max(12, Math.min(top, base.height - h - 12));
+      menu.style.top = top + 'px';
+      if (m.mine) menu.style.right = Math.max(12, base.right - rect.right) + 'px';
+      else menu.style.left = Math.max(12, rect.left - base.left) + 'px';
+      state.menu = back;
+      var firstBtn = menu.querySelector('button'); if (firstBtn) firstBtn.focus();
+    }
+    function closeMenu() { if (state.menu) { state.menu.remove(); state.menu = null; } }
+
+    function showReactions(m) {
+      state.detail = m;
+      detail.textContent = '';
+      detail.appendChild(el('button', { class: 'fc-chat-x fc-detail-close', type: 'button', text: 'Done', on: { click: function () { showDetail(null); } } }));
+      detail.appendChild(el('h3', { text: 'Reactions' }));
+      var ul = el('ul', { class: 'fc-reaction-list', 'data-testid': 'chat-reaction-list' });
+      reactionsOn(m.id).forEach(function (x) {
+        ul.appendChild(el('li', null, [
+          el('span', { class: 'fc-av', 'aria-hidden': 'true', text: initials(x.name) }),
+          el('span', { class: 'who', text: x.mine ? 'You' : x.name }),
+          x.mine ? el('button', { type: 'button', text: 'Remove', on: { click: function () { react(m, x.emoji); showDetail(null); } } }) : null,
+          el('span', { class: 'face', text: x.emoji })]));
+      });
+      detail.appendChild(ul);
+      detail.hidden = false;
+      render();
     }
 
     /* REVEAL: the detail is a sheet on narrow chats and a side panel on wide
@@ -275,7 +505,7 @@
     function showDetail(m) {
       state.detail = m;
       detail.textContent = '';
-      detail.appendChild(el('p', { class: 'fc-detail-hint', text: 'Tap a message to see when it was sent, or to report it.' }));
+      detail.appendChild(el('p', { class: 'fc-detail-hint', text: 'Hold or right-click a message to react, reply or see its details.' }));
       if (!m) { detail.hidden = true; render(); return; }
       detail.appendChild(el('button', { class: 'fc-chat-x fc-detail-close', type: 'button', text: 'Done', on: { click: function () { showDetail(null); } } }));
       detail.appendChild(el('h3', { text: m.mine ? 'You' : m.name }));
@@ -319,25 +549,59 @@
       sb.from('chat_members').delete().eq('bbl', bbl).eq('user_id', state.me).then(function () { stopLive(); close(); });
     }
 
-    function send() {
-      var t = input.value.trim(), name = '';
-      if (!t || t.length > 2000) return;
-      try { name = (localStorage.getItem('fac.chat.name') || '').slice(0, 40); } catch (e) {}
-      if (blocks(t)) return showErr('That message breaks the chat rules and wasn’t sent.');
-      sendBtn.disabled = true;
-      refresh().then(function () {
-        var payload = new TextEncoder().encode(JSON.stringify({ t: t, n: name }));
-        return C.seal(payload, bbl, state.ident.privateKey, state.keys);
+    function myName() { try { return (localStorage.getItem('fac.chat.name') || '').slice(0, 40); } catch (e) { return ''; } }
+
+    /* Seals a payload for every member right now and posts it. */
+    function post(payload) {
+      return refresh().then(function () {
+        return C.seal(new TextEncoder().encode(JSON.stringify(payload)), bbl, state.ident.privateKey, state.keys);
       }).then(function (s) {
         return sb.from('chat_messages').insert({ bbl: bbl, salt: s.salt, ciphertext: s.ciphertext, keys: s.keys, sender_device: state.ident.deviceId });
-      }).then(function (r) {
-        if (r.error) throw r.error;
-        input.value = ''; input.style.height = 'auto'; errLine.hidden = true;
+      }).then(function (r) { if (r.error) throw r.error; });
+    }
+
+    function send() {
+      var t = input.value.trim(), name = myName(), to = state.replyTo;
+      if (!t || t.length > 2000) return;
+      if (blocks(t)) return showErr('That message breaks the chat rules and wasn’t sent.');
+      sendBtn.disabled = true;
+      var payload = { t: t, n: name };
+      if (to && to.text !== null) payload.r = { id: to.id, n: to.mine ? name : to.name, t: to.text.slice(0, 160) };
+      post(payload).then(function () {
+        input.value = ''; input.style.height = 'auto'; errLine.hidden = true; sendBtn.hidden = true;
+        setReply(null);
         typed('');
-        track('chat_send', { bbl: bbl, members: Object.keys(state.keys).length, web: true });
+        track('chat_send', { bbl: bbl, members: Object.keys(state.keys).length, web: true, reply: !!payload.r });
         render(true);
       }).catch(function () { showErr('Couldn’t send. Check your connection and try again.'); })
-        .then(function () { sendBtn.disabled = !input.value.trim(); });
+        .then(function () { sendBtn.disabled = false; });
+    }
+
+    /* Your reaction replaces your earlier one; the same emoji takes it back. */
+    function react(m, e) {
+      if (!isReaction(e)) return;
+      var old = reactionsOn(m.id).filter(function (x) { return x.mine; })[0];
+      var gone = old ? sb.from('chat_messages').delete().eq('id', old.id).then(function (r) { if (r.error) throw r.error; removed(old.id); })
+                     : Promise.resolve();
+      gone.then(function () {
+        if (old && old.emoji === e) return render();
+        return post({ t: 'Reacted ' + e + ' to a message', n: myName(), k: 'react', to: m.id, e: e }).then(function () {
+          track('chat_react', { bbl: bbl, web: true }); render();
+        });
+      }).catch(function () { showErr('Couldn’t send. Check your connection and try again.'); });
+    }
+
+    function unsend(m) {
+      sb.from('chat_messages').delete().eq('id', m.id).eq('sender', state.me).then(function (r) {
+        if (r.error) return showErr('Couldn’t unsend. Check your connection and try again.');
+        removed(m.id); track('chat_unsend', { bbl: bbl, web: true }); render();
+      });
+    }
+
+    function hideForMe(m) {
+      state.hidden[m.id] = true;
+      try { localStorage.setItem(hiddenKey(bbl), JSON.stringify(Object.keys(state.hidden).map(Number).slice(-500))); } catch (e) {}
+      render();
     }
     function showErr(t) { errLine.textContent = t; errLine.hidden = false; }
 
@@ -349,7 +613,13 @@
           if (!row || state.messages.some(function (m) { return m.id === row.id; })) return;
           var ready = state.keys[senderKeyId(row)] ? Promise.resolve() : refresh();
           ready.then(function () { return state.messages.some(function (m) { return m.id === row.id; }) ? null : decode(row); })
-            .then(function (m) { if (m) state.messages.push(m); delete state.typers[row.sender.toLowerCase()]; render(); });
+            .then(function (m) { if (m) take(m); delete state.typers[row.sender.toLowerCase()]; render(); });
+        })
+        // Unsent messages and taken-back reactions: Realtime can't filter
+        // deletes and sends only the id, so ids we don't hold are ignored.
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, function (p) {
+          var id = p.old && p.old.id;
+          if (typeof id === 'number') { removed(id); render(); }
         })
         .subscribe();
       state.typingCh = sb.channel('chat-typing:' + bbl, { config: { private: true, broadcast: { self: false } } })
@@ -397,5 +667,5 @@
     return { close: close };
   }
 
-  window.FacBuildingChat = { open: open, _runs: runs, _dayLabel: dayLabel, _initials: initials, _typingLine: typingLine, _blocks: blocks };
+  window.FacBuildingChat = { open: open, _runs: runs, _stamp: stamp, _initials: initials, _typingLine: typingLine, _blocks: blocks, _isReaction: isReaction };
 })();

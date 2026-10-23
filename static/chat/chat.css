@@ -1,8 +1,7 @@
 /* Building chat on findacrib.com (owner, 2026-10-19). Same rules as the app:
- * RANK who > what > when · STACK a sender's run under one header ·
- * SLOT the time always in the trailing place · LABEL days and "You", not
- * the obvious · REVEAL details in a sheet or side panel, never a page ·
- * BREAKPOINT on the chat's own width (container query), not the window's. */
+ * Instagram's direct-message layout since 2026-10-23 (see chat-ui.js).
+ * Details still open in a sheet or a side panel, never a page, and the
+ * breakpoint is the chat's own width (container query), not the window's. */
 .fc-chat-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex;
   align-items: stretch; justify-content: center; }
 .fc-chat { container-type: inline-size; container-name: chat; position: relative; display: flex; flex-direction: column;
@@ -21,42 +20,109 @@
 .fc-col { max-width: 720px; margin: 0 auto; }
 .fc-empty { color: var(--ink-2); text-align: center; padding: 48px 0; }
 
-/* LABEL: dates get a divider. */
-.fc-day { display: flex; align-items: center; gap: 10px; margin: 18px 0 4px; color: var(--ink-2); font-size: 13px; font-weight: 700; }
-.fc-day::before, .fc-day::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
-
-/* RANK + STACK + SLOT: initials · name ......... time, messages below. */
-.fc-run { padding-top: 12px; }
-.fc-run-head { display: flex; align-items: center; gap: 8px; }
-.fc-av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 11.5px; font-weight: 800;
-  background: var(--blue-soft); color: var(--blue); }
-.fc-run.mine .fc-av { background: var(--blue-solid); color: #fff; }
-.fc-name { font-weight: 700; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fc-time { margin-left: auto; padding-left: 8px; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.fc-msg { display: block; margin: 4px 0 0 34px; max-width: calc(100% - 34px); text-align: left; font: inherit; font-size: 16.5px; line-height: 1.4;
-  color: var(--ink); background: var(--surface); border: 2px solid transparent; border-radius: 14px; padding: 7px 12px;
-  cursor: pointer; white-space: pre-wrap; overflow-wrap: anywhere; }
-.fc-run.mine .fc-msg { background: var(--blue-solid); color: #fff; }
-.fc-msg.locked { font-style: italic; color: var(--ink-2); background: var(--surface); }
+/* Instagram's layout (owner, 2026-10-23): centred time lines; yours on the
+   right in teal, neighbors' on the left with initials beside the last bubble. */
+.fc-stamp { text-align: center; margin: 18px 0 6px; color: var(--ink-2); font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.fc-run { padding-top: 8px; }
+.fc-who { font-size: 12.5px; color: var(--ink-2); margin: 0 0 2px 44px; }
+.fc-row { --av: 28px; position: relative; display: flex; align-items: flex-end; gap: 8px; margin-top: 2px; padding-right: 56px;
+  transform: translateX(var(--shift, 0)); transition: transform .2s ease; }
+.fc-row.mine { justify-content: flex-end; padding: 0 0 0 56px; }
+.fc-col[style*="--shift"] .fc-row { transition: none; }
+.fc-av, .fc-av-gap { width: var(--av, 28px); height: var(--av, 28px); flex: none; }
+.fc-av { border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: var(--blue-soft); color: var(--blue); }
+.fc-stack { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; max-width: 100%; position: relative; }
+.fc-row.mine .fc-stack { align-items: flex-end; }
+.fc-msg { display: block; max-width: 100%; text-align: left; font: inherit; font-size: 16.5px; line-height: 1.4; color: var(--ink);
+  background: var(--surface); border: 2px solid transparent; padding: 7px 13px; cursor: default; white-space: pre-wrap; overflow-wrap: anywhere;
+  border-radius: 5px 20px 20px 5px; -webkit-touch-callout: none; user-select: text; }
+.fc-msg.first { border-top-left-radius: 20px; } .fc-msg.last { border-bottom-left-radius: 20px; }
+.fc-row.mine .fc-msg { background: var(--blue-solid); color: #fff; border-radius: 20px 5px 5px 20px; }
+.fc-row.mine .fc-msg.first { border-top-right-radius: 20px; } .fc-row.mine .fc-msg.last { border-bottom-right-radius: 20px; }
+.fc-msg.locked, .fc-row.mine .fc-msg.locked { font-style: italic; color: var(--ink-2); background: var(--surface); }
 .fc-msg[aria-current="true"] { border-color: var(--blue); }
 .fc-msg:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.fc-row.flash .fc-msg { animation: fc-flash .9s ease; }
+@keyframes fc-flash { 30% { filter: brightness(.85); } }
+/* A reply's quote: who answered whom, then the faded original. */
+.fc-quote { display: flex; flex-direction: column; align-items: inherit; margin-bottom: -6px; }
+.fc-row.mine .fc-quote { align-items: flex-end; }
+.fc-quote-cap { font-size: 12px; color: var(--ink-2); margin: 4px 4px 3px; }
+.fc-quote-text { font: inherit; font-size: 14.5px; color: var(--ink-2); background: var(--line); border: 0; border-radius: 16px; padding: 6px 12px 12px;
+  max-width: 100%; text-align: left; cursor: pointer; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: .85; }
+/* Reactions under the bubble. */
+.fc-pill { margin: -6px 8px 0; position: relative; z-index: 1; display: inline-flex; gap: 2px; align-items: center; font-size: 13px; line-height: 1;
+  padding: 3px 6px; border-radius: 999px; background: var(--surface); border: 2px solid var(--bg); cursor: pointer; color: var(--ink-2); }
+.fc-pill span { font-size: 12px; font-weight: 700; }
+/* Hover tools (pointer devices): react, reply, more. */
+.fc-tools { display: none; gap: 2px; align-self: center; }
+.fc-row.mine .fc-tools { order: -1; }
+.fc-tools button { background: none; border: 0; width: 28px; height: 28px; border-radius: 50%; color: var(--ink-2); font-size: 16px; cursor: pointer; }
+.fc-tools button:hover { background: var(--line); }
+@media (hover: hover) { .fc-row:hover .fc-tools, .fc-row:focus-within .fc-tools { display: flex; } }
+/* Swipe left: every message's time slides out on the right. */
+.fc-stime { position: absolute; right: -64px; bottom: 8px; width: 60px; font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  white-space: nowrap; opacity: 0; pointer-events: none; }
+.fc-row.mine .fc-stime { right: -64px; }
+.fc-col[style*="--shift"] .fc-stime { opacity: 1; }
+.fc-scroll { overflow-x: hidden; }
 
 /* Typing bubble. */
-.fc-typing { margin: 10px 0 0 34px; }
-.fc-dots { display: inline-flex; gap: 5px; padding: 12px 14px; background: var(--surface); border-radius: 14px; }
+.fc-typing { display: flex; align-items: flex-end; gap: 8px; margin: 10px 0 0; }
+.fc-dots { display: inline-flex; gap: 5px; padding: 12px 14px; background: var(--surface); border-radius: 20px; }
 .fc-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); opacity: .45; animation: fc-dot 1.2s infinite ease-in-out; }
 .fc-dots i:nth-child(2) { animation-delay: .15s; } .fc-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes fc-dot { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-3px); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .fc-dots i { animation: none; opacity: .7; } }
-.fc-typing-line { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .fc-dots i { animation: none; opacity: .7; } .fc-row { transition: none; } }
+.fc-typing-line { font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
 
-.fc-compose { display: flex; gap: 10px; align-items: flex-end; padding: 10px 12px; background: var(--bg); border-top: 1px solid var(--line); }
-.fc-compose textarea { flex: 1; resize: none; font: inherit; font-size: 16.5px; line-height: 1.35; max-height: 140px; padding: 10px 12px;
-  border-radius: 18px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
-.fc-compose textarea:focus { outline: none; border-color: var(--blue); }
-.fc-send { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--blue-solid); color: #fff; font-size: 20px; cursor: pointer; flex: none; }
+/* ↓ back to the newest. */
+.fc-room { position: relative; }
+.fc-jump { position: absolute; right: 16px; bottom: 84px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 0;
+  background: var(--surface); color: var(--ink); font-size: 19px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+
+/* Replying to … over the composer. */
+.fc-replying { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--surface); border-top: 1px solid var(--line); }
+.fc-replying-text { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; }
+.fc-replying-text span { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-replying-x { background: none; border: 0; color: var(--ink-2); font-size: 15px; cursor: pointer; padding: 6px; }
+
+.fc-compose { padding: 8px 12px; background: var(--bg); }
+.fc-field-wrap { display: flex; align-items: flex-end; gap: 6px; border-radius: 22px; border: 1px solid var(--line-strong); background: var(--surface); padding: 4px; }
+.fc-field-wrap:focus-within { border-color: var(--blue); }
+.fc-compose textarea { flex: 1; resize: none; font: inherit; font-size: 16.5px; line-height: 1.35; max-height: 140px; padding: 7px 4px 7px 12px;
+  border: 0; background: transparent; color: var(--ink); }
+.fc-compose textarea:focus { outline: none; }
+.fc-send { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--blue-solid); color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; flex: none; }
+.fc-send[hidden] { display: none; }
 .fc-send[disabled] { opacity: .45; cursor: default; }
 .fc-err { color: var(--bad); font-size: 14px; padding: 6px 16px 0; }
+
+/* Hold menu: blurred room, reactions over the bubble, actions under it. */
+.fc-menu-back { position: absolute; inset: 0; z-index: 5; background: rgba(0,0,0,.12); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.fc-menu { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; max-width: calc(100% - 24px); }
+.fc-menu.mine { align-items: flex-end; }
+.fc-emoji { display: flex; gap: 2px; padding: 6px 8px; border-radius: 28px; background: var(--surface); box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.fc-emoji button, .fc-emoji-more button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; font-size: 25px; cursor: pointer; line-height: 1; }
+.fc-emoji button:hover, .fc-emoji-more button:hover, .fc-emoji button.on, .fc-emoji-more button.on { background: var(--blue-soft); }
+.fc-emoji .plus { font-size: 20px; color: var(--ink-2); background: var(--bg); }
+.fc-emoji-more { display: grid; grid-template-columns: repeat(6, 40px); gap: 2px; padding: 6px 8px; border-radius: 18px; background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.fc-emoji-more[hidden] { display: none; }
+.fc-menu-bubble { max-width: 300px; font-size: 16.5px; line-height: 1.4; padding: 7px 13px; border-radius: 20px; background: var(--surface); color: var(--ink);
+  white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
+.fc-menu-bubble.mine { background: var(--blue-solid); color: #fff; }
+.fc-menu-list { width: 240px; padding: 4px 0 6px; border-radius: 16px; background: var(--surface); box-shadow: 0 8px 26px rgba(0,0,0,.2); }
+.fc-menu-time { font-size: 12px; font-weight: 700; color: var(--ink-2); padding: 8px 16px; }
+.fc-menu-list button { display: block; width: 100%; text-align: left; background: none; border: 0; font: inherit; font-size: 15.5px; color: var(--ink);
+  padding: 11px 16px; cursor: pointer; }
+.fc-menu-list button:hover, .fc-menu-list button:focus-visible { background: var(--bg); outline: none; }
+.fc-menu-list .danger { color: var(--bad); }
+.fc-reaction-list { list-style: none; margin: 0; padding: 0; }
+.fc-reaction-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.fc-reaction-list .who { flex: 1; font-weight: 700; }
+.fc-reaction-list .face { font-size: 22px; }
+.fc-reaction-list button { background: none; border: 0; color: var(--blue); font-weight: 700; cursor: pointer; }
 
 /* REVEAL: narrow = a sheet over the room; wide = a panel beside it. */
 .fc-detail { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--surface); border-top: 1px solid var(--line);

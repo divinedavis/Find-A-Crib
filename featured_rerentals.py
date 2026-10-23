@@ -29,6 +29,7 @@ feature could do, so every amount is classified before it is stored and the
 tile says which one it is. See classify_money().
 """
 import argparse
+import collections
 import datetime
 import hashlib
 import json
@@ -75,6 +76,12 @@ ONE_PERSON = re.compile(r'\b1\s*(?:person|adult|occupant)\b', re.I)
 # a count of 10,452 units. No re-rental board posts a thousand of anything.
 UNITS = re.compile(r'\b(\d{1,3})\s+units?\b', re.I)
 BEDS = re.compile(r'\b(studio|\d+)\s*(?:bed|bd|br|bedroom)s?\b', re.I)
+# Tax Solute writes the size as "Unit Size: 2", "Unit Size: studio" or
+# "Unit Size: 0" (a studio); a range ("0 - 2") is a building with several.
+UNIT_SIZE = re.compile(r'\bunit size:\s*(studio|\d)\s*$', re.I)
+# "Unit on Hold": applications are in and under review (Tax Solute, 2026-10-23,
+# eight of its ten tiles). The badge sits above the address it belongs to.
+ON_HOLD = re.compile(r'\b(unit|application)s?\s+on\s+hold\b', re.I)
 ZIP = re.compile(r'\b(\d{5})\b')
 # "188-11 Hillside Avenue, Queens, NY 11423" / "410 W 126th St, New York, NY"
 ADDRISH = re.compile(r'^\s*\d+[\w-]*\s+[A-Za-z0-9.\'-]', re.I)
@@ -450,6 +457,9 @@ def parse_card(c, agent, page_url):
     kind, low, high = classify_money(amounts_in(blob), blob)
     um = UNITS.search(blob)
     bm = BEDS.search(blob)
+    sm = next((m for m in map(UNIT_SIZE.search, lines) if m), None)
+    beds = (bm.group(1).lower() if bm else
+            ("studio" if sm.group(1) in ("0", "studio") else sm.group(1)) if sm else None)
     zm = ZIP.search(address) or ZIP.search(blob)
     zipcode = zm.group(1) if zm else None
     # The listing's own link often names the borough when the card only says
@@ -472,7 +482,8 @@ def parse_card(c, agent, page_url):
         # size. The tile falls back to this when there is no rent to show.
         "income_1p_max": one_person_income(lines),
         "units": int(um.group(1)) if um else None,
-        "beds": bm.group(1).lower() if bm else None,
+        "beds": beds,
+        "on_hold": any(ON_HOLD.search(l) for l in lines[:addr_i + 1]) or None,
         "href": c["href"] or board_link(page_url, address),
         # Whether that link is the apartment or just the board it sits on. The
         # tile says which, because "Apply on their site" pointing at a grid of
@@ -594,6 +605,14 @@ def sweep(pages, only=None):
                         continue
                     seen.add(k)
                     found.append(rec)
+                # One photo on two buildings is the wrong photo on at least one
+                # of them: Tax Solute's Google Sites grid lays photos out apart
+                # from the text, and 597 Grand showed 260 Knickerbocker's
+                # (2026-10-23). No photo beats someone else's building.
+                srcs = collections.Counter(r["image_src"] for r in found if r["image_src"])
+                for rec in found:
+                    if srcs[rec["image_src"]] > 1:
+                        rec["image_src"] = None
                 resolve_by_click(page, found, meta["url"])
                 for rec in found:
                     rec.pop("probe", None)
@@ -1125,6 +1144,10 @@ def rank(records):
             s += 1
         if r.get("units"):
             s += 1
+        # Someone else's application is already under review: show the
+        # apartments a visitor can still apply for first.
+        if r.get("on_hold"):
+            s -= 8
         return -s
     by_agent = {}
     for r in sorted(records, key=score):

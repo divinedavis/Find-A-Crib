@@ -147,6 +147,11 @@ struct PillTabBar: View {
                     .frame(width: itemWidth, height: 66)
                     .background { if on { selectedFill } }
                     .clipShape(Capsule())
+                    // The whole 72 x 66 pill is the button, selected or not.
+                    // Without it an unselected tab shrank to its icon and
+                    // label once its clear background went (2026-10-23), and
+                    // the end tabs stopped taking taps.
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("tab-\(tab.rawValue)")

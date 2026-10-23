@@ -274,13 +274,13 @@ extension View {
     /// Clear Liquid Glass with a white tint so dark text stays readable over photos.
     @ViewBuilder func lightGlass<S: Shape>(in shape: S) -> some View {
         if #available(iOS 26.0, *) {
-            // Not .interactive(): on the tab bar that glass took the taps meant
-            // for its buttons, and Search/Profile stopped switching (daily
-            // build, 2026-10-23: testTabsSwitch and four more failed).
-            self.glassEffect(.regular.tint(.white.opacity(0.35)), in: shape)
+            // A layer behind the content, so the glass never sits over a
+            // button's hit area; not .interactive(), whose press wobble is
+            // for the control itself, not a bar of them.
+            self.background { shape.fill(.clear).glassEffect(.regular.tint(.white.opacity(0.35)), in: shape).allowsHitTesting(false) }
         } else {
             self.background(.ultraThinMaterial, in: shape)
-                .overlay(shape.stroke(.white.opacity(0.6), lineWidth: 0.5))
+                .overlay(shape.stroke(.white.opacity(0.6), lineWidth: 0.5).allowsHitTesting(false))
                 .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
         }
     }
@@ -289,7 +289,7 @@ extension View {
 extension View {
     /// On a holiday, a 2 pt ring in the day's colours round a glass pill and a
     /// soft glow in its first colour, like Marracat's search bar.
-    @ViewBuilder func holidayGlow<S: Shape>(in shape: S) -> some View {
+    @ViewBuilder func holidayGlow<S: InsettableShape>(in shape: S) -> some View {
         if let h = Skyline.holiday {
             self.overlay(shape.strokeBorder(AngularGradient(colors: h.colors + [h.colors[0]], center: .center), lineWidth: 2).allowsHitTesting(false))
                 .shadow(color: h.accent.opacity(0.45), radius: 9)

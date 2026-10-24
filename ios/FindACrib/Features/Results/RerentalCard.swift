@@ -127,7 +127,7 @@ struct RerentalCard: View {
                 .frame(maxWidth: .infinity)
                 // Plus opens the sheet; anyone else sees the Plus page first,
                 // led by Help me apply, and lands in the sheet once they have it.
-                Button { if auth.hasPlus { showApply = true } else { showPlus = true } } label: {
+                Button { if auth.hasPlus || ApplyHelpSheet.isDemo { showApply = true } else { showPlus = true } } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "doc.text").font(.system(size: 15, weight: .bold))
                         Text("Help me apply").font(.se(17, .bold))

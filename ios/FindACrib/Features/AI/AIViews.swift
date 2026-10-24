@@ -107,6 +107,8 @@ struct ApplyHelpSheet: View {
     @State private var copied = false
     @State private var showPacket = false
     @State private var slow = false
+    @State private var packet = Packet.shared
+    @State private var mail: MailDraft?
 
     var body: some View {
         NavigationStack {
@@ -142,10 +144,30 @@ struct ApplyHelpSheet: View {
                                 UIPasteboard.general.string = "Subject: \(h.email_subject)\n\n\(h.email_body)"; copied = true
                                 Analytics.shared.track("apply_help_copy", ["agent": listing.agent])
                             }
-                            if let e = h.contact.email,
+                            // Documents already in the packet go with the email
+                            // (owner, 2026-10-24): Mail's composer with them
+                            // attached. A mailto link can't carry attachments.
+                            if !packet.docs.isEmpty {
+                                SEPrimaryButton(title: String(localized: "Email with my documents")) {
+                                    mail = MailDraft(to: h.contact.email.map { [$0] } ?? [], subject: h.email_subject,
+                                                     body: h.email_body + "\n\nAttached: " + packet.docs.map(\.title).joined(separator: ", "),
+                                                     files: packet.docs.map { (packet.url($0), $0.title) })
+                                    Analytics.shared.track("apply_help_email", ["agent": listing.agent, "docs": packet.docs.count])
+                                }
+                                .accessibilityIdentifier("apply-email-send")
+                            } else if let e = h.contact.email,
                                let url = URL(string: "mailto:\(e)?subject=\(h.email_subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(h.email_body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
                                 SEPrimaryButton(title: String(localized: "Open in Mail")) { openURL(url) }
+                                    .accessibilityIdentifier("apply-email-send")
                             }
+                        }
+                        if !packet.docs.isEmpty {
+                            Text("Your documents go with it: \(packet.docs.map(\.title).joined(separator: ", ")).")
+                                .font(.se(13)).foregroundStyle(SE.ink2)
+                                .accessibilityIdentifier("apply-email-attached")
+                        } else {
+                            Text("Add your documents with Get my documents ready and they'll be attached to this email.")
+                                .font(.se(13)).foregroundStyle(SE.ink3)
                         }
                         Text("Written by AI from the agent's listing. Check their page before you send anything.").font(.se(13)).foregroundStyle(SE.ink3)
                     } else if let error {
@@ -179,10 +201,36 @@ struct ApplyHelpSheet: View {
             .task { await load() }
             .task { try? await Task.sleep(for: .seconds(10)); if help == nil && error == nil { slow = true } }
             .sheet(isPresented: $needsPlus, onDismiss: { if !auth.hasPlus { dismiss() } else { Task { await load() } } }) { PaywallView(source: "apply_help", context: listing.address) }
+            .sheet(item: $mail) { m in MailComposer(draft: m).ignoresSafeArea() }
         }
     }
 
+    /// --apply-demo, Debug builds only: the shipped app never skips Plus.
+    static var isDemo: Bool {
+        #if DEBUG
+        CommandLine.arguments.contains("--apply-demo")
+        #else
+        false
+        #endif
+    }
+
     private func load() async {
+        // --apply-demo (UI tests): a canned answer with no network or Plus,
+        // and one saved document so the email carries an attachment.
+        if Self.isDemo {
+            help = try? JSONDecoder().decode(ApplyHelp.self, from: Data("""
+            {"steps":["Email the agent with your documents"],"documents":[{"item":"Recent pay stubs","required_by_listing":true}],
+             "deadline":null,"contact":{"email":"agent@example.com","phone":null,"link":null},
+             "email_subject":"Application for \(listing.address)","email_body":"Hello,\\n\\nI'd like to apply.\\n\\nThank you"}
+            """.utf8))
+            if packet.docs.isEmpty {
+                let page = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 400)).image { c in
+                    UIColor.white.setFill(); c.fill(CGRect(x: 0, y: 0, width: 300, height: 400))
+                }
+                _ = packet.add(kind: .payStubs, images: [page])
+            }
+            return
+        }
         Analytics.shared.track("apply_help_click", ["agent": listing.agent, "plus": auth.hasPlus])
         do { help = try await AIService.applyHelp(href: listing.href, auth: auth); error = nil }
         catch {

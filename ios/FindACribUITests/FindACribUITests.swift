@@ -222,12 +222,9 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Cancel"].tap()
     }
 
-    /// Every re-rental card offers Help me apply.
-    func testRerentalOffersHelpMeApply() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
-        app.launch()
-        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+    /// Scrolls the results until a re-rental card's Help me apply sits clear
+    /// of the tab bar and the floating pills.
+    private func scrollToHelpMeApply() -> XCUIElement {
         let help = app.buttons["rerental-apply-help"].firstMatch
         // Clear of the floating tab bar: "hittable" under it still sends the
         // tap to the bar (failed once in the build 114 ship, passed on rerun).
@@ -245,6 +242,16 @@ final class FindACribUITests: XCTestCase {
             let up = !(help.exists && help.frame.minY <= 150)
             mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: up ? -320 : 220)))
         }
+        return help
+    }
+
+    /// Every re-rental card offers Help me apply.
+    func testRerentalOffersHelpMeApply() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let help = scrollToHelpMeApply()
         XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
         help.tap()
         XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")
@@ -1323,6 +1330,28 @@ final class FindACribUITests: XCTestCase {
         app.buttons["chat-menu-details"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["chat-detail"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["chat-detail-report"].exists, "with Report")
+    }
+
+    /// Documents saved in the app go with the email to the agent (owner,
+    /// 2026-10-24): with one in the packet, the send button attaches it and
+    /// says so; tapping it opens a composer, not a bare mailto link.
+    func testHelpMeApplyEmailCarriesSavedDocuments() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--apply-demo"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let help = scrollToHelpMeApply()
+        XCTAssertTrue(help.exists)
+        help.tap()
+        let send = app.buttons["apply-email-send"]
+        for _ in 0..<6 where !(send.exists && send.isHittable) { app.swipeUp() }
+        XCTAssertTrue(send.waitForExistence(timeout: 10))
+        XCTAssertEqual(send.label, "Email with my documents", "with a saved document the button attaches it")
+        XCTAssertTrue(app.staticTexts["apply-email-attached"].label.contains("Recent pay stubs"), "and names what goes with it")
+        send.tap()
+        // No Mail account on a simulator: the share sheet, with the files.
+        XCTAssertTrue(app.otherElements["ActivityListView"].waitForExistence(timeout: 10)
+                      || app.navigationBars["MFMailComposeView"].waitForExistence(timeout: 2), "sending opens a composer with the files")
     }
 
     /// The records screen's "N open" is the city's count now, not the weekly

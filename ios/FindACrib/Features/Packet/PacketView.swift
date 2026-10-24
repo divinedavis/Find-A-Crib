@@ -353,6 +353,15 @@ struct DocumentScanner: UIViewControllerRepresentable {
     }
 }
 
+/// The draft's text for the share sheet, with its subject for Mail-like apps.
+final class MailText: NSObject, UIActivityItemSource {
+    let text: String, subject: String
+    init(text: String, subject: String) { self.text = text; self.subject = subject }
+    func activityViewControllerPlaceholderItem(_ c: UIActivityViewController) -> Any { text }
+    func activityViewController(_ c: UIActivityViewController, itemForActivityType t: UIActivity.ActivityType?) -> Any? { text }
+    func activityViewController(_ c: UIActivityViewController, subjectForActivityType t: UIActivity.ActivityType?) -> String { subject }
+}
+
 struct MailDraft: Identifiable {
     let id = UUID()
     let to: [String]
@@ -377,7 +386,12 @@ struct MailComposer: UIViewControllerRepresentable {
             }
             return m
         }
-        let a = UIActivityViewController(activityItems: [draft.body] + draft.files.map(\.0), applicationActivities: nil)
+        // No Mail account (many people only use the Gmail app): the share
+        // sheet with the files. The text carries the subject for apps that
+        // ask for one, and the agent's address on its first line, since a
+        // share sheet can't fill in the To field.
+        let text = (draft.to.isEmpty ? "" : "To: \(draft.to.joined(separator: ", "))\n\n") + draft.body
+        let a = UIActivityViewController(activityItems: [MailText(text: text, subject: draft.subject)] + draft.files.map(\.0), applicationActivities: nil)
         a.completionWithItemsHandler = { _, _, _, _ in context.coordinator.parent.dismiss() }
         return a
     }

@@ -45,11 +45,11 @@ def counts_for(bbls):
             by_boro[boroid].append((block, lot))
 
     print("Fetching HPD violations...")
-    violations = fetch_hpd.fetch_violations(by_boro)
+    violations = fetch_hpd.in_parallel(fetch_hpd.fetch_violations, by_boro)
     print(f"  -> {len(violations):,} buildings with a violation record")
 
     print("Fetching HPD complaints...")
-    complaints = fetch_hpd.fetch_complaints(bbls)
+    complaints = fetch_hpd.in_parallel(fetch_hpd.fetch_complaints, bbls)
     print(f"  -> {len(complaints):,} buildings with a complaint record")
 
     print("Fetching pest violations (last 12 months)...")
@@ -154,6 +154,10 @@ def main():
     # before writing rather than publish it — every count on the site reads this.
     if after == 0 and before > 0:
         sys.exit("REFUSING TO WRITE: every open violation vanished — treat as a failed fetch")
+    # Any query that gave up after its retries left some buildings' counts
+    # low; keep yesterday's numbers rather than publish those.
+    if fetch_hpd.FAILURES:
+        sys.exit(f"REFUSING TO WRITE: {fetch_hpd.FAILURES} Open Data queries failed after retries")
 
     if args.dry_run:
         print("\n--dry-run: nothing written")

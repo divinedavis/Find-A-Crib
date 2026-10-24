@@ -2,7 +2,10 @@
 """Pull HPD Registrations + Contacts + Complaints + Violations from NYC Open Data,
 join to each BBL in buildings.min.json, write buildings_hpd.json."""
 import json
+import os
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import urllib.request
 from collections import defaultdict
@@ -33,7 +36,14 @@ CONTACT_PRIORITY = [
 ]
 
 
-def fetch(url, params, retries=3):
+# Queries that still failed after every retry. A refresh that lost any of them
+# would publish counts that are silently low, so refresh_hpd_counts.py refuses
+# to write when this is non-zero.
+FAILURES = 0
+_failures_lock = threading.Lock()
+
+
+def fetch(url, params, retries=5):
     qs = urllib.parse.urlencode(params)
     full = f"{url}?{qs}"
     for attempt in range(retries):
@@ -43,6 +53,9 @@ def fetch(url, params, retries=3):
                 return json.loads(resp.read())
         except Exception as e:
             if attempt == retries - 1:
+                global FAILURES
+                with _failures_lock:
+                    FAILURES += 1
                 print(f"  ! giving up on {full[:120]}... — {e}")
                 return []
             time.sleep(2 ** attempt)
@@ -66,11 +79,49 @@ def fetch_all(url, params):
         offset += PAGE
 
 
+# Parallel batches (owner, 2026-10-24: "do the recheck in batches"). The
+# nightly refresh made ~thousands of count queries one after another, 2.5 h.
+# in_parallel(fn, ...) runs fn once with counts() only RECORDING the queries it
+# asks for, fetches them all HPD_WORKERS at a time, then runs fn again with
+# counts() answering from those results, so the counting code is unchanged.
+WORKERS = int(os.environ.get("HPD_WORKERS", "6"))
+_recording = None      # list of query keys while recording
+_answers = None        # key -> rows while replaying
+
+
+def in_parallel(fn, *args):
+    global _recording, _answers
+    _recording = []
+    try:
+        fn(*args)
+    finally:
+        keys, _recording = _recording, None
+    keys = list(dict.fromkeys(keys))
+    print(f"  {len(keys):,} queries, {WORKERS} at a time")
+    with ThreadPoolExecutor(max_workers=WORKERS) as ex:
+        rows = list(ex.map(lambda k: _counts_now(*k), keys))
+    _answers = dict(zip(keys, rows))
+    try:
+        return fn(*args)
+    finally:
+        _answers = None
+
+
 def counts(url, select, where, group):
     """One grouped COUNT instead of every matching row. The aggregate is what we
     actually want, it cannot be truncated at any volume we hit (the widest group
     here is 60 blocks x 60 lots x class x status), and it moves megabytes of rows
     off the wire."""
+    key = (url, select, where, group)
+    if _recording is not None:
+        _recording.append(key)
+        return []
+    if _answers is not None and key in _answers:
+        return _answers[key]
+    return _counts_now(*key)
+
+
+def _counts_now(url, select, where, group):
     rows = fetch_all(url, {
         "$select": f"{select},count(1) as n",
         "$where": where,

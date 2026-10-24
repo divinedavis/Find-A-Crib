@@ -23,7 +23,10 @@ main() {
   git pull -q --ff-only || echo "  ! git pull failed; running the checked-out version"
 
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] FMR refresh starting"
-  python3 build_fmr.py
+  # The project venv: system python3 has no openpyxl, so every monthly run
+  # failed at import (found 2026-10-24, logs in /tmp long gone). Harmless only
+  # because HUD hadn't posted FY2027 yet.
+  "${PY:-$HOME/.venvs/dhcr-map/bin/python}" build_fmr.py
 
   # Ship only on a real change. HUD publishes once a year, so eleven of twelve
   # runs should print "unchanged" — and a diff in a month that is not October is

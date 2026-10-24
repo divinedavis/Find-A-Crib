@@ -14,6 +14,8 @@ struct HPDRecordsView: View {
     @State private var bedbugs: [HPDRecords.BedbugFiling] = []
     @State private var rodents: [HPDRecords.RodentInspection] = []
     @State private var loading = true
+    /// The city's open count fetched with the list; the banked count until it lands.
+    @State private var liveOpen: Int?
     @State private var failed = false
 
     private var b: Building { building }
@@ -68,11 +70,17 @@ struct HPDRecordsView: View {
         loading = true; failed = false
         do {
             switch kind {
-            case .violations: violations = try await HPDRecords.violations(bbl: b.bbl)
+            case .violations:
+                async let open = HPDRecords.openCount(complaints: false, bbl: b.bbl)
+                violations = try await HPDRecords.violations(bbl: b.bbl)
+                liveOpen = await open
             case .pests:
                 violations = try await HPDRecords.pestViolations(bbl: b.bbl)
                 pests = try await HPDRecords.pests(bbl: b.bbl)
-            case .complaints: complaints = try await HPDRecords.complaints(bbl: b.bbl)
+            case .complaints:
+                async let open = HPDRecords.openCount(complaints: true, bbl: b.bbl)
+                complaints = try await HPDRecords.complaints(bbl: b.bbl)
+                liveOpen = await open
             case .bedbugs: bedbugs = try await HPDRecords.bedbugs(bbl: b.bbl)
             case .rodents: rodents = try await HPDRecords.rodents(bbl: b.bbl)
             }
@@ -87,11 +95,13 @@ struct HPDRecordsView: View {
         VStack(alignment: .leading, spacing: 6) {
             switch kind {
             case .violations:
-                Text("\(v?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
+                Text("\(liveOpen ?? v?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
+                    .accessibilityIdentifier("hpd-open-count")
                 Text("NYC HPD's own Open/Close flag. HPD never closes a violation on its own — only the owner certifying the repair, or an inspector verifying it, does. So a violation nobody has touched in years is still \"open\" on the record; those rows say so.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             case .complaints:
-                Text("\(c?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
+                Text("\(liveOpen ?? c?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
+                    .accessibilityIdentifier("hpd-open-count")
                 Text("Problems tenants reported to 311 / HPD, newest first. A complaint is a report, not a finding — Violations are what inspectors confirmed.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             case .pests:

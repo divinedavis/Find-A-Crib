@@ -1098,10 +1098,11 @@ final class LotteryFeedTests: XCTestCase {
         let b = Building(bbl: "CHI-1", b: "CHI", a: "3414 W DIVERSEY AVE", z: "60647", lat: 41.93, lng: -87.71)
         XCTAssertEqual(b.webURL(in: chi).host, "maps.apple.com", "no web page for these cities yet: share the place")
         XCTAssertEqual(City.find("st-nj").id, "nyc", "the state maps are gone; an old saved state falls back to New York")
-        // A plain search's headline is just the count (owner, 2026-10-17)
-        XCTAssertEqual(SearchQuery().resultHeadline(count: 47_165, city: .nyc), "47,165")
-        XCTAssertEqual(SearchQuery().resultHeadline(count: 656, city: .phl), "656")
-        XCTAssertEqual(SearchQuery().resultHeadline(count: 1, city: .sf), "1")
+        // A plain search's headline is the count of buildings (owner,
+        // 2026-10-17 just the count; 2026-10-24 "69 buildings").
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 47_165, city: .nyc), "47,165 buildings")
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 656, city: .phl), "656 buildings")
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 1, city: .sf), "1 building")
         XCTAssertEqual(City.phl.badgeLabel, "Income-restricted"); XCTAssertEqual(City.nyc.badgeLabel, "Rent stabilized")
         XCTAssertEqual(City.dc.badgeLabel, "Rent controlled"); XCTAssertEqual(City.la.badgeLabel, "Likely RSO")
         let p = Building(bbl: "PHL-1", b: "PHL", a: "100 W OXFORD ST", z: "19122", lat: 39.97, lng: -75.14)

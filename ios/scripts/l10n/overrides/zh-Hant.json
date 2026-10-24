@@ -58,7 +58,7 @@
   "%@ %@ in view" : "視圖中 %1$@ %2$@",
   "%@ bd" : "%@ 臥",
   "%@ bed" : "%@ 臥",
-  "%@ buildings" : "%@ 棟建築",
+  "%@ buildings" : "%@ 棟樓",
   "%@ closing soonest: %@." : "%1$@最先截止：%2$@。",
   "%@ County" : "%@縣",
   "%@ in" : "%@內",
@@ -402,5 +402,6 @@
   "React %@" : "用%@回應",
   "Reactions" : "回應",
   "Reactions: %@" : "回應：%@",
-  "Unsend" : "收回"
+  "Unsend" : "收回",
+  "1 building" : "1 棟樓"
 }

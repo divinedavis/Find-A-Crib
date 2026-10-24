@@ -286,6 +286,26 @@ enum HPDRecords {
         return rows
     }
 
+    /// How many open violations or complaints the city has for this building
+    /// RIGHT NOW (2026-10-24: 129 Carlton Ave said "0 open" over six open
+    /// complaints filed after the last refresh of the banked counts). Same
+    /// rules as fetch_hpd.py, so a fresh count matches what the next refresh
+    /// banks: a violation is open by HPD's own flag; a complaint is open
+    /// unless its status is CLOSE. nil when the city can't be reached.
+    static func openCount(complaints: Bool, bbl: String) async -> Int? {
+        guard bbl.count == 10, bbl.allSatisfy(\.isNumber) else { return nil }
+        var comps = URLComponents(string: complaints ? complaintsURL : violationsURL)!
+        comps.queryItems = [
+            .init(name: "$select", value: "count(*) as n"),
+            .init(name: "$where", value: complaints
+                  ? "bbl='\(bbl)' AND (complaint_status IS NULL OR complaint_status != 'CLOSE')"
+                  : "bbl='\(bbl)' AND violationstatus='Open'"),
+        ]
+        struct Row: Decodable { let n: String? }
+        guard let rows: [Row] = try? await fetch(comps.url!) else { return nil }
+        return rows.first?.n.flatMap { Int($0) }
+    }
+
     private static func fetch<T: Decodable>(_ url: URL) async throws -> [T] {
         var req = URLRequest(url: url, timeoutInterval: 20)
         req.setValue("application/json", forHTTPHeaderField: "Accept")

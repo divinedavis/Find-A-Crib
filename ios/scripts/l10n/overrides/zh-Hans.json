@@ -44,7 +44,7 @@
  "%@ County": "%@县",
  "%@ bd": "%@ 卧",
  "%@ bed": "%@ 卧",
- "%@ buildings": "%@ 栋建筑",
+ "%@ buildings": "%@ 栋楼",
  "%@ closing soonest: %@.": "%1$@最先截止：%2$@。",
  "%@ in": "%@内",
  "%@ · open": "%@ · 开放中",
@@ -402,5 +402,6 @@
  "React %@": "用%@回应",
  "Reactions": "回应",
  "Reactions: %@": "回应：%@",
- "Unsend": "撤回"
+ "Unsend": "撤回",
+ "1 building": "1 栋楼"
 }

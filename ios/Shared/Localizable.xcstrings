@@ -844,19 +844,19 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "건물 %@개"
+            "value" : "건물 %@곳"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ 栋建筑"
+            "value" : "%@ 栋楼"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ 棟建築"
+            "value" : "%@ 棟樓"
           }
         }
       }
@@ -4258,6 +4258,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 臥"
+          }
+        }
+      }
+    },
+    "1 building" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 edificio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "건물 1곳"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 栋楼"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 棟樓"
           }
         }
       }

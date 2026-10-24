@@ -1325,6 +1325,23 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["chat-detail-report"].exists, "with Report")
     }
 
+    /// The records screen's "N open" is the city's count now, not the weekly
+    /// banked one (owner, 2026-10-24: 129 Carlton Ave said "0 open" above a
+    /// list of open complaints). Live data, so it checks the contradiction
+    /// itself: any Open row in the list means the count can't be 0.
+    func testComplaintsOpenCountAgreesWithTheList() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "hpdc:3020440004"]
+        app.launch()
+        let count = app.staticTexts["hpd-open-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 30), "the complaints screen shows its open count")
+        let openRow = app.staticTexts["Open"].firstMatch
+        if openRow.waitForExistence(timeout: 20) {
+            let done = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != '0 open'"), object: count)
+            XCTAssertEqual(XCTWaiter().wait(for: [done], timeout: 15), .completed, "an Open complaint is listed, but the count says \(count.label)")
+        }
+    }
+
     /// Violations & inspections leads and About is the last section (owner,
     /// 2026-09-19): violations are what people tap most on a building page.
     func testViolationsFirstAndAboutLast() throws {

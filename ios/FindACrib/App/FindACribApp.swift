@@ -225,10 +225,11 @@ enum LaunchArgs {
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
         else if r == "mapall" { let a = SearchQuery(); nav.searchPath = [.results(a), .map(a)] }
         else if r.hasPrefix("hpd") {
-            // hpd[:bbl] — the violations screen, for screenshots.
+            // hpd[:bbl] — the violations screen, for screenshots; hpdc[:bbl]
+            // the complaints screen.
             let bbl = r.split(separator: ":").dropFirst().first.map(String.init)
                 ?? store.buildings.first { ($0.h?.violations?.open ?? 0) > 5 }?.bbl ?? store.buildings.first?.bbl ?? ""
-            nav.searchPath = [.results(q), .building(bbl), .hpdRecords(bbl, .violations)]
+            nav.searchPath = [.results(q), .building(bbl), .hpdRecords(bbl, r.hasPrefix("hpdc") ? .complaints : .violations)]
         }
         else if r.hasPrefix("detail") {
             // Outside NYC, prefer a building that actually carries a record —

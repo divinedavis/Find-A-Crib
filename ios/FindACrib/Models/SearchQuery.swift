@@ -136,7 +136,11 @@ struct SearchQuery: Codable, Hashable {
     /// rent-stabilized" before. Voucher and lottery searches keep their noun.
     func resultHeadline(count: Int, city: City = .nyc) -> String {
         let n = normalized
-        if !n.hcrOnly && !n.vouchersOnly { return count.formatted() }
+        // "69 buildings", not a bare "69" (owner, 2026-10-24; just the
+        // count since 2026-10-17 read as a number with no meaning).
+        if !n.hcrOnly && !n.vouchersOnly {
+            return count == 1 ? String(localized: "1 building") : String(localized: "\(count.formatted()) buildings")
+        }
         let many = n.hcrOnly ? String(localized: "lottery & waitlist sites") : String(localized: "voucher-friendly buildings")
         return count == 1 ? String(localized: "1 \(resultNoun)") : String(localized: "\(count.formatted()) \(many)")
     }

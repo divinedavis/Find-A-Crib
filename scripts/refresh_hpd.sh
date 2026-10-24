@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Weekly HPD refresh: re-pull violation + complaint counts and republish the blob
+# Nightly HPD refresh (weekly until 2026-10-24): re-pull violation + complaint counts and republish the blob
 # the map loads. Installed as /etc/cron.d/rentmap-hpd.
 #
 # HPD is the most volatile dataset on the site and was the only major one with no

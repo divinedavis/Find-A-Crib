@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weekly refresh of the HPD violation + complaint counts inside buildings.min.json.
+"""Nightly (weekly until 2026-10-24) refresh of the HPD violation + complaint counts inside buildings.min.json.
 
 The building set itself comes from DHCR and changes once a year; what moves week to
 week is HPD's record against those buildings. This updates only the `h` block and

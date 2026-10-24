@@ -424,6 +424,10 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
+    "1 building" : {
+      "back" : "1 building",
+      "src" : "8ed08e15a6b79a0e"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -4893,6 +4897,10 @@
     "1 bed" : {
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
+    },
+    "1 building" : {
+      "back" : "1 building",
+      "src" : "8ed08e15a6b79a0e"
     },
     "1 year" : {
       "back" : "1 year",
@@ -9368,6 +9376,10 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
+    "1 building" : {
+      "back" : "1 building",
+      "src" : "8ed08e15a6b79a0e"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -13841,6 +13853,10 @@
     "1 bed" : {
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
+    },
+    "1 building" : {
+      "back" : "1 building",
+      "src" : "8ed08e15a6b79a0e"
     },
     "1 year" : {
       "back" : "1 year",

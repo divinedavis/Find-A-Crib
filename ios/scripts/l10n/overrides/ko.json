@@ -43,7 +43,7 @@
  "%@ %@ in view": "화면 안 %1$@개 %2$@",
  "%@ bd": "침실 %@개",
  "%@ bed": "침실 %@개",
- "%@ buildings": "건물 %@개",
+ "%@ buildings": "건물 %@곳",
  "%@ closing soonest: %@.": "가장 먼저 마감되는 %1$@: %2$@.",
  "%@ in": "%@ 내",
  "%@ · open": "%@ · 접수 중",
@@ -538,5 +538,6 @@
  "Unsend": "전송 취소",
  "You replied to %@": "내가 %@에게 답장함",
  "You replied to yourself": "내가 나에게 답장함",
- "you": "나"
+ "you": "나",
+ "1 building": "건물 1곳"
 }

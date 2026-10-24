@@ -35,7 +35,11 @@ notify() {
 # never matches itself.
 # No grep -q: under pipefail it exits on the first match, ps dies of SIGPIPE
 # and busy reads "not busy" (both nightly builds ran at once, 2026-10-23).
-busy() { ps -axo command | grep -E "[x]codebuild (test|archive|build|-)|[s]cripts/ship\.sh|[a]ltool --upload" >/dev/null; }
+# Marracat's 03:00 job counts as busy for its whole run, not only while it
+# compiles: its catalog steps come first, and at 03:05 no xcodebuild had
+# started yet, so this build would have begun alongside it (owner,
+# 2026-10-24: "once marracat is done, put this in test flight").
+busy() { ps -axo command | grep -E "[x]codebuild (test|archive|build|-)|[s]cripts/ship\.sh|[a]ltool --upload|[M]arracat/scripts/daily_ship\.sh" >/dev/null; }
 past_cutoff() { (( 10#$(date +%H) >= 9 )); }
 
 say "=== daily build"

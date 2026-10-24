@@ -1,0 +1,7 @@
+# Flaky-test quarantine (owner approved the mechanism 2026-10-24).
+# A test listed here still runs on every ship, once, after the blocking
+# passes, but its failure doesn't stop the ship. The owner approves EVERY
+# entry; take it off the list in the same commit that fixes it.
+#
+# One test id per line, as xcodebuild -only-testing writes it, then why:
+#   FindACribUITests/FindACribUITests/testSomething   flaky under load since 2026-10-24, owner OK 2026-10-24

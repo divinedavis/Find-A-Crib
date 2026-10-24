@@ -46,6 +46,9 @@ busy() {
         ($1 ~ /(^|\/)(ba)?sh$/ && (/ [^ ]*scripts\/ship\.sh( |$)/ || /Marracat\/scripts\/daily_ship\.sh/)) {f=1} END {exit !f}'
 }
 past_cutoff() { (( 10#$(date +%H) >= 9 )); }
+# The shared build lock (scripts/build_lock.sh) as well as busy(): the lock
+# is exact for scripts that take it; busy() still covers ones that don't yet.
+source scripts/build_lock.sh
 
 say "=== daily build"
 if past_cutoff && [[ "${DAILY_SHIP_NOW:-0}" != "1" ]]; then
@@ -65,8 +68,8 @@ if [[ -z "$changes" ]]; then say "no iOS app changes since $(git log -1 --format
 say "iOS app changes since the last build:"; echo "$changes"
 (( DRY )) && { say "dry run: would ship"; exit 0; }
 
-while busy; do
-    past_cutoff && [[ "${DAILY_SHIP_NOW:-0}" != "1" ]] && { notify "no build today: another build kept the Mac busy"; exit 1; }
+until ! busy && build_lock_try "Find A Crib daily_ship.sh"; do
+    past_cutoff && [[ "${DAILY_SHIP_NOW:-0}" != "1" ]] && { notify "no build today: another build kept the Mac busy ($(build_lock_holder))"; exit 1; }
     sleep 300
 done
 # Look again after waiting: a manual run may have shipped these changes
@@ -78,5 +81,32 @@ if [[ -z "$(git log --format=%h --no-merges "$last"..HEAD -- "${APP_PATHS[@]}" |
     say "already shipped while waiting (build $(grep -m1 'CURRENT_PROJECT_VERSION:' project.yml | sed -E 's/.*"([0-9]+)".*/\1/')); nothing to ship"; exit 0
 fi
 
-./scripts/ship.sh || { notify "ship failed; see ios/build.nosync/daily-ship.log"; exit 1; }
+# What broke, in the notification itself (2026-10-24): the first failing
+# tests from this run's logs, else the last error line.
+why() {
+    local t
+    t=$(find build.nosync -maxdepth 1 -name 'test-*.log' -newer build.nosync/ship-run.log.start 2>/dev/null \
+          | xargs grep -hoE "\-\[[A-Za-z]+\.[A-Za-z]+ test[A-Za-z0-9_]+\]' failed" 2>/dev/null \
+          | sed -E "s/.*\.([A-Za-z]+) (test[A-Za-z0-9_]+).*/\1.\2/" | sort -u | head -2 | paste -sd ',' - || true)
+    [[ -n "$t" ]] && { echo "failed: $t"; return; }
+    grep -E "error:" build.nosync/ship-run.log | tail -1 | cut -c1-120 | tr -d '"\\'
+}
+run_ship() {
+    touch build.nosync/ship-run.log.start
+    ./scripts/ship.sh 2>&1 | tee build.nosync/ship-run.log
+}
+if ! run_ship; then
+    # One automatic retry before the 09:00 cutoff (2026-10-24) when nothing was
+    # bumped or uploaded yet (project.yml untouched) and the run had reached the
+    # tests (so not a compile error or a lint, which a retry can't fix): a late flake under load
+    # shouldn't wait for a person, as on 23 and 24 Oct. A second failure stops.
+    if ! past_cutoff && git diff --quiet -- project.yml \
+         && grep -qE "quick pass on iPhone|running every test|unit tests only" build.nosync/ship-run.log; then
+        notify "retrying once: $(why)"
+        git reset -q --hard && git checkout -q --detach origin/main
+        run_ship || { notify "ship failed twice: $(why)"; exit 1; }
+    else
+        notify "ship failed: $(why)"; exit 1
+    fi
+fi
 notify "build $(grep -m1 'CURRENT_PROJECT_VERSION:' project.yml | sed -E 's/.*"([0-9]+)".*/\1/') is on its way to TestFlight"

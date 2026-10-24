@@ -5,8 +5,8 @@ import XCTest
 ///
 ///   xcrun simctl spawn booted log stream --predicate \
 ///     'subsystem == "com.divinedavis.findacrib" && category == "perf"'
-///   ROUTE=detail  scripts/run_tests.sh FindACribUITests/FreezeTest
-///   ROUTE=results ANCHOR=results scripts/run_tests.sh FindACribUITests/FreezeTest
+///   TEST_RUNNER_FREEZE_RUNS=5 ROUTE=detail  scripts/run_tests.sh FindACribUITests/FreezeTest
+///   TEST_RUNNER_FREEZE_RUNS=5 ROUTE=results ANCHOR=results scripts/run_tests.sh FindACribUITests/FreezeTest
 ///
 /// tap -> `FACMOVED` is the freeze a user actually sees. What does NOT measure
 /// it, both tried and discarded:
@@ -18,7 +18,9 @@ import XCTest
 ///     one that feels instant. It measures SwiftUI's teardown schedule.
 ///
 /// It asserts nothing about timing on purpose: a threshold met on a Mac is
-/// missed by a phone. It exists so the marks stay wired up.
+/// missed by a phone. It exists so the marks stay wired up, which one run
+/// proves; ships run it once (2026-10-24: five runs were 73 s of every ship,
+/// per device). FREEZE_RUNS=5 gives the five runs an investigation needs.
 final class FreezeTest: XCTestCase {
     /// Portrait first: a simulator left in landscape by an earlier run
     /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
@@ -28,7 +30,8 @@ final class FreezeTest: XCTestCase {
         continueAfterFailure = false
         let route = ProcessInfo.processInfo.environment["ROUTE"] ?? "detail"
         let anchorIsResults = ProcessInfo.processInfo.environment["ANCHOR"] == "results"
-        for run in 1...5 {
+        let runs = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_RUNS"] ?? "") ?? 1)
+        for run in 1...runs {
             let app = XCUIApplication()
             app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--perf", "--route", route]
             app.launch()

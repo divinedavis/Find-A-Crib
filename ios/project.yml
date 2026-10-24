@@ -204,6 +204,10 @@ schemes:
         - FindACribTests
         - FindACribUITests
       gatherCoverageData: false
+      # Screenshots, not a screen recording of every UI test (2026-10-24): the
+      # recording costs simulator CPU on every test and was only ever read
+      # for failures, which keep their screenshots.
+      preferredScreenCaptureFormat: screenshots
     run:
       config: Debug
       # Local StoreKit products for the simulator; not bundled in the app.

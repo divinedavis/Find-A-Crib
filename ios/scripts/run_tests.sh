@@ -3,6 +3,10 @@
 # sim fails XCUITest preflight with "Busy" (reference_ios_sim_busy_preflight).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# One build at a time on this Mac: a session's own test run waits its turn;
+# under ship.sh the lock is already held (scripts/build_lock.sh).
+source scripts/build_lock.sh
+build_lock_take "Find A Crib run_tests.sh $*"
 SIMULATOR_ID="${SIMULATOR_ID:-$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin);print(next(iter([dev['udid'] for r in d['devices'].values() for dev in r if dev.get('state')=='Booted' and 'iPhone' in dev.get('name','')] + [dev['udid'] for r in d['devices'].values() for dev in r if 'iPhone' in dev.get('name','') and dev.get('isAvailable')]), ''))")}"
 xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
 xcrun simctl bootstatus "$SIMULATOR_ID" -b >/dev/null 2>&1 || true
@@ -33,6 +37,10 @@ SKIP_FLAGS=(); for s in ${SKIP:-}; do SKIP_FLAGS+=(-skip-testing:"$s"); done
 # "synthesizing event") while another session's simulator tests shared the
 # Mac; every one passed alone in seconds. Retried tests are listed below.
 RETRY_FLAGS=(); [[ "${RETRY:-0}" == "1" ]] && RETRY_FLAGS=(-retry-tests-on-failure -test-iterations 2)
+# A hung test fails after 3 minutes instead of sitting out every timeout
+# inside it (2026-10-24). XCTest rounds allowances up to whole minutes; the
+# longest test today (FreezeTest, ~73 s with five runs) is well inside.
+TIMEOUT_FLAGS=(-test-timeouts-enabled YES -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 600)
 RESULT_FLAGS=(); [[ -n "${RESULT_BUNDLE:-}" ]] && { rm -rf "$RESULT_BUNDLE"; RESULT_FLAGS=(-resultBundlePath "$RESULT_BUNDLE"); }
 # The whole run goes to a file and only the last 60 lines are printed: a
 # failure earlier than that was invisible twice in one afternoon (2026-09-23),
@@ -51,7 +59,7 @@ else
 fi
 set +e
 xcodebuild -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
-  ${ONLY_FLAGS[@]+"${ONLY_FLAGS[@]}"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} "${ACTION[@]}" > "$LOG.raw" 2>&1
+  ${ONLY_FLAGS[@]+"${ONLY_FLAGS[@]}"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} "${TIMEOUT_FLAGS[@]}" "${ACTION[@]}" > "$LOG.raw" 2>&1
 status=$?
 grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" "$LOG.raw" > "$LOG" || true
 set -e

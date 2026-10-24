@@ -25,6 +25,7 @@ struct SearchSnapshot: Sendable {
         var voucherFriendly = false    // s8.avail or s8.bldg has it
 
         var openViolations: Int32 = 0
+        var pests: Int32 = 0
         var units: Int32 = 0
         var year: Int32 = 0
         /// Position in address order; equal addresses share a rank.
@@ -63,6 +64,7 @@ struct SearchSnapshot: Sendable {
             f.voucherFriendly = f.voucherLive || s8.bldg[b.bbl] != nil
 
             f.openViolations = Int32(clamping: b.openViolations)
+            f.pests = Int32(clamping: b.pestsCited)
             f.units = Int32(clamping: b.u ?? 0)
             f.year = Int32(clamping: b.yr ?? 0)
             f.addrRank = rank[i]

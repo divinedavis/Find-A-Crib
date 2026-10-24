@@ -1332,6 +1332,23 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["chat-detail-report"].exists, "with Report")
     }
 
+    /// No pests sits with No violations under Building condition (owner,
+    /// 2026-10-24), and turning it on shows in the Filter count.
+    func testFiltersOfferNoPests() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        let filter = app.buttons["results-filter"]
+        XCTAssertTrue(filter.waitForExistence(timeout: 60))
+        filter.tap()
+        let pests = app.switches["filter-no-pests"]
+        for _ in 0..<6 where !(pests.exists && pests.isHittable) { app.swipeUp() }
+        XCTAssertTrue(pests.waitForExistence(timeout: 5), "the filters offer No pests")
+        XCTAssertEqual(pests.value as? String, "0", "off by default")
+        pests.switches.firstMatch.exists ? pests.switches.firstMatch.tap() : pests.tap()
+        XCTAssertEqual(pests.value as? String, "1")
+    }
+
     /// Documents saved in the app go with the email to the agent (owner,
     /// 2026-10-24): with one in the packet, the send button attaches it and
     /// says so; tapping it opens a composer, not a bare mailto link.

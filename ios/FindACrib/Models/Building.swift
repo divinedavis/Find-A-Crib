@@ -38,6 +38,9 @@ struct Building: Identifiable, Codable, Hashable {
         let complaints: Complaints?
         let lastregistration: String?
         let op: Int?
+        /// Pest violations (roaches, mice, rats, bedbugs) an inspector cited
+        /// in the last 12 months; absent = none (refresh_hpd_counts.py).
+        let pe: Int?
         struct Violations: Codable, Hashable {
             let open: Int?; let total: Int?
             let a: Int?; let b: Int?; let c: Int?
@@ -103,6 +106,7 @@ struct Building: Identifiable, Codable, Hashable {
     /// "246 10th Ave" — the clerk's all-caps softened for a card headline.
     var address: String { AddressCase.pretty(a) }
     var openViolations: Int { h?.violations?.open ?? 0 }
+    var pestsCited: Int { h?.pe ?? 0 }
     var openComplaints: Int { h?.complaints?.open ?? 0 }
     var statusLine: String { (s ?? []).map { AddressCase.pretty($0) }.joined(separator: " · ") }
     /// NYC has a page per building; the other cities do not, so those link to

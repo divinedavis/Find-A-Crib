@@ -118,6 +118,7 @@ enum SearchEngine {
             if !q.unitBands.contains(band) { return false }
         }
         if q.noOpenViolations, f.openViolations > 0 { return false }
+        if q.hidePests, f.pests > 0 { return false }
         return true
     }
 
@@ -186,6 +187,7 @@ enum SearchEngine {
             if !q.unitBands.contains(band) { return false }
         }
         if q.noOpenViolations, b.openViolations > 0 { return false }
+        if q.hidePests, b.pestsCited > 0 { return false }
         return true
     }
 

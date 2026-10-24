@@ -44,6 +44,13 @@ struct FiltersSheet: View {
                                     Text("Hide buildings with unresolved housing-code violations").font(.se(14)).foregroundStyle(SE.ink3)
                                 }
                             }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                            Toggle(isOn: $draft.hidePests) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("No pests").font(.se(18, .semibold))
+                                    Text("Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months").font(.se(14)).foregroundStyle(SE.ink3)
+                                }
+                            }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                            .accessibilityIdentifier("filter-no-pests")
                         }
                     }
                     VStack(alignment: .leading, spacing: 10) {

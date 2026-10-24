@@ -84,6 +84,15 @@ struct SearchQuery: Codable, Hashable {
     var beds: Set<Int> = []          // 0 = studio … 4 = 4+
     var unitBands: Set<Int> = []     // 0: 1–5, 1: 6–19, 2: 20–49, 3: 50+
     var noOpenViolations = false
+    /// No pests (owner, 2026-10-24): hide buildings where an inspector cited
+    /// roaches, mice, rats or bedbugs in the last 12 months. Optional so
+    /// searches saved before it existed still decode; nil means off, so an
+    /// untouched query still equals SearchQuery().
+    var noPests: Bool? = nil
+    var hidePests: Bool {
+        get { noPests ?? false }
+        set { noPests = newValue ? true : nil }
+    }
     var voucherLiveOnly = false      // vouchers mode: only live AffordableHousing.com listings
 
     var vouchersOnly = false         // Show: only Section 8 / voucher-friendly buildings
@@ -167,6 +176,7 @@ struct SearchQuery: Codable, Hashable {
         }
         if !unitBands.isEmpty { parts.append(String(localized: "\(unitBands.count) sizes")) }
         if noOpenViolations { parts.append(String(localized: "No violations")) }
+        if hidePests { parts.append(String(localized: "No pests")) }
         if hcrOnly { parts.insert("HCR", at: 0) }
         if vouchersOnly { parts.insert(String(localized: "Vouchers"), at: 0) }
 
@@ -211,6 +221,7 @@ struct SearchQuery: Codable, Hashable {
         if !beds.isEmpty { n += 1 }
         if !unitBands.isEmpty { n += 1 }
         if noOpenViolations { n += 1 }
+        if hidePests { n += 1 }
         if voucherLiveOnly { n += 1 }
 
         if vouchersOnly { n += 1 }

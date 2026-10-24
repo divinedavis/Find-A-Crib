@@ -1983,6 +1983,33 @@ final class ChatCryptoTests: XCTestCase {
     }
 }
 
+/// No pests (owner, 2026-10-24): buildings with pests cited in the last 12
+/// months drop out; searches saved before the filter still load.
+final class PestFilterTests: XCTestCase {
+    func testNoPestsHidesBuildingsWithPestsCited() throws {
+        let json = #"[{"bbl":"3020440004","a":"129 CARLTON AVE","h":{"pe":2}},{"bbl":"3000000001","a":"1 CLEAN ST","h":{"violations":{"open":0}}}]"#
+        let rows = try JSONDecoder().decode([Building].self, from: Data(json.utf8))
+        XCTAssertEqual(rows.map(\.pestsCited), [2, 0])
+        let facts = SearchSnapshot.facts(for: rows, s8: S8Blob(), fmr: [:])
+        var q = SearchQuery()
+        XCTAssertTrue(SearchEngine.matches(rows[0], facts[0], q), "off by default")
+        q.hidePests = true
+        XCTAssertFalse(SearchEngine.matches(rows[0], facts[0], q), "pests cited: hidden")
+        XCTAssertTrue(SearchEngine.matches(rows[1], facts[1], q), "no pests: shown")
+        XCTAssertEqual(q.activeFilterCount, 1)
+        XCTAssertTrue(q.summary.contains("No pests"))
+        q.hidePests = false
+        XCTAssertEqual(q, SearchQuery(), "turning it off again leaves an untouched query")
+    }
+
+    func testSearchesSavedBeforeTheFilterStillDecode() throws {
+        var old = try JSONSerialization.jsonObject(with: JSONEncoder().encode(SearchQuery())) as! [String: Any]
+        old.removeValue(forKey: "noPests")
+        let q = try JSONDecoder().decode(SearchQuery.self, from: JSONSerialization.data(withJSONObject: old))
+        XCTAssertFalse(q.hidePests)
+    }
+}
+
 /// Building chat layout + typing (owner, 2026-10-19; Instagram layout
 /// 2026-10-23): runs, time lines, reactions, typing bubbles.
 final class ChatLayoutTests: XCTestCase {

@@ -403,5 +403,7 @@
  "Reactions": "回应",
  "Reactions: %@": "回应：%@",
  "Unsend": "撤回",
- "1 building": "1 栋楼"
+ "1 building": "1 栋楼",
+ "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months": "隐藏过去12个月内被HPD查出蟑螂、老鼠或臭虫的楼",
+ "Your documents go with it: %@.": "你的文件会一并附上：%@。"
 }

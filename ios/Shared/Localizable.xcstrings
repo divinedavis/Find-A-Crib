@@ -5526,6 +5526,34 @@
         }
       }
     },
+    "Add your documents with Get my documents ready and they'll be attached to this email." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Añade tus documentos con Obtener mis documentos listos y se adjuntarán a este correo electrónico."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "내 문서 준비하기 기능을 사용하여 문서를 추가하면 이 이메일에 첨부됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用“准备好我的文件”添加您的文件，它们将附加到此电子邮件中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用「準備好我的文件」新增您的文件，它們將附加到此電子郵件中。"
+          }
+        }
+      }
+    },
     "Add your rent now and the new rent" : {
       "localizations" : {
         "es" : {
@@ -11164,6 +11192,34 @@
         }
       }
     },
+    "Email with my documents" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar con mis documentos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 서류와 함께 이메일 보내기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用电子邮件发送我的文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用電子郵件附上我的檔案"
+          }
+        }
+      }
+    },
     "Email: %@" : {
       "localizations" : {
         "es" : {
@@ -13957,6 +14013,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "幫我申請"
+          }
+        }
+      }
+    },
+    "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oculta los edificios donde HPD haya citado cucarachas, ratas, ratones o chinches en los últimos 12 meses"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지난 12개월 동안 HPD가 바퀴벌레, 생쥐, 쥐, 빈대를 적발한 건물 숨기기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏过去12个月内被HPD查出蟑螂、老鼠或臭虫的楼"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏過去12個月內被HPD查出蟑螂、老鼠或臭蟲的樓"
           }
         }
       }
@@ -19396,6 +19480,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這棟樓沒有蟲害違規記錄——HPD 從未在此開出蟑螂、小鼠、大鼠或臭蟲的違規。"
+          }
+        }
+      }
+    },
+    "No pests" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sin plagas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "해충 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "没有害虫"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "沒有害蟲"
           }
         }
       }
@@ -31791,6 +31903,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "您的詳細資訊"
+          }
+        }
+      }
+    },
+    "Your documents go with it: %@." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus documentos van adjuntos: %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서류도 함께 첨부됩니다: %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的文件会一并附上：%@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的文件會一併附上：%@。"
           }
         }
       }

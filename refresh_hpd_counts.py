@@ -51,12 +51,16 @@ def counts_for(bbls):
     print("Fetching HPD complaints...")
     complaints = fetch_hpd.fetch_complaints(bbls)
     print(f"  -> {len(complaints):,} buildings with a complaint record")
-    return violations, complaints
+
+    print("Fetching pest violations (last 12 months)...")
+    pests = fetch_hpd.fetch_pests(bbls)
+    print(f"  -> {len(pests):,} buildings with pests cited")
+    return violations, complaints, pests
 
 
-def merge(records, violations, complaints):
-    """Update each record's h.violations / h.complaints. Returns a change summary."""
-    moved = {"violations": 0, "complaints": 0, "gained_h": 0}
+def merge(records, violations, complaints, pests=None):
+    """Update each record's h.violations / h.complaints / h.pe. Returns a change summary."""
+    moved = {"violations": 0, "complaints": 0, "pests": 0, "gained_h": 0}
     for r in records:
         bbl = r["bbl"]
         h = r.get("h")
@@ -76,6 +80,19 @@ def merge(records, violations, complaints):
             if h.get(key) != fresh:
                 moved[key] += 1
             h[key] = fresh
+        # h.pe: pest violations cited in the last 12 months (absent = none).
+        if pests is not None:
+            n = pests.get(bbl, 0)
+            if n:
+                if h is None:
+                    h = r["h"] = {}
+                    moved["gained_h"] += 1
+                if h.get("pe") != n:
+                    moved["pests"] += 1
+                h["pe"] = n
+            elif h and "pe" in h:
+                del h["pe"]
+                moved["pests"] += 1
     return moved
 
 
@@ -123,13 +140,15 @@ def main():
     print(f"{len(records):,} buildings from {blob}")
 
     before = sum(((r.get("h") or {}).get("violations") or {}).get("open", 0) for r in records)
-    violations, complaints = counts_for(bbls)
-    moved = merge(records, violations, complaints)
+    violations, complaints, pests = counts_for(bbls)
+    moved = merge(records, violations, complaints, pests)
     after = sum(((r.get("h") or {}).get("violations") or {}).get("open", 0) for r in records)
 
     print(f"\nopen violations: {before:,} -> {after:,} ({after - before:+,})")
     print(f"records whose violation block changed: {moved['violations']:,}")
     print(f"records whose complaint block changed: {moved['complaints']:,}")
+    print(f"records whose pest count changed: {moved['pests']:,} "
+          f"({sum(1 for r in records if (r.get('h') or {}).get('pe')):,} buildings with pests cited)")
 
     # A refresh that empties the corpus is a broken fetch, not a quiet city. Bail
     # before writing rather than publish it — every count on the site reads this.

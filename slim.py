@@ -55,6 +55,8 @@ for r in records:
         # the Plus-gated get_agent_phone(). The flag is what the map's
         # "managing agent has a phone listed" filter tests, and it is the same
         # fact the building panel already exposes as has_phone.
+        if h.get("pe"):
+            slim_h["pe"] = h["pe"]   # pest violations, last 12 months (refresh_hpd_counts.py)
         mgr = h.get("manager")
         if isinstance(mgr, dict) and mgr.get("phone"):
             slim_h["ph"] = 1

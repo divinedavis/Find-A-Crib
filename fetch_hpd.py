@@ -307,6 +307,31 @@ def fetch_complaints(bbls):
     return out
 
 
+# Roaches, mice, rats and bedbugs as an HPD inspector cited them -- the same
+# rule as the app's HPDRecords.pestWhere and the building's Pests screen:
+# "INFESTATION/NUISANCE CONSISTING OF <pest>", which keeps out the annual
+# "FILE ANNUAL BEDBUG REPORT" paperwork notices (measured 2026-09-23).
+PEST_WHERE = (
+    "(upper(novdescription) like '%INFESTATION CONSISTING OF%' OR upper(novdescription) like '%NUISANCE CONSISTING OF%') "
+    "AND (upper(novdescription) like '%ROACH%' OR upper(novdescription) like '%MICE%' "
+    "OR upper(novdescription) like '%RATS%' OR upper(novdescription) like '%BEDBUG%' "
+    "OR upper(novdescription) like '%BED BUG%' OR upper(novdescription) like '%VERMIN%')"
+)
+
+
+def fetch_pests(bbls):
+    """Pest violations cited in the last 12 months, per BBL, open or closed
+    (owner, 2026-10-24: filter out buildings with pests). One grouped query
+    for the whole city: ~tens of thousands of rows, not one per building."""
+    want = set(bbls)
+    out = {}
+    for row in counts(VIOLATIONS, "bbl", f"{PEST_WHERE} AND novissueddate >= '{ONE_YEAR_AGO}'", "bbl"):
+        bbl = row.get("bbl")
+        if bbl in want:
+            out[bbl] = out.get(bbl, 0) + int(row["n"])
+    return out
+
+
 def pick_contact(contacts, types):
     """Return first contact matching any type in `types`, in order."""
     for t in types:

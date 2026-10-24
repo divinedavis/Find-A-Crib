@@ -584,6 +584,10 @@
       "back" : "Add what they charged you to check it",
       "src" : "0dd67f094bf783ea"
     },
+    "Add your documents with Get my documents ready and they'll be attached to this email." : {
+      "back" : "Add your documents with Get my documents ready and they will be attached to this email.",
+      "src" : "0947e7c40676a383"
+    },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent now and the new rent",
       "src" : "aeafcba0cfc8ef3c"
@@ -1408,6 +1412,10 @@
       "back" : "Email to the agent",
       "src" : "c3e7b8d555cf7bc7"
     },
+    "Email with my documents" : {
+      "back" : "Email with my documents",
+      "src" : "5693b880d95f7353"
+    },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
@@ -1779,6 +1787,10 @@
     "Help me apply" : {
       "back" : "Help me apply",
       "src" : "81d866976cc2d3f1"
+    },
+    "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
+      "back" : "Hide the buildings where HPD has reported cockroaches, rats, mice or bed bugs in the last 12 months",
+      "src" : "acb07ec9c3f6a61a"
     },
     "Hide buildings with unresolved housing-code violations" : {
       "back" : "Hide buildings with unresolved violations of the housing code",
@@ -2547,6 +2559,10 @@
     "No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here." : {
       "back" : "There are no recorded pest infestations for this building, HPD has never cited cockroaches, rats, mice or bed bugs here.",
       "src" : "8c7e2e51f2a6a56b"
+    },
+    "No pests" : {
+      "back" : "Without pests",
+      "src" : "b7328339f6046804"
     },
     "No phone number on file for this agent." : {
       "back" : "There is no registered phone number for this agent.",
@@ -4396,6 +4412,10 @@
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
     },
+    "Your documents go with it: %@." : {
+      "back" : "Your documents go with him: %@.",
+      "src" : "39bcbaca2ce1130a"
+    },
     "Your email" : {
       "back" : "Your email address",
       "src" : "1ea694d74a81e0bf"
@@ -5057,6 +5077,10 @@
     "Add what you were charged to check it" : {
       "back" : "Please add the amount charged to check.",
       "src" : "0dd67f094bf783ea"
+    },
+    "Add your documents with Get my documents ready and they'll be attached to this email." : {
+      "back" : "If you add a document using the Prepare My Document function, it will be attached to this email.",
+      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Add the current rent and the new rent now.",
@@ -5882,6 +5906,10 @@
       "back" : "Send an email to the agency",
       "src" : "c3e7b8d555cf7bc7"
     },
+    "Email with my documents" : {
+      "back" : "Send an email with my document",
+      "src" : "5693b880d95f7353"
+    },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
@@ -6257,6 +6285,10 @@
     "Help me apply" : {
       "back" : "Help me apply.",
       "src" : "81d866976cc2d3f1"
+    },
+    "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
+      "back" : "Hide buildings that have mentioned cockroaches, mice, rats or parasites in the past 12 months.",
+      "src" : "acb07ec9c3f6a61a"
     },
     "Hide buildings with unresolved housing-code violations" : {
       "back" : "Hide the building due to unresolved housing code violations.",
@@ -7025,6 +7057,10 @@
     "No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here." : {
       "back" : "There are no recorded pest violations for this building - HPD has never been found with cockroaches, mice, rats or parasites here.",
       "src" : "8c7e2e51f2a6a56b"
+    },
+    "No pests" : {
+      "back" : "No pests",
+      "src" : "b7328339f6046804"
     },
     "No phone number on file for this agent." : {
       "back" : "There is no phone number in the record of this agent.",
@@ -8874,6 +8910,10 @@
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
     },
+    "Your documents go with it: %@." : {
+      "back" : "Your document comes with it: %@.",
+      "src" : "39bcbaca2ce1130a"
+    },
     "Your email" : {
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
@@ -9535,6 +9575,10 @@
     "Add what you were charged to check it" : {
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
+    },
+    "Add your documents with Get my documents ready and they'll be attached to this email." : {
+      "back" : "Use Get My Documents to add your documents, which will be attached to this email.",
+      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Now add your rent and the new rent.",
@@ -10360,6 +10404,10 @@
       "back" : "Email to the agent",
       "src" : "c3e7b8d555cf7bc7"
     },
+    "Email with my documents" : {
+      "back" : "Send my files by email.",
+      "src" : "5693b880d95f7353"
+    },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
@@ -10735,6 +10783,10 @@
     "Help me apply" : {
       "back" : "Help me apply.",
       "src" : "81d866976cc2d3f1"
+    },
+    "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
+      "back" : "Hide buildings where HPD has mentioned cockroaches, mice, rats or bed bugs in the past 12 months.",
+      "src" : "acb07ec9c3f6a61a"
     },
     "Hide buildings with unresolved housing-code violations" : {
       "back" : "Hide buildings with unresolved housing regulations violations",
@@ -11503,6 +11555,10 @@
     "No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here." : {
       "back" : "There are no recorded pest violations in this building - HPD has never issued fines for cockroaches, mice, rats or bed bugs here.",
       "src" : "8c7e2e51f2a6a56b"
+    },
+    "No pests" : {
+      "back" : "No pests",
+      "src" : "b7328339f6046804"
     },
     "No phone number on file for this agent." : {
       "back" : "This agent does not have a archived phone number.",
@@ -13352,6 +13408,10 @@
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
     },
+    "Your documents go with it: %@." : {
+      "back" : "Your documents are also attached: %@.",
+      "src" : "39bcbaca2ce1130a"
+    },
     "Your email" : {
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
@@ -14013,6 +14073,10 @@
     "Add what you were charged to check it" : {
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
+    },
+    "Add your documents with Get my documents ready and they'll be attached to this email." : {
+      "back" : "Use \"Prepare my documents\" to add your documents, which will be attached to this email.",
+      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent and new rent now",
@@ -14838,6 +14902,10 @@
       "back" : "Send an email to the agent",
       "src" : "c3e7b8d555cf7bc7"
     },
+    "Email with my documents" : {
+      "back" : "Attach my documents by email.",
+      "src" : "5693b880d95f7353"
+    },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
@@ -15213,6 +15281,10 @@
     "Help me apply" : {
       "back" : "Help me apply",
       "src" : "81d866976cc2d3f1"
+    },
+    "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
+      "back" : "Hide HPD buildings that have been cited for cockroaches, mice, rats or bed bugs in the past 12 months.",
+      "src" : "acb07ec9c3f6a61a"
     },
     "Hide buildings with unresolved housing-code violations" : {
       "back" : "Hiding unsolvable housing law violations and illegal buildings",
@@ -15981,6 +16053,10 @@
     "No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here." : {
       "back" : "There are no recorded pest violations in the building - HPD has never reported cockroaches, mice, rats or bed bugs here.",
       "src" : "8c7e2e51f2a6a56b"
+    },
+    "No pests" : {
+      "back" : "No pests",
+      "src" : "b7328339f6046804"
     },
     "No phone number on file for this agent." : {
       "back" : "There is no phone number in this agent file.",
@@ -17829,6 +17905,10 @@
     "Your details" : {
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
+    },
+    "Your documents go with it: %@." : {
+      "back" : "Your documents are attached accordingly: %@.",
+      "src" : "39bcbaca2ce1130a"
     },
     "Your email" : {
       "back" : "Your email address",

@@ -50,6 +50,10 @@ def slim_h(h):
     # filter that silently matches nothing.
     if h.get("ph"):
         out["ph"] = h["ph"]
+    # pe (pest violations cited in the last 12 months) is eager for the same
+    # reason: the No pests filter reads it on every record.
+    if h.get("pe"):
+        out["pe"] = h["pe"]
     return out or None
 
 

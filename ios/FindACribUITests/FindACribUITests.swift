@@ -1281,9 +1281,9 @@ final class FindACribUITests: XCTestCase {
         }
         let mine = message("Back on here"), theirs = message("Radiators are cold")
         XCTAssertTrue(mine.exists && theirs.exists)
-        let mid = app.windows.firstMatch.frame.midX
-        XCTAssertGreaterThan(mine.frame.minX, mid - 60, "yours sit on the right: \(mine.frame)")
-        XCTAssertLessThan(theirs.frame.minX, 70, "a neighbor's sit on the left: \(theirs.frame)")
+        // Against each other, not the screen: on iPad the room is a centred
+        // 720 pt column, so a neighbor's bubble starts well inside the edge.
+        XCTAssertGreaterThan(mine.frame.minX, theirs.frame.minX + 80, "yours sit right of a neighbor's: \(mine.frame) vs \(theirs.frame)")
         XCTAssertTrue(app.descendants(matching: .any)["chat-quote"].exists, "a reply shows what it answers")
         XCTAssertTrue(app.buttons["chat-reactions"].exists, "a reaction sits under its bubble")
         XCTAssertFalse(app.staticTexts["You"].exists, "your messages carry no \"You\" label")

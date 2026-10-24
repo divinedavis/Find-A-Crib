@@ -4,14 +4,6 @@
       "back" : "(mandatory here)",
       "src" : "b08fc11f6f761cd6"
     },
-    " — an HPD-approved marketing agent" : {
-      "back" : "— a marketing agent approved by HPD",
-      "src" : "9d26c1cb12325845"
-    },
-    " — the city's affordable-housing finance agency" : {
-      "back" : "— the city's affordable housing financing agency",
-      "src" : "80a7d5bfb048a046"
-    },
     " · %@/yr" : {
       "back" : "· %@/year",
       "src" : "e2db0a0a1a745f74"
@@ -159,6 +151,10 @@
     "%@ and %@ here — see each one" : {
       "back" : "%1$@ and %2$@ here, see each one",
       "src" : "754484d2fe449f4f"
+    },
+    "%@ at %@" : {
+      "back" : "%1$@ in %2$@",
+      "src" : "8e6b279f87969fdf"
     },
     "%@ bd" : {
       "back" : "%@ bd",
@@ -400,10 +396,6 @@
       "back" : "%lld+ in file",
       "src" : "04017329113b550e"
     },
-    "⏱ First come, first served" : {
-      "back" : "⏱ First when you arrive, first when you serve",
-      "src" : "33efa6077b363ed0"
-    },
     "✨ Ask a question" : {
       "back" : "✨ Ask a question",
       "src" : "2aa817316305c92b"
@@ -491,6 +483,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "A lottery or subletting is only sent when the rent of an unit is at or below its limit and your family income falls into one of its income bands. Leave both blank to find out everything. Your income and your home also determine which lotteries and subleases you qualify for in the Lotteries tab.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A message this phone can't read" : {
+      "back" : "A message that this phone cannot read",
+      "src" : "4111d010a1fafddb"
     },
     "A neighbor" : {
       "back" : "A neighbor",
@@ -711,6 +707,10 @@
     "Apartment" : {
       "back" : "apartment",
       "src" : "df00e3c24c89298c"
+    },
+    "App icon" : {
+      "back" : "Application icon",
+      "src" : "8ea480baa9e7cdc3"
     },
     "Apple couldn't verify the purchase." : {
       "back" : "Apple was unable to verify the purchase.",
@@ -936,10 +936,6 @@
       "back" : "Nearby cafes",
       "src" : "80f5c3ea4a7c4964"
     },
-    "Cafés within about half a mile, from Apple Maps." : {
-      "back" : "Cafes less than a mile and a half away, from Apple Maps.",
-      "src" : "472e8709a35fa874"
-    },
     "Call" : {
       "back" : "call",
       "src" : "0a2a1e0ef91e93ee"
@@ -963,6 +959,10 @@
     "Cancel" : {
       "back" : "to cancel",
       "src" : "5e4baab906fcac57"
+    },
+    "Cancel reply" : {
+      "back" : "Cancel reply",
+      "src" : "7a031c769e1bda38"
     },
     "Car theft" : {
       "back" : "Car theft",
@@ -1228,6 +1228,10 @@
       "back" : "The alerts could not be activated. Try again in a minute.",
       "src" : "4eb970b6f50608eb"
     },
+    "Couldn't unsend. Check your connection and try again." : {
+      "back" : "The shipment could not be canceled. Check your connection and try again.",
+      "src" : "677b95b389ae5ed2"
+    },
     "County" : {
       "back" : "county",
       "src" : "55f388a449f67a8c"
@@ -1308,6 +1312,10 @@
       "back" : "Delete everything",
       "src" : "0fda71a0de43684c"
     },
+    "Delete for you" : {
+      "back" : "Delete for you",
+      "src" : "6dcf5008d2e8b712"
+    },
     "Delete my packet" : {
       "back" : "Delete my package",
       "src" : "ff6259ff0b5e993f"
@@ -1335,6 +1343,10 @@
     "Describe the apartment you want" : {
       "back" : "Describe the apartment you want",
       "src" : "3da50864885e546b"
+    },
+    "Details" : {
+      "back" : "Internal information",
+      "src" : "b69e89205121f91d"
     },
     "Developer API" : {
       "back" : "API for developers",
@@ -1772,6 +1784,10 @@
       "back" : "Hide answers",
       "src" : "5855a0c676128944"
     },
+    "Holiday app icons" : {
+      "back" : "Vacation application icons",
+      "src" : "7b8f968560501e09"
+    },
     "HOLLYWOOD" : {
       "back" : "Hollywood",
       "src" : "43165b73d765eadd"
@@ -1856,10 +1872,6 @@
       "back" : "HUD FY2026 Fair market rent in small areas for ZIP %@, from studio to 2 bedrooms. A neighborhood-level estimate of what apartments cost, not the rent of this building.",
       "src" : "603591c4e06c0985"
     },
-    "HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it." : {
-      "back" : "HUD FY2026 Fair market rents in small areas: the neighborhood reference rate, not the regulated rent of this building. Stabilized rents are usually much below it.",
-      "src" : "9adc8297f4cb9e6f"
-    },
     "I know when it started" : {
       "back" : "I know when it started",
       "src" : "1bba1916d347e865"
@@ -1923,10 +1935,6 @@
     "Income-restricted" : {
       "back" : "Restricted by income",
       "src" : "c445a995e8b67c5c"
-    },
-    "Income-restricted · see agent for rent" : {
-      "back" : "Restricted income · consult the agent to rent",
-      "src" : "c7b86d9a48b37d35"
     },
     "Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table." : {
       "back" : "Apartments with income restrictions that HPD approved marketing agents are subletting, from their own websites. Request through the agent. Room sizes come from the unit table of each listing.",
@@ -2011,6 +2019,10 @@
     "Join the waiting list by %@" : {
       "error" : "placeholders or terms lost: Únete a la lista de espera antes de las 0 horas",
       "src" : "94beee187a0a468d"
+    },
+    "Jump to the newest message" : {
+      "back" : "Go to the latest message",
+      "src" : "93543c805fc3dc43"
     },
     "just now" : {
       "back" : "Right now",
@@ -2288,6 +2300,10 @@
       "back" : "member",
       "src" : "a777665fdf5eae7d"
     },
+    "Message..." : {
+      "back" : "Message...",
+      "src" : "1719d0639da28848"
+    },
     "min. income $%@/mo" : {
       "back" : "Minimum income $%@/month",
       "src" : "84ae315ad6317b9c"
@@ -2320,6 +2336,10 @@
       "back" : "Monthly rent",
       "src" : "86806f86d31a423d"
     },
+    "More reactions" : {
+      "back" : "More reactions",
+      "src" : "7bbf961150e36479"
+    },
     "Most expensive" : {
       "back" : "More expensive",
       "src" : "429d5a216466f60a"
@@ -2343,10 +2363,6 @@
     "Nearby in %@" : {
       "back" : "Close in %@",
       "src" : "2a5ee0b56307e2fa"
-    },
-    "Nearest rent-stabilized buildings in the same neighborhood." : {
-      "back" : "The closest buildings with stabilized rent in the same neighborhood.",
-      "src" : "543fbadbfbf547f6"
     },
     "Neighborhood" : {
       "back" : "neighborhood",
@@ -3040,6 +3056,22 @@
       "back" : "New rentals are made on a first-come, first-served basis. Listen when the first one opens in your neighborhoods, without Plus, alerts arrive once a day at 8 a.m.",
       "src" : "4185772bf27ef067"
     },
+    "React %@" : {
+      "back" : "React %@",
+      "src" : "63be37c97db8ae6c"
+    },
+    "React with a heart" : {
+      "back" : "React with a heart",
+      "src" : "2d21383bc707662d"
+    },
+    "Reactions" : {
+      "back" : "Reactions",
+      "src" : "fca935f48796d967"
+    },
+    "Reactions: %@" : {
+      "back" : "Reactions: %@",
+      "src" : "640f132b048cfaff"
+    },
     "Reading the listing…" : {
       "back" : "Reading the list...",
       "src" : "660c03e42d646ed5"
@@ -3204,6 +3236,10 @@
       "back" : "Repairs",
       "src" : "23075a2cf3dd1d37"
     },
+    "Replied to %@" : {
+      "back" : "Answered to %@",
+      "src" : "c3804599c0446cf1"
+    },
     "Reply" : {
       "back" : "answer",
       "src" : "d31f207e88607970"
@@ -3211,6 +3247,10 @@
     "Replying to %@" : {
       "back" : "Responding to %@",
       "src" : "f734e0cdf7bec2ca"
+    },
+    "Replying to yourself" : {
+      "back" : "Answering yourself",
+      "src" : "d20575144fe0d85c"
     },
     "Report" : {
       "back" : "report",
@@ -3448,10 +3488,6 @@
       "back" : "Showing the latest %lld.",
       "src" : "daa5f33f75cba90f"
     },
-    "Shows details" : {
-      "back" : "Show details",
-      "src" : "87017ec8e68dca4a"
-    },
     "Sign in" : {
       "back" : "Log in",
       "src" : "db6db7cf052db857"
@@ -3672,10 +3708,6 @@
       "back" : "SUBSIDIZED BUILDING / FRIENDLY WITH VALUES",
       "src" : "068ad4280fce30a8"
     },
-    "Tap a message to see when it was sent, or to report it." : {
-      "back" : "Tap a message to see when it was sent or to report it.",
-      "src" : "eb5a51e012bd32fd"
-    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star to rate it in the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -3687,6 +3719,10 @@
     "Tap the heart on any building to keep it here." : {
       "back" : "Touch the heart in any building to keep it here.",
       "src" : "8fa8a9e6745b27ac"
+    },
+    "Tap to remove" : {
+      "back" : "Tap to delete",
+      "src" : "edb69068a88b77a7"
     },
     "Tell me about" : {
       "back" : "Tell me about",
@@ -3800,6 +3836,10 @@
       "back" : "The first %1$@ costs nothing; the %2$@ is charged on your Apple Account when it ends, unless you cancel at least 24 hours in advance.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
+      "back" : "The icon on your home screen shows the colors of each holiday, then return to the home screen. iOS indicates each time it changes.",
+      "src" : "0e9afbce184b781e"
+    },
     "The increase" : {
       "back" : "The increase",
       "src" : "0987c272aed25458"
@@ -3912,9 +3952,9 @@
       "back" : "A",
       "src" : "10e05d95e6e3c184"
     },
-    "Today" : {
-      "back" : "today",
-      "src" : "67637ca5b966dd09"
+    "Today %@" : {
+      "back" : "Today %@",
+      "src" : "ccf452e492606f3e"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts, take an hour.",
@@ -4019,6 +4059,10 @@
     "Unsave" : {
       "back" : "Do not save",
       "src" : "562535efb2650719"
+    },
+    "Unsend" : {
+      "back" : "Cancel the shipment of",
+      "src" : "f9d507842b466c0c"
     },
     "up to %@" : {
       "back" : "Until %@",
@@ -4268,9 +4312,13 @@
       "back" : "yes",
       "src" : "f85ada67100a471c"
     },
-    "Yesterday" : {
-      "back" : "past",
-      "src" : "5a2c2960c8f628d3"
+    "Yesterday %@" : {
+      "back" : "Yesterday %@",
+      "src" : "9c860b757478fdbd"
+    },
+    "you" : {
+      "back" : "you",
+      "src" : "709f660c82b4aeb9"
     },
     "You" : {
       "back" : "you",
@@ -4287,6 +4335,14 @@
     "You qualify" : {
       "back" : "You qualify",
       "src" : "cd1a7bb2948bf5f9"
+    },
+    "You replied to %@" : {
+      "back" : "You replied to %@",
+      "src" : "19680883dfffea0b"
+    },
+    "You replied to yourself" : {
+      "back" : "You answered yourself",
+      "src" : "c954f16917850e5f"
     },
     "You'll stop getting notifications and emails about new lotteries and re-rentals." : {
       "back" : "You will stop receiving notifications and emails about new lotteries and subleases.",
@@ -4417,14 +4473,6 @@
     "  (required here)" : {
       "back" : "(Required here)",
       "src" : "b08fc11f6f761cd6"
-    },
-    " — an HPD-approved marketing agent" : {
-      "back" : "— Marketing agent approved by HPD",
-      "src" : "9d26c1cb12325845"
-    },
-    " — the city's affordable-housing finance agency" : {
-      "back" : "- Affordable housing financial institutions in the city",
-      "src" : "80a7d5bfb048a046"
     },
     " · %@/yr" : {
       "back" : "· %@/year",
@@ -4573,6 +4621,10 @@
     "%@ and %@ here — see each one" : {
       "back" : "Look at %1$@ and %2$@ here - each one separately.",
       "src" : "754484d2fe449f4f"
+    },
+    "%@ at %@" : {
+      "back" : "From %2$@ to %1$@",
+      "src" : "8e6b279f87969fdf"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -4814,10 +4866,6 @@
       "back" : "There is %lld+ in the file.",
       "src" : "04017329113b550e"
     },
-    "⏱ First come, first served" : {
-      "back" : "⏱ If you come first, we will serve you first.",
-      "src" : "33efa6077b363ed0"
-    },
     "✨ Ask a question" : {
       "back" : "✨ Please ask a question.",
       "src" : "2aa817316305c92b"
@@ -4905,6 +4953,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Lottery or subletting will only be sent when the rent of the complex is below your ceiling and your furniture income falls within one of the income ranges. Leave both blank to hear everything. Your income and household will also show which lottery and sublease benefits you can receive in the lottery tab.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A message this phone can't read" : {
+      "back" : "Messages that can't be read on this phone.",
+      "src" : "4111d010a1fafddb"
     },
     "A neighbor" : {
       "back" : "the neighborhood",
@@ -5125,6 +5177,10 @@
     "Apartment" : {
       "back" : "Luxurious room",
       "src" : "df00e3c24c89298c"
+    },
+    "App icon" : {
+      "back" : "App icon",
+      "src" : "8ea480baa9e7cdc3"
     },
     "Apple couldn't verify the purchase." : {
       "back" : "Apple could not confirm the purchase.",
@@ -5350,10 +5406,6 @@
       "back" : "Nearby cafes",
       "src" : "80f5c3ea4a7c4964"
     },
-    "Cafés within about half a mile, from Apple Maps." : {
-      "back" : "Cafes within about half a mile on the Apple map.",
-      "src" : "472e8709a35fa874"
-    },
     "Call" : {
       "back" : "electrify",
       "src" : "0a2a1e0ef91e93ee"
@@ -5377,6 +5429,10 @@
     "Cancel" : {
       "back" : "cancellation",
       "src" : "5e4baab906fcac57"
+    },
+    "Cancel reply" : {
+      "back" : "Answer cancellation",
+      "src" : "7a031c769e1bda38"
     },
     "Car theft" : {
       "back" : "Car theft",
@@ -5642,6 +5698,10 @@
       "back" : "I couldn't turn on the notification. Please try again in 1 minute.",
       "src" : "4eb970b6f50608eb"
     },
+    "Couldn't unsend. Check your connection and try again." : {
+      "back" : "You cannot cancel the invoice. Please check your connection status and try again.",
+      "src" : "677b95b389ae5ed2"
+    },
     "County" : {
       "back" : "principle",
       "src" : "55f388a449f67a8c"
@@ -5722,6 +5782,10 @@
       "back" : "Delete everything.",
       "src" : "0fda71a0de43684c"
     },
+    "Delete for you" : {
+      "back" : "I'm deleting it for you.",
+      "src" : "6dcf5008d2e8b712"
+    },
     "Delete my packet" : {
       "back" : "Delete my package",
       "src" : "ff6259ff0b5e993f"
@@ -5749,6 +5813,10 @@
     "Describe the apartment you want" : {
       "back" : "Please describe the apartment you want.",
       "src" : "3da50864885e546b"
+    },
+    "Details" : {
+      "back" : "Detailed information",
+      "src" : "b69e89205121f91d"
     },
     "Developer API" : {
       "back" : "Developer API",
@@ -6026,6 +6094,10 @@
       "back" : "From %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@/yr" : {
+      "back" : "From %@/year",
+      "src" : "0a817762effd51c0"
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "back" : "Checked daily at affordable housing New Jersey (CGP&H). To participate in the lottery, please fill out the CGP&H pre-application form and join the waiting list for the village in the CGP&H profile by the date indicated. Unit, rent and income limits are displayed in the profile.",
       "src" : "beaa34b5b4988c30"
@@ -6186,6 +6258,10 @@
       "back" : "Hide the answer",
       "src" : "5855a0c676128944"
     },
+    "Holiday app icons" : {
+      "back" : "Holiday app icon",
+      "src" : "7b8f968560501e09"
+    },
     "HOLLYWOOD" : {
       "back" : "The center of the film industry",
       "src" : "43165b73d765eadd"
@@ -6270,10 +6346,6 @@
       "back" : "Small-scale fair market rents for HUD FY2026 ZIP %@, from studios to 2-bedroom apartments. These are neighborhood-level estimates of apartment prices, not building rents.",
       "src" : "603591c4e06c0985"
     },
-    "HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it." : {
-      "back" : "HUD FY2026 Small-scale local fair market rent - This is the typical rent of the neighborhood, not the regulated rent of this building. Stabilized rents are often much lower than that.",
-      "src" : "9adc8297f4cb9e6f"
-    },
     "I know when it started" : {
       "back" : "I know when it started.",
       "src" : "1bba1916d347e865"
@@ -6337,10 +6409,6 @@
     "Income-restricted" : {
       "back" : "Income restriction",
       "src" : "c445a995e8b67c5c"
-    },
-    "Income-restricted · see agent for rent" : {
-      "back" : "Please refer to the agent for income restrictions and rent.",
-      "src" : "c7b86d9a48b37d35"
     },
     "Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table." : {
       "back" : "Income-restricted apartments subleased by a marketing agent approved by HPD on its own website. Apply through the agent. The size of the bedroom is based on the self-unit table in each list.",
@@ -6425,6 +6493,10 @@
     "Join the waiting list by %@" : {
       "back" : "Join the waiting list up to %@.",
       "src" : "94beee187a0a468d"
+    },
+    "Jump to the newest message" : {
+      "back" : "Skip to the latest message",
+      "src" : "93543c805fc3dc43"
     },
     "just now" : {
       "back" : "a moment ago",
@@ -6702,6 +6774,10 @@
       "back" : "a member",
       "src" : "a777665fdf5eae7d"
     },
+    "Message..." : {
+      "back" : "Message...",
+      "src" : "1719d0639da28848"
+    },
     "min. income $%@/mo" : {
       "back" : "Minimum income $%@/month",
       "src" : "84ae315ad6317b9c"
@@ -6734,6 +6810,10 @@
       "back" : "monthly rent",
       "src" : "86806f86d31a423d"
     },
+    "More reactions" : {
+      "back" : "More reactions",
+      "src" : "7bbf961150e36479"
+    },
     "Most expensive" : {
       "back" : "The most expensive",
       "src" : "429d5a216466f60a"
@@ -6757,10 +6837,6 @@
     "Nearby in %@" : {
       "back" : "Near %@",
       "src" : "2a5ee0b56307e2fa"
-    },
-    "Nearest rent-stabilized buildings in the same neighborhood." : {
-      "back" : "The closest rental stabilization buildings in the same neighborhood.",
-      "src" : "543fbadbfbf547f6"
     },
     "Neighborhood" : {
       "back" : "Neighbors",
@@ -7454,6 +7530,22 @@
       "back" : "The first person to apply for a re-lease can receive it first. Get notified as soon as it opens in your district. Notifications are sent only once a day at 8 a.m. without Plus.",
       "src" : "4185772bf27ef067"
     },
+    "React %@" : {
+      "back" : "Response %@",
+      "src" : "63be37c97db8ae6c"
+    },
+    "React with a heart" : {
+      "back" : "Please respond with a heart shape.",
+      "src" : "2d21383bc707662d"
+    },
+    "Reactions" : {
+      "back" : "Reactions",
+      "src" : "fca935f48796d967"
+    },
+    "Reactions: %@" : {
+      "back" : "Response: %@",
+      "src" : "640f132b048cfaff"
+    },
     "Reading the listing…" : {
       "back" : "I'm reading the list...",
       "src" : "660c03e42d646ed5"
@@ -7618,6 +7710,10 @@
       "back" : "an eagle",
       "src" : "23075a2cf3dd1d37"
     },
+    "Replied to %@" : {
+      "back" : "I replied to %@.",
+      "src" : "c3804599c0446cf1"
+    },
     "Reply" : {
       "back" : "a reply",
       "src" : "d31f207e88607970"
@@ -7625,6 +7721,10 @@
     "Replying to %@" : {
       "back" : "Answer to %@",
       "src" : "f734e0cdf7bec2ca"
+    },
+    "Replying to yourself" : {
+      "back" : "Reply to yourself",
+      "src" : "d20575144fe0d85c"
     },
     "Report" : {
       "back" : "a report",
@@ -7862,10 +7962,6 @@
       "back" : "We are showing the latest %lld.",
       "src" : "daa5f33f75cba90f"
     },
-    "Shows details" : {
-      "back" : "Show details.",
-      "src" : "87017ec8e68dca4a"
-    },
     "Sign in" : {
       "back" : "Login",
       "src" : "db6db7cf052db857"
@@ -8086,10 +8182,6 @@
       "back" : "Subsidy support / Voucher-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
-    "Tap a message to see when it was sent, or to report it." : {
-      "back" : "You can tap the message to check when it was sent or report it.",
-      "src" : "eb5a51e012bd32fd"
-    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap one star to rate it in the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -8101,6 +8193,10 @@
     "Tap the heart on any building to keep it here." : {
       "back" : "Tap the heart of any building and fix it here.",
       "src" : "8fa8a9e6745b27ac"
+    },
+    "Tap to remove" : {
+      "back" : "Click to remove.",
+      "src" : "edb69068a88b77a7"
     },
     "Tell me about" : {
       "back" : "Tell me about it.",
@@ -8214,6 +8310,10 @@
       "back" : "The first %1$@ is free; %2$@ will be charged to the Apple account at the end unless canceled at least 24 hours in advance.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
+      "back" : "The icon on the home screen wears the color of each holiday and then returns. iOS indicates each changing time.",
+      "src" : "0e9afbce184b781e"
+    },
     "The increase" : {
       "back" : "increase",
       "src" : "0987c272aed25458"
@@ -8326,9 +8426,9 @@
       "back" : "oh",
       "src" : "10e05d95e6e3c184"
     },
-    "Today" : {
-      "back" : "today",
-      "src" : "67637ca5b966dd09"
+    "Today %@" : {
+      "back" : "Today %@",
+      "src" : "ccf452e492606f3e"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts - try it for an hour.",
@@ -8433,6 +8533,10 @@
     "Unsave" : {
       "back" : "Not saved",
       "src" : "562535efb2650719"
+    },
+    "Unsend" : {
+      "back" : "Cancel sending.",
+      "src" : "f9d507842b466c0c"
     },
     "up to %@" : {
       "back" : "Up to %@",
@@ -8682,9 +8786,13 @@
       "back" : "you",
       "src" : "f85ada67100a471c"
     },
-    "Yesterday" : {
-      "back" : "yesterday",
-      "src" : "5a2c2960c8f628d3"
+    "Yesterday %@" : {
+      "back" : "Yesterday %@",
+      "src" : "9c860b757478fdbd"
+    },
+    "you" : {
+      "back" : "you",
+      "src" : "709f660c82b4aeb9"
     },
     "You" : {
       "back" : "you",
@@ -8701,6 +8809,14 @@
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
+    },
+    "You replied to %@" : {
+      "back" : "You sent a reply to %@.",
+      "src" : "19680883dfffea0b"
+    },
+    "You replied to yourself" : {
+      "back" : "You answered yourself.",
+      "src" : "c954f16917850e5f"
     },
     "You'll stop getting notifications and emails about new lotteries and re-rentals." : {
       "back" : "You will no longer receive notifications and emails about new lotteries and re-rentals.",
@@ -8831,14 +8947,6 @@
     "  (required here)" : {
       "back" : "(Must be filled in here)",
       "src" : "b08fc11f6f761cd6"
-    },
-    " — an HPD-approved marketing agent" : {
-      "back" : "— HPD approved marketing agents",
-      "src" : "9d26c1cb12325845"
-    },
-    " — the city's affordable-housing finance agency" : {
-      "back" : "—Affordable housing financial institutions in the city",
-      "src" : "80a7d5bfb048a046"
     },
     " · %@/yr" : {
       "back" : "· %@/year",
@@ -8987,6 +9095,10 @@
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - let's take a look at each one.",
       "src" : "754484d2fe449f4f"
+    },
+    "%@ at %@" : {
+      "back" : "%1$@ is in %2$@",
+      "src" : "8e6b279f87969fdf"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -9228,10 +9340,6 @@
       "back" : "%lld+ is in the file.",
       "src" : "04017329113b550e"
     },
-    "⏱ First come, first served" : {
-      "back" : "⏱First come, first served",
-      "src" : "33efa6077b363ed0"
-    },
     "✨ Ask a question" : {
       "back" : "✨Ask questions",
       "src" : "2aa817316305c92b"
@@ -9319,6 +9427,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Only when the unit's rent reaches or falls below your upper limit, and your family income falls within one of the income ranges, will the lottery be sent or re-rented. Please leave both blank to understand all the information. Your income and family situation will also be displayed in the Lottery tab to show which lotteries and resales you are eligible for.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A message this phone can't read" : {
+      "back" : "This mobile phone cannot read this message.",
+      "src" : "4111d010a1fafddb"
     },
     "A neighbor" : {
       "back" : "A neighbor",
@@ -9539,6 +9651,10 @@
     "Apartment" : {
       "back" : "Apartment suite",
       "src" : "df00e3c24c89298c"
+    },
+    "App icon" : {
+      "back" : "Application icon",
+      "src" : "8ea480baa9e7cdc3"
     },
     "Apple couldn't verify the purchase." : {
       "back" : "Apple cannot verify the purchase.",
@@ -9764,10 +9880,6 @@
       "back" : "Nearby cafes",
       "src" : "80f5c3ea4a7c4964"
     },
-    "Cafés within about half a mile, from Apple Maps." : {
-      "back" : "A cafe about half a mile away from the Apple map.",
-      "src" : "472e8709a35fa874"
-    },
     "Call" : {
       "back" : "telephone",
       "src" : "0a2a1e0ef91e93ee"
@@ -9791,6 +9903,10 @@
     "Cancel" : {
       "back" : "cancel",
       "src" : "5e4baab906fcac57"
+    },
+    "Cancel reply" : {
+      "back" : "Cancel reply",
+      "src" : "7a031c769e1bda38"
     },
     "Car theft" : {
       "back" : "Car theft",
@@ -10056,6 +10172,10 @@
       "back" : "The alarm cannot be opened. Please try again in a minute.",
       "src" : "4eb970b6f50608eb"
     },
+    "Couldn't unsend. Check your connection and try again." : {
+      "back" : "Cannot cancel the sending. Please check your connection and try again.",
+      "src" : "677b95b389ae5ed2"
+    },
     "County" : {
       "back" : "county",
       "src" : "55f388a449f67a8c"
@@ -10136,6 +10256,10 @@
       "back" : "Delete everything",
       "src" : "0fda71a0de43684c"
     },
+    "Delete for you" : {
+      "back" : "Delete for you",
+      "src" : "6dcf5008d2e8b712"
+    },
     "Delete my packet" : {
       "back" : "Delete my data package",
       "src" : "ff6259ff0b5e993f"
@@ -10163,6 +10287,10 @@
     "Describe the apartment you want" : {
       "back" : "Describe the apartment you want.",
       "src" : "3da50864885e546b"
+    },
+    "Details" : {
+      "back" : "Internal news",
+      "src" : "b69e89205121f91d"
     },
     "Developer API" : {
       "back" : "Developer API",
@@ -10440,6 +10568,10 @@
       "back" : "Starting from %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@/yr" : {
+      "back" : "Starting from %@/year",
+      "src" : "0a817762effd51c0"
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "back" : "From Affordable Homes New Jersey (CGP&H), checked every day. To participate in the lottery, please fill in the CGP&H application form and then join the town's waiting list through your CGP&H profile before the date shown. Your profile shows the unit, rent and income limits.",
       "src" : "beaa34b5b4988c30"
@@ -10600,6 +10732,10 @@
       "back" : "Hide reply",
       "src" : "5855a0c676128944"
     },
+    "Holiday app icons" : {
+      "back" : "Holiday application icon",
+      "src" : "7b8f968560501e09"
+    },
     "HOLLYWOOD" : {
       "back" : "Hollywood movies",
       "src" : "43165b73d765eadd"
@@ -10684,10 +10820,6 @@
       "back" : "HUD FY2026 ZIP %@'s fair market rent for apartments, from single rooms to two-bedroom apartments. This is a community-level estimate of apartment prices - not the rent of this building.",
       "src" : "603591c4e06c0985"
     },
-    "HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it." : {
-      "back" : "HUD FY2026 small-area fair market rent - this is the market price in the nearby area, not the regulated rent of this building. Stable rents are usually much lower than this price.",
-      "src" : "9adc8297f4cb9e6f"
-    },
     "I know when it started" : {
       "back" : "I know when it started.",
       "src" : "1bba1916d347e865"
@@ -10751,10 +10883,6 @@
     "Income-restricted" : {
       "back" : "Limited income",
       "src" : "c445a995e8b67c5c"
-    },
-    "Income-restricted · see agent for rent" : {
-      "back" : "Income is limited · See agent for rental housing",
-      "src" : "c7b86d9a48b37d35"
     },
     "Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table." : {
       "back" : "Marketing agents approved by HPD sublet income-restricted apartments on their own websites. Apply through the agent. The size of the bedroom comes from the unit table of each listing.",
@@ -10839,6 +10967,10 @@
     "Join the waiting list by %@" : {
       "back" : "Join the waiting list before %@.",
       "src" : "94beee187a0a468d"
+    },
+    "Jump to the newest message" : {
+      "back" : "Jump to the latest news",
+      "src" : "93543c805fc3dc43"
     },
     "just now" : {
       "back" : "just",
@@ -11116,6 +11248,10 @@
       "back" : "member",
       "src" : "a777665fdf5eae7d"
     },
+    "Message..." : {
+      "back" : "News...",
+      "src" : "1719d0639da28848"
+    },
     "min. income $%@/mo" : {
       "back" : "Minimum income $%@/month",
       "src" : "84ae315ad6317b9c"
@@ -11148,6 +11284,10 @@
       "back" : "Monthly rent",
       "src" : "86806f86d31a423d"
     },
+    "More reactions" : {
+      "back" : "More reactions",
+      "src" : "7bbf961150e36479"
+    },
     "Most expensive" : {
       "back" : "The most expensive",
       "src" : "429d5a216466f60a"
@@ -11171,10 +11311,6 @@
     "Nearby in %@" : {
       "back" : "Near %@",
       "src" : "2a5ee0b56307e2fa"
-    },
-    "Nearest rent-stabilized buildings in the same neighborhood." : {
-      "back" : "The most recent stable rental building in the same block.",
-      "src" : "543fbadbfbf547f6"
     },
     "Neighborhood" : {
       "back" : "neighbour",
@@ -11868,6 +12004,22 @@
       "back" : "The re-rental will be carried out on a first-come, first-served basis. Once it opens in your urban area, you can hear the news immediately - there is no Plus, and the alarm is issued once a day at 8 a.m.",
       "src" : "4185772bf27ef067"
     },
+    "React %@" : {
+      "back" : "Reaction %@",
+      "src" : "63be37c97db8ae6c"
+    },
+    "React with a heart" : {
+      "back" : "React with one heart.",
+      "src" : "2d21383bc707662d"
+    },
+    "Reactions" : {
+      "back" : "react",
+      "src" : "fca935f48796d967"
+    },
+    "Reactions: %@" : {
+      "back" : "Reaction: %@",
+      "src" : "640f132b048cfaff"
+    },
     "Reading the listing…" : {
       "back" : "Reading list...",
       "src" : "660c03e42d646ed5"
@@ -12032,6 +12184,10 @@
       "back" : "maintain",
       "src" : "23075a2cf3dd1d37"
     },
+    "Replied to %@" : {
+      "back" : "Reported %@",
+      "src" : "c3804599c0446cf1"
+    },
     "Reply" : {
       "back" : "answer",
       "src" : "d31f207e88607970"
@@ -12039,6 +12195,10 @@
     "Replying to %@" : {
       "back" : "Reply %@",
       "src" : "f734e0cdf7bec2ca"
+    },
+    "Replying to yourself" : {
+      "back" : "Answer yourself",
+      "src" : "d20575144fe0d85c"
     },
     "Report" : {
       "back" : "report",
@@ -12276,10 +12436,6 @@
       "back" : "Show the latest %lld.",
       "src" : "daa5f33f75cba90f"
     },
-    "Shows details" : {
-      "back" : "Show detailed information",
-      "src" : "87017ec8e68dca4a"
-    },
     "Sign in" : {
       "back" : "enter",
       "src" : "db6db7cf052db857"
@@ -12500,10 +12656,6 @@
       "back" : "Subsidies/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
-    "Tap a message to see when it was sent, or to report it." : {
-      "back" : "Tap the message to see when it was sent, or report the message.",
-      "src" : "eb5a51e012bd32fd"
-    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star on the App Store to rate it.",
       "src" : "fe3f2ad41d265ebe"
@@ -12515,6 +12667,10 @@
     "Tap the heart on any building to keep it here." : {
       "back" : "Click on the heart shape of any building to keep it here.",
       "src" : "8fa8a9e6745b27ac"
+    },
+    "Tap to remove" : {
+      "back" : "Tap to delete",
+      "src" : "edb69068a88b77a7"
     },
     "Tell me about" : {
       "back" : "Tell me about...",
@@ -12628,6 +12784,10 @@
       "back" : "The first %1$@ is free; unless you cancel at least 24 hours in advance, %2$@ will be charged when the Apple account expires.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
+      "back" : "The icon on the home screen will display the color of each holiday, and then return. iOS will tell you the time of each change.",
+      "src" : "0e9afbce184b781e"
+    },
     "The increase" : {
       "back" : "increase",
       "src" : "0987c272aed25458"
@@ -12740,9 +12900,9 @@
       "back" : "leave",
       "src" : "10e05d95e6e3c184"
     },
-    "Today" : {
-      "back" : "today",
-      "src" : "67637ca5b966dd09"
+    "Today %@" : {
+      "back" : "Today %@",
+      "src" : "ccf452e492606f3e"
     },
     "Too many tries — give it an hour." : {
       "back" : "Too many attempts - give it an hour.",
@@ -12847,6 +13007,10 @@
     "Unsave" : {
       "back" : "Not saved",
       "src" : "562535efb2650719"
+    },
+    "Unsend" : {
+      "back" : "Cancel sending",
+      "src" : "f9d507842b466c0c"
     },
     "up to %@" : {
       "back" : "Until %@",
@@ -13096,9 +13260,13 @@
       "back" : "yes",
       "src" : "f85ada67100a471c"
     },
-    "Yesterday" : {
-      "back" : "yesterday",
-      "src" : "5a2c2960c8f628d3"
+    "Yesterday %@" : {
+      "back" : "Yesterday %@",
+      "src" : "9c860b757478fdbd"
+    },
+    "you" : {
+      "back" : "you",
+      "src" : "709f660c82b4aeb9"
     },
     "You" : {
       "back" : "you",
@@ -13115,6 +13283,14 @@
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
+    },
+    "You replied to %@" : {
+      "back" : "You replied %@.",
+      "src" : "19680883dfffea0b"
+    },
+    "You replied to yourself" : {
+      "back" : "You answered yourself.",
+      "src" : "c954f16917850e5f"
     },
     "You'll stop getting notifications and emails about new lotteries and re-rentals." : {
       "back" : "You will no longer receive notifications and emails about new lottery tickets and resales.",
@@ -13245,14 +13421,6 @@
     "  (required here)" : {
       "back" : "(Must be filled in here)",
       "src" : "b08fc11f6f761cd6"
-    },
-    " — an HPD-approved marketing agent" : {
-      "back" : "— HPD approved marketing agents",
-      "src" : "9d26c1cb12325845"
-    },
-    " — the city's affordable-housing finance agency" : {
-      "back" : "— Affordable housing financial institutions in the city",
-      "src" : "80a7d5bfb048a046"
     },
     " · %@/yr" : {
       "back" : "· %@/year",
@@ -13401,6 +13569,10 @@
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - take a look at each one.",
       "src" : "754484d2fe449f4f"
+    },
+    "%@ at %@" : {
+      "back" : "%1$@ is in %2$@",
+      "src" : "8e6b279f87969fdf"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -13642,10 +13814,6 @@
       "back" : "%lld+ in the file",
       "src" : "04017329113b550e"
     },
-    "⏱ First come, first served" : {
-      "back" : "⏱First come, first served",
-      "src" : "33efa6077b363ed0"
-    },
     "✨ Ask a question" : {
       "back" : "✨Ask a question",
       "src" : "2aa817316305c92b"
@@ -13733,6 +13901,10 @@
     "A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab." : {
       "back" : "Only when the unit's rent reaches or falls below your upper limit, and your family income falls within one of its income ranges, will the lottery be sent or re-rented. Please leave both blank so that you can hear all the information. Your income and family situation will also indicate in the Lottery tab which lotteries and resales you are eligible for.",
       "src" : "711f2bb8d05fb7e7"
+    },
+    "A message this phone can't read" : {
+      "back" : "Messages that this mobile phone cannot read.",
+      "src" : "4111d010a1fafddb"
     },
     "A neighbor" : {
       "back" : "A neighbor",
@@ -13953,6 +14125,10 @@
     "Apartment" : {
       "back" : "Room",
       "src" : "df00e3c24c89298c"
+    },
+    "App icon" : {
+      "back" : "Application icon",
+      "src" : "8ea480baa9e7cdc3"
     },
     "Apple couldn't verify the purchase." : {
       "back" : "Apple cannot verify the purchase.",
@@ -14178,10 +14354,6 @@
       "back" : "Nearby cafes",
       "src" : "80f5c3ea4a7c4964"
     },
-    "Cafés within about half a mile, from Apple Maps." : {
-      "back" : "Starting from Apple map, the cafe is about half a mile away.",
-      "src" : "472e8709a35fa874"
-    },
     "Call" : {
       "back" : "Call",
       "src" : "0a2a1e0ef91e93ee"
@@ -14205,6 +14377,10 @@
     "Cancel" : {
       "back" : "Cancel",
       "src" : "5e4baab906fcac57"
+    },
+    "Cancel reply" : {
+      "back" : "Cancel reply",
+      "src" : "7a031c769e1bda38"
     },
     "Car theft" : {
       "back" : "Car theft",
@@ -14470,6 +14646,10 @@
       "back" : "The alarm cannot be opened. Please try again in a minute.",
       "src" : "4eb970b6f50608eb"
     },
+    "Couldn't unsend. Check your connection and try again." : {
+      "back" : "Cannot cancel the delivery. Please check your connection and try again.",
+      "src" : "677b95b389ae5ed2"
+    },
     "County" : {
       "back" : "County",
       "src" : "55f388a449f67a8c"
@@ -14550,6 +14730,10 @@
       "back" : "Delete everything",
       "src" : "0fda71a0de43684c"
     },
+    "Delete for you" : {
+      "back" : "Delete it for you",
+      "src" : "6dcf5008d2e8b712"
+    },
     "Delete my packet" : {
       "back" : "Delete my package",
       "src" : "ff6259ff0b5e993f"
@@ -14577,6 +14761,10 @@
     "Describe the apartment you want" : {
       "back" : "Describe the apartment you want",
       "src" : "3da50864885e546b"
+    },
+    "Details" : {
+      "back" : "Details",
+      "src" : "b69e89205121f91d"
     },
     "Developer API" : {
       "back" : "Developer API",
@@ -14854,6 +15042,10 @@
       "back" : "Starting from %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@/yr" : {
+      "back" : "From %@/year",
+      "src" : "0a817762effd51c0"
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "back" : "From affordable housing New Jersey (CGP&H), checked once a day. To participate in the lottery, please fill in the application plan of CGP&H, and then add the candidate list of the town to your CGP&H profile before the date shown. Unit, rent and income restrictions are shown in your profile.",
       "src" : "beaa34b5b4988c30"
@@ -15014,6 +15206,10 @@
       "back" : "Hide the reply",
       "src" : "5855a0c676128944"
     },
+    "Holiday app icons" : {
+      "back" : "Holiday application icon",
+      "src" : "7b8f968560501e09"
+    },
     "HOLLYWOOD" : {
       "back" : "Hollywood",
       "src" : "43165b73d765eadd"
@@ -15098,10 +15294,6 @@
       "back" : "HUD FY2026 ZIP %@ Small-area fair market rent, from one bedroom to two bedrooms. A community-level apartment price estimate - not the rent of this building.",
       "src" : "603591c4e06c0985"
     },
-    "HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it." : {
-      "back" : "HUD FY2026 Small Area Fair Market Rent - The market price for the block, not the regulated rent for the building. Stable rents are usually lower than that.",
-      "src" : "9adc8297f4cb9e6f"
-    },
     "I know when it started" : {
       "back" : "I know when it started.",
       "src" : "1bba1916d347e865"
@@ -15165,10 +15357,6 @@
     "Income-restricted" : {
       "back" : "Limited income",
       "src" : "c445a995e8b67c5c"
-    },
-    "Income-restricted · see agent for rent" : {
-      "back" : "Income is limited · See agent rental",
-      "src" : "c7b86d9a48b37d35"
     },
     "Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table." : {
       "back" : "Marketing agents approved by HPD are subletting income-restricted apartments from their own websites. Apply through an agent. Bedroom sizes are from the unit table of each listing.",
@@ -15253,6 +15441,10 @@
     "Join the waiting list by %@" : {
       "back" : "Join the candidate list before %@",
       "src" : "94beee187a0a468d"
+    },
+    "Jump to the newest message" : {
+      "back" : "Jump to the latest news",
+      "src" : "93543c805fc3dc43"
     },
     "just now" : {
       "back" : "Just now",
@@ -15530,6 +15722,10 @@
       "back" : "Member",
       "src" : "a777665fdf5eae7d"
     },
+    "Message..." : {
+      "back" : "News...",
+      "src" : "1719d0639da28848"
+    },
     "min. income $%@/mo" : {
       "back" : "Minimum income $%@/month",
       "src" : "84ae315ad6317b9c"
@@ -15562,6 +15758,10 @@
       "back" : "Monthly rent",
       "src" : "86806f86d31a423d"
     },
+    "More reactions" : {
+      "back" : "More reactions",
+      "src" : "7bbf961150e36479"
+    },
     "Most expensive" : {
       "back" : "The most expensive",
       "src" : "429d5a216466f60a"
@@ -15585,10 +15785,6 @@
     "Nearby in %@" : {
       "back" : "Near %@",
       "src" : "2a5ee0b56307e2fa"
-    },
-    "Nearest rent-stabilized buildings in the same neighborhood." : {
-      "back" : "The most recent stable rental building in the same block.",
-      "src" : "543fbadbfbf547f6"
     },
     "Neighborhood" : {
       "back" : "Neighborly",
@@ -16282,6 +16478,22 @@
       "back" : "The re-rental will be carried out on a first-come, first-served basis. Once it opens in your area, you can immediately receive the news - no Plus is required, and the alarm will be issued once a day at 8 a.m.",
       "src" : "4185772bf27ef067"
     },
+    "React %@" : {
+      "back" : "Reaction %@",
+      "src" : "63be37c97db8ae6c"
+    },
+    "React with a heart" : {
+      "back" : "Respond with love",
+      "src" : "2d21383bc707662d"
+    },
+    "Reactions" : {
+      "back" : "Reaction",
+      "src" : "fca935f48796d967"
+    },
+    "Reactions: %@" : {
+      "back" : "Response: %@",
+      "src" : "640f132b048cfaff"
+    },
     "Reading the listing…" : {
       "back" : "Reading list...",
       "src" : "660c03e42d646ed5"
@@ -16446,6 +16658,10 @@
       "back" : "Maintenance",
       "src" : "23075a2cf3dd1d37"
     },
+    "Replied to %@" : {
+      "back" : "Reported %@",
+      "src" : "c3804599c0446cf1"
+    },
     "Reply" : {
       "back" : "Reply",
       "src" : "d31f207e88607970"
@@ -16453,6 +16669,10 @@
     "Replying to %@" : {
       "back" : "Reply %@",
       "src" : "f734e0cdf7bec2ca"
+    },
+    "Replying to yourself" : {
+      "back" : "Reply to yourself",
+      "src" : "d20575144fe0d85c"
     },
     "Report" : {
       "back" : "Report",
@@ -16690,10 +16910,6 @@
       "back" : "Display the latest %lld.",
       "src" : "daa5f33f75cba90f"
     },
-    "Shows details" : {
-      "back" : "Show detailed information",
-      "src" : "87017ec8e68dca4a"
-    },
     "Sign in" : {
       "back" : "Sign in",
       "src" : "db6db7cf052db857"
@@ -16914,10 +17130,6 @@
       "back" : "Subsidized/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
     },
-    "Tap a message to see when it was sent, or to report it." : {
-      "back" : "Click on the message to view its sending time, or report it.",
-      "src" : "eb5a51e012bd32fd"
-    },
     "Tap a star to rate it on the App Store." : {
       "back" : "Click a star to rate it on the App Store.",
       "src" : "fe3f2ad41d265ebe"
@@ -16929,6 +17141,10 @@
     "Tap the heart on any building to keep it here." : {
       "back" : "Click on the heart of any building to keep it here.",
       "src" : "8fa8a9e6745b27ac"
+    },
+    "Tap to remove" : {
+      "back" : "Click to remove",
+      "src" : "edb69068a88b77a7"
     },
     "Tell me about" : {
       "back" : "Tell me about",
@@ -17042,6 +17258,10 @@
       "back" : "The first %1$@ is free; unless you cancel at least 24 hours in advance, %2$@ will be charged to your Apple account at the expiration date.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
+      "back" : "The icons on the main screen will wear the colors of each holiday, and then return. iOS will tell you every time you change it.",
+      "src" : "0e9afbce184b781e"
+    },
     "The increase" : {
       "back" : "Increase",
       "src" : "0987c272aed25458"
@@ -17154,9 +17374,9 @@
       "back" : "Arrive",
       "src" : "10e05d95e6e3c184"
     },
-    "Today" : {
-      "back" : "Today",
-      "src" : "67637ca5b966dd09"
+    "Today %@" : {
+      "back" : "Today %@",
+      "src" : "ccf452e492606f3e"
     },
     "Too many tries — give it an hour." : {
       "back" : "I've tried too many times - give it an hour.",
@@ -17261,6 +17481,10 @@
     "Unsave" : {
       "back" : "Not saved",
       "src" : "562535efb2650719"
+    },
+    "Unsend" : {
+      "back" : "Cancel sending",
+      "src" : "f9d507842b466c0c"
     },
     "up to %@" : {
       "back" : "Up to %@",
@@ -17510,9 +17734,13 @@
       "back" : "Yes",
       "src" : "f85ada67100a471c"
     },
-    "Yesterday" : {
-      "back" : "Yesterday",
-      "src" : "5a2c2960c8f628d3"
+    "Yesterday %@" : {
+      "back" : "Yesterday %@",
+      "src" : "9c860b757478fdbd"
+    },
+    "you" : {
+      "back" : "You",
+      "src" : "709f660c82b4aeb9"
     },
     "You" : {
       "back" : "You",
@@ -17529,6 +17757,14 @@
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
+    },
+    "You replied to %@" : {
+      "back" : "You replied %@.",
+      "src" : "19680883dfffea0b"
+    },
+    "You replied to yourself" : {
+      "back" : "You answered yourself.",
+      "src" : "c954f16917850e5f"
     },
     "You'll stop getting notifications and emails about new lotteries and re-rentals." : {
       "back" : "You will no longer receive notifications and emails about new lotteries and resales.",

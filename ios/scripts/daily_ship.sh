@@ -64,6 +64,14 @@ while busy; do
     past_cutoff && { notify "no build today: another build kept the Mac busy"; exit 1; }
     sleep 300
 done
+# Look again after waiting: a manual run may have shipped these changes
+# while this one waited (2026-10-24: 03:05's run waited out a manual one
+# that shipped 155, then shipped the same app again as 156).
+git fetch -q origin && git reset -q --hard && git checkout -q --detach origin/main
+last=$(git log -1 --format=%H --grep='^iOS: build [0-9]' origin/main)
+if [[ -z "$(git log --format=%h --no-merges "$last"..HEAD -- "${APP_PATHS[@]}" | head -1)" ]]; then
+    say "already shipped while waiting (build $(grep -m1 'CURRENT_PROJECT_VERSION:' project.yml | sed -E 's/.*"([0-9]+)".*/\1/')); nothing to ship"; exit 0
+fi
 
 ./scripts/ship.sh || { notify "ship failed; see ios/build.nosync/daily-ship.log"; exit 1; }
 notify "build $(grep -m1 'CURRENT_PROJECT_VERSION:' project.yml | sed -E 's/.*"([0-9]+)".*/\1/') is on its way to TestFlight"

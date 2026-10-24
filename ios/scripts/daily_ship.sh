@@ -39,7 +39,12 @@ notify() {
 # compiles: its catalog steps come first, and at 03:05 no xcodebuild had
 # started yet, so this build would have begun alongside it (owner,
 # 2026-10-24: "once marracat is done, put this in test flight").
-busy() { ps -axo command | grep -E "[x]codebuild (test|archive|build|-)|[s]cripts/ship\.sh|[a]ltool --upload|[M]arracat/scripts/daily_ship\.sh" >/dev/null; }
+busy() {
+    # By executable, not command-line text: a session's shell that merely
+    # mentions "xcodebuild build" while waiting read as busy (2026-10-24).
+    ps -axo comm=,args= | awk '$1 ~ /(^|\/)xcodebuild$/ || ($1 ~ /(^|\/)altool$/ && / --upload/) ||
+        ($1 ~ /(^|\/)(ba)?sh$/ && (/ [^ ]*scripts\/ship\.sh( |$)/ || /Marracat\/scripts\/daily_ship\.sh/)) {f=1} END {exit !f}'
+}
 past_cutoff() { (( 10#$(date +%H) >= 9 )); }
 
 say "=== daily build"
@@ -61,7 +66,7 @@ say "iOS app changes since the last build:"; echo "$changes"
 (( DRY )) && { say "dry run: would ship"; exit 0; }
 
 while busy; do
-    past_cutoff && { notify "no build today: another build kept the Mac busy"; exit 1; }
+    past_cutoff && [[ "${DAILY_SHIP_NOW:-0}" != "1" ]] && { notify "no build today: another build kept the Mac busy"; exit 1; }
     sleep 300
 done
 # Look again after waiting: a manual run may have shipped these changes

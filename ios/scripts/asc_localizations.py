@@ -183,12 +183,13 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Your Crib: las alertas de delitos cerca de tu edificio ahora son gratis. Las alertas del 311 siguen en Plus.\n• Chat del edificio: ves cuando un vecino está escribiendo.\n• La búsqueda entiende más de lo que escribes, no solo nombres de lugares.\n• La búsqueda guarda tu lugar al cambiar de pestaña.\n• Tarjetas y páginas de edificios más limpias.\n• Otras mejoras.",
-    "zh-Hans": "• Your Crib：楼宇附近的犯罪提醒现在免费，311 提醒仍属 Plus。\n• 楼宇聊天：可以看到邻居正在输入。\n• 搜索能理解更多输入内容，不只是地名。\n• 切换标签后再回来，搜索会停在原来的位置。\n• 楼盘卡片和楼宇页面更简洁。\n• 其他改进。",
-    "zh-Hant": "• Your Crib：大樓附近的犯罪提醒現在免費，311 提醒仍屬 Plus。\n• 大樓聊天：可以看到鄰居正在輸入。\n• 搜尋能理解更多輸入內容，不只是地名。\n• 切換分頁後再回來，搜尋會停在原來的位置。\n• 樓盤卡片和大樓頁面更簡潔。\n• 其他改進。",
-    "ru": "• Your Crib: оповещения о преступлениях рядом с вашим домом теперь бесплатны. Оповещения 311 остаются в Plus.\n• Чат дома: видно, когда сосед печатает.\n• Поиск понимает больше, чем названия мест.\n• Поиск сохраняет место при смене вкладок.\n• Карточки и страницы домов стали чище.\n• Небольшие исправления.",
-    "ko": "• Your Crib: 건물 주변 범죄 알림이 이제 무료입니다. 311 알림은 Plus에 그대로 있습니다.\n• 건물 채팅: 이웃이 입력 중인지 볼 수 있습니다.\n• 검색이 장소 이름 외의 입력도 더 잘 이해합니다.\n• 탭을 바꿨다 돌아와도 검색 위치가 유지됩니다.\n• 더 깔끔한 건물 카드와 건물 페이지.\n• 기타 개선.",
+    "es-MX": "• Días festivos: Find A Crib se viste para Halloween, Acción de Gracias, Kwanzaa, Juneteenth y más, con ícono incluido. Desactiva el ícono en Perfil.\n• Chat del edificio: reacciona, responde y anula el envío.\n• Las tarjetas de re-rentas muestran el ingreso del hogar en un formato claro.\n• Barra de pestañas y botón Mapa de vidrio más claro.\n• Otras mejoras.",
+    "zh-Hans": "• 节日：万圣节、感恩节、宽扎节、六月节等节日换上节日配色，主屏幕图标也会变。可在“个人资料”中关闭图标。\n• 楼宇聊天：可以回应、回复和撤回消息。\n• 转租卡片以统一格式显示家庭收入。\n• 更轻盈的玻璃标签栏和地图按钮。\n• 其他改进。",
+    "zh-Hant": "• 節日：萬聖節、感恩節、寬扎節、六月節等節日換上節日配色，主畫面圖示也會變。可在「個人檔案」中關閉圖示。\n• 大樓聊天：可以回應、回覆和收回訊息。\n• 轉租卡片以統一格式顯示家庭收入。\n• 更輕盈的玻璃分頁列和地圖按鈕。\n• 其他改進。",
+    "ru": "• Праздники: Find A Crib наряжается к Хэллоуину, Дню благодарения, Кванзе, Джунтину и другим дням, вместе со значком. Значок можно отключить в Профиле.\n• Чат дома: реакции, ответы и отмена отправки.\n• Карточки повторной аренды показывают доход семьи в едином формате.\n• Более светлая стеклянная панель вкладок и кнопка «Карта».\n• Небольшие исправления.",
+    "ko": "• 공휴일: 핼러윈, 추수감사절, 콴자, 준틴스 등에 맞춰 Find A Crib이 꾸며지고 홈 화면 아이콘도 바뀝니다. 프로필에서 아이콘을 끌 수 있습니다.\n• 건물 채팅: 반응, 답장, 전송 취소.\n• 재임대 카드에 가구 소득이 한 가지 형식으로 표시됩니다.\n• 더 밝은 유리 탭 바와 지도 버튼.\n• 기타 개선.",
 }
+
 
 
 if __name__ == "__main__":

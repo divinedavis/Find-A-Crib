@@ -88,17 +88,15 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Your Crib: crime alerts near your building are now free. 311 alerts stay with Plus.
-• Building chat: see when a neighbor is typing.
-• Search understands more of what you type, not just place names.
-• Search keeps your place when you switch tabs and come back.
-• Cleaner building cards and building pages.
-• Cancelling Google sign-in no longer shows an error.
+WHATS_NEW = """• Holidays: Find A Crib dresses up for Halloween, Thanksgiving, Kwanzaa, Juneteenth and more, Home Screen icon included. Turn the icon off in Profile.
+• Building chat: react, reply and unsend, in a cleaner room.
+• Re-rental cards show household income in one tidy format.
+• A lighter glass tab bar and Map button.
 • Smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.3.4 (build __BUILD__)
-What changed since 1.3.3: crime alerts near your building are free (311 alerts stay Plus); a typing indicator in Building chat; Search reads words that aren't place names; layout polish on cards and building pages. No new permissions, SDKs or data collection.
+REVIEW_NOTES = """VERSION 1.3.5 (build __BUILD__)
+New since 1.3.4: holiday colours on public holidays, incl. an alternate Home Screen icon (iOS shows its icon-changed alert; Profile > "Holiday app icons" turns it off); chat reactions, replies, unsend; card layout. No new permissions, SDKs or data.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 

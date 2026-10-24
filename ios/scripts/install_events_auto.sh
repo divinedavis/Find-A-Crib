@@ -10,6 +10,7 @@ PLIST="$HOME/Library/LaunchAgents/com.divinedavis.findacrib-events.plist"
 PY="${PY:-$HOME/.venvs/spendcap/bin/python}"
 mkdir -p "$DEST"
 cp asc_events_auto.py asc_app_events.py asc_creative_assets.py "$DEST/"
+cp ../FindACrib/Resources/holidays.json "$DEST/"   # every holiday gets an event (10/24)
 cp asc-config.env "$DEST/" && chmod 600 "$DEST/asc-config.env"
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

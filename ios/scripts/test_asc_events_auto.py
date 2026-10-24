@@ -27,12 +27,30 @@ def test_holiday_weeks_are_planned_and_exempt_from_the_14_day_skip():
     assert by["Halloween 2026"]["deepLink"] == "findacrib://search"
     assert by["Thanksgiving 2026"]["deepLink"] == "findacrib://tool/repair"
     assert by["Halloween 2026"]["min_left"] < 14
-    assert by["Halloween 2026"]["card"] == "fac-events-logo/halloween/card-3840x2160.png"
+    assert by["Halloween 2026"]["card"] == "fac-events-icon/halloween/card-3840x2160.png"
 
 
 def test_every_event_carries_the_logo_art():
     for m in range(1, 13):
         for s in ev.planned(date(2026, m, 1)):
-            assert s["card"].startswith("fac-events-logo/") and s["details"].startswith("fac-events-logo/"), s["referenceName"]
+            assert s["card"].startswith(("fac-events-logo/everyday/", "fac-events-icon/")), s["referenceName"]
     dec = {s["referenceName"]: s for s in ev.planned(date(2026, 12, 1))}
     assert dec["Bedbug reports 2026"]["card"] == "fac-events-logo/everyday/card-3840x2160.png"
+
+
+def test_every_holiday_in_holidays_json_has_an_event():
+    import json
+    ids = [h["id"] for h in json.loads(ev.HOLIDAYS_JSON.read_text())["holidays"]]
+    assert sorted(ids) == sorted(ev.HOLIDAY_EVENTS)
+    seen = set()
+    for m in range(1, 13):
+        seen |= {s["referenceName"].rsplit(" ", 1)[0] for s in ev.planned(date(2026, m, 1)) if s.get("holiday")}
+    names = {h["name"] for h in json.loads(ev.HOLIDAYS_JSON.read_text())["holidays"]}
+    assert names <= seen, names - seen
+
+
+def test_holiday_dates():
+    hs = {h["id"]: h for h in __import__("json").loads(ev.HOLIDAYS_JSON.read_text())["holidays"]}
+    assert ev.holiday_day(hs["black-friday"], 2026) == date(2026, 11, 27)
+    assert ev.holiday_day(hs["memorial"], 2027) == date(2027, 5, 31)
+    assert ev.holiday_day(hs["mlk"], 2027) == date(2027, 1, 18)

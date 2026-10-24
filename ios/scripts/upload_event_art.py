@@ -5,8 +5,9 @@ every year, so approved art never waits on review again.
 
     ~/.venvs/spendcap/bin/python scripts/upload_event_art.py everyday halloween thanksgiving
 
-"everyday" is the teal field for the non-holiday events; any other name is
-a holiday id from holidays.json. Owner, 2026-10-24: "we should always have
+"everyday" is the teal field and real logo for the non-holiday events; any
+other name is a holiday id from holidays.json, drawn with that day's
+holiday icon (AppIcon-<id>). "all" means every holiday. Owner, 2026-10-24: "we should always have
 our logo on the event card and event details".
 """
 import subprocess
@@ -23,14 +24,19 @@ PY = Path.home() / ".venvs/dhcr-map/bin/python"   # Pillow + the brand fonts' ve
 def ref(look, kind):
     """Asset Library name of a look's card or details art."""
     size = "3840x2160" if kind == "card" else "2160x3840"
-    return f"fac-events-logo/{look}/{kind}-{size}.png"
+    base = "fac-events-logo/everyday" if look == "everyday" else f"fac-events-icon/{look}"   # holidays: the day's icon
+    return f"{base}/{kind}-{size}.png"
 
 
 def main():
     have = {i["attributes"].get("referenceName") for i in images(APP)
             if i["attributes"].get("state") != "ARCHIVED"}
-    for look in sys.argv[1:]:
-        out = Path.home() / "Downloads/ASC-creative-assets/findacrib/event-logo" / look
+    looks = sys.argv[1:]
+    if looks == ["all"]:
+        import json
+        looks = [h["id"] for h in json.loads((HERE.parent / "FindACrib/Resources/holidays.json").read_text())["holidays"]]
+    for look in looks:
+        out = Path.home() / "Downloads/ASC-creative-assets/findacrib/event-art" / look
         cmd = [str(PY), str(HERE / "make_event_assets.py"), str(out), "--theme", "logo"]
         if look != "everyday":
             cmd += ["--holiday", look]

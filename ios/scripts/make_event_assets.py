@@ -12,10 +12,10 @@ the street photos and a yellow calendar for the deadline theme.
 heat waves in place of the calendar.
 
 --theme logo [--holiday <id>] (owner, 2026-10-24: "we should always have
-our logo on the event card and event details"): the real app icon, large
-and centred, is the hero; the street photos stay around it. With
---holiday, the field is that day's colours from holidays.json (the tab
-colours) instead of the teal; the logo itself never changes.
+our logo on the event card and event details"): the app icon, large and
+centred, is the hero; the street photos stay around it. With --holiday,
+the field is that day's colours from holidays.json (the tab colours) and
+the icon is that day's holiday icon (AppIcon-<id>).
 """
 import json
 import math
@@ -120,6 +120,12 @@ def holiday_field(w, h, day):
 
 def render_logo(w, h):
     s = min(w, h) / 720.0
+    # On a holiday the tile is that day's Home Screen icon (the real house on
+    # the day's colours, AppIcon-<id>); owner 2026-10-24: "use the event
+    # logo/icons in the event cards and event details".
+    import make_header
+    icon = os.path.join(os.path.dirname(HOLIDAYS), "Assets.xcassets", f"AppIcon-{HOLIDAY}.appiconset", "icon-1024.png")
+    make_header.ICON = icon if HOLIDAY and os.path.exists(icon) else make_header.ICON
     base = (holiday_field(w, h, HOLIDAY) if HOLIDAY else gradient(w, h)).convert("RGBA")
     if w > h:
         rounded_tile(base, (w * 0.5, h * 0.5), h * 0.5, 0, s)

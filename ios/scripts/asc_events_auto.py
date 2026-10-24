@@ -20,13 +20,12 @@ Weekly (launchd, scripts/install_events_auto.sh), it:
        findacrib://broker-fee, Plus);
      - July, lease renewal season (Renewal coach, Plus);
      - October, the new rent guidelines take effect (Oct 1);
-     Holidays added 2026-10-24 (owner: "get findacrib in the holiday
-     event"; picked real tools with holiday framing, since the holiday
-     looks aren't in the live app and a cosmetic event invites 2.3.13):
-     - Halloween week, "is your building haunted?" into building search;
-     - Thanksgiving week, heat for when guests come, into the repair tool.
-     Holiday events are a week long, so the 14-days-left skip doesn't
-     apply to them (min_left);
+     Holidays (owner 2026-10-24: Halloween and Thanksgiving first, then
+     "make sure it has an event for all events"): every day in
+     holidays.json, from HOLIDAY_EVENTS, each opening a real tool with the
+     day as the reason (the holiday looks alone would invite 2.3.13).
+     Holiday events may be short (min_left) and may overlap another event
+     with the same link;
   2. creates each one whose publish date is within HORIZON days, unless an
      event with the same name exists. When another event with the same deep
      link overlaps, the new one starts where that one ends, or is skipped if
@@ -48,8 +47,10 @@ is the logo art instead (see art()); run upload_event_art.py for a new look.
     ~/.venvs/spendcap/bin/python scripts/asc_events_auto.py --apply    # create + submit
 """
 import calendar
+import json
 import sys
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
 from asc_creative_assets import _cfg, call
 import asc_app_events
@@ -64,8 +65,10 @@ LEAD = 7               # publish this many days before the event starts (Apple: 
 
 
 def art(look="everyday"):
-    return {"card": f"fac-events-logo/{look}/card-3840x2160.png",
-            "details": f"fac-events-logo/{look}/details-2160x3840.png"}
+    """Everyday events: the real logo on teal. Holidays: that day's holiday
+    icon on its colours (owner 2026-10-24, "use the event logo/icons")."""
+    base = "fac-events-logo/everyday" if look == "everyday" else f"fac-events-icon/{look}"
+    return {"card": f"{base}/card-3840x2160.png", "details": f"{base}/details-2160x3840.png"}
 NY_OFFSET = timedelta(hours=-5)   # midnight in New York, near enough across DST
 
 
@@ -100,6 +103,105 @@ def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COS
             **art(look), "min_left": min_left}
 
 
+# Every holiday in holidays.json gets an event (owner, 2026-10-24: "make
+# sure it has an event for all events"), each opening a real tool with the
+# day as the reason, never the colours alone (2.3.13). Windows follow
+# Marracat's events. id: (name, short, long, deep link, from, to, cost)
+P = "IN_APP_PURCHASE"   # Plus; Apple 409s "SUBSCRIPTION" (no longer supported, 10/24)
+RIGHTS = "A plain-language guide to your rights as a New York renter, from repairs and heat to rent increases."
+HOLIDAY_EVENTS = {
+    "halloween": ("Is Your Building Haunted?", "See a building's violations and complaints",
+                  "Strange noises, no heat, pests? Look up any NYC building's HPD violations and complaints before you sign.",
+                  "findacrib://search", -6, 0, None),
+    "veterans": ("Veterans: Use Your Voucher", "Find buildings that take housing vouchers",
+                 "HUD-VASH and Section 8 holders: find NYC buildings that take vouchers, with their violations and rent.",
+                 "findacrib://search", -3, 0, None),
+    "thanksgiving": ("Hosting? Get the Heat On", "NYC landlords must heat your home through May",
+                     "Cold apartment before guests arrive? NYC landlords must provide heat. Get a repair letter and file with 311.",
+                     "findacrib://tool/repair", -6, 3, None),
+    "black-friday": ("The Best Deal: A Fair Rent", "Find rent-stabilized buildings near you",
+                     "Skip the doorbusters. See which NYC buildings are rent stabilized, with their violations and rent.",
+                     "findacrib://search", 0, 2, None),
+    "cyber-monday": ("Apply From Your Couch", "Housing lotteries open now",
+                     "See every open NYC housing lottery, check if your income qualifies and set alerts for new ones.",
+                     "findacrib://lotteries", 0, 1, None),
+    "gift-guide": ("Gift Yourself a Fair Lease", "Check a broker fee or your lease before you sign",
+                   "Broker fee check and Lease review look over a listing's fee and your lease before you sign.",
+                   "findacrib://broker-fee", 0, 28, P),
+    "christmas": ("Home for the Holidays", "Housing lotteries open over the holidays",
+                  "Housing lotteries stay open over the holidays. See which ones you qualify for and set an alert.",
+                  "findacrib://lotteries", -6, 0, None),
+    "kwanzaa": ("Happy Kwanzaa", "See what's happening on your block",
+                "Ujamaa starts at home. See 311 complaints and crime reported near your building in Your Crib.",
+                "findacrib://casa", 0, 4, None),
+    "watch-night": ("Freedom's Eve", "Know your rights as a NYC renter",
+                    "Watch Night, Freedom's Eve: a plain-language guide to your rights as a New York renter.",
+                    "findacrib://tool/rights", -1, 0, None),
+    "new-year": ("New Year, New Lease", "Check your renewal before you sign",
+                 "The Renewal coach checks a lease renewal against the Rent Guidelines Board's increases before you sign.",
+                 "findacrib://tool/renewal", 0, 6, P),
+    "mlk": ("Fair Housing Is a Right", "Know your rights as a NYC renter", RIGHTS, "findacrib://tool/rights", -3, 0, None),
+    "bhm": ("Black History Month", "Know your rights as a renter",
+            "Fair housing was won, not given. A plain-language guide to your rights as a New York renter.",
+            "findacrib://tool/rights", 0, 27, None),
+    "presidents": ("Long Weekend, No Heat?", "NYC landlords must heat your home through May",
+                   "Cold apartment on the long weekend? NYC landlords must provide heat. Get a repair letter and file with 311.",
+                   "findacrib://tool/repair", -3, 0, None),
+    "emancipation": ("DC Emancipation Day", "Look up a DC building's rent record",
+                     "DC renters: see a building's rent registry record and estimated rent before you sign a lease.",
+                     "findacrib://search", -3, 0, None),
+    "malcolm-x": ("Malcolm X Day", "Find rent-stabilized homes near you",
+                  "Remembering Malcolm X. See which NYC buildings are rent stabilized, with their violations and rent.",
+                  "findacrib://search", -3, 0, None),
+    "ald": ("African Liberation Day", "Know your rights as a renter", RIGHTS, "findacrib://tool/rights", -3, 0, None),
+    "memorial": ("Moving This Summer?", "Check a building before you sign a lease",
+                 "Moving season is near. Look up any NYC building's violations, complaints and rent before you sign.",
+                 "findacrib://search", -3, 0, None),
+    "juneteenth": ("Juneteenth", "Know your rights as a renter",
+                   "Freedom includes a fair home. A plain-language guide to your rights as a New York renter.",
+                   "findacrib://tool/rights", -6, 0, None),
+    "july4": ("Independence From Broker Fees", "The landlord's agent can't bill you in NYC",
+              "Under the FARE Act, a landlord's broker can't charge NYC renters. Check a fee you were asked to pay.",
+              "findacrib://broker-fee", -3, 0, P),
+    "labor": ("Labor Day: Know Your Rights", "Repairs, heat and rent increases, explained", RIGHTS,
+              "findacrib://tool/rights", -3, 0, None),
+    "indigenous": ("Indigenous Peoples' Day", "Check this year's legal rent increase",
+                   "New rent guidelines took effect Oct 1. Check whether your stabilized lease increase is legal.",
+                   "findacrib://tool/rent-increase", -3, 0, None),
+}
+# holidays.json: next to this script in the launchd copy, else in the app.
+HOLIDAYS_JSON = next(p for p in (Path(__file__).with_name("holidays.json"),
+                                 Path(__file__).resolve().parent.parent / "FindACrib/Resources/holidays.json") if p.exists())
+
+
+def holiday_day(h, y):
+    """A holiday's date in year y: a fixed day, or the nth (-1 = last) ISO
+    weekday of the month, plus an offset (Black Friday = Thanksgiving + 1)."""
+    r = h["date"]
+    if "day" in r:
+        return date(y, r["month"], r["day"])
+    days = [date(y, r["month"], d) for d in range(1, calendar.monthrange(y, r["month"])[1] + 1)
+            if date(y, r["month"], d).isoweekday() == r["weekday"]]
+    return days[r["nth"] - 1 if r["nth"] > 0 else r["nth"]] + timedelta(days=r.get("offset", 0))
+
+
+def holiday_specs(today):
+    out = []
+    for h in json.loads(HOLIDAYS_JSON.read_text())["holidays"]:
+        name, short, long_, link, a, b, cost = HOLIDAY_EVENTS[h["id"]]
+        for y in (today.year, today.year + 1):
+            day = holiday_day(h, y)
+            start, end = day + timedelta(days=a), day + timedelta(days=b)
+            if end < today or start > today + timedelta(days=120):
+                continue
+            s = spec(f"{h['name']} {day.year}", name, short, long_, link, "SPECIAL_EVENT",
+                     "APPROPRIATE_FOR_ALL_USERS", start, end, cost=cost or "NO_COST_ASSOCIATED",
+                     min_left=1, look=h["id"])
+            s["holiday"] = True
+            out.append(s)
+    return out
+
+
 def planned(today):
     """Every calendar event starting in the next two months."""
     out = []
@@ -120,19 +222,6 @@ def planned(today):
                             "NYC's new stabilized rent increases start Oct 1",
                             "From Oct 1, the Rent Guidelines Board's new increases apply to stabilized leases. Check if yours is legal.",
                             "findacrib://tool/rent-increase", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
-        if m == 10:
-            out.append(spec(f"Halloween {y}", "Is Your Building Haunted?",
-                            "See a building's violations and complaints",
-                            "Strange noises, no heat, pests? Look up any NYC building's HPD violations and complaints before you sign.",
-                            "findacrib://search", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
-                            date(y, 10, 25), date(y, 10, 31), min_left=3, look="halloween"))
-        if m == 11:
-            t = thanksgiving(y)
-            out.append(spec(f"Thanksgiving {y}", "Hosting? Get the Heat On",
-                            "NYC landlords must heat your home through May",
-                            "Cold apartment before guests arrive? NYC landlords must provide heat. Get a repair letter and file with 311.",
-                            "findacrib://tool/repair", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
-                            t - timedelta(days=6), t + timedelta(days=3), min_left=3, look="thanksgiving"))
         if m == 12:
             # HPD: owners file the annual bedbug report Dec 1-31 (nyc.gov/hpd bedbugs).
             out.append(spec(f"Bedbug reports {y}", "Bedbug Reports Are Due",
@@ -156,14 +245,14 @@ def planned(today):
                             "FARE Act: the landlord's agent can't bill you",
                             "Since June 2025, a landlord's broker can't charge NYC renters a fee. Check a fee you were asked to pay.",
                             "findacrib://broker-fee", "SPECIAL_EVENT", "ATTRACT_NEW_USERS",
-                            date(y, 6, 11), date(y, 7, 10), cost="SUBSCRIPTION"))
+                            date(y, 6, 11), date(y, 7, 10), cost=P))
         if m == 7:
             out.append(spec(f"Lease renewal season {y}", "Lease Renewal Season",
                             "Plan your NYC lease renewal before you sign",
                             "Most NYC leases renew in the fall. Know what your landlord can raise and what to ask for before you sign.",
                             "findacrib://tool/renewal", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end,
-                            cost="SUBSCRIPTION"))
-    return out
+                            cost=P))
+    return out + holiday_specs(today)
 
 
 def parse(t):
@@ -227,12 +316,14 @@ def main():
         pub = parse(s["publishStart"])
         if s["referenceName"] in names:
             continue
+        holiday = s.pop("holiday", False)
         if parse(s["eventEnd"]) - max(parse(s["eventStart"]), today) < timedelta(days=s.pop("min_left")):
             continue   # over, or too little left to be worth a review (added 2026-10-20)
         if pub - today > timedelta(days=HORIZON):
             print(f"later    {s['referenceName']} (publishes {pub:%b %d})")
             continue
-        if (until := covered_until(s, existing)):
+        # Holidays may overlap an event with the same link: each is its own day.
+        if not holiday and (until := covered_until(s, existing)):
             if parse(s["eventEnd"]) - until < timedelta(days=7):
                 print(f"covered  {s['referenceName']} (another event runs to {until:%b %d})")
                 continue

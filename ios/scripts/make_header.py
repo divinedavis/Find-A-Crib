@@ -66,7 +66,8 @@ def shadow(base, mask, pos, blur, alpha=110, dy=0.0):
 
 
 def circle_photo(base, crop, center, diam, ring, s):
-    src = Image.open(HOME).convert("RGB").crop(crop)
+    # crop: a box in the home shot, or a photo file's path (event art).
+    src = Image.open(crop).convert("RGB") if isinstance(crop, str) else Image.open(HOME).convert("RGB").crop(crop)
     side = min(src.size)
     src = src.crop(((src.width - side) // 2, (src.height - side) // 2,
                     (src.width - side) // 2 + side, (src.height - side) // 2 + side))

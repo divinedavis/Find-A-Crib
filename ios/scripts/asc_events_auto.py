@@ -32,8 +32,7 @@ Weekly (launchd, scripts/install_events_auto.sh), it:
      link overlaps, the new one starts where that one ends, or is skipped if
      under a week would be left (the hand-made "Fall 2026 lottery deadlines"
      runs Oct 17-Nov 16: October 2026 is skipped, November starts Nov 16);
-  3. sends every DRAFT event to App Review in a submission of its own, or
-     waits a week when any submission is open (Apple allows one). Events
+  3. sends every DRAFT event to App Review in a submission of its own. Events
      never ride with a version: a rejected event holds an accepted version
      back from release until it is removed (1.3.3, Oct 2026).
 
@@ -42,7 +41,8 @@ Apple's rules (developer.apple.com/help/app-store-connect, checked
 it starts, 10 published and 15 approved at a time. Text can't change once
 approved, so no counts or prices go in it. The art is the approved
 fac-2026-10/event-lotteries card and details (a calendar, no words), reused
-for every event so no new art waits on review.
+for every event so no new art waits on review. Since 2026-10-24 the art
+is the logo art instead (see art()); run upload_event_art.py for a new look.
 
     ~/.venvs/spendcap/bin/python scripts/asc_events_auto.py            # plan only
     ~/.venvs/spendcap/bin/python scripts/asc_events_auto.py --apply    # create + submit
@@ -57,8 +57,15 @@ import asc_app_events
 APP = _cfg()["ASC_APP_ID"]
 HORIZON = 21           # days ahead to create an event, counted to its publish date
 LEAD = 7               # publish this many days before the event starts (Apple: <= 14)
-ART = {"card": "fac-2026-10/event-lotteries/card-3840x2160.png",
-       "details": "fac-2026-10/event-lotteries/details-2160x3840.png"}
+# The real logo, large, on every card and details page (owner, 2026-10-24:
+# "we should always have our logo on the event card and event details").
+# upload_event_art.py renders and uploads each look once; holidays wear
+# their day's colours, the rest the everyday teal.
+
+
+def art(look="everyday"):
+    return {"card": f"fac-events-logo/{look}/card-3840x2160.png",
+            "details": f"fac-events-logo/{look}/details-2160x3840.png"}
 NY_OFFSET = timedelta(hours=-5)   # midnight in New York, near enough across DST
 
 
@@ -82,7 +89,7 @@ def thanksgiving(y):
     return first + timedelta(days=(3 - first.weekday()) % 7 + 21)
 
 
-def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COST_ASSOCIATED", min_left=14):
+def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COST_ASSOCIATED", min_left=14, look="everyday"):
     assert len(name) <= 30 and len(short) <= 50 and len(long_) <= 120, ref
     s, e = ny_midnight(start), ny_midnight(end + timedelta(days=1)) - timedelta(minutes=1)
     return {"referenceName": ref, "badge": badge, "purpose": purpose, "priority": "NORMAL",
@@ -90,7 +97,7 @@ def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COS
             "eventStart": iso(s), "eventEnd": iso(e), "deepLink": link,
             "purchaseRequirement": cost,
             "name": name, "shortDescription": short, "longDescription": long_,
-            "card": ART["card"], "details": ART["details"], "min_left": min_left}
+            **art(look), "min_left": min_left}
 
 
 def planned(today):
@@ -118,14 +125,14 @@ def planned(today):
                             "See a building's violations and complaints",
                             "Strange noises, no heat, pests? Look up any NYC building's HPD violations and complaints before you sign.",
                             "findacrib://search", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
-                            date(y, 10, 25), date(y, 10, 31), min_left=3))
+                            date(y, 10, 25), date(y, 10, 31), min_left=3, look="halloween"))
         if m == 11:
             t = thanksgiving(y)
             out.append(spec(f"Thanksgiving {y}", "Hosting? Get the Heat On",
                             "NYC landlords must heat your home through May",
                             "Cold apartment before guests arrive? NYC landlords must provide heat. Get a repair letter and file with 311.",
                             "findacrib://tool/repair", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
-                            t - timedelta(days=6), t + timedelta(days=3), min_left=3))
+                            t - timedelta(days=6), t + timedelta(days=3), min_left=3, look="thanksgiving"))
         if m == 12:
             # HPD: owners file the annual bedbug report Dec 1-31 (nyc.gov/hpd bedbugs).
             out.append(spec(f"Bedbug reports {y}", "Bedbug Reports Are Due",
@@ -176,31 +183,28 @@ def covered_until(s, existing):
     return max(ends) if ends else None
 
 
-def open_submission():
-    """The app's open review submission, if any: (id, state)."""
-    d = call("GET", f"/v1/reviewSubmissions?filter[app]={APP}&filter[platform]=IOS&limit=20")["data"]
-    for r in d:
-        st = r["attributes"].get("state")
-        if st in ("READY_FOR_REVIEW", "WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES"):
-            return r["id"], st
-    return None, None
-
-
 def submit_drafts(apply):
     drafts = [e for e in call("GET", f"/v1/apps/{APP}/appEvents?limit=200")["data"]
               if e["attributes"].get("eventState") == "DRAFT"]
     if not drafts:
         return
     names = ", ".join(e["attributes"]["referenceName"] for e in drafts)
-    sid, st = open_submission()
-    if sid:
-        # A version (or another event) is already with App Review; Apple
-        # allows one open submission. Re-checked next week.
-        print(f"wait     {names}: submission {sid[:8]} is {st}")
-        return
+    # No waiting on another open submission: on 2026-10-24 Apple took 1.3.5's
+    # submission while an events one was WAITING_FOR_REVIEW, so the two run
+    # side by side and events never queue behind a version's review.
     if not apply:
         print(f"would submit {names}")
         return
+    # Apple 409s a draft whose publish or start date has passed
+    # (TERRITORY_SCHEDULES_DATES_IN_PAST), e.g. one pulled back from review.
+    soon = datetime.now(timezone.utc) + timedelta(hours=2)
+    for e in drafts:
+        ts = e["attributes"].get("territorySchedules") or []
+        if any(parse(t[k]) < soon for t in ts for k in ("publishStart", "eventStart")):
+            ts = [{**t, **{k: iso(soon) for k in ("publishStart", "eventStart") if parse(t[k]) < soon}} for t in ts]
+            call("PATCH", f"/v1/appEvents/{e['id']}", {"data": {"type": "appEvents", "id": e["id"],
+                 "attributes": {"territorySchedules": ts}}})
+            print(f"moved    {e['attributes']['referenceName']} to start showing {iso(soon)}")
     sub = call("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions",
                "attributes": {"platform": "IOS"},
                "relationships": {"app": {"data": {"type": "apps", "id": APP}}}}})["data"]

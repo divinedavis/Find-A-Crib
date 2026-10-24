@@ -27,3 +27,12 @@ def test_holiday_weeks_are_planned_and_exempt_from_the_14_day_skip():
     assert by["Halloween 2026"]["deepLink"] == "findacrib://search"
     assert by["Thanksgiving 2026"]["deepLink"] == "findacrib://tool/repair"
     assert by["Halloween 2026"]["min_left"] < 14
+    assert by["Halloween 2026"]["card"] == "fac-events-logo/halloween/card-3840x2160.png"
+
+
+def test_every_event_carries_the_logo_art():
+    for m in range(1, 13):
+        for s in ev.planned(date(2026, m, 1)):
+            assert s["card"].startswith("fac-events-logo/") and s["details"].startswith("fac-events-logo/"), s["referenceName"]
+    dec = {s["referenceName"]: s for s in ev.planned(date(2026, 12, 1))}
+    assert dec["Bedbug reports 2026"]["card"] == "fac-events-logo/everyday/card-3840x2160.png"

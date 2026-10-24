@@ -20,6 +20,13 @@ Weekly (launchd, scripts/install_events_auto.sh), it:
        findacrib://broker-fee, Plus);
      - July, lease renewal season (Renewal coach, Plus);
      - October, the new rent guidelines take effect (Oct 1);
+     Holidays added 2026-10-24 (owner: "get findacrib in the holiday
+     event"; picked real tools with holiday framing, since the holiday
+     looks aren't in the live app and a cosmetic event invites 2.3.13):
+     - Halloween week, "is your building haunted?" into building search;
+     - Thanksgiving week, heat for when guests come, into the repair tool.
+     Holiday events are a week long, so the 14-days-left skip doesn't
+     apply to them (min_left);
   2. creates each one whose publish date is within HORIZON days, unless an
      event with the same name exists. When another event with the same deep
      link overlaps, the new one starts where that one ends, or is skipped if
@@ -69,14 +76,21 @@ def month_window(y, m):
     return start, end
 
 
-def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COST_ASSOCIATED"):
+def thanksgiving(y):
+    """The fourth Thursday of November."""
+    first = date(y, 11, 1)
+    return first + timedelta(days=(3 - first.weekday()) % 7 + 21)
+
+
+def spec(ref, name, short, long_, link, badge, purpose, start, end, cost="NO_COST_ASSOCIATED", min_left=14):
+    assert len(name) <= 30 and len(short) <= 50 and len(long_) <= 120, ref
     s, e = ny_midnight(start), ny_midnight(end + timedelta(days=1)) - timedelta(minutes=1)
     return {"referenceName": ref, "badge": badge, "purpose": purpose, "priority": "NORMAL",
             "territories": ["USA"], "publishStart": iso(s - timedelta(days=LEAD)),
             "eventStart": iso(s), "eventEnd": iso(e), "deepLink": link,
             "purchaseRequirement": cost,
             "name": name, "shortDescription": short, "longDescription": long_,
-            "card": ART["card"], "details": ART["details"]}
+            "card": ART["card"], "details": ART["details"], "min_left": min_left}
 
 
 def planned(today):
@@ -99,6 +113,19 @@ def planned(today):
                             "NYC's new stabilized rent increases start Oct 1",
                             "From Oct 1, the Rent Guidelines Board's new increases apply to stabilized leases. Check if yours is legal.",
                             "findacrib://tool/rent-increase", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS", start, end))
+        if m == 10:
+            out.append(spec(f"Halloween {y}", "Is Your Building Haunted?",
+                            "See a building's violations and complaints",
+                            "Strange noises, no heat, pests? Look up any NYC building's HPD violations and complaints before you sign.",
+                            "findacrib://search", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
+                            date(y, 10, 25), date(y, 10, 31), min_left=3))
+        if m == 11:
+            t = thanksgiving(y)
+            out.append(spec(f"Thanksgiving {y}", "Hosting? Get the Heat On",
+                            "NYC landlords must heat your home through May",
+                            "Cold apartment before guests arrive? NYC landlords must provide heat. Get a repair letter and file with 311.",
+                            "findacrib://tool/repair", "SPECIAL_EVENT", "APPROPRIATE_FOR_ALL_USERS",
+                            t - timedelta(days=6), t + timedelta(days=3), min_left=3))
         if m == 12:
             # HPD: owners file the annual bedbug report Dec 1-31 (nyc.gov/hpd bedbugs).
             out.append(spec(f"Bedbug reports {y}", "Bedbug Reports Are Due",
@@ -196,7 +223,7 @@ def main():
         pub = parse(s["publishStart"])
         if s["referenceName"] in names:
             continue
-        if parse(s["eventEnd"]) - max(parse(s["eventStart"]), today) < timedelta(days=14):
+        if parse(s["eventEnd"]) - max(parse(s["eventStart"]), today) < timedelta(days=s.pop("min_left")):
             continue   # over, or too little left to be worth a review (added 2026-10-20)
         if pub - today > timedelta(days=HORIZON):
             print(f"later    {s['referenceName']} (publishes {pub:%b %d})")

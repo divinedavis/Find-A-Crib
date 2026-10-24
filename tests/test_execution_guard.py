@@ -67,12 +67,23 @@ class TheWindowIsTheVerdictsOwnSpan(unittest.TestCase):
         self.assertEqual((acted, readings), (3, 2))
 
     def test_an_unmapped_technique_reads_unknown_and_asks_nothing(self):
-        # T008 b2b_outreach has no execution series at all. The guard must need
-        # positive evidence, like MIN_CENSUS_READ, and must not invent a zero.
+        # The guard must need positive evidence, like MIN_CENSUS_READ, and must
+        # not invent a zero for a technique it has no series for.
+        #
+        # This used to be asserted of b2b_outreach, which was the live example
+        # of an unmapped technique until 2026-10-24, when T008's revisit gave it
+        # growth/outreach.py's emails_sent series. The example moved; the rule
+        # did not. Taking the slug from the ledger rather than naming one keeps
+        # it true the next time a technique gets mapped.
         fake = FakeSeries({})
         R.ledger.series = fake
-        self.assertEqual(R._executions("b2b_outreach", ("2026-08-26", "2026-10-12")),
-                         (None, 0))
+        from growth import ledger
+        unmapped = [t["slug"] for t in ledger.load_techniques()
+                    if t.get("status") == "active" and t["slug"] not in R.EXECUTION_SERIES]
+        self.assertTrue(unmapped, "every active technique is mapped — update this test")
+        for slug in unmapped[:3] + ["no-such-technique-slug"]:
+            self.assertEqual(R._executions(slug, ("2026-08-26", "2026-10-12")),
+                             (None, 0), slug)
         self.assertEqual(fake.asked, [])
 
     def test_no_window_reads_unknown(self):
@@ -283,7 +294,8 @@ class TheMappingPointsAtRealSeries(unittest.TestCase):
     def test_every_mapped_series_is_recorded_somewhere_in_the_code(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         src = ""
-        for name in ("lifecycle.py", "accounts.py"):
+        # outreach.py joined these on 2026-10-24 with T008's emails_sent series.
+        for name in ("lifecycle.py", "accounts.py", "outreach.py"):
             with open(os.path.join(root, "growth", name), encoding="utf-8") as f:
                 src += f.read()
         for slug, (tech, metric) in R.EXECUTION_SERIES.items():

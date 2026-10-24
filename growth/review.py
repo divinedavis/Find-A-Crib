@@ -160,6 +160,26 @@ CO_CLAIMANTS_NAMED = 3
 #                            the one that is ruled out, and the flat counter IS
 #                            a reading about the offer.
 #   T018 account_lifecycle-> emails_sent, recorded by growth/accounts.py.
+#   T008 b2b_outreach     -> emails_sent, recorded by growth/outreach.py. ADDED
+#                            2026-10-24, on T008's revisit. It was named in the
+#                            paragraph above as one of the two cases the ledger
+#                            had carried by hand, and then left out of the map
+#                            below — so the sentence it was written to fix was
+#                            still the sentence T008 got. It is a THIRD shape,
+#                            not a copy of either: T011 acts when this loop
+#                            sends, T017 acts when another sequence puts the
+#                            ask, and T008 acts when a HUMAN presses send,
+#                            which the loop can only know because
+#                            outreach.mark() was told. outreach.py drafts and
+#                            never sends by design (CAN-SPAM, GDPR), so the
+#                            drafting is the module acting and the send is the
+#                            TECHNIQUE acting; the hypothesis is about the
+#                            second, which is why this maps to emails_sent and
+#                            not to the drafts_written series recorded beside
+#                            it. A 0 here is therefore the honest reading of a
+#                            night with drafts waiting and nobody sending, and
+#                            the flat branch's "unmeasurable by construction
+#                            and not failed" is the correct verdict for it.
 #
 # A module constant rather than a field on the technique record, deliberately:
 # an `executes` field would have to be threaded through ledger.add() AND
@@ -171,6 +191,7 @@ EXECUTION_SERIES = {
     "lifecycle_email": ("lifecycle_email", "emails_sent"),
     "one_time_building_report_product": ("account_lifecycle", "sent_saved_paid_ask"),
     "account_lifecycle": ("account_lifecycle", "emails_sent"),
+    "b2b_outreach": ("b2b_outreach", "emails_sent"),
 }
 
 
@@ -424,7 +445,7 @@ def _judge_stock(res, metric, after, before, days):
         # whole reason this is not works=False — and where the technique's own
         # actions are measured, the loop can say WHICH of the two it is instead
         # of handing the reader a disjunction to resolve by hand every revisit.
-        # See EXECUTION_SERIES for the two live cases and why they are opposites.
+        # See EXECUTION_SERIES for the four live cases and how they differ.
         #
         # works stays None on all three branches. Resolving the disjunction
         # changes what the ledger SAYS, never whether the technique is credited:
@@ -454,6 +475,33 @@ def _judge_stock(res, metric, after, before, days):
             res["why"] = (f"{flat}, so either nothing reaches this technique or nothing "
                           f"it does converts — and its own action count is unrecorded "
                           f"across those {a_span}d, so the loop cannot say which")
+        return res
+
+    # A COUNTER THAT MOVED IS NOT EVIDENCE FOR A TECHNIQUE THAT NEVER ACTED.
+    # Until 2026-10-24 only the flat branch above consulted the execution
+    # count, and T008 b2b_outreach is the case that showed that is not enough:
+    # mrr_usd went 0 → 4.99, so its series is NOT flat, so the guard was never
+    # reached — and the 4.99 is a subscription that a drafted, never-sent
+    # outreach email cannot have caused. The reading it got instead ("no
+    # comparable baseline, so the movement cannot be attributed either way") is
+    # safe, and silent about the one recorded fact that settles it.
+    #
+    # Placed after the flat branch and before the baseline one so the flat
+    # wording is untouched, and needing POSITIVE evidence exactly as the flat
+    # branch does: an unwritten series says nothing and falls through, because
+    # "we never measured whether it acted" is not "it did not act". works stays
+    # None on this path. It never promotes a verdict — it refuses to credit a
+    # movement to a technique the loop recorded as not having acted, which is
+    # the same refusal _co_claimants makes when several techniques claim one
+    # series, reached from the other side.
+    acted, readings = _executions(res["slug"], (after[0][0], after[-1][0]))
+    if readings and not acted:
+        res["measured"]["executions"] = acted
+        res["measured"]["execution_readings"] = readings
+        res["action"] = "flag"
+        res["why"] = (f"{moved}, but it acted 0 times on the {readings} day(s) of those "
+                      f"{a_span}d that recorded whether it acted — so whatever moved this "
+                      f"counter, this technique did not cause it")
         return res
 
     if b_span < MIN_BASELINE_DAYS:

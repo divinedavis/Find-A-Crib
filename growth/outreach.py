@@ -33,6 +33,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DRAFTS_DIR = os.path.join(HERE, "outreach_drafts")
 PROSPECTS_PATH = os.path.join(HERE, "prospects.json")
 
+# Statuses that can only be true of a prospect whose email actually WENT OUT.
+# "drafted" is the one status that is not: a reply, a win and a decline all
+# presuppose a send, so any of these four is evidence the human step happened.
+# This is the list mark() accepts, read as a claim about the world rather than
+# as a workflow label.
+SENT_STATUSES = ("sent", "replied", "won", "declined")
+
 MAX_PER_DAY = 5
 
 # Who actually needs property-level rent-regulation data. Rotated daily so the
@@ -168,7 +175,91 @@ def _mirror(record):
     ledger.write_last_run("outreach", {"date": ledger.today(), **record})
 
 
+def _sent_today():
+    """How many drafts a human SENT today, or None if that cannot be read.
+
+    None rather than 0 whenever prospects.json exists and cannot be parsed,
+    because review._executions treats an absent reading as "we never measured
+    whether it acted" and a 0 as "we measured, and it acted nothing" — opposite
+    findings, and the second one is a claim this loop must be able to support.
+    _load_prospects() swallows every error into [], which is the right default
+    for the research path (a missing file genuinely means no prospects yet) and
+    the wrong one here: a corrupt file would record a send count of zero that
+    nothing established.
+
+    Counts `sent_at`, which mark() stamps ONCE on the first transition out of
+    "drafted" — not `status_at`, which moves again when the same prospect later
+    replies or declines and would count one send on two different days.
+    """
+    if not os.path.exists(PROSPECTS_PATH):
+        return 0                      # no file, no prospects, no sends
+    try:
+        with open(PROSPECTS_PATH) as f:
+            known = json.load(f)
+    except Exception:
+        return None                   # there and unreadable: unknown, not zero
+    if not isinstance(known, list):
+        return None
+    today = ledger.today()
+    return sum(1 for p in known
+               if isinstance(p, dict) and p.get("sent_at") == today)
+
+
+def _record_sent(dry_run=False):
+    """Write today's SEND count — T008's execution count — on every path.
+
+    WHY THIS EXISTS AT ALL. T008 b2b_outreach declares mrr_usd, and mrr_usd is
+    downstream of a step this module deliberately does not take: it drafts and
+    never sends, because CAN-SPAM and GDPR need a human. So a flat mrr_usd said
+    nothing about the idea, and the ledger carried that caveat by hand on
+    2026-09-24 ("the verdict on it is measuring an outage rather than an idea").
+    review.EXECUTION_SERIES now maps this slug onto this series, so the flat
+    branch can say which disjunct is true instead of handing the reader both.
+
+    RECORDED BEFORE THE API CALL, unlike lifecycle._record_sent and
+    accounts._record_sent, and that difference is the point. Those two record
+    from every path that LOOKED, where looking means querying the accounts
+    table. Here the question — did a human send any of these drafts today — is
+    answered from growth/prospects.json alone and needs no key, no credit and
+    no model answer. Recording it first is what turns the API-capped nights
+    (every night from 2026-09-08 to 2026-10-12) into readings of "it did not
+    act" rather than holes indistinguishable from a job that never ran.
+
+    Skipped when _sent_today() cannot read, and under --dry-run, which must
+    write nothing. A skipped night reads as unrecorded, which is correct.
+    """
+    if dry_run:
+        return None
+    n = _sent_today()
+    if n is None:
+        return None
+    ledger.record_result(ledger.today(), "b2b_outreach", "emails_sent", n)
+    return n
+
+
+def _record_drafted(n, dry_run=False):
+    """Write how many drafts the research produced tonight, zero included.
+
+    NOT T008's execution count, and kept separate from emails_sent on purpose.
+    A draft is this module acting; a send is the TECHNIQUE acting, and the
+    hypothesis ("personalised outreach converts far better than volume") is
+    about the second. What this series is for is telling the two failures
+    apart at the next revisit: nothing drafted because the API is capped, or
+    drafted steadily and never sent because the human step never happened.
+    Zeros are recorded for the reason in accounts._record_sent — a night that
+    found nobody worth writing to and a night whose researcher is broken look
+    identical otherwise.
+    """
+    if dry_run:
+        return None
+    ledger.record_result(ledger.today(), "b2b_outreach", "drafts_written", n)
+    return n
+
+
 def run(dry_run=False):
+    # Before anything that can fail — see _record_sent on why this one does not
+    # wait for the API to answer.
+    _record_sent(dry_run)
     key = scout.load_key()
     if not key:
         msg = "no Anthropic key — outreach research skipped (same key as the scout)"
@@ -223,6 +314,7 @@ def run(dry_run=False):
 
     if not dry_run:
         _save_prospects(known)
+        _record_drafted(len(added), dry_run)
         # "ok" must be explicit on the success path too. Both failure paths set
         # ok=False, and the report treats a missing key as failure — so omitting
         # it here made every successful outreach run show up in the daily email
@@ -245,12 +337,23 @@ def pending(limit=10):
 
 
 def mark(org, status):
-    """Record what happened: sent / replied / won / declined."""
+    """Record what happened: sent / replied / won / declined.
+
+    Stamps `sent_at` the FIRST time a prospect reaches a status that implies
+    the email went out, and never moves it again. That date is T008's whole
+    execution record (see _record_sent): `status_at` cannot serve, because it
+    is rewritten when the same prospect later replies or declines, which would
+    count one send on two separate days and credit the technique with acting
+    twice. Set here rather than inferred later because nothing else in this
+    repo knows when a human pressed send.
+    """
     known = _load_prospects()
     for p in known:
         if p["org"].lower() == org.lower():
             p["status"] = status
             p["status_at"] = ledger.today()
+            if status in SENT_STATUSES and not p.get("sent_at"):
+                p["sent_at"] = ledger.today()
             _save_prospects(known)
             return p
     return None

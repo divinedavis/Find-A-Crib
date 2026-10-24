@@ -705,6 +705,46 @@ def cmd_outreach(args):
         return None
 
 
+
+def cmd_outreach_mark(args):
+    """Record that a human SENT (or got a reply to) one drafted outreach email.
+
+    The missing half of T008 b2b_outreach. growth/outreach.py has always
+    drafted and never sent — CAN-SPAM and GDPR need a human — and
+    outreach.mark() has existed to record what the human did since the module
+    was written, with no caller anywhere in the repo. So the send could only be
+    recorded by opening a Python REPL on the droplet, which means it never was,
+    which means review.py's execution count for this technique would have read
+    0 forever for the wrong reason: not "nobody was written to" but "nobody
+    told the loop". This is the command that tells it.
+
+    Takes the organisation name as it appears in growth/outreach_drafts/ and
+    prints nothing identifying beyond what the operator already typed.
+    """
+    if not args.org or not args.status:
+        log("  outreach-mark needs --org and --status "
+            f"({'/'.join(outreach_statuses())})")
+        return
+    from growth import outreach
+    if args.status not in outreach.SENT_STATUSES:
+        log(f"  unknown status {args.status!r} — "
+            f"expected one of {'/'.join(outreach.SENT_STATUSES)}")
+        return
+    p = outreach.mark(args.org, args.status)
+    if not p:
+        log(f"  no prospect matching {args.org!r} — check growth/prospects.json")
+        return
+    # Re-record today's count so the series reflects the mark immediately
+    # rather than waiting for tomorrow's cron. record_result is idempotent per
+    # (date, technique, metric), so this overwrites today's earlier reading.
+    n = outreach._record_sent()
+    log(f"  {args.org}: {args.status} (sent_at {p.get('sent_at') or '—'}) "
+        f"— {n if n is not None else '?'} send(s) recorded for today")
+
+
+def outreach_statuses():
+    from growth import outreach
+    return outreach.SENT_STATUSES
 def cmd_lifecycle(args):
     """Buyer follow-up sequence. Only runs if the ledger says it's active."""
     if not any(t["slug"] == "lifecycle_email" for t in ledger.active()):
@@ -784,7 +824,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
-                                       "outreach", "lifecycle", "accounts", "report", "daily", "status",
+                                       "outreach", "outreach-mark", "lifecycle", "accounts",
+                                       "report", "daily", "status",
                                        "journal", "seo-status"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
@@ -799,6 +840,9 @@ def main():
     p.add_argument("--changed", help="journal: what you actually changed")
     p.add_argument("--watching", help="journal: what to check next time")
     p.add_argument("--author", help="journal: who wrote it")
+    # outreach-mark: the human send step T008 is judged on (see cmd_outreach_mark)
+    p.add_argument("--org", help="outreach-mark: organisation as named in the draft")
+    p.add_argument("--status", help="outreach-mark: sent / replied / won / declined")
     # seo-status: what growth_run.sh's watchdog just did, so last_run.json can
     # say it without anyone parsing the heartbeat.
     p.add_argument("--watchdog-rc", type=int, default=0,
@@ -810,6 +854,7 @@ def main():
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
      "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
+     "outreach-mark": cmd_outreach_mark,
      "lifecycle": cmd_lifecycle, "accounts": cmd_accounts,
      "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
      "journal": cmd_journal, "seo-status": cmd_seo_status}[args.command](args)

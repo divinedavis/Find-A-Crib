@@ -132,7 +132,17 @@ final class PlusStore {
         }
         guard let token else { return }
         do {
-            _ = try await client.functions.invoke("apple-subscription", options: .init(body: ["jws": token]))
+            // A dropped or slow connection gets two more tries before it
+            // counts (2026-10-25: one subscriber's first sync hit -1005
+            // "network connection was lost" twice; a later one recorded it).
+            for attempt in 0... {
+                do {
+                    _ = try await client.functions.invoke("apple-subscription", options: .init(body: ["jws": token]))
+                    break
+                } catch let e as URLError where attempt < 2 && Self.transient.contains(e.code) {
+                    try? await Task.sleep(for: .seconds(attempt == 0 ? 2 : 6))
+                }
+            }
             await auth.refreshPlus()
         } catch {
             // The local entitlement still unlocks Plus this session, but a
@@ -145,6 +155,10 @@ final class PlusStore {
                                                  "text": String(error.localizedDescription.prefix(140))])
         }
     }
+
+    /// Connection trouble worth retrying, not a server or verification failure.
+    static let transient: Set<URLError.Code> = [.networkConnectionLost, .timedOut, .notConnectedToInternet,
+                                                .cannotConnectToHost, .dnsLookupFailed]
 
     func manage() async {
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }

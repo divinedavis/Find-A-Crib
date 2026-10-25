@@ -592,6 +592,11 @@ enum MapRegion {
 /// the same afternoon.
 struct HeroBanner: View {
     @Environment(DataStore.self) private var store
+    /// On a holiday (owner, 2026-10-25: "theme the header on the main page…
+    /// to any theme we have at the time") the field takes the splash's
+    /// colour with a glow of the day's own, and the day's line sits under
+    /// the city line, so the banner picks up where the splash left off.
+    var holiday: Holiday? = HolidayCalendar.today
 
     /// "Every rent-stabilized building in NYC" — the register's own word for
     /// what a building IS, without the qualifier the line has no room for
@@ -606,8 +611,17 @@ struct HeroBanner: View {
             ZStack {
                 // Starts at 2F7A8A, not the lighter 3A8FA2: the city line in white
                 // read below 4.5:1 on it (accessibility audit, 2026-10-02).
-                LinearGradient(colors: [Color(hex: 0x2F7A8A), SE.royal, SE.navy],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                if let holiday {
+                    // Every holiday's field is dark (holidays.json "disc"),
+                    // and the glow stays at the bottom edge, below the city
+                    // line, so white type keeps its contrast.
+                    holiday.background
+                    RadialGradient(colors: [holiday.accentOnDark.opacity(0.35), .clear],
+                                   center: .bottom, startRadius: 0, endRadius: max(w, h) * 0.8)
+                } else {
+                    LinearGradient(colors: [Color(hex: 0x2F7A8A), SE.royal, SE.navy],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
                 // With the badges gone (owner, 2026-09-23) the mark has no
                 // scatter to sit in, so it stacks with the words: one centred
                 // lockup, mark over wordmark over city line.
@@ -628,15 +642,20 @@ struct HeroBanner: View {
                         .foregroundStyle(.white)
                         .lineLimit(1).minimumScaleFactor(0.7)
                     }
+                    if let holiday {
+                        HolidayLine(holiday: holiday, size: 11)
+                            .padding(.top, 2)
+                            .accessibilityIdentifier("hero-holiday")
+                    }
                 }
                 .padding(.horizontal, 24)
                 .position(x: w * 0.5, y: h * 0.5)
             }
         }
         .frame(height: 200)
-        .background(SE.navy.ignoresSafeArea(edges: .top))
+        .background((holiday?.background ?? SE.navy).ignoresSafeArea(edges: .top))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Find A Crib. \(Self.line(for: store.city))")
+        .accessibilityLabel("Find A Crib. \(Self.line(for: store.city))\(holiday.map { ". \($0.name)" } ?? "")")
         .accessibilityIdentifier("hero-banner")
     }
 
@@ -695,6 +714,13 @@ struct ShowChecklist: View {
                 .init(title: String(localized: "Accepting vouchers"), subtitle: String(localized: "Section 8 / voucher-friendly buildings"), isOn: $query.vouchersOnly),
                 .init(title: String(localized: "HCR lotteries & waitlists"), subtitle: String(localized: "Apply online at HousingSearch.ny.gov"), isOn: $query.hcrOnly),
             ]
+        }
+        // Here as well as in Filters (owner, 2026-10-25: "i dont see a filter
+        // for apartments that are pest free"; it was only on the results
+        // screen's Filters sheet). The same SearchQuery.hidePests, so the
+        // two always agree. HPD citations exist only for New York.
+        if store.city.isNYC {
+            rows.append(.init(title: String(localized: "No pests"), subtitle: String(localized: "No HPD pest citations in 12 months"), isOn: $query.hidePests))
         }
         return SECheckList(rows: rows)
     }

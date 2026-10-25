@@ -18700,6 +18700,34 @@
         }
       }
     },
+    "No HPD pest citations in 12 months" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin citaciones de plagas de HPD en 12 meses"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12개월간 HPD 해충 적발 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12个月内无HPD虫害记录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12個月內無HPD蟲害記錄"
+          }
+        }
+      }
+    },
     "No HPD registration contacts on file for this building." : {
       "localizations" : {
         "es" : {

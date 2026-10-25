@@ -63,6 +63,20 @@ struct LaunchPresentation<Content: View>: View {
         content
             .allowsHitTesting(finished)
             .accessibilityHidden(!finished)
+            // Hidden, not just covered, while the splash plays (owner,
+            // 2026-10-25: "white flickering on the left and right border of
+            // the splash"). During iOS's open-app zoom the window is scaled
+            // and its outermost pixels are only partly covered, so the white
+            // Search page under the splash bled through as a thin line on
+            // both edges, from the bottom of the teal banner down. It still
+            // lays out and loads underneath; it just draws nothing, over the
+            // splash's own field.
+            .opacity(finished ? 1 : 0)
+            .background {
+                if !finished {
+                    (HolidayCalendar.today?.background ?? Color("LaunchNavy")).ignoresSafeArea()
+                }
+            }
             .overlay {
                 if !finished {
                     LetterSplash(onFinished: { finish() }, holdUntil: isReady, forceReducedMotion: prefersReducedMotion)

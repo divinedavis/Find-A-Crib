@@ -850,6 +850,16 @@ final class FindACribUITests: XCTestCase {
         banner.tap()
         XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 4), "tapping must open nothing")
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
+        XCTAssertFalse(banner.label.contains("Halloween"), "an everyday banner carries no holiday: \(banner.label)")
+        // On a holiday it wears the day (owner, 2026-10-25): the splash's
+        // field and the day's line under the city line.
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--holiday", "halloween"]
+        app.launch()
+        let dressed = app.descendants(matching: .any)["hero-banner"].firstMatch
+        XCTAssertTrue(dressed.waitForExistence(timeout: 20))
+        XCTAssertTrue(dressed.label.contains("Halloween"), "the banner names the holiday: \(dressed.label)")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "hero-halloween"; shot.lifetime = .keepAlways; add(shot)
     }
 
     /// The app's Plus paywall: Plus is the AI features, real-time alerts and
@@ -1351,6 +1361,21 @@ final class FindACribUITests: XCTestCase {
         XCTAssertEqual(pests.value as? String, "0", "off by default")
         pests.switches.firstMatch.exists ? pests.switches.firstMatch.tap() : pests.tap()
         XCTAssertEqual(pests.value as? String, "1")
+    }
+
+    /// The owner looked for it on Search's Show list, not in Filters
+    /// (2026-10-25), so it is in both, and they are one setting.
+    func testShowListOffersNoPests() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launch()
+        let row = app.buttons["check-No pests"]
+        for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "Search's Show list offers No pests")
+        XCTAssertFalse(row.isSelected, "off by default")
+        row.tap()
+        XCTAssertTrue(row.isSelected)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "show-no-pests"; shot.lifetime = .keepAlways; add(shot)
     }
 
     /// Documents saved in the app go with the email to the agent (owner,

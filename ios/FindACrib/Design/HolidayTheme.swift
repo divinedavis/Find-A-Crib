@@ -220,7 +220,7 @@ struct HolidayLine: View {
     }
 }
 
-private extension Holiday {
+extension Holiday {
     /// The mark's colour on the dark splash: the first colour bright enough
     /// to show on it, else white.
     var accentOnDark: Color { Color(hexString: tab.first { UIColor(hexString: $0).luminance > 0.25 } ?? "#FFFFFF") }

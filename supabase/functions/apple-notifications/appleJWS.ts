@@ -30,12 +30,12 @@
 // We use `@peculiar/x509` for X.509 parsing + chain signature verification and
 // `jose` for the ES256 JWS verification. Both run on the Supabase edge runtime.
 
-import * as x509 from "https://esm.sh/@peculiar/x509@1.12.3";
+import * as x509 from "npm:@peculiar/x509@1.12.3";
 import {
   importX509,
   compactVerify,
   decodeProtectedHeader,
-} from "https://esm.sh/jose@5.9.6";
+} from "npm:jose@5.9.6";
 
 x509.cryptoProvider.set(crypto);
 

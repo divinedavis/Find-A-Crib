@@ -39,7 +39,10 @@ PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
           "business": os.environ.get("STRIPE_PRICE_BUSINESS", "")}
 # Public browser key (safe in source), used server-side to ask Supabase Auth
 # "who is this access token?" for the signed-in user routes.
-ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWlmb3R6d2x4anZzeGpvaGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzI2MTQsImV4cCI6MjA5Njk0ODYxNH0.5hoLfoKkNnEnFuu7jsfCTq_rUQqn8gf32BEI9qiyCI4"
+# The publishable key (2026-10-25 rotation; a hard-coded legacy anon JWT
+# before). Public by design, like the one config.js serves, but kept in
+# the env so no key sits in source.
+ANON_KEY = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100

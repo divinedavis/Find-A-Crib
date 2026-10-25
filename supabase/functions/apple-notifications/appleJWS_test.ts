@@ -10,8 +10,8 @@
 //  - stale / future signedDate rejected when maxAgeMs is set
 
 import { assertEquals, assertRejects } from "jsr:@std/assert@1";
-import * as x509 from "https://esm.sh/@peculiar/x509@1.12.3";
-import { CompactSign } from "https://esm.sh/jose@5.9.6";
+import * as x509 from "npm:@peculiar/x509@1.12.3";
+import { CompactSign } from "npm:jose@5.9.6";
 import {
   APP_STORE_LEAF_OID,
   APPLE_WWDR_INTERMEDIATE_OID,

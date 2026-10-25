@@ -11,10 +11,20 @@ verify_jwt = false
 # Checkout must stay behind the platform JWT gate: it opens a Stripe session
 # for the calling user. Pinned explicitly so a redeploy can't drop it.
 [functions.create-checkout]
-verify_jwt = true
+# Off since the 2026-10-25 key rotation: the platform gate checks tokens
+# against the legacy JWT secret, which breaks once user tokens are signed by
+# the new asymmetric key. The function calls auth.getUser() itself and
+# answers 401 without a signed-in user.
+verify_jwt = false
 
 # App Store Server Notifications V2 (2026-10-07): Apple sends no Supabase JWT;
 # the function verifies Apple's JWS chain instead. Must stay false or every
 # renewal/expiry notification 401s.
 [functions.apple-notifications]
+verify_jwt = false
+
+[functions.apple-subscription]
+# Off since the 2026-10-25 key rotation: the function verifies the user
+# itself (auth.getUser(), 401 otherwise); the platform gate uses the legacy
+# JWT secret, which breaks once user tokens are asymmetric.
 verify_jwt = false

@@ -29,7 +29,7 @@ import {
 import { mayGrant, parseAllowlist } from "../apple-subscription/sandbox.ts";
 
 const SANDBOX_ALLOW = parseAllowlist(Deno.env.get("APPLE_SANDBOX_USER_IDS"));
-const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+const admin = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("FAC_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
   { auth: { persistSession: false } });
 
 async function log(p: NotificationPayload, tx: TransactionInfo | null, env: string, outcome: string, userId: string | null) {
@@ -48,6 +48,9 @@ async function log(p: NotificationPayload, tx: TransactionInfo | null, env: stri
   if (error) console.error("apple-notifications log failed:", error.message);
 }
 
+// Keys (2026-10-25 rotation): the dedicated publishable/secret keys, set
+// as function secrets; the legacy JWT keys only as a fallback until the
+// legacy anon/service_role keys are disabled.
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("method", { status: 405 });
   const raw = await req.text();

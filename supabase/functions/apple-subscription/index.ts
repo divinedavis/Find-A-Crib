@@ -39,12 +39,15 @@ async function verify(jws: string): Promise<{ tx: Tx; env: "Production" | "Sandb
 // Sandbox receipts grant Plus only to these accounts (see sandbox.ts).
 const SANDBOX_ALLOW = parseAllowlist(Deno.env.get("APPLE_SANDBOX_USER_IDS"));
 
-const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const admin = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("FAC_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!));
 
+// Keys (2026-10-25 rotation): the dedicated publishable/secret keys, set
+// as function secrets; the legacy JWT keys only as a fallback until the
+// legacy anon/service_role keys are disabled.
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("method", { status: 405 });
   const auth = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!,
+  const userClient = createClient(Deno.env.get("SUPABASE_URL")!, (Deno.env.get("FAC_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!),
     { global: { headers: { Authorization: auth } } });
   const { data: { user }, error: uerr } = await userClient.auth.getUser();
   if (uerr || !user) return new Response("not signed in", { status: 401 });

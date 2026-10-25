@@ -43,6 +43,9 @@ function form(obj: Record<string, string>) {
   return new URLSearchParams(obj).toString();
 }
 
+// Keys (2026-10-25 rotation): the dedicated publishable/secret keys, set
+// as function secrets; the legacy JWT keys only as a fallback until the
+// legacy anon/service_role keys are disabled.
 Deno.serve(async (req) => {
   const cors = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -50,7 +53,7 @@ Deno.serve(async (req) => {
     const auth = req.headers.get("Authorization") || "";
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      (Deno.env.get("FAC_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!),
       { global: { headers: { Authorization: auth } } },
     );
     const { data: { user } } = await supabase.auth.getUser();

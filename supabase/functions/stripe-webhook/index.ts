@@ -8,7 +8,7 @@ const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  (Deno.env.get("FAC_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
 );
 
 // Verify the Stripe-Signature header against the raw body (HMAC-SHA256).
@@ -54,6 +54,9 @@ async function upsert(sub: any, userId: string | null) {
   }, { onConflict: "user_id" });
 }
 
+// Keys (2026-10-25 rotation): the dedicated publishable/secret keys, set
+// as function secrets; the legacy JWT keys only as a fallback until the
+// legacy anon/service_role keys are disabled.
 Deno.serve(async (req) => {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature") || "";

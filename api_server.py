@@ -3102,7 +3102,7 @@ def _fac_crashes(days):
         "days": days,
         "summary": {"crashes": len(found), "crashed_people": tot_people, "web_visitors": tot_web,
                     "rate": round(100 * sum(x["crashed_people"] for x in out_days) / tot_web, 2) if tot_web else None,
-                    "app_failures": sum(e["n"] for e in app.values())},
+                    "app_failures": sum(x["app_failures"] for x in out_days)},
         "per_day": out_days,
         "causes": sorted(({"last": k, "n": e["n"], "people": len(e["people"]), "devices": dict(e["uas"])}
                           for k, e in top.items()), key=lambda x: -x["n"])[:15],

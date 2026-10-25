@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Días festivos: Find A Crib se viste para Halloween, Acción de Gracias, Kwanzaa, Juneteenth y más, con ícono incluido. Desactiva el ícono en Perfil.\n• Chat del edificio: reacciona, responde y anula el envío.\n• Las tarjetas de re-rentas muestran el ingreso del hogar en un formato claro.\n• Barra de pestañas y botón Mapa de vidrio más claro.\n• Otras mejoras.",
-    "zh-Hans": "• 节日：万圣节、感恩节、宽扎节、六月节等节日换上节日配色，主屏幕图标也会变。可在“个人资料”中关闭图标。\n• 楼宇聊天：可以回应、回复和撤回消息。\n• 转租卡片以统一格式显示家庭收入。\n• 更轻盈的玻璃标签栏和地图按钮。\n• 其他改进。",
-    "zh-Hant": "• 節日：萬聖節、感恩節、寬扎節、六月節等節日換上節日配色，主畫面圖示也會變。可在「個人檔案」中關閉圖示。\n• 大樓聊天：可以回應、回覆和收回訊息。\n• 轉租卡片以統一格式顯示家庭收入。\n• 更輕盈的玻璃分頁列和地圖按鈕。\n• 其他改進。",
-    "ru": "• Праздники: Find A Crib наряжается к Хэллоуину, Дню благодарения, Кванзе, Джунтину и другим дням, вместе со значком. Значок можно отключить в Профиле.\n• Чат дома: реакции, ответы и отмена отправки.\n• Карточки повторной аренды показывают доход семьи в едином формате.\n• Более светлая стеклянная панель вкладок и кнопка «Карта».\n• Небольшие исправления.",
-    "ko": "• 공휴일: 핼러윈, 추수감사절, 콴자, 준틴스 등에 맞춰 Find A Crib이 꾸며지고 홈 화면 아이콘도 바뀝니다. 프로필에서 아이콘을 끌 수 있습니다.\n• 건물 채팅: 반응, 답장, 전송 취소.\n• 재임대 카드에 가구 소득이 한 가지 형식으로 표시됩니다.\n• 더 밝은 유리 탭 바와 지도 버튼.\n• 기타 개선.",
+    "es-MX": "• Chat del edificio renovado: tus mensajes a la derecha; mantén presionado para reaccionar, responder o anular el envío; desliza para responder o ver la hora, y un botón para ir a lo más reciente.\n• Filtro Sin plagas: oculta edificios con plagas citadas por HPD en los últimos 12 meses.\n• \"Ayúdame a solicitar\" ahora adjunta tus documentos guardados al enviar el correo al agente.\n• Las quejas abiertas se cuentan en vivo y coinciden con la lista.\n• Los resultados dicen \"69 edificios\", no solo \"69\".\n• Otras mejoras.",
+    "zh-Hans": "• 楼内聊天全新设计：你的消息显示在右侧；长按可回应、回复或撤回；滑动可回复或查看时间；一键跳到最新消息。\n• “没有害虫”筛选：隐藏过去 12 个月内被 HPD 记录有虫害的楼宇。\n• “帮我申请”发送邮件给中介时，会附上你已保存的文件。\n• 未处理投诉数量实时更新，与列表一致。\n• 搜索结果显示“69 栋楼”，而不只是“69”。\n• 其他改进。",
+    "zh-Hant": "• 樓內聊天全新設計：你的訊息顯示在右側；長按可回應、回覆或收回；滑動可回覆或查看時間；一鍵跳到最新訊息。\n• 「沒有害蟲」篩選：隱藏過去 12 個月內被 HPD 記錄有蟲害的大樓。\n• 「幫我申請」寄信給仲介時，會附上你已儲存的文件。\n• 未處理投訴數量即時更新，與列表一致。\n• 搜尋結果顯示「69 棟大樓」，而不只是「69」。\n• 其他改進。",
+    "ru": "• Новый чат дома: ваши сообщения справа; удерживайте, чтобы отреагировать, ответить или отменить отправку; смахните, чтобы ответить или увидеть время; кнопка перехода к новым сообщениям.\n• Фильтр «Без вредителей»: скрывает дома, где HPD фиксировал вредителей за последние 12 месяцев.\n• «Помогите подать заявку» теперь прикладывает ваши сохранённые документы к письму агенту.\n• Число открытых жалоб обновляется в реальном времени и совпадает со списком.\n• В результатах поиска теперь «69 домов», а не просто «69».\n• Небольшие исправления.",
+    "ko": "• 새로워진 건물 채팅: 내 메시지는 오른쪽에, 길게 눌러 반응·답장·전송 취소, 밀어서 답장하거나 시간 보기, 최신 메시지로 이동하는 버튼.\n• 해충 없음 필터: 지난 12개월 동안 HPD에서 해충이 적발된 건물을 숨깁니다.\n• \"신청 도와줘요\"로 중개인에게 이메일을 보낼 때 저장한 서류가 첨부됩니다.\n• 미해결 민원 수가 실시간으로 표시되며 목록과 일치합니다.\n• 검색 결과에 \"69\" 대신 \"건물 69개\"로 표시됩니다.\n• 기타 개선.",
 }
 
 

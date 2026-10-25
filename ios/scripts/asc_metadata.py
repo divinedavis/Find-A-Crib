@@ -88,15 +88,16 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Holidays: Find A Crib dresses up for Halloween, Thanksgiving, Kwanzaa, Juneteenth and more, Home Screen icon included. Turn the icon off in Profile.
-• Building chat: react, reply and unsend, in a cleaner room.
-• Re-rental cards show household income in one tidy format.
-• A lighter glass tab bar and Map button.
+WHATS_NEW = """• Building chat, redesigned: your messages on the right, long-press to react, reply or unsend, swipe to reply or see times, and a button to jump to the newest.
+• No pests filter: hide buildings with pests cited by HPD in the last 12 months.
+• Help me apply now attaches the documents you've saved when you email the agent.
+• Open complaint counts are live and match the list.
+• Search results say "69 buildings", not just "69".
 • Smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.3.5 (build __BUILD__)
-New since 1.3.4: holiday colours on public holidays, incl. an alternate Home Screen icon (iOS shows its icon-changed alert; Profile > "Holiday app icons" turns it off); chat reactions, replies, unsend; card layout. No new permissions, SDKs or data.
+REVIEW_NOTES = """VERSION 1.3.6 (build __BUILD__)
+New since 1.3.5: redesigned building chat (same moderation as before: filter, Report, Block, Leave); a "No pests" search filter (HPD public data); "Help me apply" > "Email with my documents" opens Apple's Mail composer with the renter's saved documents attached (sent from their own Mail account; nothing goes through our server); live open-complaint counts. No new permissions, SDKs or data.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 

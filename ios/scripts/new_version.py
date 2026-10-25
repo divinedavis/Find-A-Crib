@@ -23,6 +23,8 @@ Full release path, in order:
     2. scripts/ship.sh                     build, test, upload to TestFlight
     3. scripts/new_version.py <version>    this
     4. scripts/asc_metadata.py             listing, What's New, review notes
+    4b. scripts/asc_localizations.py --apply   What's New in es-MX/zh/ru/ko;
+                                          Apple refuses the submit without them
     5. scripts/attach_build.py             once the build has processed
     6. scripts/submit_for_review.py        preflight + submit
 """

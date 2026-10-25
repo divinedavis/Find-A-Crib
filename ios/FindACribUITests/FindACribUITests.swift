@@ -815,9 +815,10 @@ final class FindACribUITests: XCTestCase {
             app.launch()
             let count = app.staticTexts["results-count"]
             XCTAssertTrue(count.waitForExistence(timeout: 90), "\(id): results should open")
-            // The headline is just the count since 2026-10-17 (owner); the
-            // city's own word is on each card's badge.
-            expectation(for: NSPredicate(format: "label MATCHES '^[0-9][0-9,]*$'"), evaluatedWith: count)
+            // The headline is the count of buildings ("69 buildings", owner
+            // 2026-10-24; a bare number from 10-17); the city's own word is
+            // on each card's badge.
+            expectation(for: NSPredicate(format: "label MATCHES '^[0-9][0-9,]* buildings?$'"), evaluatedWith: count)
             waitForExpectations(timeout: 60)
             XCTAssertTrue(app.buttons["card-address"].firstMatch.waitForExistence(timeout: 20), "\(id): cards should load")
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == 'Income-restricted' OR label == 'Leasing now'")).firstMatch.waitForExistence(timeout: 10),

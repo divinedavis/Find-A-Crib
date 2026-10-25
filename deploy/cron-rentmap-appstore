@@ -9,4 +9,8 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-20 1,5,9,13,17,21 * * * facsubs cd /root/Find-A-Crib/ios/scripts && fac-run ascreports -- sh -c '"$FAC_PY" asc_downloads.py' >> /var/log/rentmap-appstore.log 2>&1
+# Hourly since 2026-10-24: 1.3.5 (build 156) went live between the 17:20 and
+# 21:20 runs, and for those hours the dashboard labelled real App Store users
+# "TestFlight 156", because a build above the newest one in released_builds
+# reads as TestFlight. The run is a few App Store Connect API reads.
+20 * * * * facsubs cd /root/Find-A-Crib/ios/scripts && fac-run ascreports -- sh -c '"$FAC_PY" asc_downloads.py' >> /var/log/rentmap-appstore.log 2>&1

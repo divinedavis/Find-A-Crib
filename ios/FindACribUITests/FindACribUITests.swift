@@ -551,7 +551,10 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la"]
         app.launch()
         XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 90))
-        XCTAssertFalse(app.descendants(matching: .any)["beds-row"].exists, "no Bedrooms outside New York")
+        // The search screen can draw New York's form for a moment before the
+        // city switches (2026-10-25: failed twice on a Mac at load ~35), so
+        // wait for the row to go rather than read it at once.
+        XCTAssertTrue(app.descendants(matching: .any)["beds-row"].waitForNonExistence(timeout: 10), "no Bedrooms outside New York")
     }
 
     /// Turn off alerts sits in Profile only while alerts are on (2026-10-13).

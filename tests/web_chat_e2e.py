@@ -11,7 +11,7 @@ place of findacrib.com, against the live database and Realtime.
 
     python3 tests/web_chat_e2e.py [--engine chromium|webkit] [--headed] [--target local|live]
 
-The service key comes from the Management API (keychain PAT) and stays in memory.
+The secret key comes from the Management API (keychain PAT) and stays in memory.
 """
 import argparse
 import json
@@ -45,7 +45,9 @@ def keys():
     pat = subprocess.check_output(["security", "find-generic-password", "-s", "supabase-pat-clockin", "-w"]).decode().strip()
     ks = http(f"https://api.supabase.com/v1/projects/{REF}/api-keys?reveal=true", headers={"Authorization": f"Bearer {pat}"})
     by = {k["name"]: k["api_key"] for k in ks}
-    return by["service_role"], by["anon"]
+    # The dedicated keys since the 2026-10-25 rotation; the legacy JWT keys
+    # are on their way to being disabled.
+    return by["fac_secret"], by["fac_publishable"]
 
 
 def make_user(service, anon, tag):

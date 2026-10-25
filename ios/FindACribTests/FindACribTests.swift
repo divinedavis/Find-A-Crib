@@ -1983,6 +1983,34 @@ final class ChatCryptoTests: XCTestCase {
     }
 }
 
+/// The bundled Supabase key, live (2026-10-25 key rotation). Skipped unless
+/// TEST_RUNNER_FAC_LIVE_EMAIL / TEST_RUNNER_FAC_LIVE_PASSWORD name a test
+/// account: signs in through the app's own AuthService and Info.plist key,
+/// reads a signed-in-only table, signs out. Run it before disabling the
+/// legacy keys to prove a build no longer depends on them.
+final class LiveSupabaseKeyTests: XCTestCase {
+    @MainActor func testBundledKeySignsInAndReads() async throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let email = env["FAC_LIVE_EMAIL"], let password = env["FAC_LIVE_PASSWORD"] else {
+            throw XCTSkip("set TEST_RUNNER_FAC_LIVE_EMAIL and TEST_RUNNER_FAC_LIVE_PASSWORD to run")
+        }
+        let key = Bundle.main.infoDictionary?["SUPABASE_ANON_KEY"] as? String ?? ""
+        XCTAssertTrue(key.hasPrefix("sb_publishable_"), "the app ships the publishable key, not the legacy anon JWT")
+        let auth = AuthService()
+        // The app follows the session through listen(), as RootView starts it.
+        let listening = Task { await auth.listen() }
+        defer { listening.cancel() }
+        await auth.signIn(email: email, password: password)
+        for _ in 0..<50 where !auth.isSignedIn { try await Task.sleep(for: .milliseconds(100)) }
+        XCTAssertTrue(auth.isSignedIn, "signed in with the bundled key: \(auth.error ?? "")")
+        let contacts = await auth.contacts(for: "3020440004")
+        XCTAssertNotNil(contacts, "a signed-in read (hpd_contacts) works")
+        await auth.signOut()
+        for _ in 0..<50 where auth.isSignedIn { try await Task.sleep(for: .milliseconds(100)) }
+        XCTAssertFalse(auth.isSignedIn)
+    }
+}
+
 /// No pests (owner, 2026-10-24): buildings with pests cited in the last 12
 /// months drop out; searches saved before the filter still load.
 final class PestFilterTests: XCTestCase {

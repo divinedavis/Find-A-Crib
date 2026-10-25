@@ -253,13 +253,17 @@ def visitor_kept_going(key, visitor, booted):
         return None
 
 
-def crashes(rows, key=None, kept_going=visitor_kept_going):
-    """Traces that look like the page died mid-work (see the module docstring)."""
+def crashes(rows, key=None, kept_going=visitor_kept_going, found=None):
+    """Traces that look like the page died mid-work (see the module docstring).
+    `found`, a list, also collects each counted (row, last step): the owner
+    dashboard's Crashes page lists them one by one (2026-10-25)."""
     lookups = 0
     out = defaultdict(lambda: {"n": 0, "people": set(), "uas": Counter(), "last": ""})
     boot_only = defaultdict(list)
 
     def count(r, last):
+        if found is not None:
+            found.append((r, last or "(no step)"))
         e = out[last or "(no step)"]
         e["n"] += 1
         e["people"].add(r["visitor_id"])

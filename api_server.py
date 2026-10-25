@@ -57,7 +57,7 @@ DOCS = "https://findacrib.com/developers/"
 DASHBOARD_RANGES = {"all", "6m", "3m", "month", "today"}
 # The Find A Crib metric routes the owner dashboard may read with its key.
 DASHBOARD_READ_PATHS = frozenset({"/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings",
-                                  "/dashboard-investor"})
+                                  "/dashboard-investor", "/dashboard-crashes"})
 # The investor card's own window picker (db/0065): days, or None for all time.
 DASHBOARD_INVESTOR_DAYS = {"14": 14, "30": 30, "60": 60, "90": 90, "all": None}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -3009,6 +3009,117 @@ def _fac_visitors(window="today"):
     rows = rpc("dashboard_visitors", {"since": since}) or []
     mine = set(_fac_owner_visitors())
     return [r for r in rows if r.get("visitor_id") not in mine]
+
+
+# ---------- Crashes (owner dashboard, 2026-10-25) ----------
+# The same rules as the nightly error email (error_report.crashes /
+# app_failures), so the page and the email never disagree: a page that died
+# mid-work, not one the browser tidied away in the background.
+CRASH_WINDOWS = {"7": 7, "30": 30, "90": 90}
+CRASH_EVENTS = ("crash_trace", "app_error", "signin", "purchase", "push_register_failed")
+_CENSUS = re.compile(r"\bla(\d+) ad(\d+) img(\d+) v(\d+)")
+
+
+def _crash_rows(since_iso):
+    q = urllib.parse.urlencode({"select": "event,props,path,visitor_id,created_at",
+                                "event": "in.(" + ",".join(CRASH_EVENTS) + ")",
+                                "created_at": f"gte.{since_iso}", "order": "id.asc"})
+    out, start = [], 0
+    while True:
+        req = urllib.request.Request(f"{SUPABASE_URL}/rest/v1/events?{q}", headers={
+            "apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}", "Range": f"{start}-{start + 999}"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            rows = json.load(r)
+        out += rows
+        if len(rows) < 1000 or start > 100_000:
+            return out
+        start += 1000
+
+
+def _ny_day(iso):
+    t = datetime.datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+    return t.astimezone(zoneinfo.ZoneInfo("America/New_York")).date().isoformat()
+
+
+def _crash_detail(r, last):
+    """One crash for the page: when, where, what it was doing, and what was
+    mounted the last time the viewport resized (ad frames: the suspect)."""
+    p = r.get("props") or {}
+    labels = [st[1] for st in (p.get("steps") or []) if isinstance(st, list) and len(st) > 1]
+    census = None
+    for lab in reversed(labels):
+        m = _CENSUS.search(lab)
+        if m:
+            census = dict(zip(("street", "ads", "images", "videos"), map(int, m.groups())))
+            break
+    ua = p.get("ua") or ""
+    browser = ("Chrome" if "CriOS" in ua or "Chrome/" in ua else "Firefox" if "FxiOS" in ua or "Firefox/" in ua
+               else "Safari" if "Safari/" in ua else "")
+    return {"at": r["created_at"], "device": p.get("dev") or "", "browser": browser, "last": last,
+            "before": labels[-4:-1], "census": census, "visitor": (r.get("visitor_id") or "")[:8]}
+
+
+@_memo(600)
+def _fac_crashes(days):
+    import error_report
+    since = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+    rows = _crash_rows(since.isoformat())
+    found = []
+    top = error_report.crashes(rows, SERVICE_KEY, found=found)
+    mine = set(_fac_owner_visitors())
+    found = [(r, last) for r, last in found if r.get("visitor_id") not in mine]
+    app = error_report.app_failures([r for r in rows if r.get("visitor_id") not in mine])
+    visitors = {v["d"]: v for v in (rpc("dashboard_crash_days", {"p_since": since.isoformat()}) or [])}
+    by_day = defaultdict(lambda: {"crashes": 0, "people": set(), "phone": 0, "app_failures": 0})
+    for r, _ in found:
+        d = by_day[_ny_day(r["created_at"])]
+        d["crashes"] += 1
+        d["people"].add(r.get("visitor_id"))
+        if ((r.get("props") or {}).get("dev") or "") in ("iphone", "android"):
+            d["phone"] += 1
+    for r in rows:
+        if r.get("visitor_id") in mine or (r.get("props") or {}).get("platform") != "ios":
+            continue
+        if r["event"] == "app_error":
+            by_day[_ny_day(r["created_at"])]["app_failures"] += 1
+    out_days = []
+    for d in sorted(set(visitors) | set(by_day)):
+        v, c = visitors.get(d, {}), by_day.get(d) or {"crashes": 0, "people": set(), "phone": 0, "app_failures": 0}
+        web = sum(int(v.get(k) or 0) for k in ("iphone", "android", "ipad", "desktop"))
+        out_days.append({"day": d, "web_visitors": web, "phone_visitors": int(v.get("iphone") or 0) + int(v.get("android") or 0),
+                         "app_users": int(v.get("app") or 0), "crashes": c["crashes"], "crashed_people": len(c["people"]),
+                         "phone_crashes": c["phone"], "app_failures": c["app_failures"]})
+    tot_web = sum(x["web_visitors"] for x in out_days)
+    tot_people = len({r.get("visitor_id") for r, _ in found})
+    return {
+        "days": days,
+        "summary": {"crashes": len(found), "crashed_people": tot_people, "web_visitors": tot_web,
+                    "rate": round(100 * sum(x["crashed_people"] for x in out_days) / tot_web, 2) if tot_web else None,
+                    "app_failures": sum(e["n"] for e in app.values())},
+        "per_day": out_days,
+        "causes": sorted(({"last": k, "n": e["n"], "people": len(e["people"]), "devices": dict(e["uas"])}
+                          for k, e in top.items()), key=lambda x: -x["n"])[:15],
+        "recent": [_crash_detail(r, last) for r, last in sorted(found, key=lambda x: x[0]["created_at"], reverse=True)[:25]],
+        "app": sorted(({"what": k, "n": e["n"], "people": len(e["people"]), "last": e["last"]} for k, e in app.items()),
+                      key=lambda x: -x["n"])[:15],
+    }
+
+
+@app.route("/dashboard-crashes")
+def dashboard_crashes():
+    """Pages that died mid-work and iPhone app failures, per day, with what
+    they were doing (owner, 2026-10-25: "a widget on the dashboard for
+    reporting crashes"). Read-key only, like the other dashboard routes."""
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    days = CRASH_WINDOWS.get(request.args.get("days", "30"), 30)
+    try:
+        return jsonify(_fac_crashes(days))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
 
 
 @app.route("/dashboard-visitors")

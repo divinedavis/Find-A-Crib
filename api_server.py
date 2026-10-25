@@ -3065,7 +3065,9 @@ def _fac_crashes(days):
     since = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
     rows = _crash_rows(since.isoformat())
     found = []
-    top = error_report.crashes(rows, SERVICE_KEY, found=found)
+    # The email's 40 shadow-page look-ups cover one day; a 90-day window needs
+    # more, or later tick-less traces would skip the check and count.
+    top = error_report.crashes(rows, SERVICE_KEY, found=found, max_lookups=600)
     mine = set(_fac_owner_visitors())
     found = [(r, last) for r, last in found if r.get("visitor_id") not in mine]
     app = error_report.app_failures([r for r in rows if r.get("visitor_id") not in mine])
@@ -3077,11 +3079,16 @@ def _fac_crashes(days):
         d["people"].add(r.get("visitor_id"))
         if ((r.get("props") or {}).get("dev") or "") in ("iphone", "android"):
             d["phone"] += 1
+    # App failures per day by the same rules as the total (sign-in, purchase,
+    # push registration and app_error, minus the user's own mistakes).
+    rows_by_day = defaultdict(list)
     for r in rows:
-        if r.get("visitor_id") in mine or (r.get("props") or {}).get("platform") != "ios":
-            continue
-        if r["event"] == "app_error":
-            by_day[_ny_day(r["created_at"])]["app_failures"] += 1
+        if r.get("visitor_id") not in mine:
+            rows_by_day[_ny_day(r["created_at"])].append(r)
+    for d, day_rows in rows_by_day.items():
+        n = sum(e["n"] for e in error_report.app_failures(day_rows).values())
+        if n:
+            by_day[d]["app_failures"] += n
     out_days = []
     for d in sorted(set(visitors) | set(by_day)):
         v, c = visitors.get(d, {}), by_day.get(d) or {"crashes": 0, "people": set(), "phone": 0, "app_failures": 0}

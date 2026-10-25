@@ -30,7 +30,7 @@ class DashboardCrashes(unittest.TestCase):
         fn = fn[:fn.index("\n\n\n")]
         self.assertIn('_dashboard_denial(_dashboard_auth(), ("ok",))', fn)
         self.assertIn("CRASH_WINDOWS.get(", fn)
-        self.assertIn('error_report.crashes(rows, SERVICE_KEY, found=found)', src)
+        self.assertIn('error_report.crashes(rows, SERVICE_KEY, found=found, max_lookups=600)', src)
         self.assertIn("error_report.py", read("scripts", "deploy_api.sh"), "the API imports it, so it must ship with it")
 
     def test_function_is_service_role_only(self):

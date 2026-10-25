@@ -253,7 +253,7 @@ def visitor_kept_going(key, visitor, booted):
         return None
 
 
-def crashes(rows, key=None, kept_going=visitor_kept_going, found=None):
+def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_lookups=SHADOW_LOOKUPS):
     """Traces that look like the page died mid-work (see the module docstring).
     `found`, a list, also collects each counted (row, last step): the owner
     dashboard's Crashes page lists them one by one (2026-10-25)."""
@@ -322,7 +322,7 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None):
         # "page deaths" were these (visitors first seen 9/17 and earlier).
         if not booted:
             continue
-        if booted and "tick" not in labels and lookups < SHADOW_LOOKUPS:
+        if booted and "tick" not in labels and lookups < max_lookups:
             lookups += 1
             if kept_going(key, r.get("visitor_id"), booted):
                 continue

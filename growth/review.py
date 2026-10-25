@@ -265,6 +265,18 @@ def _days_active(t):
         return 0
 
 
+def _activation_clock(t):
+    """The date `activated` names, or None if it is missing or unreadable.
+
+    _days_active collapses both of those into 0 — the same number it returns
+    for a technique activated today. judge() has to tell them apart, because
+    one is a technique at the start of its grace period and the other is a
+    ledger defect that keeps it there forever. The redundancy pass does not
+    need the distinction, so _days_active is left exactly as it is.
+    """
+    return _day(t.get("activated") or "")
+
+
 def _owned(t):
     return ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
 
@@ -724,6 +736,41 @@ def evaluate(t, techs=None):
     # being judged on numbers they cannot move.
     if t.get("judge") == "audit":
         return _judge_audit(res, t)
+
+    # AN ACTIVE TECHNIQUE WITH NO ACTIVATION CLOCK IS UNJUDGEABLE, AND THE
+    # GRACE PERIOD WAS HIDING THAT. _days_active returns 0 when `activated` is
+    # missing or unreadable, which is indistinguishable from "activated
+    # today", so the grace check below answered "only 0d active" every night
+    # forever. Never judged — and never retired either, because every
+    # retirement path lies below this point.
+    #
+    # T016 embeddable_building_lookup_widget sat in that state for its whole
+    # life: active, 253 readings of its own series recorded from 2026-09-12,
+    # every verdict discarded, `verdict` still null on 2026-10-25. The
+    # 2026-08-13 entry hit the SAME hole one field over — T015 and T016 were
+    # active with `revisit_on` null, so revisit_due() skipped them — and named
+    # the cause exactly right: the hole opens whenever a technique is made
+    # active by hand-editing the ledger instead of through set_status(), which
+    # stamps `activated` and `revisit_on` together. That fix set revisit_on and
+    # left activated null, so the technique came up for revisit on a clock it
+    # still could not be judged against.
+    #
+    # A FLAG, not a keep. A missing clock is a ledger defect with a one-line
+    # remedy, and flags are surfaced in the daily report beside the
+    # retirements (see run()) where someone can act on it, while a keep is
+    # silent by design. works stays None and `measured` stays empty, so this
+    # announces the defect and writes NO verdict — there is nothing measured
+    # to write, and run() only calls set_verdict when measured is non-empty.
+    if _activation_clock(t) is None:
+        res["action"] = "flag"
+        res["why"] = (f"ACTIVE WITH NO ACTIVATION DATE — `activated` is "
+                      f"{t.get('activated')!r} in the ledger, so the {GRACE_DAYS}d grace "
+                      f"clock reads 0d every night and this technique can be neither "
+                      f"judged nor retired, however long it runs. Its readings are being "
+                      f"recorded and discarded. Stamp the date it really went live "
+                      f"(ledger.set_status stamps it on promotion; a hand-edited status "
+                      f"does not) and the verdict paths below become reachable")
+        return res
 
     if days < GRACE_DAYS:
         res["action"] = "keep"

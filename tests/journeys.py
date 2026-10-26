@@ -609,28 +609,13 @@ class Runner:
                 f'pest sheet should list the violations or say there are none, got {body[:140]!r}', j)
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'pest violations must not be behind the account gate', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
-        # signed out, bedbug and rodent records ask for a free account (sign-up mode); the sheet must not open
-        self.click(page, '#detail-sheet [data-detail="rodents"]'); time.sleep(1)
-        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"), 'rodent record should ask for an account when signed out', j)
-        self.ok(page.evaluate("document.getElementById('viol-sheet').hidden"), 'rodent sheet must stay closed when signed out', j)
-        sub = page.evaluate("document.getElementById('auth-submit').textContent").lower()
-        self.ok('create' in sub or 'sign up' in sub, f'gate should open in sign-up mode, got {sub!r}', j)
-        # Everything is free for any account since 2026-10-01: the gate asks for
-        # an account, never for Plus.
-        self.ok('Plus' not in page.evaluate("document.getElementById('auth-sub').textContent"),
-                'the signed-out rodent gate should ask for an account, not Plus', j)
-        # …and previews what the account gets, with real-time alerts as the
-        # one Plus row (owner, 2026-10-13: it was the broker fee check).
-        prom = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
-          return {shown: !!b && !b.hidden, text: b ? b.textContent : '',
-                  src: (b && b.querySelector('[data-plus-src]') || {}).dataset?.plusSrc || null}})()""")
-        self.ok(prom['shown'] and 'Rat inspections' in prom['text'] and 'real-time lottery alerts' in prom['text']
-                and prom['src'] == 'realtime' and 'broker fee' not in prom['text'],
-                f'the rodent sign-in should preview the records with a real-time alerts Plus row: {prom}', j)
-        page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
-        self.click(page, '#detail-sheet [data-detail="bedbugs"]'); time.sleep(1)
-        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('viol-sheet').hidden"), 'bedbug record should be gated when signed out', j)
-        page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
+        # Bedbug and rodent records open signed out, no account wall (owner,
+        # 2026-10-26: 3 of 83 people signed up at it in 30 days).
+        for act in ('rodents', 'bedbugs'):
+            self.click(page, f'#detail-sheet [data-detail="{act}"]'); self.sheet_loaded(page)
+            self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), f'signed out, {act} records must not ask for an account', j)
+            self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden"), f'signed out, the {act} sheet should open', j)
+            page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
         self.click(page, '#detail-sheet [data-detail="evictions"]'); self.sheet_loaded(page)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('No marshal-executed evictions' in body or 'Marshal' in body, f'evictions sheet should answer, got {body[:120]!r}', j)

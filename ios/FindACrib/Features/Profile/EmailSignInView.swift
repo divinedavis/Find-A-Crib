@@ -283,8 +283,8 @@ struct RecordsPromiseBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             PromiseRow(icon: "exclamationmark.triangle.fill", text: violationsLine)
-            PromiseRow(icon: "ladybug.fill", text: String(localized: "Bedbug filings the landlord made, year by year"))
-            PromiseRow(icon: "pawprint.fill", text: String(localized: "Rat inspections from the Health Department"))
+            // No bedbug or rat rows since 2026-10-26: those records are free
+            // without an account now, so they are not what signing in unlocks.
             HStack(alignment: .center, spacing: 12) {
                 PromiseRow(icon: "bolt.fill", text: String(localized: "Plus: real-time lottery alerts, the minute one opens"))
                 Button {

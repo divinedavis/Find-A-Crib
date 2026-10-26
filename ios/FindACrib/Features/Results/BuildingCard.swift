@@ -273,7 +273,6 @@ struct CardRecordsButton: View {
     let building: Building
     let onOpen: (Route) -> Void
     @State private var kinds: [(word: String, count: Int)]? = nil
-    @State private var showRecordsSignIn = false
     @State private var showAgentSignIn = false
     @State private var showPaywall = false
 
@@ -299,17 +298,14 @@ struct CardRecordsButton: View {
             do { kinds = try await HPDRecords.pests(bbl: building.bbl).kinds }
             catch { kinds = [] }
         }
-        .sheet(isPresented: $showRecordsSignIn) {
-            EmailSignInView(offersSocialSignIn: true,
-                            records: RecordsPreview(openViolations: building.h?.violations?.open, openComplaints: building.h?.complaints?.open))
-        }
         .sheet(isPresented: $showAgentSignIn) { EmailSignInView(offersSocialSignIn: true, agentPreview: true) }
         .sheet(isPresented: $showPaywall) { PaywallView(source: "phone") }
     }
 
     private func tapPests() {
         Analytics.shared.track("card_pests_click", ["bbl": building.bbl, "signed_in": auth.isSignedIn])
-        if auth.isSignedIn { onOpen(.hpdRecords(building.bbl, .pests)) } else { showRecordsSignIn = true }
+        // No account needed for pests (owner, 2026-10-26).
+        onOpen(.hpdRecords(building.bbl, .pests))
     }
 
     private func tapPhone() {

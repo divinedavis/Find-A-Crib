@@ -13737,6 +13737,34 @@
         }
       }
     },
+    "HPD's open violations and complaints for this building. Sign in to see them." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las violaciones y quejas abiertas de HPD de este edificio. Inicia sesión para verlas."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 건물의 미해결 HPD 위반 및 민원. 로그인하면 볼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这栋楼未结的 HPD 违规和投诉。登录即可查看。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這棟樓未結的 HPD 違規和投訴。登入即可查看。"
+          }
+        }
+      }
+    },
     "HUD FY2026 Small-Area Fair Market Rent for ZIP %@, studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent." : {
       "localizations" : {
         "es" : {
@@ -26183,6 +26211,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "登入以檢視此建築的記錄"
+          }
+        }
+      }
+    },
+    "Sign in to see violations & complaints" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión para ver violaciones y quejas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "위반 및 민원을 보려면 로그인하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录以查看违规和投诉"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入以查看違規和投訴"
           }
         }
       }

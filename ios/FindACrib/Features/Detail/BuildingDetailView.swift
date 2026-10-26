@@ -705,18 +705,20 @@ struct BuildingDetailView: View {
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
     }
 
-    /// Signed-in only, like the website since 2026-09-08: the open violations
-    /// and complaints, this year's pest violations, and the two inspection
-    /// records from NYC Open Data. Signed out, the section says what is behind
-    /// the account and opens a sign-in sheet that previews it (owner,
-    /// 2026-10-12: not the Profile tab).
+    /// The open violations and complaints are signed-in only, like the website
+    /// since 2026-09-08; signed out, that part says what is behind the account
+    /// and opens a sign-in sheet that previews it (owner, 2026-10-12: not the
+    /// Profile tab). This year's pest violations and the two inspection
+    /// records from NYC Open Data show to everyone (owner, 2026-10-26).
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
-            // Bold pests (owner, 2026-10-12); a literal is a LocalizedStringKey, so ** renders.
-            Text("HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
+            // Pests are free without an account (owner, 2026-10-26: "lets
+            // make it appear on no sign in" — 3 of 83 people signed up at the
+            // pest wall in 30 days). Violations and complaints stay behind it.
+            Text("HPD's open violations and complaints for this building. Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: String(localized: "Sign in to see violations & inspections"), icon: "person.crop.circle") { showRecordsSignIn = true }
+            SEOutlineButton(title: String(localized: "Sign in to see violations & complaints"), icon: "person.crop.circle") { showRecordsSignIn = true }
                 .accessibilityIdentifier("hpd-sign-in")
         } else {
             if v == nil && c == nil {
@@ -732,30 +734,32 @@ struct BuildingDetailView: View {
                     }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
                 }
             }
-            // Pests first, because it is the only one of the three that can
-            // answer "are there bugs here THIS YEAR" (owner, 2026-09-23): a
-            // bedbug filing is the landlord's own annual report and runs about
-            // a year behind, and the Health Department only inspects for rats,
-            // where it inspects at all. Roaches have no inspection dataset at
-            // all — they exist only as violations.
-            NavigationLink(value: Route.hpdRecords(b.bbl, .pests)) {
-                pestTile
-            }.buttonStyle(.plain).accessibilityIdentifier("pest-violations")
-            // Red when something was found this year, green when the year is
-            // clean, grey while loading or with no record on file. Same rule
-            // as the site's buttons.
-            // Bedbug + rodent records: free for every account (owner, 2026-10-12).
-            // The whole section is already behind sign-in (hpd-sign-in).
-            HStack(spacing: 12) {
-                NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
-                    inspectionTile(String(localized: "Bedbug filings (landlord's)"), bedbugSummary, found: String(localized: "with bedbugs"), clean: String(localized: "none in the filed year"))
-                }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
-                NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
-                    inspectionTile(String(localized: "Rat inspections (Health Dept.)"), rodentSummary, found: String(localized: "failed"), clean: String(localized: "none failed this year"))
-                }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
-            }
-            Text(inspectionsFailed ? String(localized: "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again.") : String(localized: "Tap a tile to see each one."))
-                .font(.se(14)).foregroundStyle(SE.ink3)
+        }
+        // Pests first, because it is the only one of the three that can
+        // answer "are there bugs here THIS YEAR" (owner, 2026-09-23): a
+        // bedbug filing is the landlord's own annual report and runs about
+        // a year behind, and the Health Department only inspects for rats,
+        // where it inspects at all. Roaches have no inspection dataset at
+        // all — they exist only as violations.
+        NavigationLink(value: Route.hpdRecords(b.bbl, .pests)) {
+            pestTile
+        }.buttonStyle(.plain).accessibilityIdentifier("pest-violations")
+        // Red when something was found this year, green when the year is
+        // clean, grey while loading or with no record on file. Same rule
+        // as the site's buttons.
+        // Bedbug + rodent records: free for everyone, signed in or not
+        // (owner, 2026-10-12 for accounts; 2026-10-26 without one).
+        HStack(spacing: 12) {
+            NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
+                inspectionTile(String(localized: "Bedbug filings (landlord's)"), bedbugSummary, found: String(localized: "with bedbugs"), clean: String(localized: "none in the filed year"))
+            }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
+            NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
+                inspectionTile(String(localized: "Rat inspections (Health Dept.)"), rodentSummary, found: String(localized: "failed"), clean: String(localized: "none failed this year"))
+            }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
+        }
+        Text(inspectionsFailed ? String(localized: "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again.") : String(localized: "Tap a tile to see each one."))
+            .font(.se(14)).foregroundStyle(SE.ink3)
+        if auth.isSignedIn {
             // The app boots from the slim building file, which carries only
             // the open counts; the class split, 12-month and all-time figures
             // are nil there, not zero. Show a row only when it has a number —
@@ -774,7 +778,6 @@ struct BuildingDetailView: View {
     }
 
     private func loadInspections() async {
-        guard auth.isSignedIn else { bedbugSummary = nil; rodentSummary = nil; pestSummary = nil; return }
         inspectionsFailed = false
         async let bb = HPDRecords.bedbugs(bbl: b.bbl)
         async let ro = HPDRecords.rodents(bbl: b.bbl)

@@ -441,10 +441,11 @@ final class FindACribUITests: XCTestCase {
         app.buttons["price-done"].tap()
     }
 
-    /// Violations, complaints and the bedbug/rodent inspections are behind an
-    /// account (2026-09-08, same as the site): signed out — which the
-    /// simulator always is — the section offers sign-in and shows no tiles,
-    /// and the button opens a sheet that previews them.
+    /// Violations and complaints are behind an account (2026-09-08, same as
+    /// the site): signed out — which the simulator always is — that part
+    /// offers sign-in and shows no tiles, and the button opens a sheet that
+    /// previews them. Pests, bedbugs and rats show to everyone (owner,
+    /// 2026-10-26: only 3 of 83 people signed up at the pest wall).
     func testViolationsGatedWhenSignedOut() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
@@ -454,15 +455,15 @@ final class FindACribUITests: XCTestCase {
         for _ in 0..<12 where !gate.exists { app.swipeUp() }
         XCTAssertTrue(gate.waitForExistence(timeout: 5), "signed out, the HPD section must offer sign-in")
         XCTAssertFalse(app.buttons["open-violations"].exists, "violations tile leaked past the gate")
-        XCTAssertFalse(app.buttons["bedbug-inspections"].exists, "bedbug tile leaked past the gate")
-        XCTAssertFalse(app.buttons["rodent-inspections"].exists, "rodent tile leaked past the gate")
+        XCTAssertTrue(app.buttons["pest-violations"].exists, "signed out, pest violations show without an account")
+        XCTAssertTrue(app.buttons["bedbug-inspections"].exists, "signed out, bedbug records show without an account")
+        XCTAssertTrue(app.buttons["rodent-inspections"].exists, "signed out, rat records show without an account")
         // The gate opens its own sign-in sheet previewing the records and one
         // Plus feature, not the Profile tab (owner, 2026-10-12).
         gate.tap()
         let box = app.descendants(matching: .any)["records-promise-box"]
         XCTAssertTrue(box.waitForExistence(timeout: 10), "the gate should open the records sign-in sheet")
-        XCTAssertTrue(app.staticTexts["Bedbug filings the landlord made, year by year"].exists)
-        XCTAssertTrue(app.staticTexts["Rat inspections from the Health Department"].exists)
+        XCTAssertFalse(app.staticTexts["Bedbug filings the landlord made, year by year"].exists, "bedbug records are free, not a sign-in promise")
         XCTAssertTrue(app.buttons["sign-in-apple"].exists, "Apple sign-in should be on the sheet")
         XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
         XCTAssertTrue(app.buttons["records-promise-plus"].exists, "one Plus feature with a Get Plus button")
@@ -518,9 +519,9 @@ final class FindACribUITests: XCTestCase {
     }
 
     /// New York cards swap Share for the building's pests, rotating
-    /// ("Bedbugs (2)" / "Rats (1)"); signed out, a tap previews the records
-    /// sign-in (owner, 2026-10-13).
-    func testCardPestsButtonRotatesAndPreviewsRecordsSignIn() throws {
+    /// ("Bedbugs (2)" / "Rats (1)") (owner, 2026-10-13); signed out, a tap
+    /// opens the pest records themselves, no sign-in (owner, 2026-10-26).
+    func testCardPestsButtonRotatesAndOpensRecordsSignedOut() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--card-pests", "bedbugs:2,rats:1"]
         app.launch()
@@ -533,8 +534,11 @@ final class FindACribUITests: XCTestCase {
         let h = app.windows.firstMatch.frame.height
         for _ in 0..<6 where !pests.isHittable || pests.frame.maxY > h - 140 { app.swipeUp() }
         pests.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["records-promise-box"].waitForExistence(timeout: 10),
-                      "signed out, the pests button opens the violations sign-in sheet")
+        XCTAssertFalse(app.descendants(matching: .any)["records-promise-box"].waitForExistence(timeout: 4),
+                       "signed out, the pests button must not open a sign-in sheet")
+        XCTAssertFalse(app.buttons["sign-in-apple"].exists, "no sign-in in the way of the pest records")
+        XCTAssertTrue(app.descendants(matching: .any)["hpd-records-pests"].firstMatch.waitForExistence(timeout: 10),
+                      "signed out, the pests button opens the pest records")
     }
 
     /// Outside New York there are no HPD pests, owner phones or re-rental

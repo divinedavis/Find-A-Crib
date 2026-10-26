@@ -8681,10 +8681,51 @@ function favActive() {
   // `wall` names the journey that hit the sign-up wall (save, alerts, phone…),
   // logged as signin_wall{for} so the dashboard can rank walls — before
   // 2026-10-01 only four of the nineteen callers left any trace.
-  // What an account gets at each wall, and the one Plus part (owner,
-  // 2026-10-12: show them what signing in gets them, like the app's sheets).
+  // What signing in gets, tailored to what was clicked (owner, 2026-10-12:
+  // "show them what signing in gets them"; 2026-10-26: every wall gets rows
+  // for its own click). Plus features say so up front, free ones say free,
+  // so nobody signs up and then meets a paywall they were not told about.
   // (The bedbug/rodent records preview went with that wall, 2026-10-26.)
+  const PROMISE_PLUS = ['⚡', 'A Plus feature \u2014 first month on us'];
+  const PROMISE_FREE = ['✅', 'Free with an account'];
+  const PROMISE_ACCOUNT = { rows: [['🏠', 'Save buildings and see them on any device'],
+                                   ['🔔', 'Get alerts on new lotteries or re-rentals'],
+                                   ['🔎', 'Search for landlord info']] };
+  const PROMISE_SAVE = (first) => ({ rows: [['❤️', first],
+                                            ['📱', 'Your list on any device, and in the iPhone app'],
+                                            ['📁', 'Sort your saves into folders']] });
+  const PROMISE_COMMENT = { rows: [['💬', 'Comment on buildings you know'], ['↩️', 'Reply to your neighbors'], ['👍', 'Like the comments that help']] };
   const AUTH_PROMISES = {
+    header: PROMISE_ACCOUNT, deep_link: PROMISE_ACCOUNT,
+    save: PROMISE_SAVE('Save this building to your list'),
+    nudge: PROMISE_SAVE('Save the buildings you like'),
+    saved_search: { rows: [['🔁', 'Save this search and rerun it in one tap'],
+                           ['📱', 'Your saved searches on any device'],
+                           ['🔔', 'Get alerts on new lotteries or re-rentals']] },
+    landlord_research: { rows: [['🏢', 'Every rent-stabilized building this landlord runs'],
+                                ['⚠️', 'Open violations and complaints across all of them'],
+                                ['🗺️', 'Where they own, borough by borough']] },
+    landlords: { rows: [['🔎', 'Search every landlord and managing agent in NYC'],
+                        ['🏢', 'How many buildings and apartments each one runs'],
+                        ['⚠️', 'Open violations across each portfolio']] },
+    portfolio: { rows: [['🗺️', 'Every building this landlord runs, on the map'],
+                        ['⚠️', 'Open violations across the portfolio'],
+                        ['🏢', 'Tap any building for its full record']] },
+    ai_search: { rows: [['✨', 'Type it the way you\u2019d say it: \u201c2 bed in Brooklyn under $2,500\u201d'],
+                        ['🎛️', 'We set the filters for you'], PROMISE_PLUS] },
+    apply_help: { rows: [['📄', 'Your application packet, ready to send'],
+                         ['✉️', 'Email the agent with your documents attached'], PROMISE_PLUS] },
+    broker_fee: { rows: [['💵', 'Check whether a broker fee is legal under NYC\u2019s FARE Act'], PROMISE_PLUS] },
+    lease_review: { rows: [['📝', 'Flag the clauses in your lease worth asking about'], PROMISE_PLUS] },
+    renewal: { rows: [['📅', 'Plan your lease renewal: what to ask for, and when'], PROMISE_PLUS] },
+    renter_ai: { rows: [['💬', 'AI help with repairs and your rights as a renter'], PROMISE_PLUS] },
+    repair: { rows: [['🔧', 'A repair letter citing NYC law, ready to send'], PROMISE_FREE] },
+    rent_increase: { rows: [['📈', 'Check your increase against the Rent Guidelines Board'], PROMISE_FREE] },
+    comment: PROMISE_COMMENT, comment_like: PROMISE_COMMENT, comment_reply: PROMISE_COMMENT,
+    subscribe: { rows: [['⚡', 'Real-time lottery alerts, the minute one opens'],
+                        ['✨', 'AI tools: plain-words search, lease review, apply help'],
+                        ['📞', 'Agents\u2019 phone numbers, and no ads']] },
+    referral: { rows: [['🎁', 'Your own invite link'], ['🤝', 'You and your friend each get 2 months of Plus']] },
     // Owner, 2026-10-26: these two rows, then what is open right now in
     // Brooklyn and Manhattan instead of the Plus row (18% of the 89 people
     // who met this wall in 30 days signed up). Apple sign-in and a confirm

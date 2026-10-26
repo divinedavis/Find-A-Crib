@@ -812,6 +812,11 @@ class Runner:
         self.ok(after != before or gated, 'heart should toggle the local save or ask to sign in', j)
         if gated:
             self.ok('sign up' in page.evaluate("document.getElementById('auth-submit').textContent").lower() or 'create' in page.evaluate("document.getElementById('auth-submit').textContent").lower(), 'heart should open the modal in sign-UP mode', j)
+            # Every wall says what its click gets (owner, 2026-10-26).
+            sv = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
+              return {shown: !!b && !b.hidden, text: b ? b.textContent : '', sub: document.getElementById('auth-sub').hidden}})()""")
+            self.ok(sv['shown'] and 'Save this building to your list' in sv['text'] and 'folders' in sv['text'] and sv['sub'],
+                    f'the save wall lists what saving gets, in place of the one-line sentence: {sv}', j)
             # Only the alerts wall holds Confirm password back (2026-10-26).
             self.ok(not page.evaluate("document.getElementById('auth-pass2').hidden"), 'the save wall shows Confirm password at once', j)
             self.ok(page.evaluate("getComputedStyle(document.getElementById('auth-apple')).display === 'none'"), 'Apple sign-in is on the alerts wall only', j)

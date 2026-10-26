@@ -1677,6 +1677,12 @@
 </style>
 </head>
 <body>
+<!-- Mediavine "Disable Ad Settings" snippet (owner, 2026-10-26: turn the
+     video player off). Both Universal Player switches set to Disable: the
+     10/26 error digest's two iPhone page deaths ended right after the video
+     player loaded (vv-resize). Mediavine reads this div; it is their own
+     opt-out, not us hiding ads. One per page. -->
+<div id="ad-management-config-settings" data-blocklist-universal-player-desktop="1" data-blocklist-universal-player-mobile="1" ></div>
 <!-- Desktop "get the app" banner (owner, 2026-10-05: "we need this iphone/ipad
      banner for the findacrib desktop web", like marracat.com's). iPhones and
      iPads get Safari's own Smart App Banner (the apple-itunes-app tag) instead.

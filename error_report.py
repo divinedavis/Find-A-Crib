@@ -226,6 +226,14 @@ def _ts(v):
 # visitor opening buildings, so only a trace that is followed by real
 # interaction is dropped, and a boot loop still reports.
 SHADOW_WINDOW = datetime.timedelta(seconds=90)
+# The signed-in shadow shape — no tick, last step adoptHome or the auth event
+# just before it — is dropped even when the visitor did nothing afterwards
+# (2026-10-26: two of the day's four "page deaths"; seven visitors with this
+# shape since 9/25, none followed by a reload or a complaint). It usually
+# boots as the visitor is leaving. Three or more quiet ones from one visitor
+# in a run still report: that would be a real loop at sign-in.
+SHADOW_LAST = ("adoptHome", "auth INITIAL_SESSION")
+SHADOW_LOOP = 3
 SHADOW_LOOKUPS = 40       # REST calls per run, at most
 INTERACTION_EVENTS = ("building_view", "section_view", "outbound", "status_open",
                       "violations_open", "rodents_open", "pests_open", "bedbugs_open",
@@ -260,6 +268,7 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_looku
     lookups = 0
     out = defaultdict(lambda: {"n": 0, "people": set(), "uas": Counter(), "last": ""})
     boot_only = defaultdict(list)
+    quiet_shadows = defaultdict(list)
 
     def count(r, last):
         if found is not None:
@@ -324,9 +333,17 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_looku
             continue
         if booted and "tick" not in labels and lookups < max_lookups:
             lookups += 1
-            if kept_going(key, r.get("visitor_id"), booted):
+            went_on = kept_going(key, r.get("visitor_id"), booted)
+            if went_on:
+                continue
+            if went_on is False and last in SHADOW_LAST:
+                quiet_shadows[r.get("visitor_id")].append((r, last))
                 continue
         count(r, last)
+    for traces in quiet_shadows.values():
+        if len(traces) >= SHADOW_LOOP:
+            for r, last in traces:
+                count(r, last)
     for traces in boot_only.values():
         if len(traces) >= 2:
             for r in traces:

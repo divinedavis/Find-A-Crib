@@ -22,9 +22,23 @@ def test_shadow_page_with_active_visitor_is_dropped():
     assert not out
 
 
-def test_shadow_page_with_no_later_activity_still_reports():
+def test_quiet_shadow_page_is_dropped():
+    # 2026-10-26: signed-in shadow pages die before their first tick whether
+    # or not the visitor carries on; one with no later activity is not news.
     out = er.crashes([trace("v1", SHADOW)], key="k", kept_going=lambda *a: False)
-    assert out["adoptHome"]["n"] == 1
+    assert not out
+
+
+def test_three_quiet_shadow_pages_from_one_visitor_report():
+    rows = [trace("v1", SHADOW, booted=f"2026-09-28T13:4{i}:51.410Z") for i in range(3)]
+    out = er.crashes(rows, key="k", kept_going=lambda *a: False)
+    assert out["adoptHome"]["n"] == 3
+
+
+def test_quiet_death_elsewhere_in_boot_still_reports():
+    steps = ["boot", "grid:done", "map-resize 678", "vv-resize 714 la0 ad0 img14 v0"]
+    out = er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
+    assert out["vv-resize 714 la0 ad0 img14 v0"]["n"] == 1
 
 
 def test_unknown_activity_keeps_the_trace():

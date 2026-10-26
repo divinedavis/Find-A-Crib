@@ -812,6 +812,9 @@ class Runner:
         self.ok(after != before or gated, 'heart should toggle the local save or ask to sign in', j)
         if gated:
             self.ok('sign up' in page.evaluate("document.getElementById('auth-submit').textContent").lower() or 'create' in page.evaluate("document.getElementById('auth-submit').textContent").lower(), 'heart should open the modal in sign-UP mode', j)
+            # Only the alerts wall holds Confirm password back (2026-10-26).
+            self.ok(not page.evaluate("document.getElementById('auth-pass2').hidden"), 'the save wall shows Confirm password at once', j)
+            self.ok(page.evaluate("getComputedStyle(document.getElementById('auth-apple')).display === 'none'"), 'Apple sign-in is on the alerts wall only', j)
             page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         if BBL not in after and not gated:               # it was already saved (the my-apartment step saves too); toggle back on
             self.click(page, '#detail-sheet [data-detail="fav"]'); time.sleep(0.8)
@@ -2140,12 +2143,30 @@ class Runner:
         self.boot(page)
         page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
         self.ok(self.alerts_signup_open(page), 'Alerts should open the sign-up modal, not the paywall (signed out)', j)
-        # What an account gets (2026-10-12): the alerts wall previews it, with
-        # the Plus row and its Get Plus button.
-        prom = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
-          return {shown: !!b && !b.hidden, text: b ? b.textContent : '', plus: !!(b && b.querySelector('[data-plus-src="realtime"]'))}})()""")
-        self.ok(prom['shown'] and '8 AM' in prom['text'] and prom['plus'],
-                f'the alerts sign-in should preview what alerts get, with Get Plus: {prom}', j)
+        # The alerts wall (owner, 2026-10-26): two rows, then what is open now
+        # in Brooklyn and Manhattan on one line, and no Plus row. Confirm
+        # password waits for the first tap on Create account.
+        self.wait_until(page, "!!document.querySelector('#auth-promise [data-ap-live]')", 8000)
+        prom = page.evaluate("""(()=>{const b=document.getElementById('auth-promise'), live=b && b.querySelector('[data-ap-live]');
+          const t=live && live.querySelector('span:last-child');
+          return {shown: !!b && !b.hidden, text: b ? b.textContent : '', plus: !!(b && b.querySelector('[data-plus-src]')),
+                  live: t ? t.textContent : '', oneLine: t ? t.getClientRects().length === 1 && t.offsetHeight < 28 : false}})()""")
+        self.ok(prom['shown'] and 'Get alerts on new lotteries or re-rentals' in prom['text']
+                and 'Search for landlord info' in prom['text'] and not prom['plus'],
+                f'the alerts wall shows the two rows and no Plus row: {prom}', j)
+        self.ok(re.search(r'^\d+ open in Brooklyn, \d+ in Manhattan$', prom['live'] or '') is not None and prom['oneLine'],
+                f'the alerts wall counts what is open now in Brooklyn and Manhattan, on one line: {prom}', j)
+        self.ok(page.evaluate("document.getElementById('auth-pass2').hidden"), 'Confirm password waits for the first tap', j)
+        # Apple shows here only once APPLE_WEB_CLIENT_ID is set (a Services ID
+        # from Apple's portal); until then it must not be on screen at all.
+        apple = page.evaluate("""(()=>{const html=document.documentElement.outerHTML; const m=html.match(/const APPLE_WEB_CLIENT_ID = '([^']*)'/);
+          return {id: m ? m[1] : null, shown: getComputedStyle(document.getElementById('auth-apple')).display !== 'none'}})()""")
+        self.ok(apple['shown'] == bool(apple['id']), f'Apple sign-in shows on the alerts wall exactly when a web client ID is set: {apple}', j)
+        page.fill('#auth-email', 'journey-check@findacrib.com'); page.fill('#auth-pass', 'not-a-real-password')
+        self.click(page, '#auth-submit'); time.sleep(0.3)
+        self.ok(page.evaluate("!document.getElementById('auth-pass2').hidden") and
+                page.evaluate("!document.getElementById('auth-modal').hidden"),
+                'the first tap shows Confirm password and creates nothing', j)
         page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         # The who-runs-it wall (signed out): previews who runs the building
         # with the agent's phone as the Plus row, and its Get Plus swaps the

@@ -1356,7 +1356,11 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(filter.waitForExistence(timeout: 60))
         filter.tap()
         let pests = app.switches["filter-no-pests"]
-        for _ in 0..<6 where !(pests.exists && pests.isHittable) { app.swipeUp() }
+        // Scrolled until the whole row is on screen, not just its centre:
+        // with the row's top edge peeking above the bottom of the sheet it
+        // counted as hittable and the tap landed off the switch (2026-10-25).
+        let bottom = app.windows.firstMatch.frame.maxY - 140
+        for _ in 0..<6 where !(pests.exists && pests.isHittable && pests.frame.maxY < bottom) { app.swipeUp() }
         XCTAssertTrue(pests.waitForExistence(timeout: 5), "the filters offer No pests")
         XCTAssertEqual(pests.value as? String, "0", "off by default")
         pests.switches.firstMatch.exists ? pests.switches.firstMatch.tap() : pests.tap()

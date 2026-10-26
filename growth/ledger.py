@@ -433,6 +433,41 @@ def series(technique, metric, since=None):
     return [(r["date"], r["value"]) for r in read_results(technique, metric, since)]
 
 
+def measured_nights_since(date):
+    """How many distinct dates results.jsonl holds STRICTLY AFTER `date`.
+
+    The question a revisit needs answered before it can mean anything: has any
+    new evidence landed since this technique was last judged?
+
+    revisit_on is a CALENDAR date, so REVISIT_DAYS books the second look thirty
+    days of clock ahead — not thirty days of measurement. The two are the same
+    thing only while the engine is running. They came apart on 2026-10-12, when
+    the owner paused the growth crons: on 2026-10-26 five techniques came due
+    with their verdicts all decided 2026-10-12 and this function returning 0,
+    so the loop was being asked to re-decide every one of them on exactly the
+    evidence that produced the verdict it was re-deciding.
+
+    That is the same family of error as the 2026-10-16 finding (a window
+    published as 14d that was fourteen ROWS) and the 2026-10-19 one (a hole in
+    a series read as a zero): a count of one unit quoted as a count of another.
+    It is reported rather than fixed by arithmetic, deliberately — making
+    revisit_due() wait for thirty MEASURED nights would mean that a long pause
+    silently cancels every second look, which is the louder failure. So the
+    date still comes due on the clock and the reader is told what evidence
+    stands behind it.
+
+    Returns None when `date` is missing or unreadable, which is distinct from
+    0: "no new nights" and "cannot tell" are different answers.
+    """
+    if not date or not isinstance(date, str):
+        return None
+    try:
+        datetime.date.fromisoformat(date)
+    except ValueError:
+        return None
+    return len({r["date"] for r in read_results() if r.get("date") and r["date"] > date})
+
+
 # -------------------------------------------------------------------- state
 
 def load_state():

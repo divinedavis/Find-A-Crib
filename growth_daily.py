@@ -646,6 +646,88 @@ def _reread_docroot_verifiers(args):
     return techs
 
 
+def revisit_lines(as_of=None):
+    """The due-revisit block for `status`, as a list of lines.
+
+    WHY THIS EXISTS AT ALL. ledger.revisit_due() had exactly one caller in the
+    whole repo: growth/report.py, the Friday email. So the one input the daily
+    review needs in order to do its third step — "handle anything due for
+    revisit" — was reachable only through a weekly report, and that report has
+    been switched off since the owner paused the growth crons on 2026-10-12.
+    `status` is the command the review actually runs, and it listed every
+    technique and every verdict while saying nothing about which ones were due.
+
+    That is not a hypothetical gap. On 2026-10-25 the review wrote, in the
+    journal, "no revisit pushed (none came due: the nearest is T023 on
+    2026-10-27)" while T011 lifecycle_email and T018 account_lifecycle were
+    both due THAT DAY, and three more came due the next morning. Two deliberate
+    second looks were skipped and the journal recorded the opposite, because
+    the date comparison was being done by eye against a ledger dump.
+
+    Nothing catches up a missed revisit: revisit_due() is a `<= as_of` filter,
+    so a skipped one simply stays due and silent. Hence `OVERDUE`, which the
+    weekly report never said either — it prints the scheduled date and leaves
+    the subtraction to the reader, so one day late and thirty days late read
+    identically.
+
+    Each line also carries ledger.measured_nights_since(), because a revisit
+    with no new evidence behind it is a different job from a real one. See that
+    function for why the date is still allowed to come due on the clock.
+    """
+    import datetime   # local, matching cron_liveness() above
+    due = ledger.revisit_due(as_of=as_of)
+    if not due:
+        return ["revisits: none due"]
+    today = as_of or ledger.today()
+
+    def overdue(t):
+        try:
+            return (datetime.date.fromisoformat(today)
+                    - datetime.date.fromisoformat(t.get("revisit_on"))).days
+        except Exception:
+            return None
+
+    # Most overdue first: the ones that have already been missed are the ones
+    # this block exists to stop being missed again.
+    ranked = sorted(due, key=lambda t: (-(overdue(t) or 0), t.get("id") or ""))
+    out = [f"due for revisit ({len(due)}) — decide keep / change / replace:"]
+    nights = []
+    for t in ranked:
+        n = overdue(t)
+        when = (f"scheduled {t.get('revisit_on')} — "
+                + ("due today" if n == 0 else
+                   f"{n} DAY{'S' if n != 1 else ''} OVERDUE" if n and n > 0 else
+                   "scheduled date unreadable"))
+        decided = ((t.get("verdict") or {}).get("decided")) or None
+        mn = ledger.measured_nights_since(decided)
+        nights.append(mn)
+        if decided and mn is not None:
+            when += f" · {mn} night{'s' if mn != 1 else ''} measured since the verdict of {decided}"
+        elif decided:
+            when += f" · verdict of {decided}, new evidence since it unreadable"
+        else:
+            # Not nothing-to-report: a due revisit on a technique that has
+            # never been judged is the T016 shape, and the reader needs to
+            # know the revisit has no verdict to re-examine.
+            when += " · NO VERDICT EVER RECORDED — nothing to re-examine"
+        mark = "!" if (n or 0) > 0 else "·"
+        out.append(f"  {mark} {t['id']} {t.get('name')}  [{t.get('kind')}/{t.get('status')}]")
+        out.append(f"      {when}")
+        if t.get("status") == "retired":
+            # revisit_due() only returns a retired technique when the
+            # retirement landed BEFORE the date booked for this look, so this
+            # is a statement of fact rather than an inference.
+            out.append(f"      RETIRED {t.get('retired')}, before this date — "
+                       f"reconsider that verdict, do not skip it")
+    # Said once rather than per row: when the engine is not measuring, EVERY
+    # due revisit is being asked on the same frozen evidence, and that is a
+    # fact about the loop rather than about any one technique.
+    if nights and all(n == 0 for n in nights):
+        out.append("      ^ every one of these has 0 new nights of evidence behind it — "
+                   "re-deciding on exactly the data that produced the verdict being re-decided")
+    return out
+
+
 def cmd_status(args):
     summary, rows = cron_liveness()
     log(f"cron: {summary}")
@@ -675,6 +757,9 @@ def cmd_status(args):
     if isinstance(wd, dict) and wd.get("ran"):
         log(f"seo watchdog: ran at {wd.get('at')}, rc={wd.get('rc')} "
             f"({'ok' if wd.get('ok') else 'FAILED'}) — {wd.get('note') or 'no note'}")
+    log("")
+    for line in revisit_lines():
+        log(line)
     log("")
     techs = ledger.load_techniques()
     for t in techs:

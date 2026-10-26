@@ -418,7 +418,20 @@ SEEDS = [
                "are internal navigation: 233 of 241 visitors on 2026-09-22 landed on '/' and "
                "clicked through the map, which no answer block caused and none could have "
                "prevented. Not refuted either, for the unchanged 08-27 reason. KEEP because the "
-               "blocks are accurate and cost nothing, NOT because the visitor count looks alive."),
+               "blocks are accurate and cost nothing, NOT because the visitor count looks alive. "
+               "[2026-10-26 revisit] KEEP, unchanged, and the honest reason is that there is "
+               "nothing new to judge it on: 0 nights have been measured since its verdict was "
+               "decided 2026-10-12, because the growth crons are paused. The standing reading "
+               "holds — 95 owned visitors in 90d (median 2.0/day) against 0 search impressions "
+               "on its own pages, so no visitor it is credited with arrived from a search, "
+               "which is the only thing its hypothesis claims. DELIBERATELY NOT CHANGED: the "
+               "2026-10-21 revisit established that this block is ~70% sibling-shared BY "
+               "NECESSITY — the data caveat IS the block, and a caveat has to read identically "
+               "on every page — so rewording it for uniqueness would trade accuracy for a "
+               "duplicate-share number, which this site does not do. A rewrite could not be "
+               "measured anyway while nothing rebuilds the corpus. The thing this technique "
+               "actually turns on is upstream of it and not in its gift: its pages are not "
+               "being fetched."),
     dict(slug="city_guides", status="active", kind="content",
          prefixes=["/guide/is-my-apartment-rent-controlled-"], metric="organic_visitors",
          name="Cornerstone guides for San Francisco, Los Angeles and Washington DC",
@@ -640,6 +653,13 @@ SEEDS = [
     dict(slug="gsc_integration", status="candidate", kind="indexing",
          name="Search Console integration (measures the 90% goal)",
          prefixes=[], metric="organic_visitors",
+         # It publishes nothing and cannot move what it reads, so no traffic
+         # series can measure it and none is consulted. The metric above is
+         # left as it was on purpose: with judge="audit" it is never read, and
+         # rewriting it would only hide which column two earlier revisits
+         # correctly refused to repoint. See review._judge_audit and
+         # review.AUDIT_READING_SOURCES.
+         judge="audit",
          hypothesis="We cannot steer toward 90% search share without knowing our actual "
                     "positions and impressions. Search Console also exposes page-2 queries, "
                     "which are the cheapest rankings to win.",
@@ -692,7 +712,27 @@ SEEDS = [
                "so the tracked query universe grew 56% and the page-2 tier this hypothesis "
                "predicted still does not exist anywhere in it. Verdict and metric both left "
                "alone for the 08-27 reason, which has not weakened: an instrument is not judged "
-               "by the series it reads, and every candidate metric is one it also cannot cause."),
+               "by the series it reads, and every candidate metric is one it also cannot cause. "
+               "[2026-10-26 revisit] CHANGE, and it is the change the last two revisits wanted "
+               "and had no way to make. Both diagnosed the category error exactly right and then "
+               "left it in place, because the only remedy either considered was repointing "
+               "`metric` — and they were right that it buys nothing, since every candidate column "
+               "is one an instrument also cannot cause. The third remedy did not exist in August "
+               "or September: judge=\"audit\" (review._judge_audit) landed later, for the class "
+               "'publishes nothing and cannot move what it reads', and T010 was left OUT of it — "
+               "named in that judge's own rationale on the ACTOR side, among the four techniques "
+               "it was protecting from the audits. It is not an actor. Reading the Search Console "
+               "API cannot change what Search Console reports, which makes this the purest "
+               "instrument on the site. Shipped: judge=\"audit\" here and in the ledger, plus "
+               "review.AUDIT_READING_SOURCES so the verdict reports the numbers this technique "
+               "actually collects (serving_pages with its census contradiction, non-branded "
+               "impressions, share, tracked_ranking, window) instead of the site-wide "
+               "organic_visitors it cannot have caused — the verdict it replaces was crediting a "
+               "Search Console reader with 'organic_visitors median 41.5/day vs 6.0/day'. Side "
+               "effect, independently checkable: _co_claimants skips an audit, so T004 and T005 "
+               "lose a claimant they were never competing with. NOT retired and not doubted: the "
+               "instrument half of the hypothesis is why this loop can see anything at all, and "
+               "the 'cheapest rankings' half stays refuted at 0 of 615 tracked queries ranking."),
     dict(slug="lifecycle_email", status="candidate", kind="lifecycle",
          name="Buyer follow-up sequence (Building Report)",
          # reports_sold, not mrr_usd: mrr_usd is monthly RECURRING revenue and the
@@ -776,7 +816,21 @@ SEEDS = [
                "believed it would skip the check. The two are separate strings in separate "
                "modules and must be edited together; corrected here rather than by importing "
                "build_seo.py into the email path, which would pull a whole build script into "
-               "a mailer to share six lines of prose."),
+               "a mailer to share six lines of prose. "
+               "[2026-10-26 revisit] KEEP, with a structural reason nothing had written down. "
+               "The measured reading is unchanged and currently unchangeable — "
+               "accounts_with_saves 3 → 50 (+47) over 77d with 0d of pre-activation history, so "
+               "no baseline and no attribution either way, and 0 nights measured since the "
+               "2026-10-12 verdict because the crons are paused. THE REASON TO KEEP IT IS NOT "
+               "THAT READING. This sequence is T017's only instrument: the $9 Building Report "
+               "ask is put by THIS technique, and review.EXECUTION_SERIES maps T017 "
+               "one_time_building_report_product to this slug's sent_saved_paid_ask series. So "
+               "retiring T018 on its own flat stock would silently delete the execution count "
+               "T017's verdict turns on, and T017 would fall straight back to the unresolved "
+               "'either nothing reaches this technique or nothing it does converts' that the "
+               "2026-10-19 guard was built to end. Any future retirement of this technique has "
+               "to move that ask somewhere else FIRST, or it takes a second technique's "
+               "measurability down with it."),
     dict(slug="listings_freshness", status="retired", kind="content",   # owner dropped the Zumper/StreetEasy feed 2026-10-06
          name="Refresh the 'recently advertised' feed more than monthly",
          prefixes=["/available/"], metric="owned_visitors",

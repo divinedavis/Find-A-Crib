@@ -611,21 +611,86 @@ def _guard_shared_metric(res, metric, co):
 AUDIT_DETAIL_CAP = 240
 
 
+# Where a measure-only technique's own nightly reading lives, when it is NOT
+# under last_run["build"]["techniques"][slug].
+#
+# _judge_audit was written for techniques.DOCROOT_VERIFIERS: every one of them
+# reads the live docroot during the 05:40 build and records itself under
+# build.techniques. T010 gsc_integration belongs to the same CLASS — it
+# publishes no URL and cannot move any series it reads — but it reads the
+# Search Console API from the 05:00 daily job, so its reading lands in a
+# top-level last_run record instead. Without this map, marking it `audit`
+# would produce "last_run.json carries no reading for it", which is honest and
+# tells the reader strictly less than the numbers this technique actually
+# collects.
+#
+# A module constant rather than a ledger field, for the EXECUTION_SERIES
+# reason: a new field has to be threaded through ledger.add() AND seed.run()'s
+# sync tuple list, and a seeded technique whose new field is missing from that
+# list reverts silently on the next deploy. Promote it the first time a
+# technique the scout proposes needs one.
+AUDIT_READING_SOURCES = {"gsc_integration": "searchconsole"}
+
+
+def _gsc_reading(rec):
+    """last_run["searchconsole"] rendered as an audit reading.
+
+    Every number is paired with the caveat this loop requires beside it:
+    gsc_serving_pages is never quoted without the census columns that
+    contradict it, and the window is named because the series runs eight days
+    behind the date on the record.
+
+    `ok` is passed through and NOT synthesized. searchconsole.py records no
+    `ok` on this record, so this reads None and _judge_audit says "no pass/fail
+    recorded" — which is the honest answer. Deriving True from the presence of
+    a window would assert that the integration is healthy on evidence that only
+    shows it returned a date range; the ab747de trap was a job whose success
+    path omitted `ok` being announced as a failure, and the fix for that is for
+    the JOB to set it, not for a reader to guess it. There is no false-failure
+    risk here: _judge_audit treats None as "not recorded", never as failing.
+    """
+    if not rec:
+        return None
+    detail = (f"{_num(rec.get('serving_pages'))} pages served in search "
+              f"({_num(rec.get('serving_census_contradicted'))} census-contradicted, "
+              f"{_num(rec.get('serving_census_indexed'))} census-indexed, "
+              f"{_num(rec.get('serving_nonbranded'))} non-branded); "
+              f"{_num(rec.get('nonbranded_impressions'))} non-branded of "
+              f"{_num(rec.get('page_impressions'))} page impressions; "
+              f"share {_num(rec.get('share_pct'))}%, "
+              f"{_num(rec.get('tracked_ranking'))} tracked queries ranking; "
+              f"window {rec.get('window') or 'not recorded'}")
+    return {"ok": rec.get("ok"), "detail": detail}
+
+
 def _audit_reading(slug):
     """Last night's pass/fail reading for a read-only audit technique.
 
     Written by cmd_build into last_run.json under build.techniques.<slug> —
-    {ok, detail, same_since, unchanged} — which is the only place an audit's
-    own result is recorded. Audits write no per-technique series: t_crawl_paths
-    has recorded exactly zero rows in results.jsonl since 2026-08-05, which is
-    the whole reason this helper has to read last_run instead of the ledger.
+    {ok, detail, same_since, unchanged} — which is where a DOCROOT_VERIFIERS
+    audit's own result is recorded. Audits write no per-technique series:
+    t_crawl_paths has recorded exactly zero rows in results.jsonl since
+    2026-08-05, which is the whole reason this helper has to read last_run
+    instead of the ledger.
+
+    A measure-only technique that reports somewhere else falls back to
+    AUDIT_READING_SOURCES — see that constant for why T010 is one.
 
     Returns None when there is no reading, and that is a distinct answer from a
     failing one: an audit that did not run cannot be reported green.
     """
     try:
-        rec = ((ledger.read_last_run() or {}).get("build") or {})
-        return (rec.get("techniques") or {}).get(slug) or None
+        run = ledger.read_last_run() or {}
+        rec = ((run.get("build") or {}).get("techniques") or {}).get(slug)
+        if rec:
+            return rec
+        key = AUDIT_READING_SOURCES.get(slug)
+        # One source, so an `if` rather than a registry of formatters: the
+        # shape of each top-level record differs enough that a second one
+        # wants its own function too, not a shared one.
+        if key == "searchconsole":
+            return _gsc_reading(run.get(key))
+        return None
     except Exception:
         return None
 
@@ -633,13 +698,28 @@ def _audit_reading(slug):
 def _judge_audit(res, t):
     """Verdict for a technique that only MEASURES — it publishes nothing.
 
-    Five active techniques are in this class: T037 crawl_paths, T072
-    page_uniqueness, T089 canonical_integrity, T090 frozen_pages and T091
-    voucher_reach. Every one of them reads the live docroot, writes nothing,
-    and ships no URL (they are exactly techniques.DOCROOT_VERIFIERS minus
+    Seven active techniques are in this class. Six read the live docroot,
+    write nothing and ship no URL: T037 crawl_paths, T072 page_uniqueness,
+    T089 canonical_integrity, T090 frozen_pages, T091 voucher_reach and T101
+    lastmod_integrity (they are exactly techniques.DOCROOT_VERIFIERS minus
     derived_building_facts, which owns /building/ and is judged on it).
 
-    All five declared `metric: "organic_visitors"` with no prefixes, so they
+    The seventh is T010 gsc_integration, added 2026-10-26, and it is here
+    because the TEST is "publishes nothing and cannot move what it reads", not
+    "reads the docroot". Reading the Search Console API cannot change what
+    Search Console reports, so T010 is the purest instrument on the site — and
+    it was left out of this class when the class was created, classified below
+    among "the techniques that DO act". Its own ledger notes had already
+    diagnosed the error twice, on 2026-08-27 ("disown this technique's own
+    verdict as a category error ... an instrument cannot move the series it
+    measures") and again on 2026-09-26, and both revisits left it alone because
+    the only remedy either considered was REPOINTING THE METRIC — correctly
+    rejected, since every candidate metric is one it also cannot cause. This
+    judge is the third remedy, and it did not exist when those notes were
+    written. Its reading comes from AUDIT_READING_SOURCES rather than from
+    build.techniques.
+
+    All of them declared `metric: "organic_visitors"` with no prefixes, so they
     fell through to the site-wide path and were handed the site's own traffic
     as their verdict. That is wrong twice over.
 
@@ -651,13 +731,23 @@ def _judge_audit(res, t):
         on a week when gsc_nonbranded_clicks was 0 and every indexing series
         it claims to influence was moving the other way — the 2026-09-04 entry
         had to write "DISTRUST ITS WORKS VERDICT" into the ledger by hand.
-      * It poisoned the four techniques that DO act. _co_claimants counts
-        every active prefix-less technique on the same metric, so these five
-        audits sat in the co-claimant list of T004 sitemap_daily, T005
-        indexnow, T010 gsc_integration and T015 dataset_schema_ai_citation,
-        inflating it to eight and demoting those four every single night. Of
-        the nine claimants on organic_visitors, five could never have been
-        candidates for causing anything.
+      * It poisoned the techniques that DO act. _co_claimants counts every
+        active prefix-less technique on the same metric, so these audits sat in
+        the co-claimant list of T004 sitemap_daily, T005 indexnow, T010
+        gsc_integration and T015 dataset_schema_ai_citation, inflating it to
+        eight and demoting those four every single night. Of the nine claimants
+        on organic_visitors, five could never have been candidates for causing
+        anything.
+
+        T010 was named in that list as one of the four being PROTECTED, and
+        that was the misclassification: it belongs with the audits, not with
+        the actors. Moving it leaves T004 and T005 — which do act on what
+        crawlers see, however weakly — as the only remaining claimants on
+        organic_visitors, so their verdicts get truer as a side effect of this
+        one. This is the third time a guard's own rationale enumerated the
+        techniques it reasoned about and put one on the wrong side: T008 in
+        EXECUTION_SERIES (2026-10-24) and T016 in the activation clock
+        (2026-10-25) were the first two.
 
     So `judge: "audit"` says: report this technique's own nightly reading and
     nothing else. No traffic series is consulted, `action` is always "keep",

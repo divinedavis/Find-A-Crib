@@ -93,6 +93,20 @@ def _money(v):
         return "—"
 
 
+def _days_late(on, as_of=None):
+    """Days a scheduled revisit is past due, or 0 if due today / not readable.
+
+    Never negative: a date still in the future is not late, and revisit_due()
+    does not return it anyway.
+    """
+    try:
+        due = datetime.date.fromisoformat(on)
+    except (TypeError, ValueError):
+        return 0
+    today = as_of or datetime.date.today()
+    return max(0, (today - due).days)
+
+
 def _pct(part, whole):
     try:
         return max(0.0, min(100.0, 100.0 * float(part) / float(whole)))
@@ -1180,7 +1194,23 @@ def build_blocks(run_log=None, review_out=None):
         B.append({"type": "section", "label": f"Due for revisit ({len(revisits)})",
                   "note": "Decide keep / change / replace"})
         for t in revisits:
+            # Not just the date. This block printed "scheduled <date>" and left
+            # the subtraction to the reader, so one day late and thirty days
+            # late read identically — and nothing catches a missed revisit up,
+            # because revisit_due() is a `<= today` filter that keeps returning
+            # it in silence. The nights count is here for the reason in
+            # ledger.measured_nights_since: revisit_on is thirty days of CLOCK,
+            # not thirty days of measurement, and a revisit with no new
+            # evidence behind it is a different job from a real one.
             meta = f"scheduled {t.get('revisit_on')}"
+            late = _days_late(t.get("revisit_on"))
+            if late:
+                meta += f" · {late} DAY{'S' if late != 1 else ''} OVERDUE"
+            decided = (t.get("verdict") or {}).get("decided")
+            nights = ledger.measured_nights_since(decided)
+            if decided and nights is not None:
+                meta += (f" · {nights} night{'s' if nights != 1 else ''} measured since "
+                         f"the verdict of {decided}")
             if t.get("prefixes"):
                 pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
                 meta += (f" · {sum(v for _, v in pairs):,} owned visitors "

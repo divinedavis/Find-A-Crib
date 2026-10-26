@@ -8375,17 +8375,10 @@ function favActive() {
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
     if (OPEN_DATA[act]) {
-      // Bedbug and rodent records: behind a free account since 2026-09-07,
-      // and free for every account for good (owner, 2026-10-12: "bedbug and
-      // rodent records should be free on web and iphone") — never Plus, even
-      // if paid gating returns. The count and the red/green on the button stay
-      // visible to everyone; the records are NYC Open Data.
-      if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
-        track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`Create an account or sign in to see this building\u2019s ${act === 'bedbugs' ? 'bedbug filings' : 'rat inspections'}.`, act);
-        setAuthMode('signup');
-        return;
-      }
+      // Bedbug and rodent records are open to everyone, no account (owner,
+      // 2026-10-26: "lets make it appear on no sign in"). The free-account
+      // wall here, from 2026-09-07, signed up 3 of the 83 people it stopped
+      // in 30 days. Never Plus either; the records are NYC Open Data.
       openOpenDataSheet(act, rec); return;
     }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
@@ -8676,13 +8669,8 @@ function favActive() {
   // 2026-10-01 only four of the nineteen callers left any trace.
   // What an account gets at each wall, and the one Plus part (owner,
   // 2026-10-12: show them what signing in gets them, like the app's sheets).
-  const RECORDS_PROMISE = { rows: [['⚠️', 'Open HPD violations and complaints, building by building'],
-                                   ['🛏️', 'Bedbug filings the landlord made, year by year'],
-                                   ['🐀', 'Rat inspections from the Health Department']],
-                            // Real-time alerts, not the broker fee check (owner, 2026-10-13).
-                            plus: ['⚡', 'Plus: real-time lottery alerts, the minute one opens', 'realtime'] };
+  // (The bedbug/rodent records preview went with that wall, 2026-10-26.)
   const AUTH_PROMISES = {
-    bedbugs: RECORDS_PROMISE, rodents: RECORDS_PROMISE,
     alerts: { rows: [['🏢', 'New lotteries and re-rentals in the boroughs you pick'],
                      ['✉️', 'An email at 8 AM every day with what opened']],
               plus: ['⚡', 'Plus: alerts the minute they open \u2014 first month free', 'realtime'] },

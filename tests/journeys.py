@@ -119,6 +119,7 @@ JOURNEY_EVENTS = {
     'app_qr_menu':          ['app_qr_open'],
     'boot_is_usable':       [],
     'city_chip':            [],
+    'crash_trace_throttled': ['crash_trace'],
     'ad_tiles':             ['tile_served', 'tile_impression', 'featured_click', 'hc_click'],
     'outbound_links':       ['outbound'],
     'portal_button':        ['outbound'],
@@ -1396,6 +1397,28 @@ class Runner:
                     f'a viewport resize should log a page census in the trace, got {step!r}', j)
             j.notes.append(step)
 
+    def j_crash_trace_throttled(self, page, j, device):
+        """A throttled tab is not a dead one (2026-10-27).
+
+        A Windows tab whose ticks had gone 108 s apart was reported as a page
+        death when its visitor opened a second tab: the new page waited 4 s,
+        saw no change and called it dead. A trace whose ticks ever went more
+        than 5 s apart now gets another minute; a trace with steady ticks is
+        still reported at 4 s.
+        """
+        self.boot(page)
+        page.evaluate("""() => {
+          const n = Date.now() % 1e7, at = Date.now() - 200000;
+          localStorage.setItem('fac.trace.p.jtthrottled', JSON.stringify({ at, s: [[n - 120000, 'tick'], [n - 119000, 'tick'], [n - 11000, 'tick'], [n - 9000, 'grid 15'], [n - 9000, 'grid:same']] }));
+          localStorage.setItem('fac.trace.p.jtdead', JSON.stringify({ at, s: [[n - 3000, 'tick'], [n - 2000, 'tick'], [n - 1500, 'grid 12'], [n - 1500, 'grid:done']] }));
+        }""")
+        self.boot(page)
+        page.wait_for_timeout(6000)
+        keys = page.evaluate("['fac.trace.p.jtthrottled', 'fac.trace.p.jtdead'].map(k => localStorage.getItem(k) !== null)")
+        self.ok(keys == [True, False], f'a throttled trace waits a minute, a steady one reports at 4 s (kept: {keys})', j)
+        page.evaluate("localStorage.removeItem('fac.trace.p.jtthrottled')")
+        j.notes.append('throttled trace held back, dead one reported')
+
     def j_city_chip(self, page, j, device):
         """The header must not flash four city chips before JS collapses them.
 
@@ -2324,7 +2347,7 @@ class Runner:
                 supabase_admin('DELETE', f'users/{uid}')
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
                 'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
 

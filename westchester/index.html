@@ -1109,6 +1109,10 @@
   .deal-box .deal-eff { background: var(--ok-bg); padding: 4px 8px; border-top: 1px solid var(--line);
     display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 11px; color: var(--ink-2); }
   .deal-box .deal-eff b { font-size: 14px; font-weight: 800; color: var(--ok-ink); white-space: nowrap; }
+  /* One text size under a re-rental's photo (owner, 2026-10-27: "make all
+     the fonts the same size"); bold carries the emphasis instead. Last, so
+     it wins over each piece's own size above. */
+  .card.feat-card .body, .card.feat-card .body * { font-size: 12px !important; }
   /* "email me when the next one opens here" — on lottery and re-rental tiles,
      under the apply button. The tile is the moment someone realises these
      exist and close fast; the link is the answer to "how do I not miss the

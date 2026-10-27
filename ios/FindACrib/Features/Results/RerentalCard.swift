@@ -9,7 +9,10 @@ struct RerentalCard: View {
     /// Which re-rental slot of the feed this is (0 = the 3rd tile), for the funnel.
     var slot: Int = 0
     @Environment(\.openURL) private var openURL
+    @Environment(AuthService.self) private var auth
     @State private var photo = 0
+    @State private var showAlerts = false
+    @State private var showSignIn = false
 
     var body: some View {
         let f = listing
@@ -141,6 +144,23 @@ struct RerentalCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                // Where Help me apply was (owner, 2026-10-27): alerts for the
+                // next re-rental in this borough. Signed out, sign in first.
+                Button {
+                    Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "rerental_card"])
+                    if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bell.badge.fill").font(.system(size: 15, weight: .bold))
+                        Text("Get alerts on new re-rentals").font(.se(compact ? 15 : 17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                    }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
+                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("rerental-alerts")
+                .sheet(isPresented: $showAlerts) { AlertsSheet(rerentalBorough: f.boroughCode) }
+                .sheet(isPresented: $showSignIn, onDismiss: { if auth.isSignedIn { showAlerts = true } }) {
+                    EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for re-rental alerts"), forAlerts: true)
+                }
             }
             .padding(compact ? 14 : 18)
         }

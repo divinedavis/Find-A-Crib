@@ -244,6 +244,13 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(card.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Listed by'")).firstMatch.exists, "a deal card repeats the agent under its box")
         // One screen: between the search bar and the floating Map button / tab bar.
         XCTAssertLessThanOrEqual(card.frame.height, app.windows.firstMatch.frame.height - 300, "the deal card should fit on one screen")
+        // Alerts where Help me apply was (owner, 2026-10-27); signed out it
+        // asks for an account first.
+        let alerts = card.buttons["rerental-alerts"]
+        XCTAssertTrue(alerts.exists, "a re-rental card offers alerts on new re-rentals")
+        XCTAssertFalse(card.buttons["rerental-apply-help"].exists, "Help me apply is gone")
+        alerts.tap()
+        XCTAssertTrue(app.staticTexts["Sign in for re-rental alerts"].waitForExistence(timeout: 10), "signed out, alerts open the sign-in")
     }
 
     /// Re-rentals ride along in the results feed: the 3rd tile is one, with a

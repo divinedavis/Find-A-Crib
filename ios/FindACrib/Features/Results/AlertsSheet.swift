@@ -14,6 +14,9 @@ struct AlertsSheet: View {
     var query: SearchQuery? = nil
     /// Opened from the Lotteries tab's Filter: Beds sits on top (2026-10-17).
     var showsBeds = false
+    /// Opened from a re-rental card's alerts button (2026-10-27): re-rentals
+    /// in that card's borough ("Bk"), whatever the search was.
+    var rerentalBorough: String? = nil
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
@@ -190,6 +193,7 @@ struct AlertsSheet: View {
         // edited here since 2026-10-08 — prefs from the server override it.
         if let i = Qualify.shared.income { income = String(i) }
         if let h = Qualify.shared.household { household = h }
+        if let rerentalBorough { boroughs = [rerentalBorough]; kinds = ["rerental"]; return }
         guard let query else { kinds = ["lottery", "rerental"]; return }
         var b: Set<String> = []
         for l in query.locations {

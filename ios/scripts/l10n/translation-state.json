@@ -204,6 +204,10 @@
       "back" : "Typical %1$@-%2$@",
       "src" : "1c419e6532d7bcd9"
     },
+    "%@/mo, cancel anytime" : {
+      "back" : "%@/month, cancel at any time",
+      "src" : "b004a1622b2eab9c"
+    },
     "%lld 311 calls on this building in all" : {
       "back" : "%lld and 311 calls arrive at this building in all the",
       "src" : "17cf01ca76817d9a"
@@ -508,6 +512,14 @@
       "back" : "A notification and an email for each new 311 call. Everything starts from Plus",
       "src" : "4fa98cc9170fa69a"
     },
+    "A Plus feature — first month on us" : {
+      "back" : "A Plus function: first month at our expense",
+      "src" : "a7397cc67b35e545"
+    },
+    "A repair letter citing NYC law, ready to send" : {
+      "back" : "A repair letter citing law NYC, ready to send",
+      "src" : "9da47731dbc61225"
+    },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "A repair letter in your own words, and answers to your questions about your rights as a tenant.",
       "src" : "a0f9109c56ba7f9a"
@@ -604,6 +616,10 @@
       "back" : "Agent phone numbers",
       "src" : "ee2774791216fd40"
     },
+    "Agents' phone numbers, and no ads" : {
+      "back" : "Agent phone numbers, and without ads",
+      "src" : "a7c33d5e05df1b16"
+    },
     "agreed" : {
       "back" : "okay",
       "src" : "81de896f6c0ff4c3"
@@ -615,6 +631,10 @@
     "AI repair letters & rights answers" : {
       "back" : "AI repair letters and copyright responses",
       "src" : "2d45a5ca60d79f0e"
+    },
+    "AI tools: plain-words search, lease review, broker fee check" : {
+      "back" : "AI tools: search for simple words, review leases, verification of broker commissions",
+      "src" : "5781692a0d79b8f3"
     },
     "Alert" : {
       "back" : "warning",
@@ -691,6 +711,10 @@
     "An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story." : {
       "back" : "A development with income restrictions with a regulatory agreement New York State HCR, registered in HousingSearch.ny.gov. It is not in the rental stabilization register, so there is no DHCR or HPD register here, the previous list is the whole story.",
       "src" : "ccfefa0c4aab3671"
+    },
+    "Answers from NYC and New York State law, with the rule cited" : {
+      "back" : "Answers from state law NYC and New York, with the cited rule",
+      "src" : "327df96fe41f36a5"
     },
     "Any" : {
       "back" : "Any",
@@ -800,6 +824,14 @@
       "back" : "to ask",
       "src" : "6549043cdcf6e14f"
     },
+    "Ask about heat, packages and repairs — only the chat can read it" : {
+      "back" : "Ask questions about heat, packages and repairs, only the chat can read it",
+      "src" : "c87561f41ed5da1e"
+    },
+    "Ask about your rights in plain words" : {
+      "back" : "Ask questions about your rights in simple words",
+      "src" : "5c425e746331e06b"
+    },
     "Ask before you sign" : {
       "back" : "Ask before signing",
       "src" : "57d28ecb253cd24e"
@@ -831,10 +863,6 @@
     "Bedbug filings (landlord's)" : {
       "back" : "Cockroach pest control documents (from the owner)",
       "src" : "0394b40caf5a0c66"
-    },
-    "Bedbug filings the landlord made, year by year" : {
-      "back" : "Pest control documents from the owner, year after year",
-      "src" : "fbe31b4880cfb465"
     },
     "Bedbugs reported" : {
       "back" : "Bed bugs reported",
@@ -984,6 +1012,10 @@
       "back" : "Change the neighborhoods you heard information about in Profile → Alerts.",
       "src" : "13e237d59fd89164"
     },
+    "Chat with the people in your building, end-to-end encrypted" : {
+      "back" : "Chat with people in your building, end-to-end encryption",
+      "src" : "f5d1b3b9b0b861d4"
+    },
     "Check %@ for a link to choose a new password, then come back and sign in." : {
       "back" : "Mark %@ to see a link to choose a new password, then come back and log in.",
       "src" : "13d458af0eddf977"
@@ -1023,6 +1055,10 @@
     "Check your connection and pull to refresh." : {
       "back" : "Check your connection and pull to update.",
       "src" : "725443074bbe0150"
+    },
+    "Check your increase against the Rent Guidelines Board" : {
+      "back" : "Check your increase against the Rental Guidelines Board",
+      "src" : "51e69979319f1cee"
     },
     "Checking findacrib.com…" : {
       "back" : "Buying findacrib.com...",
@@ -1616,6 +1652,10 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free with an account" : {
+      "back" : "Free with an account",
+      "src" : "225bfc0cfe881828"
+    },
     "Free: crime alerts within half a mile of your building" : {
       "back" : "Free: crime alerts within half a mile of your building",
       "src" : "5f48151f384511bd"
@@ -1880,10 +1920,6 @@
       "back" : "Violations and complaints from HPD for this building",
       "src" : "8c95ec614acf4f42"
     },
-    "HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them." : {
-      "back" : "The open violations and complaints from HPD for this building, the **slugs**, **rats** and **mice** that an inspector confirmed here this year, and the bed bug and rat records. Log in to see them.",
-      "src" : "1ea2a7e891a433a2"
-    },
     "HUD FY2026 Small-Area Fair Market Rent for ZIP %@, studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent." : {
       "back" : "HUD FY2026 Fair market rent in small areas for ZIP %@, from studio to 2 bedrooms. A neighborhood-level estimate of what apartments cost, not the rent of this building.",
       "src" : "603591c4e06c0985"
@@ -2131,6 +2167,10 @@
     "Least expensive" : {
       "back" : "The cheapest one",
       "src" : "ccea2953d4ff956c"
+    },
+    "Like the comments that help" : {
+      "back" : "Like the comments that help",
+      "src" : "be338bb5ae550727"
     },
     "Like, %lld likes" : {
       "back" : "Like, I like %lld",
@@ -2996,6 +3036,10 @@
       "back" : "Plan my renewal",
       "src" : "57ebafe33f11e66c"
     },
+    "Plan your lease renewal: what to ask for, and when" : {
+      "back" : "Plan the renewal of your lease: what to ask for and when",
+      "src" : "1b1e0c209566bb21"
+    },
     "PLUS" : {
       "back" : "virtue",
       "src" : "e3ec1117b278eb9b"
@@ -3008,6 +3052,10 @@
       "back" : "Plus: the agent's phone number: call the person who really directs it.",
       "src" : "90e29e8b07b22a60"
     },
+    "Plus: the managing agent's phone number — call who actually runs it" : {
+      "back" : "Plus: the phone number of the management agent - call the person who really directs him",
+      "src" : "91a0fd83763b0b7d"
+    },
     "Points to make" : {
       "back" : "Things to do",
       "src" : "98c42f4a4ab34376"
@@ -3015,6 +3063,10 @@
     "Post" : {
       "back" : "mail",
       "src" : "f8dbd4a43a6c4683"
+    },
+    "Post your own, and reply to your neighbors" : {
+      "back" : "Post your own and answer your neighbors",
+      "src" : "0a52d69dc2dc4daa"
     },
     "Price" : {
       "back" : "price",
@@ -3056,10 +3108,6 @@
       "back" : "Rat inspections (Department of Health)",
       "src" : "71c2fa42190fa349"
     },
-    "Rat inspections from the Health Department" : {
-      "back" : "Rat inspections by the Department of Health",
-      "src" : "84badd1a5ba7bb16"
-    },
     "Rate Find A Crib" : {
       "back" : "Rate Find A Crib",
       "src" : "af3a7b0582fdaa88"
@@ -3092,6 +3140,10 @@
       "back" : "Reactions: %@",
       "src" : "640f132b048cfaff"
     },
+    "Read what neighbors say about %@ — the heat, the super, the block" : {
+      "back" : "Read what the neighbors say about %@: the heat, the supermarket, the block",
+      "src" : "b08071f4052a3649"
+    },
     "Reading the listing…" : {
       "back" : "Reading the list...",
       "src" : "660c03e42d646ed5"
@@ -3107,6 +3159,10 @@
     "Real-time alerts" : {
       "back" : "Real-time alerts",
       "src" : "243f1ad6b3b1a30c"
+    },
+    "Real-time alerts the minute a lottery or re-rental opens" : {
+      "back" : "Real-time alerts at the moment a lottery or a subletting is opened",
+      "src" : "0edd890953df79c6"
     },
     "Recent" : {
       "back" : "recent",
@@ -3536,9 +3592,25 @@
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
     },
+    "Sign in to ask about your rights" : {
+      "back" : "Log in to ask about your rights",
+      "src" : "e01880dddd660927"
+    },
+    "Sign in to check your rent increase" : {
+      "back" : "Log in to check your rent increase",
+      "src" : "33c0518a5496c610"
+    },
     "Sign in to comment." : {
       "back" : "Log in to comment.",
       "src" : "c95e19a5620c6446"
+    },
+    "Sign in to get your repair letter" : {
+      "back" : "Log in to get your repair letter",
+      "src" : "4e0880df5aee584e"
+    },
+    "Sign in to plan your renewal" : {
+      "back" : "Log in to plan your renewal",
+      "src" : "71569d64bd1e4914"
     },
     "Sign in to see the full history" : {
       "back" : "Log in to see the complete history",
@@ -3547,10 +3619,6 @@
     "Sign in to see this building's records" : {
       "back" : "Log in to see the records of this building",
       "src" : "219b98e62c6fcb3d"
-    },
-    "Sign in to see violations & inspections" : {
-      "back" : "Log in to see violations and inspections",
-      "src" : "82a939a2d5375995"
     },
     "Sign in to see who runs this building" : {
       "back" : "Log in to see who manages this building",
@@ -3592,9 +3660,9 @@
       "back" : "Register to comment",
       "src" : "34c72b5a27017c77"
     },
-    "Sign up to read what people say about %@ — the cold radiators, the super, the block — and to add your own." : {
-      "back" : "Register to read what people say about %@: the cold radiators, the super, the block, and to add your own opinion.",
-      "src" : "d7c5125a3ed42458"
+    "Sign up with email" : {
+      "back" : "Register with email",
+      "src" : "0075b27460b158f7"
     },
     "Sign-in did not complete. Try again." : {
       "back" : "The login did not complete. Please try again.",
@@ -3727,6 +3795,10 @@
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "SUBSIDIZED BUILDING / FRIENDLY WITH VALUES",
       "src" : "068ad4280fce30a8"
+    },
+    "Talking points and an email to send your landlord" : {
+      "back" : "Conversation points and an email to send to your owner",
+      "src" : "fd117c6636737f67"
     },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star to rate it in the App Store.",
@@ -4240,6 +4312,10 @@
       "back" : "What the list asks for",
       "src" : "c4833fd5d7f6e01d"
     },
+    "What to ask for, by when, and how to file with 311" : {
+      "back" : "What to ask for, when and how to present it to 311",
+      "src" : "26f053e76d185912"
+    },
     "What to do" : {
       "back" : "What to do",
       "src" : "03b7ce141c3fdd93"
@@ -4271,6 +4347,10 @@
     "What's wrong?" : {
       "back" : "What is happening?",
       "src" : "cd77c6d70531eed2"
+    },
+    "Where to get free legal help if it isn't fixed" : {
+      "back" : "Where to get free legal help if it doesn't get fixed",
+      "src" : "4d3408398fd53ae7"
     },
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "What screens are used, so that the application can be improved. Never what you write, it is never sold, without advertising.",
@@ -4420,6 +4500,10 @@
       "back" : "Your email address",
       "src" : "1ea694d74a81e0bf"
     },
+    "Your first %@ is on us — then %@/mo" : {
+      "back" : "Your first %1$@ is at our expense, then %2$@/month",
+      "src" : "9746dafcc69cf049"
+    },
     "Your first %@ is on us — then %@/month." : {
       "back" : "Your first %1$@ is at our expense, then %2$@/month.",
       "src" : "f4633a86ffbe879c"
@@ -4443,6 +4527,10 @@
     "Your lease" : {
       "back" : "Your rental contract",
       "src" : "72acee48ec21282e"
+    },
+    "Your legal rent, what to do next, and your rent history" : {
+      "back" : "Your legal rent, what to do next and your rental history",
+      "src" : "a3552d24562804fd"
     },
     "Your letter" : {
       "back" : "Your letter",
@@ -4697,6 +4785,10 @@
     "%@–%@ typical" : {
       "back" : "%1$@-%2$@ typical",
       "src" : "1c419e6532d7bcd9"
+    },
+    "%@/mo, cancel anytime" : {
+      "back" : "%@/month, can be canceled at any time",
+      "src" : "b004a1622b2eab9c"
     },
     "%lld 311 calls on this building in all" : {
       "back" : "%lld and 311 call all the people in this building.",
@@ -5002,6 +5094,14 @@
       "back" : "I have all the notifications and emails for the new 311 calls. They are all part of Plus.",
       "src" : "4fa98cc9170fa69a"
     },
+    "A Plus feature — first month on us" : {
+      "back" : "A Plus function - We will cover the first month.",
+      "src" : "a7397cc67b35e545"
+    },
+    "A repair letter citing NYC law, ready to send" : {
+      "back" : "A repair letter citing NYC law, ready for shipment.",
+      "src" : "9da47731dbc61225"
+    },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Your literal repair letter and answers to your questions about your rights as a landlord.",
       "src" : "a0f9109c56ba7f9a"
@@ -5098,6 +5198,10 @@
       "back" : "Representative store phone number",
       "src" : "ee2774791216fd40"
     },
+    "Agents' phone numbers, and no ads" : {
+      "back" : "Dealer phone number, and no advertisement.",
+      "src" : "a7c33d5e05df1b16"
+    },
     "agreed" : {
       "back" : "I agree.",
       "src" : "81de896f6c0ff4c3"
@@ -5109,6 +5213,10 @@
     "AI repair letters & rights answers" : {
       "back" : "AI repair letter and rights response",
       "src" : "2d45a5ca60d79f0e"
+    },
+    "AI tools: plain-words search, lease review, broker fee check" : {
+      "back" : "AI tools: general word search, review of rental contracts, check brokerage fees",
+      "src" : "5781692a0d79b8f3"
     },
     "Alert" : {
       "back" : "warn",
@@ -5185,6 +5293,10 @@
     "An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story." : {
       "back" : "It is an income-restricted development with a New York status and HCR regulatory agreement, registered with HousingSearch.ny.gov. It is not in the rental stability registry, so there are no DHCR or HPD records here. The above list is the whole story.",
       "src" : "ccfefa0c4aab3671"
+    },
+    "Answers from NYC and New York State law, with the rule cited" : {
+      "back" : "Answer with the rules quoted from NYC and New York rules.",
+      "src" : "327df96fe41f36a5"
     },
     "Any" : {
       "back" : "what ／what kind of",
@@ -5294,6 +5406,14 @@
       "back" : "ask",
       "src" : "6549043cdcf6e14f"
     },
+    "Ask about heat, packages and repairs — only the chat can read it" : {
+      "back" : "Please contact us for inquiries about heat, packages, and repairs. You can only read the chat.",
+      "src" : "c87561f41ed5da1e"
+    },
+    "Ask about your rights in plain words" : {
+      "back" : "Ask questions about your rights in clear words.",
+      "src" : "5c425e746331e06b"
+    },
     "Ask before you sign" : {
       "back" : "Ask before signing.",
       "src" : "57d28ecb253cd24e"
@@ -5325,10 +5445,6 @@
     "Bedbug filings (landlord's)" : {
       "back" : "Bedding pest record (landlord's)",
       "src" : "0394b40caf5a0c66"
-    },
-    "Bedbug filings the landlord made, year by year" : {
-      "back" : "A parasite report form filled out by the landlord every year.",
-      "src" : "fbe31b4880cfb465"
     },
     "Bedbugs reported" : {
       "back" : "Bedding parasites have been found.",
@@ -5478,6 +5594,10 @@
       "back" : "Profile → Change the autonomous district you are listening to in the notification.",
       "src" : "13e237d59fd89164"
     },
+    "Chat with the people in your building, end-to-end encrypted" : {
+      "back" : "Have real-time encrypted chats with people in the building.",
+      "src" : "f5d1b3b9b0b861d4"
+    },
     "Check %@ for a link to choose a new password, then come back and sign in." : {
       "back" : "To check the link where you can choose a new password, check %@ and come back to log in.",
       "src" : "13d458af0eddf977"
@@ -5517,6 +5637,10 @@
     "Check your connection and pull to refresh." : {
       "back" : "Please check the connection status and pull to refresh.",
       "src" : "725443074bbe0150"
+    },
+    "Check your increase against the Rent Guidelines Board" : {
+      "back" : "Compare the increase to the rental guideline committee.",
+      "src" : "51e69979319f1cee"
     },
     "Checking findacrib.com…" : {
       "back" : "Checking findacrib.com...",
@@ -6110,6 +6234,10 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free with an account" : {
+      "back" : "Free if you have an account.",
+      "src" : "225bfc0cfe881828"
+    },
     "Free: crime alerts within half a mile of your building" : {
       "back" : "Free: Crime alert within half a mile of the building",
       "src" : "5f48151f384511bd"
@@ -6378,10 +6506,6 @@
       "back" : "HPD violations and complaints about this building",
       "src" : "8c95ec614acf4f42"
     },
-    "HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them." : {
-      "back" : "HPD confirmed this year's inspector's violations and complaints about **ants**, **rats** and **mice** in this building, and open violations of bedding parasites and rat records. Please log in to check.",
-      "src" : "1ea2a7e891a433a2"
-    },
     "HUD FY2026 Small-Area Fair Market Rent for ZIP %@, studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent." : {
       "back" : "Small-scale fair market rents for HUD FY2026 ZIP %@, from studios to 2-bedroom apartments. These are neighborhood-level estimates of apartment prices, not building rents.",
       "src" : "603591c4e06c0985"
@@ -6629,6 +6753,10 @@
     "Least expensive" : {
       "back" : "The cheapest",
       "src" : "ccea2953d4ff956c"
+    },
+    "Like the comments that help" : {
+      "back" : "Like a helpful comment",
+      "src" : "be338bb5ae550727"
     },
     "Like, %lld likes" : {
       "back" : "Yes, I like %lld.",
@@ -7494,6 +7622,10 @@
       "back" : "Planning my renewal.",
       "src" : "57ebafe33f11e66c"
     },
+    "Plan your lease renewal: what to ask for, and when" : {
+      "back" : "Plan your rental renewal: what you need to ask for, when you need to do it",
+      "src" : "1b1e0c209566bb21"
+    },
     "PLUS" : {
       "back" : "there",
       "src" : "e3ec1117b278eb9b"
@@ -7506,6 +7638,10 @@
       "back" : "Plus: Agent's phone number - Call the person who actually operates it.",
       "src" : "90e29e8b07b22a60"
     },
+    "Plus: the managing agent's phone number — call who actually runs it" : {
+      "back" : "Plus: Management agent's phone number - Call the person who actually operates it.",
+      "src" : "91a0fd83763b0b7d"
+    },
     "Points to make" : {
       "back" : "Things to do",
       "src" : "98c42f4a4ab34376"
@@ -7513,6 +7649,10 @@
     "Post" : {
       "back" : "mail service",
       "src" : "f8dbd4a43a6c4683"
+    },
+    "Post your own, and reply to your neighbors" : {
+      "back" : "Post yours and reply to your neighbors.",
+      "src" : "0a52d69dc2dc4daa"
     },
     "Price" : {
       "back" : "price",
@@ -7554,10 +7694,6 @@
       "back" : "Rat inspection (Ministry of Health and Welfare)",
       "src" : "71c2fa42190fa349"
     },
-    "Rat inspections from the Health Department" : {
-      "back" : "Rat test conducted by the public health center",
-      "src" : "84badd1a5ba7bb16"
-    },
     "Rate Find A Crib" : {
       "back" : "Late Find A Crib",
       "src" : "af3a7b0582fdaa88"
@@ -7590,6 +7726,10 @@
       "back" : "Response: %@",
       "src" : "640f132b048cfaff"
     },
+    "Read what neighbors say about %@ — the heat, the super, the block" : {
+      "back" : "Read what the neighbors are saying about %@ - heat, super, block",
+      "src" : "b08071f4052a3649"
+    },
     "Reading the listing…" : {
       "back" : "I'm reading the list...",
       "src" : "660c03e42d646ed5"
@@ -7605,6 +7745,10 @@
     "Real-time alerts" : {
       "back" : "Real-time notification",
       "src" : "243f1ad6b3b1a30c"
+    },
+    "Real-time alerts the minute a lottery or re-rental opens" : {
+      "back" : "Real-time notification when lottery or re-rental opens",
+      "src" : "0edd890953df79c6"
     },
     "Recent" : {
       "back" : "Recent",
@@ -8034,9 +8178,25 @@
       "back" : "Log in or create an account.",
       "src" : "e2e8e11a5ec9f984"
     },
+    "Sign in to ask about your rights" : {
+      "back" : "Please log in to inquire about your rights.",
+      "src" : "e01880dddd660927"
+    },
+    "Sign in to check your rent increase" : {
+      "back" : "Log in to check the rent increase.",
+      "src" : "33c0518a5496c610"
+    },
     "Sign in to comment." : {
       "back" : "Please log in to comment.",
       "src" : "c95e19a5620c6446"
+    },
+    "Sign in to get your repair letter" : {
+      "back" : "Log in to receive a repair letter.",
+      "src" : "4e0880df5aee584e"
+    },
+    "Sign in to plan your renewal" : {
+      "back" : "Please log in to plan for renewal.",
+      "src" : "71569d64bd1e4914"
     },
     "Sign in to see the full history" : {
       "back" : "Please log in to see the full record.",
@@ -8045,10 +8205,6 @@
     "Sign in to see this building's records" : {
       "back" : "Please log in to view the records of this building.",
       "src" : "219b98e62c6fcb3d"
-    },
-    "Sign in to see violations & inspections" : {
-      "back" : "Please log in to view violations and inspections.",
-      "src" : "82a939a2d5375995"
     },
     "Sign in to see who runs this building" : {
       "back" : "Log in to check who operates this building.",
@@ -8090,9 +8246,9 @@
       "back" : "Sign up to leave a comment.",
       "src" : "34c72b5a27017c77"
     },
-    "Sign up to read what people say about %@ — the cold radiators, the super, the block — and to add your own." : {
-      "error" : "placeholders or terms lost: 사람들이 냉각판, 슈퍼, 블록에 대해 말하는 내용을 읽고, 당신만의 의견을 추가하기 위해 가입하세요.",
-      "src" : "d7c5125a3ed42458"
+    "Sign up with email" : {
+      "back" : "Sign up by email",
+      "src" : "0075b27460b158f7"
     },
     "Sign-in did not complete. Try again." : {
       "back" : "The login has not been completed. Please try again.",
@@ -8225,6 +8381,10 @@
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidy support / Voucher-friendly buildings",
       "src" : "068ad4280fce30a8"
+    },
+    "Talking points and an email to send your landlord" : {
+      "back" : "Conversation points and email to send to the landlord",
+      "src" : "fd117c6636737f67"
     },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap one star to rate it in the App Store.",
@@ -8738,6 +8898,10 @@
       "back" : "What this list requires",
       "src" : "c4833fd5d7f6e01d"
     },
+    "What to ask for, by when, and how to file with 311" : {
+      "back" : "What to request, how long to request, and how to submit it to 311.",
+      "src" : "26f053e76d185912"
+    },
     "What to do" : {
       "back" : "What should I do?",
       "src" : "03b7ce141c3fdd93"
@@ -8769,6 +8933,10 @@
     "What's wrong?" : {
       "back" : "What's the problem?",
       "src" : "cd77c6d70531eed2"
+    },
+    "Where to get free legal help if it isn't fixed" : {
+      "back" : "Where can I get free legal help if politics is not resolved?",
+      "src" : "4d3408398fd53ae7"
     },
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "What screens are used, so that the app can be improved. We never disclose, never sell, and never advertise what you enter.",
@@ -8918,6 +9086,10 @@
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
     },
+    "Your first %@ is on us — then %@/mo" : {
+      "back" : "We will cover your first %1$@ - then it's %2$@/month.",
+      "src" : "9746dafcc69cf049"
+    },
     "Your first %@ is on us — then %@/month." : {
       "back" : "We will cover your first %1$@ - then it's monthly %2$@.",
       "src" : "f4633a86ffbe879c"
@@ -8941,6 +9113,10 @@
     "Your lease" : {
       "back" : "Your rental contract",
       "src" : "72acee48ec21282e"
+    },
+    "Your legal rent, what to do next, and your rent history" : {
+      "back" : "Your legal rent, what to do next, and your rent record",
+      "src" : "a3552d24562804fd"
     },
     "Your letter" : {
       "back" : "Your letter",
@@ -9195,6 +9371,10 @@
     "%@–%@ typical" : {
       "back" : "%1$@-%2$@ typical",
       "src" : "1c419e6532d7bcd9"
+    },
+    "%@/mo, cancel anytime" : {
+      "back" : "%@/month, can be canceled at any time",
+      "src" : "b004a1622b2eab9c"
     },
     "%lld 311 calls on this building in all" : {
       "back" : "%lld 311 calls throughout the building.",
@@ -9500,6 +9680,14 @@
       "back" : "You will receive notifications and emails every time you make a new 311 call. All of these are part of Plus.",
       "src" : "4fa98cc9170fa69a"
     },
+    "A Plus feature — first month on us" : {
+      "back" : "A Plus function - provided by us for the first month.",
+      "src" : "a7397cc67b35e545"
+    },
+    "A repair letter citing NYC law, ready to send" : {
+      "back" : "A repair letter referencing NYC legislation to be sent",
+      "src" : "9da47731dbc61225"
+    },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Write a repair letter in your own words and answer your questions about your rights as a tenant.",
       "src" : "a0f9109c56ba7f9a"
@@ -9596,6 +9784,10 @@
       "back" : "Agent phone number",
       "src" : "ee2774791216fd40"
     },
+    "Agents' phone numbers, and no ads" : {
+      "back" : "The agent's phone number, no ads.",
+      "src" : "a7c33d5e05df1b16"
+    },
     "agreed" : {
       "back" : "Agreed upon",
       "src" : "81de896f6c0ff4c3"
@@ -9607,6 +9799,10 @@
     "AI repair letters & rights answers" : {
       "back" : "Artificial intelligence repair letters and rights answers",
       "src" : "2d45a5ca60d79f0e"
+    },
+    "AI tools: plain-words search, lease review, broker fee check" : {
+      "back" : "Artificial intelligence tools: simple search, rental review, brokerage fee inspection",
+      "src" : "5781692a0d79b8f3"
     },
     "Alert" : {
       "back" : "be on the alert",
@@ -9683,6 +9879,10 @@
     "An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story." : {
       "back" : "An income-restricted development project with a New York status HCR regulatory agreement was listed on HousingSearch.ny.gov. It is not on the rent stabilization register, so there are no DHCR or HPD records here - the above listing is the whole story.",
       "src" : "ccfefa0c4aab3671"
+    },
+    "Answers from NYC and New York State law, with the rule cited" : {
+      "back" : "Answers from the laws of states NYC and New York, and references to relevant rules.",
+      "src" : "327df96fe41f36a5"
     },
     "Any" : {
       "back" : "a few",
@@ -9792,6 +9992,14 @@
       "back" : "ask",
       "src" : "6549043cdcf6e14f"
     },
+    "Ask about heat, packages and repairs — only the chat can read it" : {
+      "back" : "Ask questions about calories, packages, and repairs—only the chat window can read it.",
+      "src" : "c87561f41ed5da1e"
+    },
+    "Ask about your rights in plain words" : {
+      "back" : "Ask your rights in simple words.",
+      "src" : "5c425e746331e06b"
+    },
     "Ask before you sign" : {
       "back" : "Please clarify before signing.",
       "src" : "57d28ecb253cd24e"
@@ -9823,10 +10031,6 @@
     "Bedbug filings (landlord's)" : {
       "back" : "Pest complaint (of the landlord)",
       "src" : "0394b40caf5a0c66"
-    },
-    "Bedbug filings the landlord made, year by year" : {
-      "back" : "The flea complaints submitted by the landlord year by year",
-      "src" : "fbe31b4880cfb465"
     },
     "Bedbugs reported" : {
       "back" : "Reported the fleas.",
@@ -9976,6 +10180,10 @@
       "back" : "Change which zone you hear under \"Profile\" → \"Reminders\".",
       "src" : "13e237d59fd89164"
     },
+    "Chat with the people in your building, end-to-end encrypted" : {
+      "back" : "Chat with people in your building, full-end encryption",
+      "src" : "f5d1b3b9b0b861d4"
+    },
     "Check %@ for a link to choose a new password, then come back and sign in." : {
       "back" : "Check %@, view the link to choose a new password, and then log in again.",
       "src" : "13d458af0eddf977"
@@ -10015,6 +10223,10 @@
     "Check your connection and pull to refresh." : {
       "back" : "Check your connection and then pull to refresh.",
       "src" : "725443074bbe0150"
+    },
+    "Check your increase against the Rent Guidelines Board" : {
+      "back" : "Check your increase with the Rental Guidelines Committee.",
+      "src" : "51e69979319f1cee"
     },
     "Checking findacrib.com…" : {
       "back" : "Checking findacrib.com...",
@@ -10608,6 +10820,10 @@
       "back" : "Free legal assistance",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free with an account" : {
+      "back" : "You can use it for free if you have an account.",
+      "src" : "225bfc0cfe881828"
+    },
     "Free: crime alerts within half a mile of your building" : {
       "back" : "Free: Crime alarm within half a mile of your building",
       "src" : "5f48151f384511bd"
@@ -10876,10 +11092,6 @@
       "back" : "HPD violations and complaints of this building",
       "src" : "8c95ec614acf4f42"
     },
-    "HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them." : {
-      "back" : "HPD has confirmed the unresolved violations and complaints against this building. This year, an inspector confirmed **cockroaches**, **rats** and **rodents**, as well as flea and rat records here. Log in to view them.",
-      "src" : "1ea2a7e891a433a2"
-    },
     "HUD FY2026 Small-Area Fair Market Rent for ZIP %@, studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent." : {
       "back" : "HUD FY2026 ZIP %@'s fair market rent for apartments, from single rooms to two-bedroom apartments. This is a community-level estimate of apartment prices - not the rent of this building.",
       "src" : "603591c4e06c0985"
@@ -11127,6 +11339,10 @@
     "Least expensive" : {
       "back" : "The cheapest",
       "src" : "ccea2953d4ff956c"
+    },
+    "Like the comments that help" : {
+      "back" : "For example, those helpful comments.",
+      "src" : "be338bb5ae550727"
     },
     "Like, %lld likes" : {
       "back" : "For example, %lld likes",
@@ -11992,6 +12208,10 @@
       "back" : "Plan my renewal",
       "src" : "57ebafe33f11e66c"
     },
+    "Plan your lease renewal: what to ask for, and when" : {
+      "back" : "Plan your rental renewal: what to ask for and when to ask for it",
+      "src" : "1b1e0c209566bb21"
+    },
     "PLUS" : {
       "back" : "advantage",
       "src" : "e3ec1117b278eb9b"
@@ -12004,6 +12224,10 @@
       "back" : "Plus: The agent's phone number - call the person in charge of actual operation",
       "src" : "90e29e8b07b22a60"
     },
+    "Plus: the managing agent's phone number — call who actually runs it" : {
+      "back" : "Plus: The phone number of the management agent - call the person in charge of actual operation",
+      "src" : "91a0fd83763b0b7d"
+    },
     "Points to make" : {
       "back" : "Key points to be mentioned",
       "src" : "98c42f4a4ab34376"
@@ -12011,6 +12235,10 @@
     "Post" : {
       "back" : "post",
       "src" : "f8dbd4a43a6c4683"
+    },
+    "Post your own, and reply to your neighbors" : {
+      "back" : "Post your own posts and reply to your neighbors.",
+      "src" : "0a52d69dc2dc4daa"
     },
     "Price" : {
       "back" : "price",
@@ -12052,10 +12280,6 @@
       "back" : "Rat inspection (Ministry of Health)",
       "src" : "71c2fa42190fa349"
     },
-    "Rat inspections from the Health Department" : {
-      "back" : "Inspection of mice by the health department",
-      "src" : "84badd1a5ba7bb16"
-    },
     "Rate Find A Crib" : {
       "back" : "Speed Find A Crib",
       "src" : "af3a7b0582fdaa88"
@@ -12088,6 +12312,10 @@
       "back" : "Reaction: %@",
       "src" : "640f132b048cfaff"
     },
+    "Read what neighbors say about %@ — the heat, the super, the block" : {
+      "back" : "Read what the neighbors think of %@ - heat, super, block",
+      "src" : "b08071f4052a3649"
+    },
     "Reading the listing…" : {
       "back" : "Reading list...",
       "src" : "660c03e42d646ed5"
@@ -12103,6 +12331,10 @@
     "Real-time alerts" : {
       "back" : "Real-time alarm",
       "src" : "243f1ad6b3b1a30c"
+    },
+    "Real-time alerts the minute a lottery or re-rental opens" : {
+      "back" : "Real-time alerts will be issued as soon as the lottery ticket or the re-rental is released.",
+      "src" : "0edd890953df79c6"
     },
     "Recent" : {
       "back" : "Not long ago",
@@ -12532,9 +12764,25 @@
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
     },
+    "Sign in to ask about your rights" : {
+      "back" : "Log in to inquire about your rights.",
+      "src" : "e01880dddd660927"
+    },
+    "Sign in to check your rent increase" : {
+      "back" : "Log in to check your rent increase.",
+      "src" : "33c0518a5496c610"
+    },
     "Sign in to comment." : {
       "back" : "Comment after logging in.",
       "src" : "c95e19a5620c6446"
+    },
+    "Sign in to get your repair letter" : {
+      "back" : "Log in to get your repair letter.",
+      "src" : "4e0880df5aee584e"
+    },
+    "Sign in to plan your renewal" : {
+      "back" : "Log in to plan your renewal.",
+      "src" : "71569d64bd1e4914"
     },
     "Sign in to see the full history" : {
       "back" : "Log in to view the complete history.",
@@ -12543,10 +12791,6 @@
     "Sign in to see this building's records" : {
       "back" : "Log in to view the records of this building.",
       "src" : "219b98e62c6fcb3d"
-    },
-    "Sign in to see violations & inspections" : {
-      "back" : "Log in to view violations and check the situation.",
-      "src" : "82a939a2d5375995"
     },
     "Sign in to see who runs this building" : {
       "back" : "Log in to see who manages this building.",
@@ -12588,9 +12832,9 @@
       "back" : "Register comments",
       "src" : "34c72b5a27017c77"
     },
-    "Sign up to read what people say about %@ — the cold radiators, the super, the block — and to add your own." : {
-      "back" : "Register to read people's opinions on %@ - radiator, super, block - and add your own opinions.",
-      "src" : "d7c5125a3ed42458"
+    "Sign up with email" : {
+      "back" : "Register by email",
+      "src" : "0075b27460b158f7"
     },
     "Sign-in did not complete. Try again." : {
       "back" : "Login is not completed. Please try again.",
@@ -12723,6 +12967,10 @@
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidies/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
+    },
+    "Talking points and an email to send your landlord" : {
+      "back" : "Key points and an email sent to the landlord",
+      "src" : "fd117c6636737f67"
     },
     "Tap a star to rate it on the App Store." : {
       "back" : "Tap a star on the App Store to rate it.",
@@ -13236,6 +13484,10 @@
       "back" : "What does this list require?",
       "src" : "c4833fd5d7f6e01d"
     },
+    "What to ask for, by when, and how to file with 311" : {
+      "back" : "What to request, when to request it, and how to submit an application to 311",
+      "src" : "26f053e76d185912"
+    },
     "What to do" : {
       "back" : "What should I do?",
       "src" : "03b7ce141c3fdd93"
@@ -13267,6 +13519,10 @@
     "What's wrong?" : {
       "back" : "What's the problem?",
       "src" : "cd77c6d70531eed2"
+    },
+    "Where to get free legal help if it isn't fixed" : {
+      "back" : "If the problem is not solved, where can I get free legal help?",
+      "src" : "4d3408398fd53ae7"
     },
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "Which screens are used in order to improve the application. Never use what you enter, never sell, no ads.",
@@ -13416,6 +13672,10 @@
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
     },
+    "Your first %@ is on us — then %@/mo" : {
+      "back" : "We will bear your first %1$@ - and then %2$@/month.",
+      "src" : "9746dafcc69cf049"
+    },
     "Your first %@ is on us — then %@/month." : {
       "back" : "We will cover your first %1$@ - then %2$@/month.",
       "src" : "f4633a86ffbe879c"
@@ -13439,6 +13699,10 @@
     "Your lease" : {
       "back" : "Your lease agreement",
       "src" : "72acee48ec21282e"
+    },
+    "Your legal rent, what to do next, and your rent history" : {
+      "back" : "Your legal rent, what to do next, and your rent history record",
+      "src" : "a3552d24562804fd"
     },
     "Your letter" : {
       "back" : "Your letter",
@@ -13693,6 +13957,10 @@
     "%@–%@ typical" : {
       "back" : "%1$@–%2$@ typical",
       "src" : "1c419e6532d7bcd9"
+    },
+    "%@/mo, cancel anytime" : {
+      "back" : "%@/month, can be canceled at any time",
+      "src" : "b004a1622b2eab9c"
     },
     "%lld 311 calls on this building in all" : {
       "back" : "%lld 311 calls for the whole building.",
@@ -13998,6 +14266,14 @@
       "back" : "Notifications and emails will be sent every time a new 311 call is made. This is part of Plus.",
       "src" : "4fa98cc9170fa69a"
     },
+    "A Plus feature — first month on us" : {
+      "back" : "Plus function - provided by us for the first month.",
+      "src" : "a7397cc67b35e545"
+    },
+    "A repair letter citing NYC law, ready to send" : {
+      "back" : "A repair letter citing NYC law is ready to be sent.",
+      "src" : "9da47731dbc61225"
+    },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Write a maintenance letter in your own words and answer your questions about your rights as a tenant.",
       "src" : "a0f9109c56ba7f9a"
@@ -14094,6 +14370,10 @@
       "back" : "Agent phone number",
       "src" : "ee2774791216fd40"
     },
+    "Agents' phone numbers, and no ads" : {
+      "back" : "The agent's phone number, no advertisement.",
+      "src" : "a7c33d5e05df1b16"
+    },
     "agreed" : {
       "back" : "Agree",
       "src" : "81de896f6c0ff4c3"
@@ -14105,6 +14385,10 @@
     "AI repair letters & rights answers" : {
       "back" : "Artificial Intelligence Repair Letters and Rights Answers",
       "src" : "2d45a5ca60d79f0e"
+    },
+    "AI tools: plain-words search, lease review, broker fee check" : {
+      "back" : "Artificial intelligence tools: simple text search, rental review, brokerage fee inspection",
+      "src" : "5781692a0d79b8f3"
     },
     "Alert" : {
       "back" : "Alert",
@@ -14181,6 +14465,10 @@
     "An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story." : {
       "back" : "An income-restricted development project with a New York status HCR regulatory agreement is listed on HousingSearch.ny.gov. It is not on the Rent Stabilization Register, so there are no DHCR or HPD records here - the above listing is the whole story.",
       "src" : "ccfefa0c4aab3671"
+    },
+    "Answers from NYC and New York State law, with the rule cited" : {
+      "back" : "Answers from the laws of states NYC and New York, and references to the rules.",
+      "src" : "327df96fe41f36a5"
     },
     "Any" : {
       "back" : "Any one of them",
@@ -14290,6 +14578,14 @@
       "back" : "Inquire",
       "src" : "6549043cdcf6e14f"
     },
+    "Ask about heat, packages and repairs — only the chat can read it" : {
+      "back" : "Ask questions about calories, packages and repairs - only chat can read it",
+      "src" : "c87561f41ed5da1e"
+    },
+    "Ask about your rights in plain words" : {
+      "back" : "Ask about your rights in simple language.",
+      "src" : "5c425e746331e06b"
+    },
     "Ask before you sign" : {
       "back" : "Please consult before signing.",
       "src" : "57d28ecb253cd24e"
@@ -14321,10 +14617,6 @@
     "Bedbug filings (landlord's)" : {
       "back" : "Cockroach residues (of the landlord)",
       "src" : "0394b40caf5a0c66"
-    },
-    "Bedbug filings the landlord made, year by year" : {
-      "back" : "The flea complaint letters submitted by the landlord year by year",
-      "src" : "fbe31b4880cfb465"
     },
     "Bedbugs reported" : {
       "back" : "Reported the fleas",
@@ -14474,6 +14766,10 @@
       "back" : "Change the areas you hear under \"Personal Information\" → \"Alerts\".",
       "src" : "13e237d59fd89164"
     },
+    "Chat with the people in your building, end-to-end encrypted" : {
+      "back" : "Chat with people in your building, end-to-end encrypted",
+      "src" : "f5d1b3b9b0b861d4"
+    },
     "Check %@ for a link to choose a new password, then come back and sign in." : {
       "back" : "Check %@ to view the link to select a new password, then return and log in.",
       "src" : "13d458af0eddf977"
@@ -14513,6 +14809,10 @@
     "Check your connection and pull to refresh." : {
       "back" : "Check your connection and then drag to refresh.",
       "src" : "725443074bbe0150"
+    },
+    "Check your increase against the Rent Guidelines Board" : {
+      "back" : "Please check your price increase with the Rent Guidelines Committee.",
+      "src" : "51e69979319f1cee"
     },
     "Checking findacrib.com…" : {
       "back" : "Checking findacrib.com...",
@@ -15106,6 +15406,10 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free with an account" : {
+      "back" : "Account is free",
+      "src" : "225bfc0cfe881828"
+    },
     "Free: crime alerts within half a mile of your building" : {
       "back" : "Free: Crime alerts within half a mile of your building",
       "src" : "5f48151f384511bd"
@@ -15374,10 +15678,6 @@
       "back" : "HPD violations and complaints of this building",
       "src" : "8c95ec614acf4f42"
     },
-    "HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them." : {
-      "back" : "HPD has unresolved violations and complaints against this building. This year, the inspector confirmed the presence of **cockroaches**, **rats** and **mice**, as well as flea and rat records. Log in to view them.",
-      "src" : "1ea2a7e891a433a2"
-    },
     "HUD FY2026 Small-Area Fair Market Rent for ZIP %@, studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent." : {
       "back" : "HUD FY2026 ZIP %@ Small-area fair market rent, from one bedroom to two bedrooms. A community-level apartment price estimate - not the rent of this building.",
       "src" : "603591c4e06c0985"
@@ -15625,6 +15925,10 @@
     "Least expensive" : {
       "back" : "The cheapest one",
       "src" : "ccea2953d4ff956c"
+    },
+    "Like the comments that help" : {
+      "back" : "Just like helpful comments.",
+      "src" : "be338bb5ae550727"
     },
     "Like, %lld likes" : {
       "back" : "For example, %lld likes",
@@ -16490,6 +16794,10 @@
       "back" : "Plan my renewal",
       "src" : "57ebafe33f11e66c"
     },
+    "Plan your lease renewal: what to ask for, and when" : {
+      "back" : "Plan your lease renewal: what to ask and when to ask",
+      "src" : "1b1e0c209566bb21"
+    },
     "PLUS" : {
       "back" : "Add",
       "src" : "e3ec1117b278eb9b"
@@ -16502,6 +16810,10 @@
       "back" : "Plus: The agent's phone number - call the person who actually operates it.",
       "src" : "90e29e8b07b22a60"
     },
+    "Plus: the managing agent's phone number — call who actually runs it" : {
+      "back" : "Plus: The phone number of the management agent - call the person who actually operates it.",
+      "src" : "91a0fd83763b0b7d"
+    },
     "Points to make" : {
       "back" : "Key points to do",
       "src" : "98c42f4a4ab34376"
@@ -16509,6 +16821,10 @@
     "Post" : {
       "back" : "Post",
       "src" : "f8dbd4a43a6c4683"
+    },
+    "Post your own, and reply to your neighbors" : {
+      "back" : "Post your own posts and reply to your neighbors.",
+      "src" : "0a52d69dc2dc4daa"
     },
     "Price" : {
       "back" : "Price",
@@ -16550,10 +16866,6 @@
       "back" : "Rat inspection (Ministry of Health)",
       "src" : "71c2fa42190fa349"
     },
-    "Rat inspections from the Health Department" : {
-      "back" : "Inspection of mice by the health department",
-      "src" : "84badd1a5ba7bb16"
-    },
     "Rate Find A Crib" : {
       "back" : "Speed Find A Crib",
       "src" : "af3a7b0582fdaa88"
@@ -16586,6 +16898,10 @@
       "back" : "Response: %@",
       "src" : "640f132b048cfaff"
     },
+    "Read what neighbors say about %@ — the heat, the super, the block" : {
+      "back" : "Read what your neighbors think of %@ - popularity, super, block",
+      "src" : "b08071f4052a3649"
+    },
     "Reading the listing…" : {
       "back" : "Reading list...",
       "src" : "660c03e42d646ed5"
@@ -16601,6 +16917,10 @@
     "Real-time alerts" : {
       "back" : "Real-time alarm",
       "src" : "243f1ad6b3b1a30c"
+    },
+    "Real-time alerts the minute a lottery or re-rental opens" : {
+      "back" : "A real-time alert will be issued immediately when the lottery or the re-rental is opened.",
+      "src" : "0edd890953df79c6"
     },
     "Recent" : {
       "back" : "The latest",
@@ -17030,9 +17350,25 @@
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
     },
+    "Sign in to ask about your rights" : {
+      "back" : "Log in to inquire about your rights.",
+      "src" : "e01880dddd660927"
+    },
+    "Sign in to check your rent increase" : {
+      "back" : "Log in to view your rent increase.",
+      "src" : "33c0518a5496c610"
+    },
     "Sign in to comment." : {
       "back" : "Log in to post a comment.",
       "src" : "c95e19a5620c6446"
+    },
+    "Sign in to get your repair letter" : {
+      "back" : "Log in to get your repair letter.",
+      "src" : "4e0880df5aee584e"
+    },
+    "Sign in to plan your renewal" : {
+      "back" : "Log in to plan your renewal.",
+      "src" : "71569d64bd1e4914"
     },
     "Sign in to see the full history" : {
       "back" : "Log in to view the complete history.",
@@ -17041,10 +17377,6 @@
     "Sign in to see this building's records" : {
       "back" : "Log in to view the records of this building.",
       "src" : "219b98e62c6fcb3d"
-    },
-    "Sign in to see violations & inspections" : {
-      "back" : "Log in to view violations and check the situation.",
-      "src" : "82a939a2d5375995"
     },
     "Sign in to see who runs this building" : {
       "back" : "Log in to see who manages this building.",
@@ -17086,9 +17418,9 @@
       "back" : "Register to comment",
       "src" : "34c72b5a27017c77"
     },
-    "Sign up to read what people say about %@ — the cold radiators, the super, the block — and to add your own." : {
-      "back" : "Register to read what people think about %@ - Radiators, Supers, Blocks - and add your own thoughts.",
-      "src" : "d7c5125a3ed42458"
+    "Sign up with email" : {
+      "back" : "Register with email",
+      "src" : "0075b27460b158f7"
     },
     "Sign-in did not complete. Try again." : {
       "back" : "Login is not completed. Please try again.",
@@ -17221,6 +17553,10 @@
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidized/coupon-friendly buildings",
       "src" : "068ad4280fce30a8"
+    },
+    "Talking points and an email to send your landlord" : {
+      "back" : "Key points and an email to send to your landlord.",
+      "src" : "fd117c6636737f67"
     },
     "Tap a star to rate it on the App Store." : {
       "back" : "Click a star to rate it on the App Store.",
@@ -17734,6 +18070,10 @@
       "back" : "What does this list require?",
       "src" : "c4833fd5d7f6e01d"
     },
+    "What to ask for, by when, and how to file with 311" : {
+      "back" : "What to request, when to request, and how to submit documents to 311",
+      "src" : "26f053e76d185912"
+    },
     "What to do" : {
       "back" : "What should I do?",
       "src" : "03b7ce141c3fdd93"
@@ -17765,6 +18105,10 @@
     "What's wrong?" : {
       "back" : "What's wrong?",
       "src" : "cd77c6d70531eed2"
+    },
+    "Where to get free legal help if it isn't fixed" : {
+      "back" : "If it is not resolved, where can I get free legal help?",
+      "src" : "4d3408398fd53ae7"
     },
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "Which screens are used so that the application can be improved. It will never show what you enter, never sell anything, and never advertise.",
@@ -17914,6 +18258,10 @@
       "back" : "Your email address",
       "src" : "1ea694d74a81e0bf"
     },
+    "Your first %@ is on us — then %@/mo" : {
+      "back" : "We will take care of your first %1$@ - and then %2$@/month.",
+      "src" : "9746dafcc69cf049"
+    },
     "Your first %@ is on us — then %@/month." : {
       "back" : "We take care of your first %1$@ - and then the monthly %2$@.",
       "src" : "f4633a86ffbe879c"
@@ -17937,6 +18285,10 @@
     "Your lease" : {
       "back" : "Your lease agreement",
       "src" : "72acee48ec21282e"
+    },
+    "Your legal rent, what to do next, and your rent history" : {
+      "back" : "Your legal rent, what to do next and your rent history record",
+      "src" : "a3552d24562804fd"
     },
     "Your letter" : {
       "back" : "Your letter",

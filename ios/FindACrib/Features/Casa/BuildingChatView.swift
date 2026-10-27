@@ -13,6 +13,7 @@ struct BuildingChatView: View {
     @AppStorage(BuildingChat.nameKey) private var name = ""
     @State private var agreed = false
     @State private var signIn = false
+    @State private var showPlus = false
     @State private var sending = false
     @State private var reporting: BuildingChat.Message?
     @State private var reported = false
@@ -59,7 +60,8 @@ struct BuildingChatView: View {
         }
         .task(id: auth.isSignedIn) { if auth.isSignedIn || BuildingChat.isDemo { await chat.start(auth: auth) } }
         .onDisappear { Task { await chat.stop() } }
-        .sheet(isPresented: $signIn) { EmailSignInView(offersSocialSignIn: true) }
+        .sheet(isPresented: $signIn) { EmailSignInView(offersSocialSignIn: true, purpose: .chat) }
+        .sheet(isPresented: $showPlus) { PaywallView(source: "phone") }
         .confirmationDialog(String(localized: "Report this message?"), isPresented: Binding(get: { reporting != nil }, set: { if !$0 { reporting = nil } }), titleVisibility: .visible) {
             ForEach([String(localized: "Harassment or hate"), String(localized: "Threat or violence"), String(localized: "Spam or scam"), String(localized: "Something else")], id: \.self) { reason in
                 Button(reason) {
@@ -93,17 +95,20 @@ struct BuildingChatView: View {
 
     // MARK: - Before joining
 
+    // What joining gets, one Plus feature, then Apple, Google and email on
+    // the screen itself (owner, 2026-10-27).
     private var signedOut: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            lockLine
-            Text("Talk with the people in \(address)").font(.se(22, .bold)).foregroundStyle(SE.ink)
-            Text("Sign in to join your building's chat. Messages are end-to-end encrypted: only the people in the chat can read them.")
-                .font(.se(16)).foregroundStyle(SE.ink2)
-            SEPrimaryButton(title: String(localized: "Sign in to chat")) { signIn = true }
-                .accessibilityIdentifier("chat-signin")
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                lockLine
+                Text("Talk with the people in \(address)").font(.se(22, .bold)).foregroundStyle(SE.ink)
+                PurposePromiseBox(purpose: .chat) { showPlus = true }
+                if auth.configured { SocialSignInButtons() }
+                SEOutlineButton(title: String(localized: "Sign in with email"), icon: "envelope.fill") { signIn = true }
+                    .accessibilityIdentifier("chat-signin")
+            }
+            .padding(16)
         }
-        .padding(16)
     }
 
     private var joinCard: some View {

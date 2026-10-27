@@ -25,7 +25,11 @@ struct EmailSignInView: View {
     /// Opened from "See the full history" instead: the same box, history first
     /// (owner, 2026-10-15: show what they get for that feature).
     var casaHistory = false
-    private var promo: Bool { forAlerts || records != nil || agentPreview || casaPreview }
+    /// Comments, building chat, Plus and the renter tools: a box of what that
+    /// tap gets, tailored to it (owner, 2026-10-27: "make sure features are
+    /// tailored to the button/sheet they are on").
+    var purpose: SignInPurpose? = nil
+    private var promo: Bool { forAlerts || records != nil || agentPreview || casaPreview || purpose != nil }
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -38,7 +42,7 @@ struct EmailSignInView: View {
     enum Field { case email, password, confirm }
 
     var body: some View {
-        content.onAppear { Analytics.shared.track("signin_view", ["for": casaPreview ? (casaHistory ? "casa_history" : "casa") : agentPreview ? "agent" : records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
+        content.onAppear { Analytics.shared.track("signin_view", ["for": purpose?.id ?? (casaPreview ? (casaHistory ? "casa_history" : "casa") : agentPreview ? "agent" : records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile"))]) }
             .modifier(TallSheetOnIPad())
     }
 
@@ -47,7 +51,7 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? String(localized: "Create account") : (heading ?? (casaPreview ? (casaHistory ? String(localized: "Sign in to see the full history") : String(localized: "Sign in to watch your building")) : agentPreview ? String(localized: "Sign in to see who runs this building") : records != nil ? String(localized: "Sign in to see this building's records") : (offersSocialSignIn ? String(localized: "Sign in for lottery alerts") : String(localized: "Sign in with email"))))).font(.se(26, .bold))
+                    Text(creating ? String(localized: "Create account") : (heading ?? purpose?.title ?? (casaPreview ? (casaHistory ? String(localized: "Sign in to see the full history") : String(localized: "Sign in to watch your building")) : agentPreview ? String(localized: "Sign in to see who runs this building") : records != nil ? String(localized: "Sign in to see this building's records") : (offersSocialSignIn ? String(localized: "Sign in for lottery alerts") : String(localized: "Sign in with email"))))).font(.se(26, .bold))
                     // While typing, the promise box steps aside so Email and
                     // Password both sit above the keyboard and its Sign in bar
                     // (owner, 2026-10-15: "i can't see the password field when
@@ -55,6 +59,8 @@ struct EmailSignInView: View {
                     // goes.
                     if focus != nil && promo && !creating {
                         EmptyView()
+                    } else if let p = purpose, !creating {
+                        PurposePromiseBox(purpose: p) { showPlus = true }
                     } else if casaPreview && !creating {
                         CasaPromiseBox(history: casaHistory) { showPlus = true }
                     } else if agentPreview && !creating {
@@ -157,7 +163,7 @@ struct EmailSignInView: View {
             // Signing in from the Plus sheet must not close this one under it;
             // it closes when the Plus sheet does.
             .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
-            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: casaPreview ? "casa" : agentPreview ? "phone" : records != nil ? "realtime" : "signin_alerts") }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: purpose?.paywallSource ?? (casaPreview ? "casa" : agentPreview ? "phone" : records != nil ? "realtime" : "signin_alerts")) }
           }
         }
     }
@@ -436,5 +442,140 @@ struct SocialSignInButtons: View {
             .buttonStyle(.plain).accessibilityIdentifier("sign-in-google")
         }
         .disabled(auth.busy)
+    }
+}
+
+/// Where a sign-in came from, for the sheets that had no box of what an
+/// account gets (owner, 2026-10-27, from mock-ups he approved): comments,
+/// building chat, Plus and the four renter tools. Plus features say so up
+/// front and free ones say free, as on the website's walls.
+enum SignInPurpose: Equatable {
+    case comments(address: String), chat, plus, repair, rentIncrease, rights, renewal
+
+    var id: String {
+        switch self {
+        case .comments: "comment"
+        case .chat: "chat"
+        case .plus: "subscribe"
+        case .repair: "repair"
+        case .rentIncrease: "rent_increase"
+        case .rights: "renter_ai"
+        case .renewal: "renewal"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .comments: String(localized: "Sign up to comment")
+        case .chat: String(localized: "Sign in to chat")
+        case .plus: String(localized: "Sign in for Plus")
+        case .repair: String(localized: "Sign in to get your repair letter")
+        case .rentIncrease: String(localized: "Sign in to check your rent increase")
+        case .rights: String(localized: "Sign in to ask about your rights")
+        case .renewal: String(localized: "Sign in to plan your renewal")
+        }
+    }
+
+    /// Where the box's Get Plus button sends the paywall.
+    var paywallSource: String {
+        switch self {
+        case .chat: "phone"
+        case .renewal: "renewal"
+        case .rights: "renter_ai"
+        default: "subscribe"
+        }
+    }
+
+    enum Tone { case plain, free, plus }
+    struct Line { let icon: String; let text: String; var tone: Tone = .plain }
+
+    func lines(plusOffer: String) -> [Line] {
+        let plusFeature = Line(icon: "bolt.fill", text: String(localized: "A Plus feature — first month on us"), tone: .plus)
+        let free = Line(icon: "checkmark", text: String(localized: "Free with an account"), tone: .free)
+        switch self {
+        case .comments(let address):
+            return [Line(icon: "bubble.left.and.bubble.right.fill", text: String(localized: "Read what neighbors say about \(address) — the heat, the super, the block")),
+                    Line(icon: "square.and.pencil", text: String(localized: "Post your own, and reply to your neighbors")),
+                    Line(icon: "hand.thumbsup.fill", text: String(localized: "Like the comments that help"))]
+        case .chat:
+            return [Line(icon: "lock.fill", text: String(localized: "Chat with the people in your building, end-to-end encrypted")),
+                    Line(icon: "building.2.fill", text: String(localized: "Ask about heat, packages and repairs — only the chat can read it")),
+                    Line(icon: "phone.fill", text: String(localized: "Plus: the managing agent's phone number — call who actually runs it"), tone: .plus)]
+        case .plus:
+            return [Line(icon: "bolt.fill", text: String(localized: "Real-time alerts the minute a lottery or re-rental opens")),
+                    Line(icon: "sparkles", text: String(localized: "AI tools: plain-words search, lease review, broker fee check")),
+                    Line(icon: "phone.fill", text: String(localized: "Agents' phone numbers, and no ads")),
+                    Line(icon: "gift.fill", text: plusOffer, tone: .free)]
+        case .repair:
+            return [Line(icon: "wrench.and.screwdriver.fill", text: String(localized: "A repair letter citing NYC law, ready to send")),
+                    Line(icon: "list.bullet.clipboard.fill", text: String(localized: "What to ask for, by when, and how to file with 311")),
+                    Line(icon: "building.columns.fill", text: String(localized: "Where to get free legal help if it isn't fixed")),
+                    free]
+        case .rentIncrease:
+            return [Line(icon: "chart.line.uptrend.xyaxis", text: String(localized: "Check your increase against the Rent Guidelines Board")),
+                    Line(icon: "list.bullet.clipboard.fill", text: String(localized: "Your legal rent, what to do next, and your rent history")),
+                    free]
+        case .rights:
+            return [Line(icon: "questionmark.bubble.fill", text: String(localized: "Ask about your rights in plain words")),
+                    Line(icon: "building.columns.fill", text: String(localized: "Answers from NYC and New York State law, with the rule cited")),
+                    plusFeature]
+        case .renewal:
+            return [Line(icon: "calendar", text: String(localized: "Plan your lease renewal: what to ask for, and when")),
+                    Line(icon: "envelope.fill", text: String(localized: "Talking points and an email to send your landlord")),
+                    plusFeature]
+        }
+    }
+}
+
+/// The box for a SignInPurpose, in the same look as the alerts, records and
+/// who-runs-it boxes. A Plus row with a feature of its own (chat's phone
+/// number) carries the small Get Plus button.
+struct PurposePromiseBox: View {
+    let purpose: SignInPurpose
+    let openPlus: () -> Void
+    @Environment(PlusStore.self) private var plus
+
+    var body: some View {
+        let offer = plus.trial.map { String(localized: "Your first \($0) is on us — then \(plus.priceText)/mo") }
+            ?? String(localized: "\(plus.priceText)/mo, cancel anytime")
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(purpose.lines(plusOffer: offer).enumerated()), id: \.offset) { _, line in
+                if line.tone == .plus && purpose == .chat {
+                    HStack(alignment: .center, spacing: 12) {
+                        row(line)
+                        Button {
+                            Analytics.shared.track("phone_upsell_click", ["src": "signin_\(purpose.id)"]); openPlus()
+                        } label: {
+                            Text("Get Plus").font(.se(14, .bold)).foregroundStyle(.white).fixedSize()
+                                .padding(.horizontal, 12).frame(minHeight: 32)
+                                .background(Capsule().fill(Color(hex: 0x5B21B6)))
+                                .frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).accessibilityIdentifier("purpose-promise-plus")
+                    }
+                } else {
+                    row(line)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("purpose-promise-box")
+    }
+
+    private func row(_ line: SignInPurpose.Line) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: line.icon)
+                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(line.tone == .free ? SE.good : line.tone == .plus ? Color(hex: 0x5B21B6) : SE.royal))
+                .accessibilityHidden(true)
+            Text(line.text).font(.se(15, .semibold)).foregroundStyle(SE.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

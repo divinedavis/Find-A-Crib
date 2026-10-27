@@ -1281,6 +1281,10 @@ final class FindACribUITests: XCTestCase {
         chat.tap()
         XCTAssertTrue(app.buttons["chat-signin"].waitForExistence(timeout: 5), "signed out, the chat asks to sign in")
         XCTAssertTrue(app.staticTexts["End-to-end encrypted"].exists)
+        // What joining gets, a Plus row, and Apple/Google on the screen (2026-10-27).
+        XCTAssertTrue(app.descendants(matching: .any)["purpose-promise-box"].exists, "the chat lists what an account gets")
+        XCTAssertTrue(app.buttons["purpose-promise-plus"].exists, "with a Get Plus button on the Plus row")
+        XCTAssertTrue(app.buttons["sign-in-apple"].exists && app.buttons["sign-in-google"].exists, "Apple and Google sit on the chat screen")
         add(XCTAttachment(screenshot: app.screenshot()))
         app.buttons["Close"].tap()
     }
@@ -1466,6 +1470,14 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["comment-row"].firstMatch.exists, "no thread without an account")
         XCTAssertFalse(app.textFields["comment-field"].exists, "and no way to type one")
         XCTAssertFalse(app.buttons["comment-report"].exists, "nothing to report without a thread")
+        // What an account gets, and Apple/Google right there (owner, 2026-10-27).
+        XCTAssertTrue(app.descendants(matching: .any)["purpose-promise-box"].exists, "comments list what an account gets")
+        XCTAssertTrue(app.buttons["sign-in-apple"].exists && app.buttons["sign-in-google"].exists, "Apple and Google sit on the comments screen")
+        app.buttons["comments-signup"].tap()
+        XCTAssertTrue(app.staticTexts["Sign up to comment"].waitForExistence(timeout: 5), "email sign-up says what it is for, not lottery alerts")
+        XCTAssertFalse(app.staticTexts["Sign in for lottery alerts"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["purpose-promise-box"].exists, "the sheet keeps the comment rows")
+        app.buttons["Cancel"].tap()
         app.buttons["Close"].tap()
         XCTAssertTrue(comments.waitForExistence(timeout: 10))
         // Share is still reachable from the menu.

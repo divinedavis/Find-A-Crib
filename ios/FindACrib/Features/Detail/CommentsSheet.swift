@@ -39,7 +39,7 @@ struct CommentsSheet: View {
             }
         }
         .presentationDragIndicator(.visible)
-        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true) }
+        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, purpose: .comments(address: building.address)) }
         .task(id: auth.isSignedIn) {
             store.auth = auth
             if auth.isSignedIn { await store.load(bbl: building.bbl) }
@@ -70,20 +70,22 @@ struct CommentsSheet: View {
 
     // MARK: - Signed out
 
+    // What an account gets here, then Apple, Google and email on the screen
+    // itself (owner, 2026-10-27: one sentence and one button was the only
+    // wall in the app with no feature rows and no Apple/Google).
     private var signedOut: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Spacer(minLength: 24)
-            Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 38, weight: .semibold)).foregroundStyle(SE.royal)
-            Text("Comments are for members").font(.se(24, .bold)).foregroundStyle(SE.ink)
-            Text("Sign up to read what people say about \(building.address) — the cold radiators, the super, the block — and to add your own.")
-                .font(.se(17)).foregroundStyle(SE.ink2)
-            SEPrimaryButton(title: String(localized: "Sign up to comment")) { showSignIn = true }
-                .accessibilityIdentifier("comments-signup")
-            Text("Your account name shows on what you post.").font(.se(14)).foregroundStyle(SE.ink3)
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Comments are for members").font(.se(26, .bold)).foregroundStyle(SE.ink)
+                PurposePromiseBox(purpose: .comments(address: building.address)) {}
+                if auth.configured { SocialSignInButtons() }
+                SEOutlineButton(title: String(localized: "Sign up with email"), icon: "envelope.fill") { showSignIn = true }
+                    .accessibilityIdentifier("comments-signup")
+                Text("Your account name shows on what you post.").font(.se(14)).foregroundStyle(SE.ink3)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Signed in

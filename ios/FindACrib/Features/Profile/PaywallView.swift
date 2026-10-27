@@ -83,7 +83,7 @@ struct PaywallView: View {
             }
             .buttonStyle(.plain).padding(14).accessibilityIdentifier("paywall-close").accessibilityLabel("Close")
         }
-        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for Plus")) }
+        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, purpose: .plus) }
         .onChange(of: auth.isSignedIn) { _, on in
             if on { Analytics.shared.track("paywall_signed_in", ["source": source]) }
         }

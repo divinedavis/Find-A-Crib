@@ -146,10 +146,12 @@ private let notAdvice = String(localized: "General information about NYC and New
 /// Signed out, a tool's first tap opens sign-in; without Plus, the paywall.
 private struct ToolGate: ViewModifier {
     @Binding var signIn: Bool
+    /// What this tool's sign-in sheet lists (owner, 2026-10-27).
+    let purpose: SignInPurpose
     @Binding var paywall: String?
     func body(content: Content) -> some View {
         content
-            .sheet(isPresented: $signIn) { EmailSignInView() }
+            .sheet(isPresented: $signIn) { EmailSignInView(offersSocialSignIn: true, purpose: purpose) }
             .sheet(item: Binding(get: { paywall.map { PaywallSource(id: $0) } }, set: { paywall = $0?.id })) { PaywallView(source: $0.id) }
     }
     struct PaywallSource: Identifiable { let id: String }
@@ -233,7 +235,7 @@ struct RepairView: View {
             }
             .navigationTitle("Get a repair made").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            .modifier(ToolGate(signIn: $signIn, paywall: $paywall))
+            .modifier(ToolGate(signIn: $signIn, purpose: .repair, paywall: $paywall))
             .onAppear { Analytics.shared.track("tool_open", ["tool": "repair", "src": "app"]) }
         }
     }
@@ -333,7 +335,7 @@ struct RentIncreaseView: View {
             }
             .navigationTitle("Rent increase check").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            .modifier(ToolGate(signIn: $signIn, paywall: $paywall))
+            .modifier(ToolGate(signIn: $signIn, purpose: .rentIncrease, paywall: $paywall))
             .onAppear { Analytics.shared.track("tool_open", ["tool": "rentup", "src": "app"]) }
         }
     }
@@ -418,7 +420,7 @@ struct RightsView: View {
             }
             .navigationTitle("Know your rights").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            .modifier(ToolGate(signIn: $signIn, paywall: $paywall))
+            .modifier(ToolGate(signIn: $signIn, purpose: .rights, paywall: $paywall))
             .task {
                 if let c = try? await AIService.rights() { cards = c } else { loadFailed = true }
             }
@@ -531,7 +533,7 @@ struct RenewalView: View {
             }
             .navigationTitle("Renewal coach").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            .modifier(ToolGate(signIn: $signIn, paywall: $paywall))
+            .modifier(ToolGate(signIn: $signIn, purpose: .renewal, paywall: $paywall))
             .onAppear { Analytics.shared.track("tool_open", ["tool": "renewal", "src": "app"]) }
         }
     }

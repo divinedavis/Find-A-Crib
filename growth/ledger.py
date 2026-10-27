@@ -465,7 +465,131 @@ def measured_nights_since(date):
         datetime.date.fromisoformat(date)
     except ValueError:
         return None
-    return len({r["date"] for r in read_results() if r.get("date") and r["date"] > date})
+    return len([d for d in _measured_dates() if d > date])
+
+
+_DATES_CACHE = {}
+
+
+def _measured_dates():
+    """The distinct dates results.jsonl holds, cached on the file's identity.
+
+    read_results() parses ten thousand rows and builds a dedup dict on every
+    call. That is fine for the handful of calls revisit_due() makes, and far
+    too slow for verdict_staleness(), which asks the same question once per
+    technique — 107 full parses of a 1.5MB file to answer 107 copies of one
+    question.
+
+    Keyed on (reader, mtime_ns, size), and all three parts are load-bearing.
+
+      * mtime_ns rather than mtime, because a caller that appends a row and
+        re-reads inside the same second must not be served the pre-append
+        answer. record_result() appends, so size moves too.
+      * THE READER ITSELF, because the data does not come from the file — it
+        comes from read_results(), which callers monkeypatch. Keying on the
+        file alone cached a stub's synthetic rows under the real file's stat,
+        and since restoring the stub leaves the file untouched, every later
+        call got the synthetic answer back. That is not hypothetical: it broke
+        tests/test_revisit_visibility.py's live-ledger assertion on the first
+        full-suite run after this cache was added, and only under the full
+        suite, because the poisoning test has to run first. A cache key must
+        describe where the data actually came from, not where it usually does.
+
+    Single-entry on purpose: swapping the reader evicts immediately rather
+    than growing an entry per stub, and the cost of that is one re-read.
+    """
+    try:
+        st = os.stat(RESULTS_PATH)
+    except OSError:
+        return frozenset()
+    key = (read_results, st.st_mtime_ns, st.st_size)
+    hit = _DATES_CACHE.get("k")
+    if hit == key:
+        return _DATES_CACHE["v"]
+    dates = frozenset(r["date"] for r in read_results() if r.get("date"))
+    _DATES_CACHE["k"] = key
+    _DATES_CACHE["v"] = dates
+    return dates
+
+
+def verdict_staleness(t, techs=None):
+    """How far a stored verdict has drifted from the ledger it sits in.
+
+    A verdict is a STRING FROZEN AT THE MOMENT IT WAS COMPUTED. Nothing
+    rewrites it when the ledger moves underneath it, and `status` printed it
+    with no date at all — so a reader could not tell a verdict decided last
+    night from one decided a fortnight ago under a different configuration.
+
+    That gap has now cost two consecutive reviews a real investigation:
+
+      * 2026-10-25 read "3 other active techniques ... (T005 indexnow, T010
+        gsc_integration, T015 dataset_schema_ai_citation)" on T004 and T005,
+        and had to call review._co_claimants() by hand to establish that T015,
+        retired 2026-10-12, is not in fact being counted. It filed the result
+        in the journal as "A NEAR-MISS I AM RECORDING SO THE NEXT RUN DOES NOT
+        'FIX' IT".
+      * 2026-10-26 moved T010 to judge="audit" and pre-registered the check
+        "T004 AND T005 MUST HAVE ONE CO-CLAIMANT EACH, NOT THREE ... If T010
+        reappears in either list, the judge field was reverted." On 2026-10-27
+        `status` showed T010 in both lists and a T010 verdict quoting
+        organic_visitors, so that condition read as HAVING FIRED. It had not:
+        techniques.json holds judge="audit", seed.py agrees, and a fresh
+        review.run(apply=False) returns exactly one co-claimant each and the
+        audit verdict for T010. The printed text was simply written first.
+
+    Twice is a pattern, and the second time the frozen text impersonated a
+    pre-registered FAILURE — the most expensive way for a display to be wrong,
+    because the reviewer's own instructions told them to act on it.
+
+    NONE OF THIS IS A DEFECT IN THE MACHINERY. review.py reads the live ledger
+    on every run; only the stored copy is old. So the remedy is a label and
+    never a rewrite of the string: a verdict is the record of a judgement
+    actually made on a particular night, and editing it would destroy the
+    history the ledger exists to keep. The pause makes this permanent rather
+    than momentary — with the crons stopped on 2026-10-12, every verdict in
+    the ledger is frozen at that date and will stay frozen until they resume.
+
+    Returns None when there is no verdict to describe, else
+    {decided, nights_since, contradicted, contradictions} — `contradictions`
+    being the specific, checkable ways the frozen text disagrees with the
+    ledger NOW. `contradicted` is about the TEXT, not about the technique:
+    nothing here is evidence that a technique is doing better or worse.
+    """
+    v = (t or {}).get("verdict") or {}
+    decided = v.get("decided")
+    if not decided:
+        return None
+    measured = v.get("measured") or {}
+    if techs is None:
+        techs = load_techniques()
+    live = {x.get("id") for x in techs if x.get("status") == "active"}
+
+    contradictions = []
+
+    # (a) The 2026-10-25 case. _co_claimants() skips any technique that is not
+    # active, so a retired one named here is counted in the printed number and
+    # in nothing else.
+    gone = [c for c in (measured.get("co_claimants") or [])
+            if str(c).split()[0].startswith("T") and str(c).split()[0] not in live]
+    if gone:
+        contradictions.append(
+            "counts " + ", ".join(str(g) for g in gone) + " as a co-claimant and it is no longer "
+            "active — _co_claimants skips a non-active technique, so the live count is lower "
+            "than this line says")
+
+    # (b) The 2026-10-27 case. An audit verdict carries `judged_on`; a metric
+    # verdict carries `metric`. A technique now judged as an audit, whose
+    # stored text came off the metric judge, was reclassified after it.
+    if t.get("judge") == "audit" and "metric" in measured and "judged_on" not in measured:
+        contradictions.append(
+            "was computed by the metric judge on " + repr(measured.get("metric")) + ", but this "
+            "technique now carries judge=\"audit\" — the text predates the reclassification, and "
+            "the audit judge consults no traffic series at all")
+
+    return {"decided": decided,
+            "nights_since": measured_nights_since(decided),
+            "contradicted": bool(contradictions),
+            "contradictions": contradictions}
 
 
 # -------------------------------------------------------------------- state

@@ -489,7 +489,32 @@ SEEDS = [
                "in prose. REFUTATION PRE-REGISTERED for 2026-10-27: if any /guide/ URL has "
                "been fetched by then and still earns 0 impressions, that is a real failure of "
                "the guides and they should be rewritten or replaced. Until one is fetched, "
-               "the zero measures crawl reach and belongs to T037/T027, not here."),
+               "the zero measures crawl reach and belongs to T037/T027, not here.\n"
+               "2026-10-27 REVISIT — KEEP, and the refutation RE-POINTED from a calendar "
+               "date to measured evidence, which is the only thing that changed. The "
+               "2026-09-27 condition fell due today and DID NOT FIRE: its antecedent is "
+               "'if any /guide/ URL has been fetched by then', and the index census reads "
+               "the guide family at cohort 10, read 10, fetched 0, ever_indexed 0, with all "
+               "ten in unknown_to_google — Google has not merely declined to index these "
+               "pages, it has never discovered one. The cohort GREW from 3 inspected URLs to "
+               "10 since September and the fetched count stayed at 0, so the September "
+               "reading is now better evidence for the same conclusion, not weaker: the zero "
+               "still measures crawl reach and still belongs to T037/T027. Nothing about the "
+               "guides' content has been tested yet. WHY THE DATE WAS THE WRONG UNIT, and "
+               "this is the actual finding: the owner paused the growth crons on 2026-10-12 "
+               "(#PAUSED-20261012), so this condition came due on a census frozen fifteen "
+               "days before the date it was written for — ledger.measured_nights_since "
+               "reports 0 nights of evidence since the verdict it was asked to re-examine. "
+               "A calendar condition cannot tell a quiet month from a stopped engine. T011 "
+               "lifecycle_email had the identical defect and was re-pointed on 2026-10-26 "
+               "for the identical reason, after its own calendar condition lapsed twice. So "
+               "the refutation now reads: IF A /guide/ URL IS EVER FETCHED and still earns 0 "
+               "impressions over the 30 MEASURED nights that follow, the guides have failed "
+               "on their own merits and should be rewritten or replaced. Until then there is "
+               "nothing here to judge. STILL DELIBERATELY NOT DONE, unchanged from September "
+               "and for the same reason: do not link these from the NYC building tier to buy "
+               "crawl reach — an off-topic link placed for a crawler and against the reader "
+               "trades the credibility that is this site's product."),
 
     dict(slug="provenance_page", status="active", kind="indexing",
          name="Published methodology: where every record comes from (/methodology/)",

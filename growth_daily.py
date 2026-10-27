@@ -762,6 +762,23 @@ def cmd_status(args):
         log(line)
     log("")
     techs = ledger.load_techniques()
+    stale = {t["id"]: ledger.verdict_staleness(t, techs=techs) for t in techs}
+
+    # Said ONCE, above the list, because the thing it prevents is a reader
+    # acting on a single line in isolation. Two consecutive reviews have
+    # already investigated a frozen verdict as though it were a live reading
+    # (2026-10-25's retired co-claimant, 2026-10-27's reclassified judge) and
+    # the second one had a pre-registered failure condition pointed straight
+    # at it. See ledger.verdict_staleness.
+    bad = [i for i, s in stale.items() if s and s["contradicted"]]
+    if bad:
+        log(f"NOTE: {len(bad)} stored verdict{'s' if len(bad) != 1 else ''} below "
+            f"({', '.join(sorted(bad))}) quote{'' if len(bad) != 1 else 's'} a ledger state "
+            f"that has since changed. The text is frozen at the date it was decided; review.py "
+            f"re-reads the live ledger on every run. Confirm with review.run(apply=False) "
+            f"before concluding that a field was reverted.")
+        log("")
+
     for t in techs:
         v = t.get("verdict") or {}
         mark = {"active": "●", "candidate": "○", "retired": "×"}.get(t.get("status"), "?")
@@ -769,6 +786,16 @@ def cmd_status(args):
         if v:
             mk = {True: "WORKS", False: "no"}.get(v.get("works"), "UNPROVEN")
             log(f"    verdict: {mk} — {v.get('why')}")
+            s = stale.get(t["id"])
+            if s:
+                n = s["nights_since"]
+                age = f"      decided {s['decided']}"
+                if n is not None:
+                    age += (f" · {n} night{'s' if n != 1 else ''} measured since"
+                            + (" — NO new evidence behind it" if n == 0 else ""))
+                log(age)
+                for c in s["contradictions"]:
+                    log(f"      ^ FROZEN TEXT, NOT A LIVE READING — it {c}")
     log("")
     log(json.dumps(keywords.summary(), indent=2))
 

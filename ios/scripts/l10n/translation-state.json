@@ -136,6 +136,14 @@
       "back" : "%1$@ %2$@ · saved %3$@",
       "src" : "85fdaa2380b0829e"
     },
+    "%@ %@ → with %@ months free" : {
+      "back" : "%1$@ %2$@ → with %3$@ months free",
+      "src" : "acb2bcede9529a76"
+    },
+    "%@ %@ → with 1 month free" : {
+      "back" : "%1$@ %2$@ → with 1 month free",
+      "src" : "d44c01e39b88ff21"
+    },
     "%@ %@ buildings" : {
       "back" : "Buildings %1$@ %2$@",
       "src" : "c18743b94002bf7d"
@@ -399,6 +407,10 @@
     "%lld+ on file" : {
       "back" : "%lld+ in file",
       "src" : "04017329113b550e"
+    },
+    "≈ %@/mo" : {
+      "back" : "≈ %@/month",
+      "src" : "21e5ee5b18a45e8f"
     },
     "✨ Ask a question" : {
       "back" : "✨ Ask a question",
@@ -1676,6 +1688,10 @@
       "back" : "From %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@ · as listed" : {
+      "back" : "From %@ · as indicated",
+      "src" : "9caea8b11aa50ebc"
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "back" : "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a raffle, fill out the previous CGP&H application, then join the waiting list for that city from your CGP&H profile before the indicated date. The units, rents and income limits are shown in your profile.",
       "src" : "beaa34b5b4988c30"
@@ -2403,6 +2419,10 @@
     "Most units" : {
       "back" : "Most of the units",
       "src" : "587227f1ed2c7f54"
+    },
+    "Move-in deal" : {
+      "back" : "Moving offer",
+      "src" : "f4c95d8f1c174821"
     },
     "Multiple dwelling" : {
       "back" : "Multiple housing",
@@ -4718,6 +4738,14 @@
       "back" : "%1$@ %2$@ · Saved %3$@",
       "src" : "85fdaa2380b0829e"
     },
+    "%@ %@ → with %@ months free" : {
+      "back" : "T0 T1 → Free for 2 months",
+      "src" : "acb2bcede9529a76"
+    },
+    "%@ %@ → with 1 month free" : {
+      "back" : "%1$@ %2$@ → Free for 1 month",
+      "src" : "d44c01e39b88ff21"
+    },
     "%@ %@ buildings" : {
       "back" : "%1$@ %2$@ buildings",
       "src" : "c18743b94002bf7d"
@@ -4981,6 +5009,10 @@
     "%lld+ on file" : {
       "back" : "There is %lld+ in the file.",
       "src" : "04017329113b550e"
+    },
+    "≈ %@/mo" : {
+      "back" : "≈ %@/month",
+      "src" : "21e5ee5b18a45e8f"
     },
     "✨ Ask a question" : {
       "back" : "✨ Please ask a question.",
@@ -6258,6 +6290,10 @@
       "back" : "From %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@ · as listed" : {
+      "back" : "From %@ · As listed",
+      "src" : "9caea8b11aa50ebc"
+    },
     "from %@/yr" : {
       "back" : "From %@/year",
       "src" : "0a817762effd51c0"
@@ -6989,6 +7025,10 @@
     "Most units" : {
       "back" : "Most units",
       "src" : "587227f1ed2c7f54"
+    },
+    "Move-in deal" : {
+      "back" : "Move-in transaction",
+      "src" : "f4c95d8f1c174821"
     },
     "Multiple dwelling" : {
       "back" : "Two-story house",
@@ -9304,6 +9344,14 @@
       "back" : "%1$@ %2$@ · Saved %3$@",
       "src" : "85fdaa2380b0829e"
     },
+    "%@ %@ → with %@ months free" : {
+      "back" : "%1$@ %2$@ → Free use for %3$@ months",
+      "src" : "acb2bcede9529a76"
+    },
+    "%@ %@ → with 1 month free" : {
+      "back" : "%1$@ %2$@ → Free for 1 month",
+      "src" : "d44c01e39b88ff21"
+    },
     "%@ %@ buildings" : {
       "back" : "%1$@ %2$@ buildings",
       "src" : "c18743b94002bf7d"
@@ -9567,6 +9615,10 @@
     "%lld+ on file" : {
       "back" : "%lld+ is in the file.",
       "src" : "04017329113b550e"
+    },
+    "≈ %@/mo" : {
+      "back" : "≈ %@/month",
+      "src" : "21e5ee5b18a45e8f"
     },
     "✨ Ask a question" : {
       "back" : "✨Ask questions",
@@ -10844,6 +10896,10 @@
       "back" : "Starting from %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@ · as listed" : {
+      "back" : "From %@, as shown in the list.",
+      "src" : "9caea8b11aa50ebc"
+    },
     "from %@/yr" : {
       "back" : "Starting from %@/year",
       "src" : "0a817762effd51c0"
@@ -11575,6 +11631,10 @@
     "Most units" : {
       "back" : "Most units",
       "src" : "587227f1ed2c7f54"
+    },
+    "Move-in deal" : {
+      "back" : "Check-in transaction",
+      "src" : "f4c95d8f1c174821"
     },
     "Multiple dwelling" : {
       "back" : "Multi-family house",
@@ -13890,6 +13950,14 @@
       "back" : "%1$@ %2$@ · Saved %3$@",
       "src" : "85fdaa2380b0829e"
     },
+    "%@ %@ → with %@ months free" : {
+      "back" : "%1$@ %2$@ → Free for 2 months with %3$@ included",
+      "src" : "acb2bcede9529a76"
+    },
+    "%@ %@ → with 1 month free" : {
+      "back" : "%1$@ %2$@ → Free for 1 month",
+      "src" : "d44c01e39b88ff21"
+    },
     "%@ %@ buildings" : {
       "back" : "%1$@ %2$@ buildings",
       "src" : "c18743b94002bf7d"
@@ -14153,6 +14221,10 @@
     "%lld+ on file" : {
       "back" : "%lld+ in the file",
       "src" : "04017329113b550e"
+    },
+    "≈ %@/mo" : {
+      "back" : "≈ %@/month",
+      "src" : "21e5ee5b18a45e8f"
     },
     "✨ Ask a question" : {
       "back" : "✨Ask a question",
@@ -15430,6 +15502,10 @@
       "back" : "Starting from %@",
       "src" : "50c4cb8d4dab2129"
     },
+    "from %@ · as listed" : {
+      "back" : "Starting from %@ · as shown in the list",
+      "src" : "9caea8b11aa50ebc"
+    },
     "from %@/yr" : {
       "back" : "From %@/year",
       "src" : "0a817762effd51c0"
@@ -16161,6 +16237,10 @@
     "Most units" : {
       "back" : "Most units",
       "src" : "587227f1ed2c7f54"
+    },
+    "Move-in deal" : {
+      "back" : "Check-in transaction",
+      "src" : "f4c95d8f1c174821"
     },
     "Multiple dwelling" : {
       "back" : "Multi-family housing",

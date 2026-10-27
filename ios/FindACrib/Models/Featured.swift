@@ -40,11 +40,28 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// stays because the feed writes it and it is what a "building photo"
     /// filter would need.
     var imageExterior = false
+    /// The move-in deal the agent's own listing prints (months free, a smaller
+    /// deposit, fees cut), read by rerental_deals.py; nil when it names none
+    /// (owner, 2026-10-27: no box without the agent's own words).
+    var deal: Deal?
+
+    struct Deal: Codable, Hashable, Sendable {
+        struct Perk: Codable, Hashable, Sendable {
+            /// "free", "deposit", "fees" or "gift".
+            var kind: String
+            var title: String
+            var detail: String?
+        }
+        var perks: [Perk]
+        /// Months free on a one-year lease, when the page ties them to one.
+        var freeOn12: Double?
+        enum CodingKeys: String, CodingKey { case perks, freeOn12 = "free_on_12" }
+    }
 
     var id: String { href + "|" + address }
 
     enum CodingKeys: String, CodingKey {
-        case agent, title, address, borough, zip, units, beds, href, image, images
+        case agent, title, address, borough, zip, units, beds, href, image, images, deal
         case imageExterior = "image_exterior"
         case agentPage = "agent_page", moneyKind = "money_kind", moneyLow = "money_low", moneyHigh = "money_high"
         case income1pMax = "income_1p_max", hrefKind = "href_kind"
@@ -70,6 +87,8 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         image = try c.decodeIfPresent(String.self, forKey: .image)
         images = try? c.decodeIfPresent([String].self, forKey: .images)
         imageExterior = try c.decodeIfPresent(Bool.self, forKey: .imageExterior) ?? false
+        // A deal the app can't read never costs the listing its tile.
+        deal = (try? c.decodeIfPresent(Deal.self, forKey: .deal)).flatMap { $0?.perks.isEmpty == false ? $0 : nil }
     }
 
     init(agent: String, address: String, borough: String?, href: String, moneyKind: String? = nil, moneyLow: Int? = nil, moneyHigh: Int? = nil, image: String? = nil, imageExterior: Bool = false) {

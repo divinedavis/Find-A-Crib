@@ -1048,6 +1048,74 @@
         }
       }
     },
+    "%@ %@ → with %@ months free" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ → with %3$@ months free"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → con %3$@ meses gratis"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → %3$@개월 무료 제공"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → 免费使用%3$@个月"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → 附帶%3$@個月的免費"
+          }
+        }
+      }
+    },
+    "%@ %@ → with 1 month free" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ → with 1 month free"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → con 1 mes gratis"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → 1개월 무료 제공"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → 免费1个月"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@ %2$@ → 1個月免費"
+          }
+        }
+      }
+    },
     "%@ %@ buildings" : {
       "localizations" : {
         "en" : {
@@ -4479,6 +4547,34 @@
     },
     "• %@" : {
       "shouldTranslate" : false
+    },
+    "≈ %@/mo" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "≈ %@/mes"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "≈ %@/월"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "≈ %@/月"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "≈ %@/月"
+          }
+        }
+      }
     },
     "✨ Ask a question" : {
       "localizations" : {
@@ -13978,6 +14074,34 @@
         }
       }
     },
+    "from %@ · as listed" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desde %@ · como se indica"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@부터 · 나열된 대로"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从%@开始·如列表所示"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "從%@開始·如列表所示"
+          }
+        }
+      }
+    },
     "from %@/yr" : {
       "localizations" : {
         "es" : {
@@ -19463,6 +19587,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "單位最多"
+          }
+        }
+      }
+    },
+    "Move-in deal" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oferta de mudanza"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "입주 거래"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "入住交易"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "入住交易"
           }
         }
       }

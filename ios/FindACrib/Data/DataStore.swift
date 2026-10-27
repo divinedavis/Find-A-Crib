@@ -230,13 +230,26 @@ final class DataStore {
         await load()
     }
 
+    /// UI tests (`--deal-demo`): every re-rental carries House 55's deal, so
+    /// the deal box is checked whatever the agents offer that day.
+    static func withDemoDeals(_ blob: FeaturedBlob) -> FeaturedBlob {
+        guard CommandLine.arguments.contains("--deal-demo") else { return blob }
+        var b = blob
+        let deal = FeaturedListing.Deal(perks: [
+            .init(kind: "free", title: "Up to 2 months free", detail: "1 mo on 1-yr, 2 on 2-yr"),
+            .init(kind: "deposit", title: "$1,000 security deposit", detail: "Any unit size"),
+            .init(kind: "fees", title: "50% off amenity fees", detail: "First lease year")], freeOn12: 1)
+        for i in b.listings.indices { b.listings[i].deal = deal }
+        return b
+    }
+
     func applyPayload(_ p: Payload) {
         let ix = p.index ?? Self.buildIndex(p.buildings, city: city)
         buildings = p.buildings
         records = p.records
         byBBL = ix.byBBL
         byNeighborhood = ix.byNeighborhood
-        s8 = p.s8; fmr = p.fmr; hcr = p.hcr; featured = p.featured
+        s8 = p.s8; fmr = p.fmr; hcr = p.hcr; featured = Self.withDemoDeals(p.featured)
         dataAsOf = p.s8.updated.map { Date(timeIntervalSince1970: $0) }
         indexHCR()
         neighborhoods = ix.neighborhoods
@@ -256,7 +269,7 @@ final class DataStore {
         // indexHCR mints synthetic rows into byBBL; drop the old ones first so
         // a lottery that closed does not linger as a stray pin.
         for b in hcrBuildings where HCRListing.isSynthetic(b.bbl) { byBBL[b.bbl] = nil }
-        s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = e.featured
+        s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = Self.withDemoDeals(e.featured)
         dataAsOf = e.s8.updated.map { Date(timeIntervalSince1970: $0) }
         indexHCR()
         snapshot.facts = e.facts ?? SearchSnapshot.facts(for: buildings, s8: s8, fmr: fmr)

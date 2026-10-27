@@ -120,6 +120,7 @@ JOURNEY_EVENTS = {
     'boot_is_usable':       [],
     'city_chip':            [],
     'crash_trace_throttled': ['crash_trace'],
+    'rerental_deal':        [],
     'ad_tiles':             ['tile_served', 'tile_impression', 'featured_click', 'hc_click'],
     'outbound_links':       ['outbound'],
     'portal_button':        ['outbound'],
@@ -1397,6 +1398,57 @@ class Runner:
                     f'a viewport resize should log a page census in the trace, got {step!r}', j)
             j.notes.append(step)
 
+    def j_rerental_deal(self, page, j, device):
+        """The move-in deal box (owner, 2026-10-27).
+
+        Only a listing whose agent prints a deal gets the box and the ribbon;
+        every other tile shows none. featured.json is rewritten so every
+        other listing carries a deal and the rest carry nothing, whatever the
+        agents happen to be offering today.
+        """
+        deal = {'perks': [{'kind': 'free', 'title': 'Up to 2 months free', 'detail': '1 mo on 1-yr, 2 on 2-yr'},
+                          {'kind': 'deposit', 'title': '$1,000 security deposit', 'detail': 'Any unit size'},
+                          {'kind': 'fees', 'title': '50% off amenity fees', 'detail': None}],
+                'free_on_12': 1, 'quote': 'journey'}
+
+        def feed(r):
+            d = r.fetch().json()
+            for i, f in enumerate(d.get('listings') or []):
+                f.pop('deal', None)
+                if i % 2 == 0:
+                    f['deal'] = deal
+            r.fulfill(status=200, content_type='application/json', body=json.dumps(d))
+        page.route(LIVE + '/featured.json*', feed)
+        try:
+            self.boot(page)
+            if device == 'phone':
+                page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(1.5)
+            self.wait_until(page, "document.querySelectorAll('#grid .card.feat-card').length > 0", 20000)
+            time.sleep(1.5)
+            got = page.evaluate("""(async () => {
+                const F = (await (await fetch('/featured.json')).json()).listings || [];
+                return [...document.querySelectorAll('#grid .card.feat-card')].map(c => {
+                  const f = F.find(x => x.href === c.dataset.featHref) || {};
+                  const box = c.querySelector('.deal-box'), eff = c.querySelector('.deal-eff');
+                  return {want: !!f.deal, box: !!box, ribbon: !!c.querySelector('.deal-ribbon'),
+                          rows: box ? box.querySelectorAll('.deal-r').length : 0, text: box ? box.textContent : '',
+                          rent: f.money_kind === 'rent' ? f.money_low : null, eff: eff && !eff.hidden ? eff.textContent : null};
+                }); })()""")
+            self.ok(got, 'no re-rental tile rendered', j)
+            wrong = [g for g in got if g['want'] != g['box'] or g['want'] != g['ribbon']]
+            self.ok(not wrong, f'deal box/ribbon only on listings with a deal: {wrong[:2]}', j)
+            with_deal = [g for g in got if g['want']]
+            for g in with_deal:
+                self.ok(g['rows'] == 3 and '$1,000 security deposit' in g['text'] and 'Any unit size' in g['text'],
+                        f'deal box should list all three perks: {g}', j)
+                if g['rent']:
+                    want = f"${int(g['rent'] * 11 / 12 + 0.5):,}/mo"  # Math.round, not banker's
+                    self.ok(g['eff'] and want in g['eff'] and 'Studio-bed' not in g['eff'],
+                            f"rent ${g['rent']:,} with 1 month free averages {want}: {g}", j)
+            j.notes.append(f"{len(with_deal)} of {len(got)} tiles with a deal")
+        finally:
+            page.unroute(LIVE + '/featured.json*')
+
     def j_crash_trace_throttled(self, page, j, device):
         """A throttled tab is not a dead one (2026-10-27).
 
@@ -2347,7 +2399,7 @@ class Runner:
                 supabase_admin('DELETE', f'users/{uid}')
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
                 'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
 

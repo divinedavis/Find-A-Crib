@@ -260,6 +260,28 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
+    /// A move-in deal (owner, 2026-10-27): the ribbon on the photo and the
+    /// compact box listing each perk, with the whole card on one screen.
+    func testRerentalDealBox() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--deal-demo"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let box = app.descendants(matching: .any)["deal-box"].firstMatch
+        for _ in 0..<8 where !box.isHittable { app.swipeUp() }
+        XCTAssertTrue(box.isHittable, "a re-rental with a deal should show the deal box")
+        XCTAssertTrue(app.descendants(matching: .any)["deal-ribbon"].firstMatch.exists, "and the Move-in deal ribbon on its photo")
+        XCTAssertTrue(box.staticTexts.matching(NSPredicate(format: "label CONTAINS '$1,000 security deposit'")).firstMatch.exists)
+        XCTAssertTrue(box.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Up to 2 months free'")).firstMatch.exists)
+        let card = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'rerental-card'"))
+            .containing(.any, identifier: "deal-box").firstMatch
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        from.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -(card.frame.minY - 120))), withVelocity: .slow, thenHoldForDuration: 0.4)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "deal-card"; shot.lifetime = .keepAlways; add(shot)
+        // One screen: between the search bar and the floating Map button / tab bar.
+        XCTAssertLessThanOrEqual(card.frame.height, app.windows.firstMatch.frame.height - 300, "the deal card should fit on one screen")
+    }
+
     /// Re-rentals ride along in the results feed: the 3rd tile is one, with a
     /// "Rerental" flag and a hand-off button, and it never displaces a building
     /// (the count headline is unchanged). The default route is Brooklyn, and

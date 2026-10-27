@@ -1091,6 +1091,22 @@
   .card.hc-card .hc-income { font-size: 12px; font-weight: 600; color: var(--ink-2); }
   .card.hc-card .alert-link { margin-top: 6px; }
   .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
+  /* Move-in deal (owner, 2026-10-27): months free, a smaller deposit, fees
+     cut, only when the agent's own listing says so (rerental_deals.py). */
+  .card.feat-card .deal-ribbon { position: absolute; left: 0; bottom: 34px; z-index: 3; background: var(--ok-ink);
+    color: #fff; font-size: 12px; font-weight: 800; padding: 4px 9px; box-shadow: 0 2px 8px rgba(0,0,0,.3); pointer-events: none; }
+  .deal-box { border: 1.5px solid var(--ok-ink); border-radius: 8px; overflow: hidden; margin: 6px 0 2px; }
+  .deal-box .deal-h { background: var(--ok-ink); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em;
+    text-transform: uppercase; padding: 3px 8px; display: flex; justify-content: space-between; gap: 6px; }
+  .deal-box .deal-h span { font-weight: 600; letter-spacing: 0; text-transform: none; opacity: .9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .deal-box .deal-r { display: flex; gap: 6px; align-items: baseline; padding: 4px 8px; border-top: 1px solid var(--line);
+    font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  .deal-box .deal-r:first-of-type { border-top: 0; }
+  .deal-box .deal-r small { font-weight: 400; font-size: 11px; color: var(--ink-2); }
+  .deal-box .deal-eff { background: var(--ok-bg); padding: 4px 8px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 11px; color: var(--ink-2); }
+  .deal-box .deal-eff b { font-size: 14px; font-weight: 800; color: var(--ok-ink); white-space: nowrap; }
   /* "email me when the next one opens here" — on lottery and re-rental tiles,
      under the apply button. The tile is the moment someone realises these
      exist and close fast; the link is the answer to "how do I not miss the
@@ -5545,6 +5561,11 @@ function favActive() {
       const slot = card.querySelector('.feat-income-slot');
       const range = unitsIncome(t);
       if (range && slot) slot.outerHTML = featIncomeHtml(range);
+      const effSlot = card.querySelector('.deal-eff[hidden]');
+      if (effSlot) {
+        const eff = dealEffective(FEATURED.find(x => x.href === card.dataset.featHref), t);
+        if (eff) { effSlot.innerHTML = eff; effSlot.hidden = false; }
+      }
       if (card.querySelector('.feat-facts')) return;
       if (!t) return;
       const bits = [];
@@ -6707,6 +6728,31 @@ function favActive() {
   // things — MGNY's "$98,366 - $176,410" is what you must EARN, not what you
   // pay. Labelling it is not a nicety; an unlabelled income band reads as the
   // most expensive studio in New York.
+  // The deal box: each perk on one line, then what the lowest rent averages
+  // to over a one-year lease with its free months (filled by paintFlyerFacts
+  // once the unit table is in, when the feed itself has no rent).
+  const DEAL_ICON = { free: '🎁', deposit: '🔒', fees: '½', gift: '💳' };
+  function featDealHtml(f) {
+    const d = f.deal;
+    if (!d || !d.perks || !d.perks.length) return '';
+    const short = (f.agent || '').split(/\s+(?:Consulting|Development|Management|Corp|LLC|Inc)\b/)[0].replace(/[,.]+$/, '');
+    const rows = d.perks.map(p => `<div class="deal-r"><span>${DEAL_ICON[p.kind] || '•'}</span><div>${esc(p.title)}${p.detail ? ` <small>· ${esc(p.detail)}</small>` : ''}</div></div>`).join('');
+    return `<div class="deal-box"><div class="deal-h">Move-in deal <span>from ${esc(short)} · as listed</span></div>${rows}<div class="deal-eff" hidden></div></div>`;
+  }
+  function dealEffective(f, t) {
+    const n = f && f.deal && f.deal.free_on_12;
+    if (!n) return null;
+    let rent = f.money_kind === 'rent' ? f.money_low : null, beds = f.beds;
+    if (rent == null) {
+      const rows = ((t && t.units) || []).filter(r => r.rent);
+      if (!rows.length) return null;
+      const r = rows.reduce((a, b) => b.rent < a.rent ? b : a);
+      rent = r.rent; beds = r.beds === 0 ? 'studio' : r.beds;
+    }
+    const what = /^(studio|0)$/i.test(String(beds)) ? 'Studio' : beds != null && beds !== '' ? beds + '-bed' : 'From';
+    const eff = Math.round(rent * (12 - n) / 12);
+    return `<span>${what} $${Number(rent).toLocaleString()} → with ${n} month${n === 1 ? '' : 's'} free</span><b>≈ $${eff.toLocaleString()}/mo</b>`;
+  }
   function featMoneyHtml(f) {
     const n = v => '$' + Number(v).toLocaleString();
     // Every card in the MGNY format (owner, 2026-10-22): the labelled
@@ -6786,11 +6832,13 @@ function favActive() {
           <span></span>
           <span class="listed-pill">Income-restricted</span>
         </div>
+        ${f.deal ? '<div class="deal-ribbon">🎁 Move-in deal</div>' : ''}
         <div class="addr-overlay">${esc(f.address)}</div>
       </div>
       <div class="body">
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
         ${featMoneyHtml(f)}
+        ${featDealHtml(f)}
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
         <div class="feat-agent">Listed by <b>${esc(f.agent)}</b></div>
         <div class="actions">

@@ -42,6 +42,7 @@ import urllib.parse
 import urllib.request
 
 import rerental_address
+import rerental_deals
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RERENTALS = os.path.join(HERE, "rerental_pages.json")
@@ -957,6 +958,10 @@ def gallery_sweep(records):
                 for _ in range(3):                 # lazy galleries load on scroll
                     page.mouse.wheel(0, 1500); page.wait_for_timeout(400)
                 rec["gallery_src"] = gallery_pick(page.evaluate(GALLERY_JS), rec.get("address"))
+                # The page's words, for its move-in deal (rerental_deals.attach).
+                # Not a "#:~:text=" link: that is a board of other buildings.
+                if "#" not in rec["href"]:
+                    rec["deal_src"] = page.evaluate("document.body ? document.body.innerText.slice(0, 40000) : ''")
                 found += bool(rec["gallery_src"])
             except Exception:
                 continue
@@ -1192,10 +1197,12 @@ def main():
     offices = office_addresses()
     records = [r for r in records if is_real_listing(r, offices)]
     records, jev_changes = jev_review(records)
+    gallery_sweep(records)
+    # Move-in deals, only where the agent prints one (owner, 2026-10-27).
+    n_deals = rerental_deals.attach(records)
     for r in records:
         for k in [k for k in r if k.startswith("_")]:
             r.pop(k)                       # _card, _amounts, _key: never published
-    gallery_sweep(records)
     kept_img = save_images(records, args.apply)
     records = rank(records)[:args.limit]
     dropped_img = prune_images(records, args.apply)
@@ -1216,7 +1223,11 @@ def main():
     deep = sum(1 for r in records if r.get("href_kind") == "listing")
     print(f"{len(records)} listings from {len(agents)} agents · {kept_img} with a photo"
           + f" · {deep} link to the apartment, {len(records) - deep} to the agent's board"
-          + (f" · {dropped_img} stale photo(s) removed" if dropped_img else ""))
+          + (f" · {dropped_img} stale photo(s) removed" if dropped_img else "")
+          + f" · {sum(1 for r in records if r.get('deal'))} with a move-in deal ({n_deals} before ranking)")
+    for r in records:
+        if r.get("deal"):
+            print(f"  deal  {r['address'][:40]:40} {' | '.join(p['title'] for p in r['deal']['perks'])}")
     for a, n in sorted(agents.items(), key=lambda kv: -kv[1]):
         print(f"  {n:3}  {a}")
     for a, e in errors.items():

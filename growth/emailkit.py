@@ -63,6 +63,9 @@ INK3 = "#9aa3af"
 LINE = "#e3e8ef"
 BLUE = "#1a63d6"
 PAPER = "#ffffff"
+# The grey page the white groups sit on (owner, 2026-10-27: design #2 of
+# three, an iPhone-style grouped list readable on a phone).
+PAGE = "#f2f2f7"
 FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
 
@@ -107,7 +110,7 @@ def _strip(html):
 
 def _paragraph(b):
     html = (f'<p style="margin:0 0 14px;font-size:15px;line-height:1.6;'
-            f'color:{INK};background:{PAPER}">{esc(b["text"])}</p>')
+            f'color:{INK};background:{PAGE}">{esc(b["text"])}</p>')
     return html, b["text"]
 
 
@@ -140,7 +143,7 @@ def _steps(b):
     lis = "".join(
         f'<li style="margin:0 0 8px;font-size:15px;line-height:1.55;color:{INK}">{esc(i)}</li>'
         for i in items)
-    html = (f'<ol style="margin:0 0 14px;padding-left:22px;background:{PAPER}">{lis}</ol>')
+    html = (f'<ol style="margin:0 0 14px;padding-left:22px;background:{PAGE}">{lis}</ol>')
     text = "\n".join(f"  {n}. {i}" for n, i in enumerate(items, 1))
     return html, text
 
@@ -163,7 +166,7 @@ def _stats(b):
         f'<span style="display:block;font-size:22px;font-weight:700;color:{INK}">{esc(v)}</span>'
         f'<span style="display:block;font-size:12px;color:{INK2}">{esc(l)}</span></span>'
         for v, l in b["items"])
-    html = f'<div style="margin:0 0 12px;background:{PAPER}">{cells}</div>'
+    html = f'<div style="margin:0 0 12px;background:{PAGE}">{cells}</div>'
     text = " · ".join(f"{v} {l}" for v, l in b["items"])
     return html, text
 
@@ -241,7 +244,7 @@ def _progress(b):
     # The gap below has to be clearly larger than the gap between a bar and its
     # own caption, or the caption reads as belonging to the next row.
     html = (
-        f'<div style="margin:0 0 20px;background:{PAPER}">'
+        f'<div style="margin:0 0 20px;background:{PAGE}">'
         + _tbl(f'<tr>'
                f'<td style="font-size:14px;font-weight:600;color:{INK};padding:0 8px 6px 0">'
                f'{esc(b["label"])}</td>'
@@ -354,6 +357,8 @@ def _callout(b):
     tap when a client's address detector has grabbed the address text itself.
     """
     colour, bg = TONES.get(b.get("tone") or "warn", (WARN, WARN_BG))
+    if b.get("items") and any(isinstance(it, dict) and it.get("url") for it in b["items"]):
+        return _group(b)
     head = (f'<div style="font-size:14px;font-weight:700;color:{colour};margin:0 0 4px">'
             f'{esc(b["heading"])}</div>') if b.get("heading") else ""
     if b.get("items"):
@@ -404,6 +409,67 @@ def _callout(b):
     return html, text
 
 
+def _group(b):
+    """Linked items as an iPhone-style grouped list (owner, 2026-10-27, design
+    #2): a grey caps label, then one white rounded group with a row per item.
+    Each row is one table whose cells are all links to the same place, so the
+    whole row is the tap target (see _callout on why a wrapped inline link
+    is not). An item may add `right` (a price) and `right_sub` (beds) for the
+    right-hand column; a chevron says the row opens something."""
+    def cell(url, inner, style):
+        return (f'<td valign="middle" style="{style}"><a href="{esc(safe_url(url))}" '
+                f'style="display:block;text-decoration:none;color:{INK}">{inner}</a></td>')
+    rows = []
+    for i, it in enumerate(b["items"]):
+        if not isinstance(it, dict):
+            it = {"text": it}
+        url = it.get("url") or "#"
+        rule = f"border-top:1px solid {LINE};" if i else ""
+        left = (f'<span style="display:block;font-size:17px;font-weight:700;line-height:1.3;color:{INK}">{esc(it.get("text", ""))}</span>'
+                + (f'<span style="display:block;font-size:14px;line-height:1.4;color:{INK2};margin-top:3px">{esc(it["sub"])}</span>'
+                   if it.get("sub") else ""))
+        right = ""
+        if it.get("right") or it.get("right_sub"):
+            right = ((f'<span style="display:block;font-size:18px;font-weight:800;color:{INK}">{esc(it["right"])}</span>' if it.get("right") else "")
+                     + (f'<span style="display:block;font-size:12px;color:{INK2}">{esc(it["right_sub"])}</span>' if it.get("right_sub") else ""))
+        rows.append('<tr>'
+                    + cell(url, left, f"{rule}padding:14px 0 14px 16px")
+                    + cell(url, right, f"{rule}padding:14px 4px 14px 8px;text-align:right;white-space:nowrap")
+                    + cell(url, f'<span style="font-size:22px;color:#c7cbd1">&rsaquo;</span>', f"{rule}padding:14px 14px 14px 2px;width:12px")
+                    + '</tr>')
+    head = (f'<div style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;'
+            f'color:{INK2};margin:0 4px 8px">{esc(b["heading"])}</div>') if b.get("heading") else ""
+    html = (f'<div style="margin:0 0 18px">{head}'
+            f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+            f'style="border-collapse:separate;background:{PAPER};border-radius:14px;font-family:{FONT}">'
+            + "".join(rows) + '</table></div>')
+    lines = []
+    for it in b["items"]:
+        it = it if isinstance(it, dict) else {"text": it}
+        lines.append(f"      • {it.get('text', '')}"
+                     + (f" — {it['right']}" if it.get("right") else "")
+                     + (f"\n        {it['sub']}" if it.get("sub") else "")
+                     + (f"\n        {it['url']}" if it.get("url") else ""))
+    text = "\n".join(lines)
+    return html, (f"  {b['heading']}\n{text}" if b.get("heading") else text.lstrip())
+
+
+def _counts(b):
+    """Up to three numbers in white tiles across the top of an alert: "3 new
+    this week · 2 Brooklyn · 1 Manhattan". items: [(number, label), ...]."""
+    items = list(b["items"])[:3]
+    w = f"{100 // max(1, len(items))}%"
+    tds = "".join(
+        f'<td width="{w}" align="center" style="padding:0 0 0 {0 if i == 0 else 8}px">'
+        f'<div style="background:{PAPER};border-radius:12px;padding:14px 4px">'
+        f'<div style="font-size:26px;font-weight:800;color:{BLUE};line-height:1.1">{esc(n)}</div>'
+        f'<div style="font-size:12px;color:{INK2};margin-top:2px">{esc(label)}</div></div></td>'
+        for i, (n, label) in enumerate(items))
+    html = (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+            f'style="border-collapse:collapse;margin:0 0 20px;font-family:{FONT}"><tr>{tds}</tr></table>')
+    return html, " · ".join(f"{n} {label}" for n, label in items)
+
+
 def _chips(b):
     """Short strings as pills — query lists, tags. Wraps naturally, no columns
     to get out of sync."""
@@ -411,13 +477,13 @@ def _chips(b):
         f'<span style="display:inline-block;background:{SOFT};border:1px solid {LINE};'
         f'border-radius:99px;padding:5px 11px;margin:0 6px 7px 0;font-size:12px;'
         f'color:{INK2}">{esc(c)}</span>' for c in b["items"])
-    return (f'<div style="margin:0 0 12px;background:{PAPER}">{chips}</div>',
+    return (f'<div style="margin:0 0 12px;background:{PAGE}">{chips}</div>',
             "\n".join(f"  · {c}" for c in b["items"]))
 
 
 def _note(b):
-    return (f'<p style="margin:0 0 14px;font-size:12px;color:{INK3};line-height:1.55;'
-            f'background:{PAPER}">{esc(b["text"])}</p>', f"  {b['text']}")
+    return (f'<p style="margin:0 0 14px;font-size:13px;color:{INK2};line-height:1.55;'
+            f'background:{PAGE}">{esc(b["text"])}</p>', f"  {b['text']}")
 
 
 def _upsell(b):
@@ -438,7 +504,7 @@ def _upsell(b):
 RENDERERS = {"paragraph": _paragraph, "card": _card, "steps": _steps,
              "quote": _quote, "stats": _stats, "section": _section, "tiles": _tiles,
              "progress": _progress, "table": _table, "status": _status,
-             "callout": _callout, "chips": _chips, "note": _note, "upsell": _upsell}
+             "callout": _callout, "counts": _counts, "chips": _chips, "note": _note, "upsell": _upsell}
 
 
 # ------------------------------------------------------------------- render
@@ -466,10 +532,10 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
     if cta:
         label, url = cta
         cta_html = (
-            f'<div style="margin:4px 0 18px;background:{PAPER}">'
-            f'<a href="{esc(safe_url(url))}" style="display:inline-block;background:{BLUE};'
-            f'color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:11px 20px;'
-            f'border-radius:9px">{esc(label)}</a></div>')
+            f'<div style="margin:4px 0 18px;background:{PAGE}">'
+            f'<a href="{esc(safe_url(url))}" style="display:block;text-align:center;background:{BLUE};'
+            f'color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:15px 20px;'
+            f'border-radius:14px">{esc(label)}</a></div>')
         body_text.append(f"{label}: {url}")
 
     foot_bits = []
@@ -479,28 +545,41 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
         foot_bits.append(f'<a href="{esc(safe_url(unsub_url))}" style="color:{INK3}">'
                          f'{esc(unsub_label)}</a>')
     foot_html = (f'<p style="margin:22px 0 0;padding-top:14px;border-top:1px solid {LINE};'
-                 f'color:{INK3};font-size:12px;line-height:1.55;background:{PAPER}">'
+                 f'color:{INK3};font-size:12px;line-height:1.55;background:{PAGE}">'
                  + " ".join(foot_bits) + "</p>") if foot_bits else ""
 
     # The shell is a table, not a padded div. A div with max-width and padding
     # is content-box in mail clients, so on a 390px phone its own padding pushes
     # the card wider than the screen and the right-hand column is cut off.
+    # Since 2026-10-27 (owner picked design #2 of three) the page is grey and
+    # the content sits on it like an iPhone settings screen: brand and date on
+    # one line, a big title, then white groups. Text blocks carry the page
+    # grey as their own background so dark-mode clients cannot invert one
+    # and not the other.
+    try:
+        import datetime as _dt
+        from zoneinfo import ZoneInfo as _Z
+        today = _dt.datetime.now(_Z("America/New_York"))
+        today = f"{today:%a}, {today:%b} {today.day}"
+    except Exception:
+        today = ""
     html = (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
-        f'style="border-collapse:collapse;background:#f6f7f9;margin:0;'
+        f'style="border-collapse:collapse;background:{PAGE};margin:0;'
         f'-webkit-text-size-adjust:100%"><tr>'
-        f'<td align="center" style="padding:24px 12px">'
+        f'<td align="center" style="padding:22px 12px 32px;background:{PAGE}">'
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
         f'style="border-collapse:collapse;max-width:{int(width)}px;margin:0 auto">'
-        f'<tr><td style="font-family:{FONT};padding:26px 22px;background:{PAPER};'
-        f'border-radius:12px;color:{INK}">'
-        f'<div style="font-weight:800;font-size:17px;color:{BLUE};margin:0 0 10px">{BRAND}</div>'
-        + (f'<div style="font-size:12px;font-weight:600;letter-spacing:.07em;'
-           f'text-transform:uppercase;color:{INK3};margin:0 0 4px">{esc(eyebrow)}</div>'
-           if eyebrow else "")
-        + f'<h1 style="font-size:21px;line-height:1.3;margin:0 0 8px;color:{INK}">'
+        f'<tr><td style="font-family:{FONT};padding:0 4px;background:{PAGE};color:{INK}">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">'
+        f'<tr><td style="font-family:{FONT};font-weight:800;font-size:17px;color:{BLUE}">{BRAND}</td>'
+        f'<td align="right" style="font-family:{FONT};font-size:13px;color:{INK2}">{esc(today)}</td></tr></table>'
+        + (f'<div style="font-size:13px;font-weight:700;letter-spacing:.06em;'
+           f'text-transform:uppercase;color:{INK2};margin:18px 0 4px">{esc(eyebrow)}</div>'
+           if eyebrow else '<div style="height:14px;line-height:14px;font-size:1px">&nbsp;</div>')
+        + f'<h1 style="font-size:26px;line-height:1.2;font-weight:800;margin:0 0 10px;color:{INK}">'
           f'{esc(title)}</h1>'
-        + (f'<p style="color:{INK2};font-size:14px;margin:0 0 18px;line-height:1.55">'
+        + (f'<p style="color:{INK2};font-size:16px;margin:0 0 20px;line-height:1.5">'
            f'{esc(intro)}</p>' if intro else "")
         + "".join(body_html) + cta_html + foot_html
         + "</td></tr></table></td></tr></table>")

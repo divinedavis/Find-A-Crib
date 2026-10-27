@@ -167,6 +167,11 @@ def hc_items(d):
                     "label": "Housing Connect lottery",
                     "text": l.get("name") or l.get("address") or "Housing Connect lottery",
                     "sub": " · ".join(bits), "url": l.get("href"),
+                    # The email's list row: price and beds on the right, the
+                    # rest under the name (owner, 2026-10-27, design #2).
+                    "meta": " · ".join(b for b in (" · ".join(x for x in (l.get("neighborhood"), l.get("borough")) if x),
+                                                   (f"closes {l['closes']}" if l.get("closes") else None)) if b),
+                    "price": rent.replace("/mo", "") if rent else None, "beds": " / ".join(l.get("beds") or []) or None,
                     "closes": iso_date(l.get("closes")),
                     "rent_low": l.get("rent_low"),
                     "income_min": l.get("income_min"), "income_max": l.get("income_max"),
@@ -210,6 +215,7 @@ def hcr_items(d):
                               else "HCR lottery"),
                     "text": l.get("name") or "HCR listing",
                     "sub": " · ".join(bits), "url": l.get("url"),
+                    "meta": " · ".join(bits), "price": None, "beds": None,
                     "closes": iso_date(l.get("due")),
                     "rent_low": None,
                     "income_min": l.get("min_income"), "income_max": l.get("max_income")})
@@ -245,6 +251,9 @@ def rerental_items(d):
                     "boro": boro_code(e.get("boro")), "label": "re-rental",
                     "text": e.get("label") or e["key"],
                     "sub": " · ".join(bits),
+                    "meta": " · ".join(b for b in (" · ".join(x for x in (e.get("hood"), e.get("boro")) if x),
+                                                   f"listed by {e['agent']}") if b),
+                    "price": money(e["rent_low"]) if e.get("rent_low") else None, "beds": None,
                     "url": (board_fragment(e["url"], e.get("label") or e["key"]) if shared.get(e.get("url"), 0) > 1
                             else e.get("url")) or f"{SITE}/marketing-agents/",
                     "rent_low": e.get("rent_low"),
@@ -278,6 +287,8 @@ def voucher_items(d):
         out.append({"id": f"s8:{bbl}", "kind": "voucher", "boro": boro,
                     "label": "voucher listing", "text": addr,
                     "sub": " · ".join(bits), "url": url,
+                    "meta": " · ".join(b for b in (BORO_NAME.get(boro, "").replace("the ", ""), "on AffordableHousing.com") if b),
+                    "price": money(e["p"]) if e.get("p") else None, "beds": f"{n} unit{'' if n == 1 else 's'}",
                     "rent_low": e.get("p"), "income_min": None, "income_max": None})
     return out
 
@@ -455,6 +466,30 @@ def filter_words(sub):
     return (", " + ", ".join(bits)) if bits else ""
 
 
+def email_row(i):
+    """One row of the email's grouped list: name, the place under it, price
+    and beds on the right (owner, 2026-10-27, design #2). Items from before
+    `meta` existed fall back to their one-line `sub`."""
+    # "445 Grand Avenue, Brooklyn, NY 11238": the borough is on the line below.
+    name = re.sub(r",\s*(Manhattan|Brooklyn|Queens|Bronx|The Bronx|Staten Island|New York)?,?\s*NY\s*\d{5}\s*$", "", i["text"] or "", flags=re.I)
+    return {"text": name or i["text"], "sub": i.get("meta") or i.get("sub"), "url": i["url"],
+            "right": i.get("price"), "right_sub": i.get("beds")}
+
+
+def counts_block(items, total_label):
+    """The tiles across the top: how many, then the two boroughs with the
+    most. None for a single item, where a tile saying 1 says nothing."""
+    if len(items) < 2:
+        return None
+    per = {}
+    for i in items:
+        b = BORO_NAME.get(i.get("boro"), "").replace("the ", "")
+        if b:
+            per[b] = per.get(b, 0) + 1
+    tiles = [(len(items), total_label)] + sorted(((n, b) for b, n in per.items()), key=lambda t: -t[0])[:2]
+    return {"type": "counts", "items": tiles}
+
+
 def render_alert(items, sub, emailkit, upsell=False):
     lot = [i for i in items if i["kind"] == "lottery"]
     rr = [i for i in items if i["kind"] == "rerental"]
@@ -489,7 +524,10 @@ def render_alert(items, sub, emailkit, upsell=False):
                        "button": ("Get real-time alerts", UPSELL_URL)})
 
     def rows(group):
-        return [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in group]
+        return [email_row(i) for i in group]
+    counts = counts_block(items, "new")
+    if counts:
+        blocks.append(counts)
     lot_shown = [i for i in shown if i["kind"] == "lottery"]
     rr_shown = [i for i in shown if i["kind"] == "rerental"]
     vo_shown = [i for i in shown if i["kind"] == "voucher"]
@@ -671,6 +709,11 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
     (heading, tone, items); empty groups are skipped."""
     blocks = []
     shown = 0
+    # The round-up counts what opened, not what is closing (listed again).
+    every = (sections[0][2] if digest and sections else [i for _, _, items in sections for i in items])
+    counts = counts_block(every, "new this week" if digest else "open now")
+    if counts:
+        blocks.append(counts)
     for heading, tone, items in sections:
         if not items:
             continue
@@ -680,7 +723,7 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
         if not part:
             continue
         blocks.append({"type": "callout", "tone": tone, "heading": heading,
-                       "items": [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in part]})
+                       "items": [email_row(i) for i in part]})
         if len(items) > len(part):
             blocks.append({"type": "note", "text": f"…and {len(items) - len(part)} more on the map."})
     blocks.append({"type": "note",

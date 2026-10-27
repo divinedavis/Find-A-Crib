@@ -12,9 +12,9 @@ import FoundationModels
 /// runs on the phone (free, private, offline-capable) on iOS 26+ devices with
 /// Apple Intelligence on; anywhere else, or when its answer fails the same
 /// number check the server uses, the app falls back to Claude on the server.
-/// Lease review, Help me apply and plain-words search stay on the server:
-/// a lease is far past the on-device context window, Help me apply reads a
-/// third-party page server-side, and search already costs a fraction of a cent.
+/// Lease review and plain-words search stay on the server: a lease is far
+/// past the on-device context window, and search already costs a fraction
+/// of a cent.
 enum OnDeviceAI {
     /// OFF by default — it didn't perform (eval 2026-10-13, macOS 26.4 system
     /// model, the prompts below, 11 cases against the Claude answers):

@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 
 /// "My application packet" — see Services/Packet.swift. Open to everyone
 /// (it's a tool, not AI, and paying should never be what gets an
-/// application sent). Reached from Profile and from Help me apply.
+/// application sent). Reached from Profile.
 struct PacketView: View {
     /// When opened for one listing: the agent's document list, address and email.
     var needs: [String] = []

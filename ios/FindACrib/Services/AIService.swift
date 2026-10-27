@@ -1,7 +1,7 @@
 import Foundation
 
 /// The Plus AI features (owner, 2026-10-03), the same endpoints the website
-/// calls: plain-language search and Help me apply. Each request carries the
+/// calls: plain-language search. Each request carries the
 /// Supabase session; the server checks Plus and the $20/month cap, so a
 /// 402 here means "show the paywall", never "feature broken".
 enum AIError: Error, Equatable {
@@ -21,17 +21,6 @@ struct AISearchResult: Decodable {
     let filters: Filters
     let explain: [String]
     let used_ai: Bool?
-}
-
-struct ApplyHelp: Decodable {
-    struct Doc: Decodable, Hashable { let item: String; let required_by_listing: Bool }
-    struct Contact: Decodable { let email: String?; let phone: String?; let link: String? }
-    let steps: [String]
-    let documents: [Doc]
-    let deadline: String?
-    let contact: Contact
-    let email_subject: String
-    let email_body: String
 }
 
 @MainActor
@@ -70,11 +59,6 @@ enum AIService {
 
     static func search(_ q: String, auth: AuthService) async throws -> AISearchResult {
         try JSONDecoder().decode(AISearchResult.self, from: try await request("search", auth: auth, body: ["q": q]))
-    }
-
-    static func applyHelp(href: String, auth: AuthService) async throws -> ApplyHelp {
-        struct R: Decodable { let help: ApplyHelp }
-        return try JSONDecoder().decode(R.self, from: try await request("apply-help", auth: auth, body: ["href": href])).help
     }
 
     /// The AI search's filters as the app's own query. Prices snap to whole

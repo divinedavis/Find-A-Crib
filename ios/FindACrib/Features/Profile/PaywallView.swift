@@ -41,9 +41,6 @@ struct PaywallView: View {
         Perk(id: "renter_ai", icon: "sparkles", title: String(localized: "AI repair letters & rights answers"),
              sub: String(localized: "A repair letter in your own words, and answers to your questions about your rights as a renter."),
              example: nil),
-        Perk(id: "apply_help", icon: "doc.text", title: String(localized: "Help me apply"),
-             sub: String(localized: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental."),
-             example: String(localized: "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”")),
         Perk(id: "ai_search", icon: "sparkles", title: String(localized: "Search in plain words"),
              sub: String(localized: "Type what you want and the search sets every filter."),
              example: String(localized: "“2 bed under $2,500 near Prospect Park, no violations”")),
@@ -134,7 +131,7 @@ struct PaywallView: View {
                     Text(p.sub).font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            if let ex = p.example, lead || p.id == "apply_help" {
+            if let ex = p.example, lead {
                 Text(ex).font(.se(14).italic()).foregroundStyle(SE.ink2)
                     .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                     .background(SE.canvas).clipShape(RoundedRectangle(cornerRadius: 8))

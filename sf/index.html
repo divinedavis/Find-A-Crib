@@ -2143,7 +2143,6 @@
       <li data-perk="lease_review" data-ai><span class="pf-ico">📄</span><span><b>Lease review</b>Upload your lease and AI flags the clauses New York law limits or voids, quoting each one</span></li>
       <li data-perk="renewal" data-ai><span class="pf-ico">🔁</span><span><b>Renewal coach</b>Your key dates, the legal cap on your increase, and an AI-written email to negotiate your renewal</span></li>
       <li data-perk="renter_ai" data-ai><span class="pf-ico">✨</span><span><b>AI repair letters &amp; rights answers</b>A repair letter in your own words, and answers to your questions about your rights as a renter</span></li>
-      <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="phone" data-ai><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
     </ul>
@@ -5489,44 +5488,6 @@ function favActive() {
     if (!authUser) { openAuthModal(signupMsg, source); setAuthMode('signup'); return null; }
     try { return (await supaClient.auth.getSession()).data.session.access_token; } catch (e) { return null; }
   }
-  async function runApplyHelp(card, href) {
-    track('apply_help_click', Object.assign(featProps(card), { signed_in: !!authUser, plus: !!plusActive }));
-    const tok = await aiToken('apply_help', 'Create an account or sign in to get help applying.');
-    const out = card.querySelector('.feat-apply-out');
-    if (!tok || !out) return;
-    out.textContent = '📝 Reading the listing…'; out.hidden = false;
-    // Most listings are read ahead overnight and come back at once; one nobody
-    // has opened this week is read live (5-60 s on a long page) — after 10 s
-    // say so and offer the page itself (2026-10-03).
-    const slow = setTimeout(() => {
-      if (!out.textContent.startsWith('📝')) return;
-      out.innerHTML = '📝 Still reading — some agents’ pages are long. You can wait or <a href="' + esc(href) + '" target="_blank" rel="noopener">open the agent’s page</a>.';
-    }, 10000);
-    let r, j = {};
-    try { r = await fetch('/api/ai/apply-help', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ href }) }); j = await r.json(); }
-    catch (e) { clearTimeout(slow); out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
-    clearTimeout(slow);
-    if (r.status === 402) { out.hidden = true; openPaywall(null, 'apply_help'); return; }
-    if (!r.ok || !j.ok) { out.textContent = j.error === 'monthly_limit' ? 'You’ve used this month’s AI — more on the 1st.' : j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
-    const h = j.help || {}, c = h.contact || {};
-    const mail = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(h.email_subject || '')}&body=${encodeURIComponent(h.email_body || '')}` : null;
-    out.innerHTML = `
-      <div><b>How to apply</b></div>
-      <ol class="rc-points" style="padding-left:18px;list-style:decimal">${(h.steps || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol>
-      ${(h.documents || []).length ? `<div style="margin-top:8px"><b>Gather</b></div><ul class="rc-points">${h.documents.map(d => `<li>• ${esc(d.item)}${d.required_by_listing ? ' <span class="rc-src">required here</span>' : ''}</li>`).join('')}</ul>` : ''}
-      ${h.deadline ? `<div style="margin-top:6px"><b>Deadline:</b> ${esc(h.deadline)}</div>` : ''}
-      ${c.email || c.phone ? `<div style="margin-top:6px"><b>Contact:</b> ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}${c.email && c.phone ? ' · ' : ''}${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${esc(c.phone)}</a>` : ''}</div>` : ''}
-      <div style="margin-top:8px"><b>Email to the agent</b></div>
-      <div style="white-space:pre-wrap;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:4px;font-size:13.5px">${esc('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || ''))}</div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="d-rentcheck feat-copy" type="button" style="margin-top:0">Copy email</button>
-        ${mail ? `<a class="d-rentcheck" style="margin-top:0;text-decoration:none" href="${esc(mail)}">Open in email ↗</a>` : ''}
-      </div>
-      <div class="rc-note">Written by AI from the agent’s listing${j.page_read ? ' and page' : ''}. Check the agent’s page before you send anything.</div>`;
-    const copy = out.querySelector('.feat-copy');
-    if (copy) copy.onclick = () => { try { navigator.clipboard.writeText('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || '')); copy.textContent = 'Copied ✓'; } catch (e) {} track('apply_help_copy', featProps(card)); };
-    track('apply_help_result', Object.assign(featProps(card), { cached: !!j.cached, page_read: !!j.page_read, has_email: !!c.email }));
-  }
 
   // ---------- qualify-check (free, owner 2026-10-03) ----------
   // Household size + yearly income, once; every lottery and re-rental tile
@@ -6851,8 +6812,6 @@ function favActive() {
              href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : f.href_kind === 'flyer' ? 'unit_flyer' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : f.href_kind === 'flyer' ? 'See the listing ↗' : 'Apply on their site ↗'}</a>
         </div>
-        <button class="d-rentcheck feat-apply" data-action="applyhelp" data-href="${esc(f.href)}" style="margin-top:8px">📝 Help me apply<span class="plus-tag">Plus</span></button>
-        <div class="rentcheck-card feat-apply-out" hidden></div>
         ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
     </div>`;
@@ -7333,8 +7292,6 @@ function favActive() {
     // A featured tile is somebody else's listing: it has no BBL and no marker,
     // so there is nothing to fly to. Count the hand-off and let the link go.
     if (card.classList.contains('feat-card')) {
-      const ah = e.target.closest('[data-action="applyhelp"]');
-      if (ah) { runApplyHelp(card, ah.dataset.href); return; }
       if (e.target.closest('a[data-action="featured"]'))
         track('featured_click', Object.assign(featProps(card), { href: e.target.closest('a').getAttribute('href') || '' }));
       return;
@@ -8787,8 +8744,6 @@ function favActive() {
                         ['🏢', 'Tap any building for its full record']] },
     ai_search: { rows: [['✨', 'Type it the way you\u2019d say it: \u201c2 bed in Brooklyn under $2,500\u201d'],
                         ['🎛️', 'We set the filters for you'], PROMISE_PLUS] },
-    apply_help: { rows: [['📄', 'Your application packet, ready to send'],
-                         ['✉️', 'Email the agent with your documents attached'], PROMISE_PLUS] },
     broker_fee: { rows: [['💵', 'Check whether a broker fee is legal under NYC\u2019s FARE Act'], PROMISE_PLUS] },
     lease_review: { rows: [['📝', 'Flag the clauses in your lease worth asking about'], PROMISE_PLUS] },
     renewal: { rows: [['📅', 'Plan your lease renewal: what to ask for, and when'], PROMISE_PLUS] },
@@ -8797,7 +8752,7 @@ function favActive() {
     rent_increase: { rows: [['📈', 'Check your increase against the Rent Guidelines Board'], PROMISE_FREE] },
     comment: PROMISE_COMMENT, comment_like: PROMISE_COMMENT, comment_reply: PROMISE_COMMENT,
     subscribe: { rows: [['⚡', 'Real-time lottery alerts, the minute one opens'],
-                        ['✨', 'AI tools: plain-words search, lease review, apply help'],
+                        ['✨', 'AI tools: plain-words search, lease review, broker fee check'],
                         ['📞', 'Agents\u2019 phone numbers, and no ads']] },
     referral: { rows: [['🎁', 'Your own invite link'], ['🤝', 'You and your friend each get 2 months of Plus']] },
     // Owner, 2026-10-26: these two rows, then what is open right now in
@@ -8878,7 +8833,7 @@ function favActive() {
   // 2026-10-03) — and no ads, which paying members keep.
   // …and agent phone numbers (owner, 2026-10-12: "make agents phone number a
   // paid feature"; get_agent_phone() answers Plus only).
-  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'renewal', 'renter_ai', 'profile', 'phone']);
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'broker_fee', 'lease_review', 'renewal', 'renter_ai', 'profile', 'phone']);
   function openPaywall(bbl, source) {
     // A phone reveal passes only the bbl: name its source before the check.
     source = source || (bbl ? 'phone' : undefined);
@@ -8890,7 +8845,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', renewal: 'Plan your renewal', renter_ai: 'Let AI write it for you', noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', renewal: 'Plan your renewal', renter_ai: 'Let AI write it for you', noads: 'Find A Crib, with no ads',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
     const pt = document.getElementById('paywall-title');
@@ -9163,7 +9118,7 @@ function favActive() {
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
-      showPlusToast('🎉 You’re now Find A Crib Plus — search in plain words, Help me apply, Is this rent fair? and no ads are unlocked.');
+      showPlusToast('🎉 You’re now Find A Crib Plus — search in plain words, Is this rent fair? and no ads are unlocked.');
       plusPurchasePending = true;
     }
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get

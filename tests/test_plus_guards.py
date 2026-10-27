@@ -32,7 +32,7 @@ class PlusGuards(unittest.TestCase):
     def test_site_names_the_monthly_cap(self):
         html = read("index.html")
         msgs = re.findall(r"monthly_limit'?\s*[?:]\s*'([^']+)'", html)
-        self.assertGreaterEqual(len(msgs), 3, f"search, Help me apply and the tools each handle monthly_limit: {msgs}")
+        self.assertGreaterEqual(len(msgs), 2, f"search and the tools each handle monthly_limit: {msgs}")
         for m in msgs:
             self.assertIn("this month", m)
 

@@ -9,10 +9,7 @@ struct RerentalCard: View {
     /// Which re-rental slot of the feed this is (0 = the 3rd tile), for the funnel.
     var slot: Int = 0
     @Environment(\.openURL) private var openURL
-    @State private var showApply = false
-    @State private var showPlus = false
     @State private var photo = 0
-    @Environment(AuthService.self) private var auth
 
     var body: some View {
         let f = listing
@@ -141,21 +138,6 @@ struct RerentalCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                // Plus opens the sheet; anyone else sees the Plus page first,
-                // led by Help me apply, and lands in the sheet once they have it.
-                Button { if auth.hasPlus || ApplyHelpSheet.isDemo { showApply = true } else { showPlus = true } } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.text").font(.system(size: 15, weight: .bold))
-                        Text("Help me apply").font(.se(compact ? 15 : 17, .bold))
-                        PlusTag()
-                    }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
-                }
-                .buttonStyle(.plain).accessibilityIdentifier("rerental-apply-help")
-                .sheet(isPresented: $showApply) { ApplyHelpSheet(listing: f) }
-                .sheet(isPresented: $showPlus, onDismiss: { if auth.hasPlus { showApply = true } }) {
-                    PaywallView(source: "apply_help", context: f.address)
-                }
             }
             .padding(compact ? 14 : 18)
         }
@@ -172,8 +154,10 @@ struct RerentalCard: View {
     private var compact: Bool { listing.deal != nil }
 
     /// One labelled money line, the style MGNY's income-only cards set.
+    /// The label sits as far above its number as the line above sits above
+    /// the label (owner, 2026-10-27: "spacing must be equal there").
     private func moneyBlock(label: String?, text: String) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 0 : 2) {
+        VStack(alignment: .leading, spacing: compact ? 3 : BuildingCard.headGap) {
             if let label { Text(label).font(.se(compact ? 11 : 15, .semibold)).foregroundStyle(SE.ink3).textCase(.uppercase) }
             Text(text).font(.se(compact ? 19 : 24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8)
         }

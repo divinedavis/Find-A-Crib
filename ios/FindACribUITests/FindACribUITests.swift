@@ -222,44 +222,6 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Cancel"].tap()
     }
 
-    /// Scrolls the results until a re-rental card's Help me apply sits clear
-    /// of the tab bar and the floating pills.
-    private func scrollToHelpMeApply() -> XCUIElement {
-        let help = app.buttons["rerental-apply-help"].firstMatch
-        // Clear of the floating tab bar: "hittable" under it still sends the
-        // tap to the bar (failed once in the build 114 ship, passed on rerun).
-        // Small drags until it sits mid-screen (a full swipe could carry it
-        // past the top, then the loop swiped on forever).
-        // …and clear of the floating Map / Lottery Alerts pills above it
-        // (2026-10-13: the tap landed on Lottery Alerts and opened alerts).
-        let h = app.windows.firstMatch.frame.height
-        let pills = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pill-'"))
-        let pillTop = (0..<pills.count).map { pills.element(boundBy: $0).frame.minY }.filter { $0 > h / 2 }.min() ?? (h - 140)
-        let floor = min(h - 140, pillTop - 12)
-        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
-        for _ in 0..<30 {
-            if help.exists && help.isHittable && help.frame.minY > 150 && help.frame.maxY < floor { break }
-            let up = !(help.exists && help.frame.minY <= 150)
-            mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: up ? -320 : 220)))
-        }
-        return help
-    }
-
-    /// Every re-rental card offers Help me apply.
-    func testRerentalOffersHelpMeApply() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
-        app.launch()
-        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
-        let help = scrollToHelpMeApply()
-        XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
-        help.tap()
-        XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'WHAT YOU TAPPED'")).firstMatch.exists, "the tapped feature leads the Plus page")
-        app.buttons["paywall-sign-in"].tap()
-        XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
-    }
-
     /// A move-in deal (owner, 2026-10-27): the ribbon on the photo and the
     /// compact box listing each perk, with the whole card on one screen.
     func testRerentalDealBox() throws {
@@ -899,14 +861,14 @@ final class FindACribUITests: XCTestCase {
         // Broker fee check, Agent phone numbers and Lease review promoted
         // (owner, 2026-10-12), under the header "Your apartment hunt, with AI".
         XCTAssertTrue(app.staticTexts["Your apartment hunt, with AI"].exists, "the paywall header")
-        for perk in ["Real-time alerts", "Broker fee check", "Agent phone numbers", "Lease review", "Help me apply", "No ads"] {
+        for perk in ["Real-time alerts", "Broker fee check", "Agent phone numbers", "Lease review", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
         let sheet = app.scrollViews.containing(.staticText, identifier: "Search in plain words").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Is this rent fair?", "Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals",
+        for gone in ["Is this rent fair?", "Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Lottery alerts", "Re-rental alerts", "Saved searches", "Help me apply", "Landlord research", "Folders", "Your lotteries & re-rentals",
                      "Listings, rents and applications — read for you, in plain words."] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
@@ -1410,28 +1372,6 @@ final class FindACribUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(row.isSelected)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "show-no-pests"; shot.lifetime = .keepAlways; add(shot)
-    }
-
-    /// Documents saved in the app go with the email to the agent (owner,
-    /// 2026-10-24): with one in the packet, the send button attaches it and
-    /// says so; tapping it opens a composer, not a bare mailto link.
-    func testHelpMeApplyEmailCarriesSavedDocuments() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--apply-demo"]
-        app.launch()
-        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
-        let help = scrollToHelpMeApply()
-        XCTAssertTrue(help.exists)
-        help.tap()
-        let send = app.buttons["apply-email-send"]
-        for _ in 0..<6 where !(send.exists && send.isHittable) { app.swipeUp() }
-        XCTAssertTrue(send.waitForExistence(timeout: 10))
-        XCTAssertEqual(send.label, "Email with my documents", "with a saved document the button attaches it")
-        XCTAssertTrue(app.staticTexts["apply-email-attached"].label.contains("Recent pay stubs"), "and names what goes with it")
-        send.tap()
-        // No Mail account on a simulator: the share sheet, with the files.
-        XCTAssertTrue(app.otherElements["ActivityListView"].waitForExistence(timeout: 10)
-                      || app.navigationBars["MFMailComposeView"].waitForExistence(timeout: 2), "sending opens a composer with the files")
     }
 
     /// The records screen's "N open" is the city's count now, not the weekly

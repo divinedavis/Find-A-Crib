@@ -81,7 +81,7 @@ ACCOUNTS
 An account (Sign in with Apple, Google or email) includes bedbug and rodent records, the repair and rent-increase tools, and borough alerts.
 
 FIND A CRIB PLUS
-Plus adds real-time lottery alerts, managing-agent phone numbers, the Broker fee check, AI tools — Search in plain words, Help me apply, Lease review, the Renewal coach, AI repair letters and rights answers — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+Plus adds real-time lottery alerts, managing-agent phone numbers, the Broker fee check, AI tools — Search in plain words, Lease review, the Renewal coach, AI repair letters and rights answers — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
@@ -90,14 +90,13 @@ Find A Crib is an independent, informational tool. It is not a broker, does not 
 
 WHATS_NEW = """• Building chat, redesigned: your messages on the right, long-press to react, reply or unsend, swipe to reply or see times, and a button to jump to the newest.
 • No pests filter: hide buildings with pests cited by HPD in the last 12 months.
-• Help me apply now attaches the documents you've saved when you email the agent.
 • Open complaint counts are live and match the list.
 • Search results say "69 buildings", not just "69".
 • Smaller fixes.
 """
 
 REVIEW_NOTES = """VERSION 1.3.6 (build __BUILD__)
-New since 1.3.5: redesigned building chat (same moderation as before: filter, Report, Block, Leave); a "No pests" search filter (HPD public data); "Help me apply" > "Email with my documents" opens Apple's Mail composer with the renter's saved documents attached (sent from their own Mail account; nothing goes through our server); live open-complaint counts. No new permissions, SDKs or data.
+New since 1.3.5: redesigned building chat (same moderation as before: filter, Report, Block, Leave); a "No pests" search filter (HPD public data); live open-complaint counts. No new permissions, SDKs or data.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 

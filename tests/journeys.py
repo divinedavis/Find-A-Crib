@@ -1431,7 +1431,7 @@ class Runner:
                   const f = F.find(x => x.href === c.dataset.featHref) || {};
                   const box = c.querySelector('.deal-box'), eff = c.querySelector('.deal-eff');
                   return {want: !!f.deal, box: !!box, ribbon: !!c.querySelector('.deal-ribbon'),
-                          listed: !!c.querySelector('.feat-agent'),
+                          listed: !!c.querySelector('.feat-agent'), studiobed: /studio-bed/i.test(c.textContent),
                           sizes: [...new Set([...c.querySelectorAll('.body *')].filter(e => [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
                                    .map(e => getComputedStyle(e).fontSize))],
                           rows: box ? box.querySelectorAll('.deal-r').length : 0, text: box ? box.textContent : '',
@@ -1444,6 +1444,7 @@ class Runner:
             # "Listed by" line (owner, 2026-10-27); every other card keeps it.
             dup = [g for g in got if g['listed'] == g['box']]
             self.ok(not dup, f'"Listed by" only on cards without a deal box: {dup[:2]}', j)
+            self.ok(not any(g['studiobed'] for g in got), 'a studio reads "Studio", never "Studio-bed"', j)
             # One text size under the photo (owner, 2026-10-27).
             mixed = [g['sizes'] for g in got if g['sizes'] != ['12px']]
             self.ok(not mixed, f'every line under a re-rental photo should be 12px: {mixed[:2]}', j)

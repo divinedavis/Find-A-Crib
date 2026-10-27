@@ -1,9 +1,5 @@
 {
   "es" : {
-    "  (required here)" : {
-      "back" : "(mandatory here)",
-      "src" : "b08fc11f6f761cd6"
-    },
     " · %@/yr" : {
       "back" : "· %@/year",
       "src" : "e2db0a0a1a745f74"
@@ -91,10 +87,6 @@
     "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”" : {
       "back" : "\"Agent fee of $4,200 - the owner hired the agent, so according to the FARE Law you should not pay it\".",
       "src" : "5abc9d5abdbb6154"
-    },
-    "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”" : {
-      "back" : "\"1. Download the application... 2. Collect the payment receipts... Email: Hello, I am interested in unit 4B...\"",
-      "src" : "c16d0a01e5cf4223"
     },
     "“2 bed under $2,500 near Prospect Park, no violations”" : {
       "back" : "\"2 bedrooms for less than $2,500 near Prospect Park, no violations\"",
@@ -607,10 +599,6 @@
     "Add what you were charged to check it" : {
       "back" : "Add what they charged you to check it",
       "src" : "0dd67f094bf783ea"
-    },
-    "Add your documents with Get my documents ready and they'll be attached to this email." : {
-      "back" : "Add your documents with Get my documents ready and they will be attached to this email.",
-      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent now and the new rent",
@@ -1200,10 +1188,6 @@
       "back" : "Continue with Google",
       "src" : "909626ae397eff55"
     },
-    "Copied" : {
-      "back" : "Copied",
-      "src" : "bac2b00df4a996b2"
-    },
     "Copied ✓" : {
       "back" : "Copied ✓",
       "src" : "6f650bc96682c5fc"
@@ -1211,10 +1195,6 @@
     "Copy" : {
       "back" : "copy",
       "src" : "1a86d6e4ea46e39f"
-    },
-    "Copy email" : {
-      "back" : "Copy email",
-      "src" : "5dc49c48147ae33e"
     },
     "Couldn't check right now. Try again in a minute." : {
       "back" : "I couldn't check it right now. Try again in a minute.",
@@ -1344,10 +1324,6 @@
       "back" : "DC Buildings Department",
       "src" : "d06f619bf3855c3f"
     },
-    "Deadline: %@" : {
-      "back" : "Deadline: %@",
-      "src" : "b3de2bba3ed99130"
-    },
     "Deed theft: warning signs and how to report it" : {
       "back" : "Document theft: warning signs and how to report it",
       "src" : "441a6d9dda9849b9"
@@ -1455,14 +1431,6 @@
     "Email my packet" : {
       "back" : "Send me my package by email",
       "src" : "9f20feb9e52f4913"
-    },
-    "Email to the agent" : {
-      "back" : "Email to the agent",
-      "src" : "c3e7b8d555cf7bc7"
-    },
-    "Email with my documents" : {
-      "back" : "Email with my documents",
-      "src" : "5693b880d95f7353"
     },
     "Email: %@" : {
       "back" : "Email: %@",
@@ -1728,10 +1696,6 @@
       "back" : "From your summary at 8 a.m. Click to apply on the agent's website.",
       "src" : "7b3a0ecfd78c8d7c"
     },
-    "Gather" : {
-      "back" : "meeting",
-      "src" : "966a4ecc631922c3"
-    },
     "General information about New York law, not legal advice." : {
       "back" : "General information about law New York, not legal advice.",
       "src" : "86227946485f9bfb"
@@ -1747,6 +1711,10 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Get a repair, check a rent increase, read your rights or plan a renewal.",
       "src" : "c329b857298bf7e0"
+    },
+    "Get alerts on new re-rentals" : {
+      "back" : "Receive alerts about new rentals",
+      "src" : "bf6babefe2b3b3bf"
     },
     "Get alerts on this phone?" : {
       "back" : "Get alerts on this phone?",
@@ -1767,10 +1735,6 @@
     "Get Find A Crib Plus · %@/mo" : {
       "back" : "Get Find A Crib Plus · %@/month",
       "src" : "ab35158a69db2931"
-    },
-    "Get my documents ready" : {
-      "back" : "Prepare my documents",
-      "src" : "b1871feff57a2fb8"
     },
     "Get one made" : {
       "back" : "Get one made for you",
@@ -1839,10 +1803,6 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Listen to what are the next NYC housing lotteries that close.",
       "src" : "9886cb8fef32b896"
-    },
-    "Help me apply" : {
-      "back" : "Help me apply",
-      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide the buildings where HPD has reported cockroaches, rats, mice or bed bugs in the last 12 months",
@@ -1915,10 +1875,6 @@
     "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." : {
       "back" : "HousingSearch.ny.gov lists around 50 open lotteries and waiting lists in the city at the same time. Clear the other Show and price range boxes to see them all.",
       "src" : "017769ffe23b2904"
-    },
-    "How to apply" : {
-      "back" : "How to request",
-      "src" : "feac2e8eb4f6e440"
     },
     "How you found the apartment" : {
       "back" : "How did you find the apartment?",
@@ -2880,17 +2836,9 @@
       "back" : "Open the Find A Crib renewal trainer to check the offer.",
       "src" : "e63a5260000d5567"
     },
-    "Open in Mail" : {
-      "back" : "Open in Mail",
-      "src" : "17809b6b6dd0b6dd"
-    },
     "Open on record, never certified. Last HPD action: %@, %@ — nothing since, %lld years." : {
       "back" : "Open in the registry, never certified. Last action HPD: %1$@, %2$@, nothing since then, %3$lld years.",
       "src" : "96f9a32a907eb564"
-    },
-    "Open the agent's page" : {
-      "back" : "Open the agent's page",
-      "src" : "0fb4253edf85f8a9"
     },
     "Open the building" : {
       "back" : "Open the building",
@@ -3163,10 +3111,6 @@
     "Read what neighbors say about %@ — the heat, the super, the block" : {
       "back" : "Read what the neighbors say about %@: the heat, the supermarket, the block",
       "src" : "b08071f4052a3649"
-    },
-    "Reading the listing…" : {
-      "back" : "Reading the list...",
-      "src" : "660c03e42d646ed5"
     },
     "Reading your lease…" : {
       "back" : "Reading your rental contract...",
@@ -3608,6 +3552,10 @@
       "back" : "Log in for Plus",
       "src" : "72c2284e3ac475fa"
     },
+    "Sign in for re-rental alerts" : {
+      "back" : "Log in to receive subletting alerts",
+      "src" : "b75ba624230337d1"
+    },
     "Sign in or create an account" : {
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
@@ -3776,10 +3724,6 @@
       "back" : "Step 1 of 2, then choose Plus. Your account also works on findacrib.com.",
       "src" : "87bf1fd1c6d2543e"
     },
-    "Still reading — some agents' pages are long. You can wait or go straight to the listing." : {
-      "back" : "Still reading, the pages of some agents are long. You can wait or go directly to the list.",
-      "src" : "2c0aee191ae9cc86"
-    },
     "Stop alerts" : {
       "back" : "Stop alerts",
       "src" : "97870f1cfc7056a8"
@@ -3807,10 +3751,6 @@
     "Studio" : {
       "back" : "study",
       "src" : "59d91c5703aa6d72"
-    },
-    "Subject: %@\n\n%@" : {
-      "back" : "Subject: %1$@\n\n%2$@",
-      "src" : "373f1edcddeb36ea"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "SUBSIDIZED BUILDING / FRIENDLY WITH VALUES",
@@ -3919,10 +3859,6 @@
     "the agencies' own listings" : {
       "back" : "The lists of the agencies themselves",
       "src" : "2bb2958677edafc1"
-    },
-    "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental." : {
-      "back" : "The agent's steps, the documents that need to be collected and an email ready to be sent, for each new rental.",
-      "src" : "aeeb48340c798c75"
     },
     "The basics" : {
       "back" : "The basic concepts",
@@ -4408,10 +4344,6 @@
       "back" : "Write my letter",
       "src" : "f121c4e9caf09d28"
     },
-    "Written by AI from the agent's listing. Check their page before you send anything." : {
-      "back" : "Written by AI from the agent's list. Check your page before sending anything.",
-      "src" : "7edc2448f13c08b4"
-    },
     "Written by AI from your lease, checked against New York law. General information, not legal advice." : {
       "back" : "Written by AI based on your lease contract, verified against law New York. General information, not legal advice.",
       "src" : "e7fa3868650cc3f2"
@@ -4512,10 +4444,6 @@
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
     },
-    "Your documents go with it: %@." : {
-      "back" : "Your documents go with him: %@.",
-      "src" : "39bcbaca2ce1130a"
-    },
     "Your email" : {
       "back" : "Your email address",
       "src" : "1ea694d74a81e0bf"
@@ -4602,10 +4530,6 @@
     }
   },
   "ko" : {
-    "  (required here)" : {
-      "back" : "(Required here)",
-      "src" : "b08fc11f6f761cd6"
-    },
     " · %@/yr" : {
       "back" : "· %@/year",
       "src" : "e2db0a0a1a745f74"
@@ -4693,10 +4617,6 @@
     "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”" : {
       "back" : "\"$4,200 in brokerage fees - because the landlord hired an agent, you shouldn't have to pay it under the FARE Act.\"",
       "src" : "5abc9d5abdbb6154"
-    },
-    "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”" : {
-      "back" : "\"1. Please download the app... 2. Please collect your pay slip... Email: Hello, I am interested in Unit 4B...\"",
-      "src" : "c16d0a01e5cf4223"
     },
     "“2 bed under $2,500 near Prospect Park, no violations”" : {
       "back" : "\"2-bedroom near Project Park, under $2,500, no violations\"",
@@ -5209,10 +5129,6 @@
     "Add what you were charged to check it" : {
       "back" : "Please add the amount charged to check.",
       "src" : "0dd67f094bf783ea"
-    },
-    "Add your documents with Get my documents ready and they'll be attached to this email." : {
-      "back" : "If you add a document using the Prepare My Document function, it will be attached to this email.",
-      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Add the current rent and the new rent now.",
@@ -5802,10 +5718,6 @@
       "back" : "Continue to Google",
       "src" : "909626ae397eff55"
     },
-    "Copied" : {
-      "back" : "Copied",
-      "src" : "bac2b00df4a996b2"
-    },
     "Copied ✓" : {
       "back" : "Copy ✓",
       "src" : "6f650bc96682c5fc"
@@ -5813,10 +5725,6 @@
     "Copy" : {
       "back" : "prone shooting",
       "src" : "1a86d6e4ea46e39f"
-    },
-    "Copy email" : {
-      "back" : "Copy email",
-      "src" : "5dc49c48147ae33e"
     },
     "Couldn't check right now. Try again in a minute." : {
       "back" : "We can't check it now. Please try again in 1 minute.",
@@ -5946,10 +5854,6 @@
       "back" : "DC Architectural Department",
       "src" : "d06f619bf3855c3f"
     },
-    "Deadline: %@" : {
-      "back" : "Deadline: %@",
-      "src" : "b3de2bba3ed99130"
-    },
     "Deed theft: warning signs and how to report it" : {
       "back" : "Certificate theft: warning signals and reporting methods",
       "src" : "441a6d9dda9849b9"
@@ -6057,14 +5961,6 @@
     "Email my packet" : {
       "back" : "Please send my package by email.",
       "src" : "9f20feb9e52f4913"
-    },
-    "Email to the agent" : {
-      "back" : "Send an email to the agency",
-      "src" : "c3e7b8d555cf7bc7"
-    },
-    "Email with my documents" : {
-      "back" : "Send an email with my document",
-      "src" : "5693b880d95f7353"
     },
     "Email: %@" : {
       "back" : "Email: %@",
@@ -6334,10 +6230,6 @@
       "back" : "In the summary at 8 a.m. To apply on the agent site, please tap.",
       "src" : "7b3a0ecfd78c8d7c"
     },
-    "Gather" : {
-      "back" : "gather",
-      "src" : "966a4ecc631922c3"
-    },
     "General information about New York law, not legal advice." : {
       "back" : "This is general information about the New York law, not legal advice.",
       "src" : "86227946485f9bfb"
@@ -6353,6 +6245,10 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Get repairs, check rent increases, read your rights, and plan your renewal.",
       "src" : "c329b857298bf7e0"
+    },
+    "Get alerts on new re-rentals" : {
+      "back" : "Get a new lease renewal notification.",
+      "src" : "bf6babefe2b3b3bf"
     },
     "Get alerts on this phone?" : {
       "back" : "Do you receive notifications from this phone?",
@@ -6373,10 +6269,6 @@
     "Get Find A Crib Plus · %@/mo" : {
       "back" : "Get Find A Crib Plus · %@/month.",
       "src" : "ab35158a69db2931"
-    },
-    "Get my documents ready" : {
-      "back" : "Please prepare my documents.",
-      "src" : "b1871feff57a2fb8"
     },
     "Get one made" : {
       "back" : "Make one.",
@@ -6445,10 +6337,6 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Next, listen to when the next NYC housing lottery will end.",
       "src" : "9886cb8fef32b896"
-    },
-    "Help me apply" : {
-      "back" : "Help me apply.",
-      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide buildings that have mentioned cockroaches, mice, rats or parasites in the past 12 months.",
@@ -6521,10 +6409,6 @@
     "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." : {
       "back" : "HousingSearch.ny.gov lists about 50 open lotteries and waiting lists in the city at once. If you clear other checkboxes and price ranges, you can see them all.",
       "src" : "017769ffe23b2904"
-    },
-    "How to apply" : {
-      "back" : "How to apply",
-      "src" : "feac2e8eb4f6e440"
     },
     "How you found the apartment" : {
       "back" : "How did you find the apartment?",
@@ -7486,17 +7370,9 @@
       "back" : "Open the renewal coach of Find A Crib and check the proposal.",
       "src" : "e63a5260000d5567"
     },
-    "Open in Mail" : {
-      "back" : "Open by email",
-      "src" : "17809b6b6dd0b6dd"
-    },
     "Open on record, never certified. Last HPD action: %@, %@ — nothing since, %lld years." : {
       "back" : "According to the records, it is open, but it has never been certified. Last HPD action: %1$@, %2$@ - there has been no action since then, and it is the third year of %3$lld.",
       "src" : "96f9a32a907eb564"
-    },
-    "Open the agent's page" : {
-      "back" : "Open the dealer page",
-      "src" : "0fb4253edf85f8a9"
     },
     "Open the building" : {
       "back" : "Open the building.",
@@ -7769,10 +7645,6 @@
     "Read what neighbors say about %@ — the heat, the super, the block" : {
       "back" : "Read what the neighbors are saying about %@ - heat, super, block",
       "src" : "b08071f4052a3649"
-    },
-    "Reading the listing…" : {
-      "back" : "I'm reading the list...",
-      "src" : "660c03e42d646ed5"
     },
     "Reading your lease…" : {
       "back" : "I'm reading your rental contract...",
@@ -8214,6 +8086,10 @@
       "back" : "Please log in to Plus.",
       "src" : "72c2284e3ac475fa"
     },
+    "Sign in for re-rental alerts" : {
+      "back" : "Please log in for the re-rental notification.",
+      "src" : "b75ba624230337d1"
+    },
     "Sign in or create an account" : {
       "back" : "Log in or create an account.",
       "src" : "e2e8e11a5ec9f984"
@@ -8382,10 +8258,6 @@
       "back" : "Step 1 of 2 - Then select Plus. Your account also works on findacrib.com.",
       "src" : "87bf1fd1c6d2543e"
     },
-    "Still reading — some agents' pages are long. You can wait or go straight to the listing." : {
-      "back" : "I'm still reading - some agent's pages are long. You can wait or go straight to the list.",
-      "src" : "2c0aee191ae9cc86"
-    },
     "Stop alerts" : {
       "back" : "Stop notifications.",
       "src" : "97870f1cfc7056a8"
@@ -8413,10 +8285,6 @@
     "Studio" : {
       "back" : "a studio",
       "src" : "59d91c5703aa6d72"
-    },
-    "Subject: %@\n\n%@" : {
-      "back" : "Subject: %1$@\n\n%2$@ line",
-      "src" : "373f1edcddeb36ea"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidy support / Voucher-friendly buildings",
@@ -8525,10 +8393,6 @@
     "the agencies' own listings" : {
       "back" : "List of the institution itself",
       "src" : "2bb2958677edafc1"
-    },
-    "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental." : {
-      "back" : "The stage of the intermediary, the documents that need to be collected and the emails that are ready to be sent - every time you rent.",
-      "src" : "aeeb48340c798c75"
     },
     "The basics" : {
       "back" : "Basic matters",
@@ -9014,10 +8878,6 @@
       "back" : "Write my letter for me.",
       "src" : "f121c4e9caf09d28"
     },
-    "Written by AI from the agent's listing. Check their page before you send anything." : {
-      "back" : "It was written by AI from the list of agents. Please check their page before sending anything.",
-      "src" : "7edc2448f13c08b4"
-    },
     "Written by AI from your lease, checked against New York law. General information, not legal advice." : {
       "back" : "AI drafted your rental contract, which has been reviewed in accordance with New York law. This is general information and not legal advice.",
       "src" : "e7fa3868650cc3f2"
@@ -9118,10 +8978,6 @@
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
     },
-    "Your documents go with it: %@." : {
-      "back" : "Your document comes with it: %@.",
-      "src" : "39bcbaca2ce1130a"
-    },
     "Your email" : {
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
@@ -9208,10 +9064,6 @@
     }
   },
   "zh-Hans" : {
-    "  (required here)" : {
-      "back" : "(Must be filled in here)",
-      "src" : "b08fc11f6f761cd6"
-    },
     " · %@/yr" : {
       "back" : "· %@/year",
       "src" : "e2db0a0a1a745f74"
@@ -9299,10 +9151,6 @@
     "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”" : {
       "back" : "\"The brokerage fee of $4,200 - the landlord hired a broker, so you should not pay this fee according to the FARE Act.\"",
       "src" : "5abc9d5abdbb6154"
-    },
-    "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”" : {
-      "back" : "\"1. Download the application... 2. Collect the pay stubs... Email: Hi, I'm interested in Unit 4B...\"",
-      "src" : "c16d0a01e5cf4223"
     },
     "“2 bed under $2,500 near Prospect Park, no violations”" : {
       "back" : "\"2-bedroom room near Prospect Park, less than $2500, no violations\"",
@@ -9815,10 +9663,6 @@
     "Add what you were charged to check it" : {
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
-    },
-    "Add your documents with Get my documents ready and they'll be attached to this email." : {
-      "back" : "Use Get My Documents to add your documents, which will be attached to this email.",
-      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Now add your rent and the new rent.",
@@ -10408,10 +10252,6 @@
       "back" : "Continue to use Google",
       "src" : "909626ae397eff55"
     },
-    "Copied" : {
-      "back" : "duplicate",
-      "src" : "bac2b00df4a996b2"
-    },
     "Copied ✓" : {
       "back" : "Copy ✓",
       "src" : "6f650bc96682c5fc"
@@ -10419,10 +10259,6 @@
     "Copy" : {
       "back" : "duplicate",
       "src" : "1a86d6e4ea46e39f"
-    },
-    "Copy email" : {
-      "back" : "Copy the email",
-      "src" : "5dc49c48147ae33e"
     },
     "Couldn't check right now. Try again in a minute." : {
       "back" : "It can't be checked now. Please try again in a minute.",
@@ -10552,10 +10388,6 @@
       "back" : "Department of Housing and Urban Development, Washington, D.C.",
       "src" : "d06f619bf3855c3f"
     },
-    "Deadline: %@" : {
-      "back" : "Deadline: %@",
-      "src" : "b3de2bba3ed99130"
-    },
     "Deed theft: warning signs and how to report it" : {
       "back" : "Contract theft: warning signs and how to report it",
       "src" : "441a6d9dda9849b9"
@@ -10663,14 +10495,6 @@
     "Email my packet" : {
       "back" : "Send my package to me by email.",
       "src" : "9f20feb9e52f4913"
-    },
-    "Email to the agent" : {
-      "back" : "Email to the agent",
-      "src" : "c3e7b8d555cf7bc7"
-    },
-    "Email with my documents" : {
-      "back" : "Send my files by email.",
-      "src" : "5693b880d95f7353"
     },
     "Email: %@" : {
       "back" : "Email: %@",
@@ -10940,10 +10764,6 @@
       "back" : "From your summary at 8 a.m. Click to enter the agent's website to apply.",
       "src" : "7b3a0ecfd78c8d7c"
     },
-    "Gather" : {
-      "back" : "gather",
-      "src" : "966a4ecc631922c3"
-    },
     "General information about New York law, not legal advice." : {
       "back" : "General information about New York law is not legal advice.",
       "src" : "86227946485f9bfb"
@@ -10959,6 +10779,10 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Perform maintenance, check the increase in rent, understand your rights, or plan to renew the lease.",
       "src" : "c329b857298bf7e0"
+    },
+    "Get alerts on new re-rentals" : {
+      "back" : "Get reminders about new subletting",
+      "src" : "bf6babefe2b3b3bf"
     },
     "Get alerts on this phone?" : {
       "back" : "Did you receive a reminder on this mobile phone?",
@@ -10979,10 +10803,6 @@
     "Get Find A Crib Plus · %@/mo" : {
       "back" : "Get Find A Crib Plus · %@/month",
       "src" : "ab35158a69db2931"
-    },
-    "Get my documents ready" : {
-      "back" : "Prepare my documents.",
-      "src" : "b1871feff57a2fb8"
     },
     "Get one made" : {
       "back" : "Make one",
@@ -11051,10 +10871,6 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Learn about the next closed NYC housing lottery.",
       "src" : "9886cb8fef32b896"
-    },
-    "Help me apply" : {
-      "back" : "Help me apply.",
-      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide buildings where HPD has mentioned cockroaches, mice, rats or bed bugs in the past 12 months.",
@@ -11127,10 +10943,6 @@
     "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." : {
       "back" : "HousingSearch.ny.gov also lists about 50 open lottery tickets and waiting lists in the city. Clear other display boxes and price ranges to view all lottery tickets.",
       "src" : "017769ffe23b2904"
-    },
-    "How to apply" : {
-      "back" : "How to apply",
-      "src" : "feac2e8eb4f6e440"
     },
     "How you found the apartment" : {
       "back" : "How did you find this apartment?",
@@ -12092,17 +11904,9 @@
       "back" : "Open the Find A Crib renewal coach to view the offer.",
       "src" : "e63a5260000d5567"
     },
-    "Open in Mail" : {
-      "back" : "Open it in the email.",
-      "src" : "17809b6b6dd0b6dd"
-    },
     "Open on record, never certified. Last HPD action: %@, %@ — nothing since, %lld years." : {
       "back" : "The record is open and has never been certified. The last HPD operation: %1$@, %2$@ - since then, there has been no operation, %3$lld year.",
       "src" : "96f9a32a907eb564"
-    },
-    "Open the agent's page" : {
-      "back" : "Open the agent's page.",
-      "src" : "0fb4253edf85f8a9"
     },
     "Open the building" : {
       "back" : "Open the building.",
@@ -12375,10 +12179,6 @@
     "Read what neighbors say about %@ — the heat, the super, the block" : {
       "back" : "Read what the neighbors think of %@ - heat, super, block",
       "src" : "b08071f4052a3649"
-    },
-    "Reading the listing…" : {
-      "back" : "Reading list...",
-      "src" : "660c03e42d646ed5"
     },
     "Reading your lease…" : {
       "back" : "Read your lease agreement...",
@@ -12820,6 +12620,10 @@
       "back" : "Log in to Plus",
       "src" : "72c2284e3ac475fa"
     },
+    "Sign in for re-rental alerts" : {
+      "back" : "Log in to get a reminder for re-rental.",
+      "src" : "b75ba624230337d1"
+    },
     "Sign in or create an account" : {
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
@@ -12988,10 +12792,6 @@
       "back" : "Step 1, 2 steps in total - then select Plus. Your account can also be used on findacrib.com.",
       "src" : "87bf1fd1c6d2543e"
     },
-    "Still reading — some agents' pages are long. You can wait or go straight to the listing." : {
-      "back" : "Still reading - some agent pages are very long. You can wait or go directly to the list.",
-      "src" : "2c0aee191ae9cc86"
-    },
     "Stop alerts" : {
       "back" : "Stop the alarm",
       "src" : "97870f1cfc7056a8"
@@ -13019,10 +12819,6 @@
     "Studio" : {
       "back" : "Recording room",
       "src" : "59d91c5703aa6d72"
-    },
-    "Subject: %@\n\n%@" : {
-      "back" : "Theme: %1$@\n\n%2$@",
-      "src" : "373f1edcddeb36ea"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidies/coupon-friendly buildings",
@@ -13131,10 +12927,6 @@
     "the agencies' own listings" : {
       "back" : "The institution's own list",
       "src" : "2bb2958677edafc1"
-    },
-    "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental." : {
-      "back" : "The steps for the agent, the documents to be collected, and an email that can be sent at any time - applicable to each re-rental.",
-      "src" : "aeeb48340c798c75"
     },
     "The basics" : {
       "back" : "elementary knowledge",
@@ -13620,10 +13412,6 @@
       "back" : "Write a letter to me",
       "src" : "f121c4e9caf09d28"
     },
-    "Written by AI from the agent's listing. Check their page before you send anything." : {
-      "back" : "Written by artificial intelligence from the list of agents. Please check their pages before sending any content.",
-      "src" : "7edc2448f13c08b4"
-    },
     "Written by AI from your lease, checked against New York law. General information, not legal advice." : {
       "back" : "Compiled by artificial intelligence from your lease and checked according to New York law. General information, not legal advice.",
       "src" : "e7fa3868650cc3f2"
@@ -13724,10 +13512,6 @@
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
     },
-    "Your documents go with it: %@." : {
-      "back" : "Your documents are also attached: %@.",
-      "src" : "39bcbaca2ce1130a"
-    },
     "Your email" : {
       "back" : "Your email",
       "src" : "1ea694d74a81e0bf"
@@ -13814,10 +13598,6 @@
     }
   },
   "zh-Hant" : {
-    "  (required here)" : {
-      "back" : "(Must be filled in here)",
-      "src" : "b08fc11f6f761cd6"
-    },
     " · %@/yr" : {
       "back" : "· %@/year",
       "src" : "e2db0a0a1a745f74"
@@ -13905,10 +13685,6 @@
     "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”" : {
       "back" : "\"The brokerage fee of $4,200 - the landlord hired a broker, so you should not pay this fee according to the Fair Rental Law.\"",
       "src" : "5abc9d5abdbb6154"
-    },
-    "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”" : {
-      "back" : "\"1. Download the application... 2. Collect the payroll slip... Email: Hi, I'm interested in the 4B unit...\"",
-      "src" : "c16d0a01e5cf4223"
     },
     "“2 bed under $2,500 near Prospect Park, no violations”" : {
       "back" : "\"2 two-bedroom rooms near Prospect Park, priced under $2,500, no violations\"",
@@ -14421,10 +14197,6 @@
     "Add what you were charged to check it" : {
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
-    },
-    "Add your documents with Get my documents ready and they'll be attached to this email." : {
-      "back" : "Use \"Prepare my documents\" to add your documents, which will be attached to this email.",
-      "src" : "0947e7c40676a383"
     },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent and new rent now",
@@ -15014,10 +14786,6 @@
       "back" : "Continue to use Google",
       "src" : "909626ae397eff55"
     },
-    "Copied" : {
-      "back" : "Copied",
-      "src" : "bac2b00df4a996b2"
-    },
     "Copied ✓" : {
       "back" : "Copy ✓",
       "src" : "6f650bc96682c5fc"
@@ -15025,10 +14793,6 @@
     "Copy" : {
       "back" : "Copy",
       "src" : "1a86d6e4ea46e39f"
-    },
-    "Copy email" : {
-      "back" : "Copy email",
-      "src" : "5dc49c48147ae33e"
     },
     "Couldn't check right now. Try again in a minute." : {
       "back" : "It can't be checked now. Please try again in a minute.",
@@ -15158,10 +14922,6 @@
       "back" : "Department of Housing and Urban Development, Washington, D.C.",
       "src" : "d06f619bf3855c3f"
     },
-    "Deadline: %@" : {
-      "back" : "Deadline: %@",
-      "src" : "b3de2bba3ed99130"
-    },
     "Deed theft: warning signs and how to report it" : {
       "back" : "Deed theft: warning signs and how to report it",
       "src" : "441a6d9dda9849b9"
@@ -15269,14 +15029,6 @@
     "Email my packet" : {
       "back" : "Send my package by email.",
       "src" : "9f20feb9e52f4913"
-    },
-    "Email to the agent" : {
-      "back" : "Send an email to the agent",
-      "src" : "c3e7b8d555cf7bc7"
-    },
-    "Email with my documents" : {
-      "back" : "Attach my documents by email.",
-      "src" : "5693b880d95f7353"
     },
     "Email: %@" : {
       "back" : "Email: %@",
@@ -15546,10 +15298,6 @@
       "back" : "From your summary at 8 a.m. Click to enter the agent's website to apply.",
       "src" : "7b3a0ecfd78c8d7c"
     },
-    "Gather" : {
-      "back" : "Gathering",
-      "src" : "966a4ecc631922c3"
-    },
     "General information about New York law, not legal advice." : {
       "back" : "General information about New York law is not legal advice.",
       "src" : "86227946485f9bfb"
@@ -15565,6 +15313,10 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Perform maintenance, check the increase in rent, read your rights, or plan to renew your lease.",
       "src" : "c329b857298bf7e0"
+    },
+    "Get alerts on new re-rentals" : {
+      "back" : "Get reminders about new subletting",
+      "src" : "bf6babefe2b3b3bf"
     },
     "Get alerts on this phone?" : {
       "back" : "Did you receive a reminder on this mobile phone?",
@@ -15585,10 +15337,6 @@
     "Get Find A Crib Plus · %@/mo" : {
       "back" : "Get Find A Crib Plus · %@/month",
       "src" : "ab35158a69db2931"
-    },
-    "Get my documents ready" : {
-      "back" : "Prepare my documents.",
-      "src" : "b1871feff57a2fb8"
     },
     "Get one made" : {
       "back" : "Make one.",
@@ -15657,10 +15405,6 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Find out when the next NYC housing lottery will end.",
       "src" : "9886cb8fef32b896"
-    },
-    "Help me apply" : {
-      "back" : "Help me apply",
-      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide HPD buildings that have been cited for cockroaches, mice, rats or bed bugs in the past 12 months.",
@@ -15733,10 +15477,6 @@
     "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." : {
       "back" : "HousingSearch.ny.gov lists about 50 open lottery and candidate lists for the city at once. Clear other \"Show\" boxes and price ranges to view everything.",
       "src" : "017769ffe23b2904"
-    },
-    "How to apply" : {
-      "back" : "How to apply",
-      "src" : "feac2e8eb4f6e440"
     },
     "How you found the apartment" : {
       "back" : "How did you find this apartment?",
@@ -16698,17 +16438,9 @@
       "back" : "Open the renewal coach of Find A Crib to view the quotation.",
       "src" : "e63a5260000d5567"
     },
-    "Open in Mail" : {
-      "back" : "Open it in the email.",
-      "src" : "17809b6b6dd0b6dd"
-    },
     "Open on record, never certified. Last HPD action: %@, %@ — nothing since, %lld years." : {
       "back" : "The record is open and has never been certified. The last HPD operation: %1$@, %2$@ - there was no operation after that, %3$lld year.",
       "src" : "96f9a32a907eb564"
-    },
-    "Open the agent's page" : {
-      "back" : "Open the agent's page",
-      "src" : "0fb4253edf85f8a9"
     },
     "Open the building" : {
       "back" : "Open the building",
@@ -16981,10 +16713,6 @@
     "Read what neighbors say about %@ — the heat, the super, the block" : {
       "back" : "Read what your neighbors think of %@ - popularity, super, block",
       "src" : "b08071f4052a3649"
-    },
-    "Reading the listing…" : {
-      "back" : "Reading list...",
-      "src" : "660c03e42d646ed5"
     },
     "Reading your lease…" : {
       "back" : "Reading your lease agreement...",
@@ -17426,6 +17154,10 @@
       "back" : "Log in to Plus",
       "src" : "72c2284e3ac475fa"
     },
+    "Sign in for re-rental alerts" : {
+      "back" : "Log in to receive reminders for re-rental.",
+      "src" : "b75ba624230337d1"
+    },
     "Sign in or create an account" : {
       "back" : "Log in or create an account",
       "src" : "e2e8e11a5ec9f984"
@@ -17594,10 +17326,6 @@
       "back" : "Step 1, 2 steps in total - then select Plus. Your account can also be used on findacrib.com.",
       "src" : "87bf1fd1c6d2543e"
     },
-    "Still reading — some agents' pages are long. You can wait or go straight to the listing." : {
-      "back" : "Still reading - some agent pages are very long. You can wait or go directly to the list.",
-      "src" : "2c0aee191ae9cc86"
-    },
     "Stop alerts" : {
       "back" : "Stop the alarm",
       "src" : "97870f1cfc7056a8"
@@ -17625,10 +17353,6 @@
     "Studio" : {
       "back" : "Studio",
       "src" : "59d91c5703aa6d72"
-    },
-    "Subject: %@\n\n%@" : {
-      "back" : "Topic: %1$@\n\n%2$@",
-      "src" : "373f1edcddeb36ea"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidized/coupon-friendly buildings",
@@ -17737,10 +17461,6 @@
     "the agencies' own listings" : {
       "back" : "The institution's own list",
       "src" : "2bb2958677edafc1"
-    },
-    "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental." : {
-      "back" : "The steps of the agent, the documents to be collected and the emails that can be sent at any time - each sublease requires.",
-      "src" : "aeeb48340c798c75"
     },
     "The basics" : {
       "back" : "Basic knowledge",
@@ -18226,10 +17946,6 @@
       "back" : "Write a letter to me",
       "src" : "f121c4e9caf09d28"
     },
-    "Written by AI from the agent's listing. Check their page before you send anything." : {
-      "back" : "Written by artificial intelligence from the list of agents. Please check their pages before sending any content.",
-      "src" : "7edc2448f13c08b4"
-    },
     "Written by AI from your lease, checked against New York law. General information, not legal advice." : {
       "back" : "Written by artificial intelligence from your lease and checked according to the New York law. General information, not legal advice.",
       "src" : "e7fa3868650cc3f2"
@@ -18329,10 +18045,6 @@
     "Your details" : {
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
-    },
-    "Your documents go with it: %@." : {
-      "back" : "Your documents are attached accordingly: %@.",
-      "src" : "39bcbaca2ce1130a"
     },
     "Your email" : {
       "back" : "Your email address",

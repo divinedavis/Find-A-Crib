@@ -542,5 +542,7 @@
  "1 building": "건물 1곳",
  "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months": "지난 12개월 동안 HPD가 바퀴벌레, 생쥐, 쥐, 빈대를 적발한 건물 숨기기",
  "Your documents go with it: %@.": "서류도 함께 첨부됩니다: %@.",
- "Email with my documents": "내 서류와 함께 이메일 보내기"
+ "Email with my documents": "내 서류와 함께 이메일 보내기",
+ "Get alerts on new re-rentals": "새 재임대 알림 받기",
+ "Sign in for re-rental alerts": "재임대 알림을 위해 로그인하세요"
 }

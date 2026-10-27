@@ -460,7 +460,7 @@ def parse_card(c, agent, page_url):
     bm = BEDS.search(blob)
     sm = next((m for m in map(UNIT_SIZE.search, lines) if m), None)
     beds = (bm.group(1).lower() if bm else
-            ("studio" if sm.group(1) in ("0", "studio") else sm.group(1)) if sm else None)
+            ("studio" if sm.group(1).lower() in ("0", "studio") else sm.group(1)) if sm else None)
     zm = ZIP.search(address) or ZIP.search(blob)
     zipcode = zm.group(1) if zm else None
     # The listing's own link often names the borough when the card only says

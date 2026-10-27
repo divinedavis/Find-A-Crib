@@ -405,5 +405,7 @@
  "Unsend": "撤回",
  "1 building": "1 栋楼",
  "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months": "隐藏过去12个月内被HPD查出蟑螂、老鼠或臭虫的楼",
- "Your documents go with it: %@.": "你的文件会一并附上：%@。"
+ "Your documents go with it: %@.": "你的文件会一并附上：%@。",
+ "Get alerts on new re-rentals": "获取新再出租房源提醒",
+ "Sign in for re-rental alerts": "登录以获取再出租提醒"
 }

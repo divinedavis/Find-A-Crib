@@ -520,5 +520,7 @@
  "Unsend": "Anular envío",
  "1 building": "1 edificio",
  "Email with my documents": "Enviar con mis documentos",
- "Your documents go with it: %@.": "Tus documentos van adjuntos: %@."
+ "Your documents go with it: %@.": "Tus documentos van adjuntos: %@.",
+ "Get alerts on new re-rentals": "Recibe alertas de nuevos re-alquileres",
+ "Sign in for re-rental alerts": "Inicia sesión para recibir alertas de re-alquileres"
 }

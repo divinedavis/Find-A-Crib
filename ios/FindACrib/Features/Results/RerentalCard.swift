@@ -199,7 +199,8 @@ struct RerentalCard: View {
     private var bits: [String] {
         let f = listing
         var out: [String] = []
-        if let b = f.beds { out.append(b == "studio" ? String(localized: "Studio") : "\(b)-bed") }
+        // Some agents print "Studio" (seen as "Studio-bed", 2026-10-27).
+        if let b = f.beds { out.append(b.lowercased() == "studio" ? String(localized: "Studio") : "\(b)-bed") }
         // No unit count or ZIP (owner, 2026-10-22): the ZIP is already in
         // the address, and "1 unit" told a renter nothing.
         return out

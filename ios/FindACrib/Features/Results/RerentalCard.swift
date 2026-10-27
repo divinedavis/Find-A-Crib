@@ -105,8 +105,11 @@ struct RerentalCard: View {
                         Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
                     }
                 }
-                (Text("Listed by ").font(.se(compact ? 14 : 18)) + Text(f.agent).font(.se(compact ? 14 : 18, .bold)))
-                    .foregroundStyle(SE.ink2)
+                // A deal box's header names the agent already (owner, 2026-10-27).
+                if f.deal == nil {
+                    (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)))
+                        .foregroundStyle(SE.ink2)
+                }
 
                 HStack(spacing: 14) {
                     if let url = URL(string: f.href) {

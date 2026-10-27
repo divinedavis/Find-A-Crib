@@ -1431,12 +1431,17 @@ class Runner:
                   const f = F.find(x => x.href === c.dataset.featHref) || {};
                   const box = c.querySelector('.deal-box'), eff = c.querySelector('.deal-eff');
                   return {want: !!f.deal, box: !!box, ribbon: !!c.querySelector('.deal-ribbon'),
+                          listed: !!c.querySelector('.feat-agent'),
                           rows: box ? box.querySelectorAll('.deal-r').length : 0, text: box ? box.textContent : '',
                           rent: f.money_kind === 'rent' ? f.money_low : null, eff: eff && !eff.hidden ? eff.textContent : null};
                 }); })()""")
             self.ok(got, 'no re-rental tile rendered', j)
             wrong = [g for g in got if g['want'] != g['box'] or g['want'] != g['ribbon']]
             self.ok(not wrong, f'deal box/ribbon only on listings with a deal: {wrong[:2]}', j)
+            # The box's header names the agent, so a deal card drops its
+            # "Listed by" line (owner, 2026-10-27); every other card keeps it.
+            dup = [g for g in got if g['listed'] == g['box']]
+            self.ok(not dup, f'"Listed by" only on cards without a deal box: {dup[:2]}', j)
             with_deal = [g for g in got if g['want']]
             for g in with_deal:
                 self.ok(g['rows'] == 3 and '$1,000 security deposit' in g['text'] and 'Any unit size' in g['text'],

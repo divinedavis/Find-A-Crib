@@ -240,6 +240,8 @@ final class FindACribUITests: XCTestCase {
         let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         from.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -(card.frame.minY - 120))), withVelocity: .slow, thenHoldForDuration: 0.4)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "deal-card"; shot.lifetime = .keepAlways; add(shot)
+        // The box's header names the agent, so no "Listed by" line (owner, 2026-10-27).
+        XCTAssertFalse(card.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Listed by'")).firstMatch.exists, "a deal card repeats the agent under its box")
         // One screen: between the search bar and the floating Map button / tab bar.
         XCTAssertLessThanOrEqual(card.frame.height, app.windows.firstMatch.frame.height - 300, "the deal card should fit on one screen")
     }

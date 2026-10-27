@@ -5541,7 +5541,8 @@ function favActive() {
       div.className = 'feat-facts';
       div.innerHTML = (bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : '')
         + (warn.length ? `<div class="units-line" style="color:var(--warn-ink)">⚠️ Check carefully: ${warn.join('; ')}</div>` : '');
-      const anchor = card.querySelector('.feat-agent');
+      // A deal card has no "Listed by" line: its box names the agent.
+      const anchor = card.querySelector('.feat-agent') || card.querySelector('.deal-box');
       if (anchor) anchor.after(div);
     });
   }
@@ -6780,6 +6781,7 @@ function favActive() {
     // something — "Forten at Columbia" does, a prefix of the address doesn't.
     const named = f.title && !f.address.toLowerCase().startsWith(f.title.toLowerCase());
     const where = [named ? f.title : null, f.borough].filter(Boolean).join(' · ');
+    const dealHtml = featDealHtml(f);
     const bits = [];
     if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
     // No unit count or ZIP (owner, 2026-10-22): the ZIP is already in the
@@ -6803,9 +6805,9 @@ function favActive() {
       <div class="body">
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
         ${featMoneyHtml(f)}
-        ${featDealHtml(f)}
+        ${dealHtml}
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
-        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b></div>
+        ${dealHtml ? '' : `<div class="feat-agent">Listed by <b>${esc(f.agent)}</b></div>`}
         <div class="actions">
           <!-- A few agents (Clinton Management) publish a board with no page
                per apartment, so the link can only be that board. Saying "Apply"

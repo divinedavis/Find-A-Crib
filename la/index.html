@@ -2405,7 +2405,10 @@ function favActive() {
   let errSent = 0;
   window.addEventListener('error', e => {
     if (errSent++ >= 5) return;
-    try { track('js_error', { msg: String(e.message || '').slice(0, 200), src: String(e.filename || '').slice(-60), line: e.lineno || 0, col: e.colno || 0 }); } catch (_) {}
+    // host: src keeps only the file's tail, which hid whose file it was
+    // (2026-10-27: a third party's rxEngine.wasm read as ours).
+    let host = ''; try { host = e.filename ? new URL(e.filename).host : ''; } catch (_) {}
+    try { track('js_error', { msg: String(e.message || '').slice(0, 200), src: String(e.filename || '').slice(-60), host: host.slice(0, 80), line: e.lineno || 0, col: e.colno || 0 }); } catch (_) {}
   });
   window.addEventListener('unhandledrejection', e => {
     if (errSent++ >= 5) return;

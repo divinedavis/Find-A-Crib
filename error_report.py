@@ -104,6 +104,10 @@ AD_STACK_HOSTS = ("scriptwrapper.com", "journeymv.com", "mediavine.com", "grow.m
                   "imasdk.googleapis.com")
 
 
+# Where our own scripts load from; any other host in a js_error is a third party's.
+OUR_HOSTS = ("findacrib.com", "www.findacrib.com")
+
+
 def is_noise(message: str) -> bool:
     m = message.lower()
     return any(n in m for n in IGNORED)
@@ -197,7 +201,14 @@ def js_errors(rows):
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).
-                      or (p.get("kind") == "promise" and not at and msg == "[object XMLHttpRequest]"))
+                      or (p.get("kind") == "promise" and not at and msg == "[object XMLHttpRequest]")
+                      # A file from another site (index.html sends its host
+                      # since 2026-10-27): an ad or extension script, not ours.
+                      or bool(p.get("host") and p["host"] not in OUR_HOSTS)
+                      # WebAssembly: this site ships none (2026-10-27, a third
+                      # party's rxEngine.wasm "memory access out of bounds",
+                      # 1 visitor, before the host was sent).
+                      or ".wasm" in src)
         e["n"] += 1
         e["people"].add(r["visitor_id"])
         e["paths"][r.get("path") or "/"] += 1

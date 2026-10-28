@@ -65,3 +65,18 @@ def test_one_phone_without_sign_in_with_apple_is_not_an_app_failure():
 def test_two_people_with_apple_1000_still_count():
     out = E.app_failures([apple("v1"), apple("v2")])
     assert out["Sign-in failed (apple)"]["n"] == 2
+
+
+def test_a_third_party_file_is_noise():
+    # 2026-10-27: someone else's rxEngine.wasm; the site ships no WebAssembly.
+    wasm = {"event": "js_error", "props": {"msg": "Uncaught RuntimeError: memory access out of bounds",
+                                           "src": "-0-production-endpoint-v1/rxEngine.wasm?0ffb634e09e360335251"},
+            "visitor_id": "v1", "path": "/", "created_at": "2026-10-28T00:13:16Z"}
+    other = {"event": "js_error", "props": {"msg": "TypeError: x is undefined", "src": "https://ads.example/a.js",
+                                            "host": "ads.example"},
+             "visitor_id": "v1", "path": "/", "created_at": "2026-10-28T00:13:16Z"}
+    ours = {"event": "js_error", "props": {"msg": "TypeError: x is undefined", "src": "https://findacrib.com/",
+                                           "host": "findacrib.com"},
+            "visitor_id": "v1", "path": "/", "created_at": "2026-10-28T00:13:16Z"}
+    assert all(v["noise"] for v in E.js_errors([wasm, other]).values())
+    assert not any(v["noise"] for v in E.js_errors([ours]).values())

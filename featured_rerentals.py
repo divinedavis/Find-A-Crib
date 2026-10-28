@@ -77,12 +77,21 @@ ONE_PERSON = re.compile(r'\b1\s*(?:person|adult|occupant)\b', re.I)
 # a count of 10,452 units. No re-rental board posts a thousand of anything.
 UNITS = re.compile(r'\b(\d{1,3})\s+units?\b', re.I)
 BEDS = re.compile(r'\b(studio|\d+)\s*(?:bed|bd|br|bedroom)s?\b', re.I)
+# "2481 Crotona Avenue: Studio" (St. Nicks), a bare "STUDIO" line (CAMBA): a
+# studio printed with no "bed" after it. Only at a line start or after a
+# separator, so a building's "yoga studio" amenity is not an apartment size.
+STUDIO_ALONE = re.compile(r'(?:^|[:|•–-]\s*)studio\b', re.I | re.M)
+# "UNIT(S) AVAILABLE" under a building with no rent printed (Spring Leasing,
+# 2026-10-28): the agent saying there is an opening is what makes it a tile.
+AVAILABLE = re.compile(r'\bunits?\s*\(?s?\)?\s+available\b|\bnow\s+leasing\b|'
+                       r'\bcurrently\s+(?:vacant|available)\b|\bvacant\s+available\b', re.I)
 # Tax Solute writes the size as "Unit Size: 2", "Unit Size: studio" or
 # "Unit Size: 0" (a studio); a range ("0 - 2") is a building with several.
 UNIT_SIZE = re.compile(r'\bunit size:\s*(studio|\d)\s*$', re.I)
 # "Unit on Hold": applications are in and under review (Tax Solute, 2026-10-23,
 # eight of its ten tiles). The badge sits above the address it belongs to.
-ON_HOLD = re.compile(r'\b(unit|application)s?\s+on\s+hold\b', re.I)
+# ACJ's version (2026-10-28): "Applications temporarily paused".
+ON_HOLD = re.compile(r'\b(unit|application)s?\s+on\s+hold\b|\bapplications?\s+(?:temporarily\s+)?paused\b', re.I)
 ZIP = re.compile(r'\b(\d{5})\b')
 # "188-11 Hillside Avenue, Queens, NY 11423" / "410 W 126th St, New York, NY"
 ADDRISH = re.compile(r'^\s*\d+[\w-]*\s+[A-Za-z0-9.\'-]', re.I)
@@ -92,7 +101,7 @@ ADDRISH = re.compile(r'^\s*\d+[\w-]*\s+[A-Za-z0-9.\'-]', re.I)
 # rows sit right next to the listings and duration strings litter TF
 # Cornerstone, so without this the grid fills with tiles for "5 Results".
 NOT_A_STREET = re.compile(
-    r'^\s*\d+[\w-]*\s+(results?|active|listings?|available|units?|bed|beds|bedrooms?|'
+    r'^\s*\d+(?:\s*[-–]\s*\d+)?[\w-]*\s+(results?|active|listings?|available|units?|bed|beds|bedrooms?|'
     r'studios?|person|people|household|applicants?|min(?:ute)?s?|hours?|days?|weeks?|'
     r'months?|years?|bath|baths|sq\.?\s*ft)\b', re.I)
 # "1-Bedroom - 2-Bedroom" is a unit-type list, but the hyphen glues the stopword
@@ -102,7 +111,15 @@ UNIT_TYPE = re.compile(r'^\s*(?:studio|\d+)\s*[-–]?\s*(?:bed|bd|br|bath|ba)\w*
 # MHANY leaves leased buildings on the page with the application closed. A tile
 # for an apartment nobody can apply to is worse than no tile.
 CLOSED = re.compile(r'application process is closed|no longer available|recently leased|'
-                    r'waitlist closed|closed to new applic', re.I)
+                    r'waitlist closed|closed to new applic|applications? (?:are|is) closed|'
+                    # Sterling23 keeps a leased unit up as "RENTED"; MHANY lists
+                    # buildings not yet open under "COMING SOON" (2026-10-28).
+                    r'^\s*rented\s*$|\bcoming soon\b', re.I | re.M)
+# Housing Partnership's one "active listing" on 2026-10-28 was Belle Gardens
+# (Homeownership); NMIC posts co-op apartments for sale. Not re-rentals.
+# MHANY's ANCP buildings are the Affordable Neighborhood Cooperative Program:
+# co-ops to buy, listed beside its rentals.
+FOR_SALE = re.compile(r'\(homeownership\)|\bfor sale\b|\bfirst-time homebuyers?\b|\bANCP\b', re.I)
 # The line above the address is usually the building's name ("Forten at
 # Columbia", "OHM", "Rialto West") — but on some sites it is a section heading,
 # and "600 Crown St · Units Available · Brooklyn" reads like the building is
@@ -112,7 +129,8 @@ GENERIC_TITLE = re.compile(
     r'listings?|current\s*vacanc\w*|vacanc\w*|apartments?(\s*for\s*rent)?|'
     r'for\s*rent|new|featured|results?|re-?rentals?|outside\s*market|'
     r'unit\s*available\s*for\s*initial\s*occupancy|initial\s*occupancy|'
-    r'affordable(\s*housing)?|our\s*\w+|properties|'
+    r'affordable(\s*housing)?(\s*for\s*rent)?|our\s*\w+|properties|address|'
+    r'applications?\b.*|'
     # Several boards print the borough as a label above the address, which then
     # renders as "BROOKLYN · Brooklyn" — the borough twice, once pretending to
     # be the building's name.
@@ -155,6 +173,18 @@ EXTRACT_JS = r"""(opts) => {
   // for itself only. resolve_by_click re-runs this with no argument.
   const CARD_MAX = (opts && opts.cardMax) || 600;
   const CARD_LINES = (opts && opts.cardLines) || 14;
+  // Where the board's own "no current vacancies" section starts (Clinton,
+  // Housing Partnership: fully-occupied buildings listed below the open
+  // ones, card for card the same shape). Nothing from there on is a listing.
+  let STOP = null;
+  if (opts && opts.stopAt) {
+    const want = opts.stopAt.toLowerCase();
+    for (const el of document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div, span, strong')) {
+      if ((el.innerText || '').trim().toLowerCase().startsWith(want) && !el.querySelector('h1, h2, h3, h4, h5, h6, p, div')) { STOP = el; break; }
+    }
+  }
+  const NAMES = Object.entries((opts && opts.names) || {}).map(([n, a]) => [n.toLowerCase(), a]);
+  const pastStop = el => STOP && (el.contains(STOP) || (STOP.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
   // "Apply on their site" has to land on THE apartment. Taking the first <a> in
   // the block sent six agents' tiles to the board they were scraped from and
   // C+C's to the company logo in the header, so every candidate link is scored
@@ -229,8 +259,24 @@ EXTRACT_JS = r"""(opts) => {
   // without this they count as addresses. On MGNY that put a phantom building
   // key next to the real one inside every card, every card looked like a
   // two-listing wrapper, and the whole site produced nothing.
-  const NOPE = /^\s*\d+[\w-]*\s+(results?|active|listings?|available|units?|bed|beds|bedrooms?|studios?|person|people|household|applicants?|min(ute)?s?|hours?|days?|weeks?|months?|years?|bath|baths|sq\.?\s*ft)\b/i;
-  const isAddr = l => ADDR.test(l) && !NOPE.test(l) && l.length < 90 && /[a-z]{3}/i.test(l);
+  const NOPE = /^\s*\d+(?:\s*[-–]\s*\d+)?[\w-]*\s+(results?|active|listings?|available|units?|bed|beds|bedrooms?|studios?|person|people|household|applicants?|min(ute)?s?|hours?|days?|weeks?|months?|years?|bath|baths|sq\.?\s*ft)\b/i;
+  // Also not streets: a unit-type list ("1-Bedroom - 2-Bedroom", AFNY), a
+  // phone number ("718-518-8000 ext. 274", Langsam) and a copyright line
+  // ("2026 ACJ International Realty LLC. All rights reserved.").
+  const NOT_ADDR = /^\s*(?:studio|\d+)\s*[-–]?\s*(?:bed|bd|br|bath|ba)\w*\b|^\s*\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b|rights reserved|copyright/i;
+  const isAddr = l => ADDR.test(l) && !NOPE.test(l) && !NOT_ADDR.test(l) && l.length < 90 && /[a-z]{3}/i.test(l);
+  // A street inside a longer line: "Address: 1488 New York Avenue, Brooklyn"
+  // (Spring), "Affordable housing for rent: 603 Pontiac Place" (Langsam),
+  // "Greenpoint Central Apartments - 65 Dupont Street" (AFNY). It has to end
+  // in a street word, so "Rent: $970" or "Hours: 9 am" never qualify.
+  const STREETY = /\b(street|st|avenue|ave|av|road|rd|boulevard|blvd|place|pl|drive|dr|parkway|pkwy|lane|ln|court|ct|terrace|ter|way|concourse|plaza|broadway|highway|hwy|turnpike|walk|loop|crescent|oval|circle|expressway)\b/i;
+  const inner = l => {
+    const m = l.match(/(?:[:–—|(]|\s-|\baka|\bat|\bfor rent)\s*(\d+[\w-]*\s+[A-Za-z0-9].*)$/i);
+    return m && isAddr(m[1]) && STREETY.test(m[1]) ? m[1].trim() : null;
+  };
+  // "⌖ 263–267 West 126th Street" (LARRIS): a leading symbol and an en dash
+  // in the house number, both of which hid the address.
+  const tidyLine = l => l.replace(/^[^\w$(]+/, '').replace(/(\d)\s*[–—]\s*(\d)/g, '$1-$2');
   // LARGEST block that still holds exactly ONE address. Taking the smallest
   // instead collapses every card down to the bare address element and throws
   // away the rent, the unit count and the photo — which is the whole record.
@@ -243,13 +289,28 @@ EXTRACT_JS = r"""(opts) => {
   const bldg = l => l.toLowerCase().replace(/[^a-z0-9 ]/g, ' ')
                      .split(/\s+/).filter(Boolean).slice(0, 2).join(' ');
   const best = new Map();
-  document.querySelectorAll('a, article, li, div, section').forEach(el => {
+  // tr: MNS's board is a table, one row per apartment (2026-10-28).
+  // td, p, span: Reclaim HDFC lists its ten buildings as bare spans.
+  document.querySelectorAll('a, article, li, div, section, tr, td, p, span').forEach(el => {
+    if (pastStop(el)) return;
     const txt = (el.innerText || '').trim();
     if (!txt || txt.length > CARD_MAX) return;
-    const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
+    const lines = [];
+    txt.split('\n').map(s => tidyLine(s.trim())).filter(Boolean).forEach(l => {
+      lines.push(l);
+      if (!isAddr(l)) { const a = inner(l); if (a) lines.push(a); }
+      // "names": buildings the agent posts by name only ("Sunset Ridge
+      // Apartments", "CAMBA GARDENS I"), each address looked up once from the
+      // agent's own detail page or flyer and kept in rerental_pages.json.
+      if (!isAddr(l)) for (const [n, a] of NAMES) if (l.toLowerCase().includes(n)) { lines.push(a); break; }
+    });
     const addrs = lines.filter(isAddr);
     if (!addrs.length) return;
-    if (new Set(addrs.map(bldg)).size !== 1) return;
+    // "1215 Fulton Street aka 12 Halsey Street" over "12 Halsey Street,
+    // Brooklyn" (MGNY) is one building under two addresses, not two cards.
+    const alias = new Map();
+    addrs.forEach(a => { const m = a.match(/\baka\s+(\d+[\w-]*\s+\S+)/i); if (m) alias.set(bldg(m[1]), bldg(a)); });
+    if (new Set(addrs.map(a => alias.get(bldg(a)) || bldg(a))).size !== 1) return;
     // Prefer the fullest spelling — the one carrying borough and ZIP.
     addrs.sort((a, b) => b.length - a.length);
     const key = bldg(addrs[0]);
@@ -406,6 +467,7 @@ def clean_address(line):
     """
     s = re.sub(r'\s+', ' ', line).strip()
     s = re.split(r'\s\$', s)[0]                     # everything from the rent on
+    s = re.split(r'\s*:\s+(?=[A-Za-z])', s)[0]      # "2481 Crotona Avenue: Studio" 
     s = re.sub(r'\s+(?:\d{1,4}\s+){2,}.*$', '', s)  # trailing numeric columns
     return s.strip(" ,-·|")[:80]
 
@@ -432,7 +494,7 @@ def parse_card(c, agent, page_url):
     """A raw DOM candidate -> a listing record, or None if it isn't one."""
     lines = c["lines"]
     blob_all = " \n".join(lines)
-    if CLOSED.search(blob_all):
+    if CLOSED.search(blob_all) or FOR_SALE.search(blob_all):
         return None
     addr_i = next((i for i, l in enumerate(lines)
                    if ADDRISH.match(l) and not NOT_A_STREET.match(l) and len(l) < 90), None)
@@ -451,6 +513,9 @@ def parse_card(c, agent, page_url):
     title = ""
     if addr_i > 0:
         cand = re.sub(r'\s+', ' ', lines[addr_i - 1]).strip(" .·|-:")
+        # "Greenpoint Central Apartments - 65 Dupont Street": the name is the
+        # part before the street the extractor pulled out onto its own line.
+        cand = re.split(r'\s*(?:[-–—:|(]|\baka\b|\bat\b|\bfor rent:?)\s*(?=\d)', cand, maxsplit=1, flags=re.I)[0].strip(" .·|-:(")
         if (3 < len(cand) < 70 and not ADDRISH.match(cand) and not MONEY.search(cand)
                 and not is_generic_title(cand)):
             title = cand
@@ -460,7 +525,8 @@ def parse_card(c, agent, page_url):
     bm = BEDS.search(blob)
     sm = next((m for m in map(UNIT_SIZE.search, lines) if m), None)
     beds = (bm.group(1).lower() if bm else
-            ("studio" if sm.group(1).lower() in ("0", "studio") else sm.group(1)) if sm else None)
+            ("studio" if sm.group(1).lower() in ("0", "studio") else sm.group(1)) if sm else
+            "studio" if STUDIO_ALONE.search(blob) else None)
     zm = ZIP.search(address) or ZIP.search(blob)
     zipcode = zm.group(1) if zm else None
     # The listing's own link often names the borough when the card only says
@@ -484,6 +550,7 @@ def parse_card(c, agent, page_url):
         "income_1p_max": one_person_income(lines),
         "units": int(um.group(1)) if um else None,
         "beds": beds,
+        "_available": bool(AVAILABLE.search(blob)),
         "on_hold": any(ON_HOLD.search(l) for l in lines[:addr_i + 1]) or None,
         "href": c["href"] or board_link(page_url, address),
         # Whether that link is the apartment or just the board it sits on. The
@@ -574,25 +641,66 @@ def sweep(pages, only=None):
         for name, meta in pages.items():
             if only and only.lower() not in name.lower():
                 continue
-            if meta.get("waitlist"):
-                continue          # a wait list has no apartment to feature
+            if meta.get("waitlist") or meta.get("sale_only"):
+                continue          # a wait list (or a co-op sale) has no apartment to rent
             if meta.get("feed"):
                 continue          # JSON sources: rerental_feeds, see feed_sweep()
             page = ctx.new_page()
             try:
-                page.goto(meta["url"], wait_until="domcontentloaded", timeout=45000)
-                page.wait_for_timeout(3500)
-                for _ in range(5):            # several lazy-load the grid on scroll
-                    page.mouse.wheel(0, 1600)
-                    page.wait_for_timeout(700)
-                page.wait_for_timeout(1200)
-                cands = page.evaluate(EXTRACT_JS, {"cardMax": meta.get("card_max"),
-                                                   "cardLines": meta.get("card_lines")})
+                opts = {"cardMax": meta.get("card_max"), "cardLines": meta.get("card_lines"),
+                        "stopAt": meta.get("stop_at"), "names": meta.get("names")}
+                cands = []
+                # "also": the agent's other availability pages (MHANY posts
+                # re-rentals on one page and leasing buildings on another).
+                # Only the main page's tiles get resolve_by_click below; the
+                # others link their own page, scrolled to the building.
+                for url in [meta["url"]] + list(meta.get("also") or []):
+                    page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                    page.wait_for_timeout(3500)
+                    for _ in range(5):            # several lazy-load the grid on scroll
+                        page.mouse.wheel(0, 1600)
+                        page.wait_for_timeout(700)
+                    page.wait_for_timeout(1200)
+                    got = page.evaluate(EXTRACT_JS, opts)
+                    # "frames": listings drawn inside embedded frames (LARRIS's
+                    # GoDaddy board puts each one in an about:srcdoc iframe).
+                    if meta.get("frames"):
+                        for fr in page.frames[1:]:
+                            try:
+                                more = fr.evaluate(EXTRACT_JS, opts)
+                            except Exception:
+                                continue
+                            for c in more:
+                                c["probe"] = None
+                            got += more
+                    # "pager": a board paged by script, not by URL (MGNY: 22
+                    # listings, 9 a page, page 1 was all we read until
+                    # 2026-10-28). Click each page button in turn.
+                    if meta.get("pager"):
+                        n = page.locator(meta["pager"]).count()
+                        for i in range(1, min(n, 10)):
+                            page.locator(meta["pager"]).nth(i).click()
+                            page.wait_for_timeout(2500)
+                            got += page.evaluate(EXTRACT_JS, opts)
+                    for c in got:
+                        c["_from"] = url
+                        if url != meta["url"] or meta.get("pager"):
+                            c["probe"] = None     # resolve_by_click needs the card on screen
+                    cands += got
+                if meta.get("also") or meta.get("pager"):
+                    # Last page loaded is not the board resolve_by_click expects.
+                    page.goto(meta["url"], wait_until="domcontentloaded", timeout=45000)
+                    page.wait_for_timeout(3000)
                 seen, found = set(), []
                 for c in cands:
-                    rec = parse_card(c, name, meta["url"])
+                    rec = parse_card(c, name, c.get("_from") or meta["url"])
                     if not rec:
                         continue
+                    # "available": the page itself says it is taking
+                    # applications for the buildings it lists, which carry no
+                    # rent of their own (Reclaim HDFC, East Village Homes).
+                    if meta.get("available") or (meta.get("also_available") and c.get("_from") != meta["url"]):
+                        rec["_available"] = True
                     if meta.get("link") == "board":
                         # The card's own links are known to be wrong for this
                         # board (Sterling23's "StreetEasy" button opens a
@@ -678,7 +786,8 @@ def is_real_listing(rec, offices):
     if not re.search(r'[a-z]{3}', a):
         return False
     # A tile with no money and no unit count is a link, not an apartment.
-    if rec["money_kind"] is None and rec["units"] is None and rec["beds"] is None:
+    if (rec["money_kind"] is None and rec["units"] is None and rec["beds"] is None
+            and not rec.get("_available")):
         return False
     return True
 
@@ -1178,7 +1287,9 @@ def main():
     # rerental_daily.py --out: write straight into the docroot instead.
     ap.add_argument("--out", help="write into this docroot directly (droplet-side)")
     ap.add_argument("--only", help="scan one agent (substring match)")
-    ap.add_argument("--limit", type=int, default=60, help="max tiles to publish")
+    # No cap by default: every listing the agents post goes out (owner,
+    # 2026-10-28). The 60 cap had been cutting ~30 a day, HDC's 25 down to 10.
+    ap.add_argument("--limit", type=int, default=None, help="max tiles to publish")
     args = ap.parse_args()
 
     global IMGDIR

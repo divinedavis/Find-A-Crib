@@ -22,7 +22,7 @@
   "K&R Realty Management Inc": "gonofee.com is a market-rate no-fee brokerage",
   "Vector New York": "/listings is market-rate luxury",
   "Diamond Mine Real Estate": "soft-404: /about/affordable-re-rentals renders their About page",
-  "Micki Garcia Realty": "soft-404: same",
+  "Micki Garcia Realty": "homepage lists homeownership projects only (re-checked 2026-10-28); the old soft-404 path is gone",
   "Urban Ecospaces, Inc.": "soft-404: same",
   "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)",
   "B3 Compliance Solutions": "compliance consultancy site, no renter listings (verified 2026-08-10)",
@@ -45,8 +45,10 @@
   "Conformity Habitat LLC": "HPD-listed domain dead - DNS (checked 2026-08-10)",
   "Reside Affordable Inc": "HPD-listed domain dead - DNS; operator's board is Reside New York's Open Market page",
   "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
-  "Sycamore Birch Management LLC": "site times out (checked 2026-08-10)",
-  "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)"
+  "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)",
+  "CGMR Compliance": "HPD links cgmrcompliance.com/housing-opportunities; 404 on 2026-10-28",
+  "Ibis Advisors": "HPD links ibis.powerappsportals.com; Azure says 'This web app is stopped' (2026-10-28)",
+  "Riverton Square": "HPD links its StreetEasy building page; StreetEasy terms bar scraping"
  },
  "checked": "2026-10-28",
  "pages": {
@@ -67,7 +69,7 @@
    "unit_count": 16
   },
   "The Wavecrest Management Team Ltd.": {
-   "url": "https://www.wavecrestrentals.com",
+   "url": "https://wavecrestrentals.com/section.php?id=1",
    "title": "Wavecrest Rentals",
    "units_seen": false,
    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
@@ -107,7 +109,8 @@
    "title": "Affordable Availabilities",
    "units_seen": true,
    "last_ok": "2026-10-28",
-   "unit_count": 6
+   "unit_count": 6,
+   "stop_at": "Properties With No Current Vacancies"
   },
   "MHANY Management, Inc.": {
    "url": "https://www.mutualhousingny.org/affordable-re-rental-units",
@@ -115,14 +118,19 @@
    "units_seen": true,
    "last_ok": "2026-10-28",
    "unit_count": 1,
-   "note": "First-come re-rentals (Stella Heights HDFC SROs; 1921 Cortelyou Road and 700 Manida Street in its submenu, each with a rent table on its own page). HPD links this page; the old /avaliable-properties is lotteries + contact emails (moved 2026-09-29)."
+   "note": "First-come re-rentals (Stella Heights HDFC SROs; 1921 Cortelyou Road and 700 Manida Street in its submenu, each with a rent table on its own page). HPD links this page; the old /avaliable-properties is lotteries + contact emails (moved 2026-09-29).",
+   "also": [
+    "https://www.mutualhousingny.org/avaliable-properties"
+   ],
+   "also_available": true
   },
   "Housing Partnership Development Corporation": {
    "url": "https://www.housingpartnership.com/services/current-vacancies",
    "title": "Current Vacancies",
    "units_seen": true,
    "last_ok": "2026-10-28",
-   "unit_count": 13
+   "unit_count": 13,
+   "stop_at": "Properties With No Current Vacancies"
   },
   "Restored Homes": {
    "url": "https://www.neighborhoodrestore.org/homebuyers",
@@ -137,14 +145,18 @@
    "title": "Listings",
    "units_seen": true,
    "last_ok": "2026-10-28",
-   "unit_count": 22
+   "unit_count": 22,
+   "pager": "li.pagination-page"
   },
   "Spring Leasing and Management, LLC": {
    "url": "https://springmanagement.net/apartments-for-rent",
    "title": "Apartments For Rent",
    "units_seen": true,
    "last_ok": "2026-10-28",
-   "unit_count": 1
+   "unit_count": 1,
+   "card_max": 1400,
+   "card_lines": 24,
+   "available": true
   },
   "C+C Apartment Management, LLC": {
    "url": "https://ccmanagers.com/availability/",
@@ -167,7 +179,9 @@
    "note": "AMI-banded units with stated rents; apply by email. First-come style.",
    "units_seen": true,
    "unit_count": 3,
-   "last_ok": "2026-10-28"
+   "last_ok": "2026-10-28",
+   "card_max": 1600,
+   "card_lines": 30
   },
   "MNS": {
    "url": "https://www.mns.com/affordable_units",
@@ -225,7 +239,11 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 2,
-   "last_ok": "2026-10-28"
+   "last_ok": "2026-10-28",
+   "names": {
+    "Sunset Ridge Apartments": "6309 4th Avenue, Brooklyn, NY 11220",
+    "Sunset Park Apartments": "372 51st Street, Brooklyn, NY 11220"
+   }
   },
   "Settlement Housing Fund": {
    "url": "https://www.settlementhousingfund.org/find-housing/",
@@ -254,7 +272,10 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 1,
-   "last_ok": "2026-10-28"
+   "last_ok": "2026-10-28",
+   "names": {
+    "CAMBA GARDENS I": "690-738 Albany Avenue, Brooklyn, NY 11203"
+   }
   },
   "Glenwood Management": {
    "url": "https://www.glenwoodnyc.com/company/assisted-housing/",
@@ -269,15 +290,16 @@
    "url": "https://www.nmic.org/en/housing-development/",
    "title": "Re-rentals / availabilities",
    "units_seen": true,
-   "note": "ANCP co-op openings at 21 Arden Street, Washington Heights",
+   "note": "Posts HDFC co-op apartments for sale to first-time buyers (21 Arden Street, 2026-10-28), not rentals; kept in the directory, left out of the tiles.",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "last_ok": "2026-10-28",
-   "unit_count": 3
+   "unit_count": 3,
+   "sale_only": true
   },
   "About Real Estate NY": {
-   "url": "https://www.aboutrealestateny.com/houses",
-   "note": "Affordable Housing category, 8 properties (1133 Bedford, 767 Marcy, 323 Quincy...)",
+   "url": "https://www.aboutrealestateny.com/rentals",
+   "note": "Rentals page; /houses went 404 by 2026-10-28. Everything there was RENTED that day.",
    "title": "Affordable availabilities",
    "units_seen": false,
    "found": "2026-09-22",
@@ -359,6 +381,69 @@
    "found": "2026-09-29",
    "source": "owner research (2026-09-29)",
    "last_ok": "2026-10-28"
+  },
+  "ACJ International Realty LLC": {
+   "url": "https://www.acjinternationalrealty.com/affordable-re-rentals",
+   "title": "Re-Rental Availabilities",
+   "note": "One card per unit with rent, type and household size.",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)"
+  },
+  "LARRIS Marketing & Compliance LLC": {
+   "url": "https://larrismarketing.com/re-rentals",
+   "title": "Available Re-Rentals",
+   "note": "GoDaddy site; each listing is drawn in an about:srcdoc iframe, hence frames.",
+   "frames": true,
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)"
+  },
+  "Sycamore Birch Management LLC (Reclaim HDFC)": {
+   "url": "https://sbmgmt.sitemanager.rentmanager.com/RECLAIMHDFC.aspx",
+   "title": "RECLAIM HDFC",
+   "note": "Ten scattered-site Bronx walk-ups on one page, applications accepted. Was excluded 2026-08-10 for timing out; loads now.",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)",
+   "available": true
+  },
+  "Stanton Norfolk Inc. (East Village Homes)": {
+   "url": "https://east-village-homes-owner-llc.rentcafewebsite.com/",
+   "title": "East Village Homes",
+   "note": "RentCafe property site, 302 East 2nd Street; accepting applications for vacancies and the waiting list.",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)",
+   "available": true
+  },
+  "The Bridge": {
+   "url": "https://www.thebridgeny.org/news-and-media",
+   "title": "News + Media",
+   "note": "Re-rentals are posted as news items with a flyer (Morrisania senior studio, Brownsville units).",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)",
+   "names": {
+    "Morrisania, Bronx": "3500 Park Avenue, Bronx, NY 10456",
+    "Brownsville, Brooklyn": "203 Newport Street, Brooklyn, NY 11212"
+   }
+  },
+  "Your Neighborhood Housing": {
+   "url": "https://yourneighborhoodhousing.com/",
+   "title": "Your Neighborhood Housing",
+   "note": "Home page names 3531 Bruckner Boulevard; the Available Listings page (/available-listings-1) was empty on 2026-10-28.",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)"
+  },
+  "SOIS Maintenance LLC": {
+   "url": "https://soisrealestateconsulting.com/current-projects-1",
+   "title": "Current Projects",
+   "note": "Project cards say APPLICATIONS ARE CLOSED when closed (both were, 2026-10-28).",
+   "units_seen": false,
+   "found": "2026-10-28",
+   "source": "HPD re-rentals page (owner, 2026-10-28)"
   }
  }
 }

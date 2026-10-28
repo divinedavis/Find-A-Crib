@@ -50,7 +50,11 @@ final class AccessibilityAuditTests: XCTestCase {
     /// Floating overlays, each grown by its padding and drop shadow (~20 pt).
     private var floatingFrames: [CGRect] {
         let tabs = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab-'"))
-        let bar = (0..<tabs.count).reduce(CGRect.null) { $0.union(tabs.element(boundBy: $1).frame) }
+        // The capsule is the buttons plus PillTabBar's 4 pt padding (iPad,
+        // 2026-10-28: a lottery's income line 2 pt above the bar's margin
+        // was measured against the glass edge and failed every daily run).
+        let buttons = (0..<tabs.count).reduce(CGRect.null) { $0.union(tabs.element(boundBy: $1).frame) }
+        let bar = buttons.isNull ? buttons : buttons.insetBy(dx: -4, dy: -4)
         let pills = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pill-'"))
         // The building page's bottom action bar (Comments + the hand-off
         // button) also floats over the scroll view, full width (iPad, 2026-10-03:

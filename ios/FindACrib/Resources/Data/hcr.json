@@ -1,7 +1,7 @@
 {
-"updated": 1792973103,
-"updated_iso": "2026-10-26T00:05:03+00:00",
-"count": 53,
+"updated": 1793189103,
+"updated_iso": "2026-10-28T12:05:03+00:00",
+"count": 54,
 "listings": [
 {
 "id": "a0Ycs000028W6CjEAK",
@@ -30,6 +30,34 @@
 "bbl": null,
 "lat": 40.716831,
 "lng": -74.001432
+}
+]
+},
+{
+"id": "a0Ycs00002P4ldfEAB",
+"name": "1919 Cornaga Avenue",
+"kind": "Lottery",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 49714,
+"max_income": 128240,
+"due": "11/29/2026",
+"fee": null,
+"phone": null,
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002P4ldfEAB/detail",
+"info": "https://housingsearch.hcr.ny.gov/housing/s/",
+"desc": "19-19 Cornaga Avenue is a newly constructed 9-story affordable and supportive housing development located in Downtown Far Rockaway, Queens, New York. The building is offering 31 new units of affordable housing. Units are available in studio, one-bedroom, and two-bedroom units ranging from 331 to 652 square feet. Apartments come equipped with EnergyStar appliances, high-efficiency LED lights, and e",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002OEcpvAAD?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": false,
+"approx": true,
+"buildings": [
+{
+"street": "1919 Cornaga LLC C/O Spring Leasing and Management LLC 401 Franklin Ave Garden City, New York 11530",
+"zip": null,
+"bbl": null
 }
 ]
 },
@@ -407,7 +435,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001pGPKjEAO/detail",
 "info": "No applications are being accepted at this time.",
 "desc": "Limited Dividend Cooperative in Flushing New York. No applications are being accepted at this time.",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002eWFNGAA4?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": true,
@@ -607,7 +635,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1gEAE/detail",
 "info": null,
 "desc": "Inwood Heights is a Mitchell Lama housing development located in Manhattan.",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002eHLbAAAW?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": true,
@@ -741,7 +769,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1hEAE/detail",
 "info": "https://jimersonhousing.com/",
 "desc": "Earl W. Jimerson Housing is a thriving community that provides quality housing in the heart of Brooklyn. PLEASE NOTE: By applying to this listing, you are applying to have your application added to an existing waitlist for this Mitchell-Lama property. This waitlist is used to fill vacant units as they become available. You may be required to pay an application fee to have your application added to",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002ec5bRAAQ?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": true,
@@ -1107,7 +1135,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK0mEAE/detail",
 "info": null,
 "desc": "Find your new apartment at River View Towers in New York, NY. You'll find this community on Riverside Dr in the Hamilton Heights area of New York. The leasing team is excited to help you find the best floor plan for your lifestyle. Contact us today to see available floor plans and see River View Towers. River View Towers is an apartment community located in New York County and the 10031 ZIP Code. ",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002egD7KAAU?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": false,

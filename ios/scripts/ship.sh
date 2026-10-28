@@ -169,6 +169,12 @@ fi
 # trying pipeline changes without sending a build to TestFlight.
 if [[ "${SHIP_REHEARSAL:-0}" == "1" ]]; then echo "==> $(date +%T) rehearsal: stopping before the bump (nothing archived or uploaded)"; exit 0; fi
 
+# An approved version is a closed train (90062/90186): move to the next one
+# first. Checked here, after the hours of tests, because a version can be
+# approved mid-run (the 2026-10-27 daily build failed its upload on 1.3.6).
+echo "==> $(date +%T) checking the app version is still open"
+"${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/next_version.py || { echo "error: could not check the app version" >&2; exit 1; }
+
 current=$(grep -m1 'CURRENT_PROJECT_VERSION:' "$PROJECT_YML" | sed -E 's/.*"([0-9]+)".*/\1/')
 next=$((current + 1))
 echo "==> $(date +%T) bumping build $current -> $next"
@@ -213,7 +219,7 @@ echo "==> $(date +%T) committing the ship's own changes (build $next)"
 SHIP_PATHS=(project.yml FindACrib.xcodeproj FindACrib/Resources/Data scripts/perf_baseline.json)
 if [[ -n "$(git status --porcelain -- "${SHIP_PATHS[@]}")" ]]; then
   git add -- "${SHIP_PATHS[@]}"
-  if git commit -q -m "iOS: build $next (seed data, perf baseline)" \
+  if git commit -q -m "iOS: build $next (seed data, perf baseline, version)" \
        -m "Committed by ship.sh after the TestFlight upload." \
        -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- "${SHIP_PATHS[@]}"; then
     git push -q origin HEAD:main 2>&1 | tail -2 || echo "warning: build $next commit not pushed; push it by hand"

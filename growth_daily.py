@@ -728,6 +728,62 @@ def revisit_lines(as_of=None):
     return out
 
 
+def pre_registration_lines(as_of=None):
+    """The pre-registered-condition block for `status`, as a list of lines.
+
+    WHY IT IS A BLOCK OF ITS OWN, next to the due-revisit block rather than
+    inside it. A revisit asks "is this still the best version of this idea?"
+    on a date. A pre-registration is a promise made earlier about what
+    specific evidence would settle a specific question, and it does not come
+    due on the revisit's clock: T017's fell due 2026-10-26, T023's 2026-10-27,
+    T013's 2026-10-28, none of them on that technique's revisit date.
+
+    Before 2026-10-28 these conditions had no reader at all. Each lived as an
+    English sentence inside a `notes` blob — T013's 7,091 characters in — and
+    the review found it by grepping seed.py. That is the same defect as
+    revisit_lines() above (the one input the review needed, reachable only
+    through a switched-off weekly email) one level down, and it has the worse
+    failure mode: a condition nobody reads is decided by whoever happens to
+    remember it, and the reader who remembers it is the one who wrote it.
+
+    The line that matters most is `cashable`. A condition can be due and still
+    unsafe to act on, and the gap is not a detail: T013's fires on an ABSENCE
+    ("census_known still 0"), so the sixteen days the owner had the crons
+    paused would have supplied its evidence for free. See
+    ledger.pre_registrations for the two shapes and why they differ.
+    """
+    regs = ledger.pre_registrations(as_of=as_of)
+    if not regs:
+        return ["pre-registered conditions: none recorded"]
+    cash = [e for e in regs if e.get("cashable")]
+    blocked = [e for e in regs if e.get("due") and not e.get("cashable")]
+    head = (f"pre-registered conditions ({len(regs)}) — {len(cash)} ready to decide, "
+            f"{len(blocked)} due but NOT cashable:")
+    out = [head]
+    for e in regs:
+        mark = "!" if e.get("cashable") else ("x" if e.get("due") else "·")
+        out.append(f"  {mark} {e['id']} {e.get('slug')}  "
+                   f"[fires on {e.get('fires_on')}"
+                   + (f", written {e['written']}" if e.get("written") else "") + "]")
+        out.append(f"      IF {e.get('condition')}")
+        if e.get("malformed"):
+            out.append(f"      ^ MALFORMED RECORD — {e['malformed']}. Fix the ledger; "
+                       f"do not act on this condition")
+            continue
+        obs, need = e.get("observed_nights"), e.get("needs_nights")
+        if need and obs is not None:
+            out.append(f"      evidence: {obs} of {need} measured nights"
+                       + (f" since {e['since']}" if e.get("since") else ""))
+        elif need:
+            out.append(f"      evidence: none countable yet — {need} measured nights are owed "
+                       f"from the day the window opens")
+        if e.get("cashable"):
+            out.append("      ^ DUE AND CASHABLE — decide it this run, and say so in the journal")
+        else:
+            out.append(f"      ^ not cashable — {e.get('why_not')}")
+    return out
+
+
 def cmd_status(args):
     summary, rows = cron_liveness()
     log(f"cron: {summary}")
@@ -759,6 +815,9 @@ def cmd_status(args):
             f"({'ok' if wd.get('ok') else 'FAILED'}) — {wd.get('note') or 'no note'}")
     log("")
     for line in revisit_lines():
+        log(line)
+    log("")
+    for line in pre_registration_lines():
         log(line)
     log("")
     techs = ledger.load_techniques()

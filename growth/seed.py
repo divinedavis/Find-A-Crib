@@ -455,6 +455,17 @@ SEEDS = [
                   "has nothing to match. 2026 pSEO guidance is consistent that templated "
                   "pages survive only where each carries unique data and intent; a "
                   "hand-written cornerstone page per city is the opposite failure mode.",
+         # Re-pointed from the calendar date 2026-10-27 to measured evidence on
+         # 2026-10-27 (see the revisit note below); transcribed into this field
+         # on 2026-10-28 without changing its substance.
+         pre_registered=[dict(
+             condition="a /guide/ URL has been fetched and still earns 0 impressions over the "
+                       "30 measured nights that follow — then the guides' CONTENT has failed "
+                       "and they should be rewritten or replaced",
+             fires_on="event",
+             gate="Google fetching any /guide/ URL at all (census 2026-10-12: guide family "
+                  "cohort 10, read 10, fetched 0, all ten unknown_to_google)",
+             since=None, needs_nights=30, decide_on=None, written="2026-09-27")],
          notes="Content lives in seo_guides.py, rendered by build_seo.guide_page(). The "
                "technique verifies the three pages exist in the docroot AND still carry "
                "their data caveat — LA is derived from assessor criteria and labelled "
@@ -890,6 +901,16 @@ SEEDS = [
                   "reaches hub pages first and that aggregate pages survive only where each "
                   "carries unique data; these carry per-place counts, unit-size or decade "
                   "distributions, and median reported rents where the city reports them.",
+         # Re-pointed from a calendar date to MEASURED nights on 2026-10-28; see the
+         # revisit note below and ledger.pre_registrations for why an absence-shaped
+         # condition must never be cashed against a window nobody observed.
+         pre_registered=[dict(
+             condition="census_known for this slug still 0 after 30 MEASURED nights — submitted "
+                       "and never once acknowledged — then the hypothesis is UNTESTABLE on this "
+                       "domain and the technique retires as UNMEASURABLE rather than refuted, "
+                       "with its 251 pages handed to T027's triage argument",
+             fires_on="absence", since="2026-09-28", needs_nights=30,
+             decide_on=None, written="2026-09-28")],
          notes="Rendered by build_seo.py:city_hub_docs() at /<city>/neighborhood/<slug>/ (SF, "
                "DC) and /la/zip/<zip>/, plus a browse hub at /<city>/buildings/. Grouped on the "
                "dimension each city's data actually carries: SF and DC record a neighborhood, LA "
@@ -984,7 +1005,53 @@ SEEDS = [
                "2026-09-14 does not change meaning; stranded pages are reported on a clause of "
                "their own. A live slug that resolves to no place in the data is left frozen and "
                "COUNTED, never invented: it is a rename or a hand-placed file, and this build "
-               "will not write a title for a URL it cannot explain."),
+               "will not write a title for a URL it cannot explain.\n"
+               "2026-10-28 REVISIT — KEEP, and the 2026-09-28 PRE-REGISTRATION FELL DUE TODAY "
+               "AND MUST NOT BE CASHED. Its terms: 'if census_known for this slug is still 0 on "
+               "2026-10-28 ... the technique retires as unmeasurable, with its 251 pages handed "
+               "to T027'. census_known IS still 0 — 0 on all 14 nights the series has ever been "
+               "measured, 2026-09-29 to 2026-10-12, cohort 57, read 57, fetched 0. The "
+               "condition reads as satisfied and the engine has been paused since 2026-10-12 "
+               "(#PAUSED-20261012, owner: 'pause seo for FAC'), so 16 of the 30 days it was "
+               "written to cover were NOT OBSERVED BY ANYONE. Re-pointed to 30 MEASURED nights "
+               "counted from 2026-09-28; 14 of 30 stand today. "
+               "WHY THIS IS A WORSE INSTANCE THAN T011's OR T023's, and the actual finding of "
+               "the run. Those two were re-pointed off the calendar for the same stated reason "
+               "('a calendar condition cannot tell a quiet month from a stopped engine'), but "
+               "both are EVENT-gated — T023 needs a /guide/ URL to be fetched, T017 needs the "
+               "ask count to reach 40 — so an unobserved window can only DELAY them. This one "
+               "fires on an ABSENCE, and an absence is exactly what a stopped observer "
+               "manufactures for free: nobody looked, so nothing was seen, so 'nothing "
+               "happened' reads as true. The pause pushes an absence-condition TOWARD firing "
+               "and an event-condition AWAY from it. Cashing this one today would have retired "
+               "a technique and handed 251 pages to T027 on the strength of sixteen days with "
+               "no observer. "
+               "SHIPPED SO THE NEXT READER IS NOT RELIED ON TO REMEMBER THE PAUSE: pre-"
+               "registrations are now a ledger FIELD (`pre_registered`) that "
+               "ledger.pre_registrations() resolves against the measured record, and `status` "
+               "prints them with `cashable` computed rather than assumed. Until today all five "
+               "pre-registrations in this ledger were English sentences inside `notes` that "
+               "nothing read — this one sits 7,091 characters in and today's review found it by "
+               "grepping seed.py. T017's got its 'still 15, still 0 is NOT new evidence' "
+               "warning by hand on 2026-10-26 and T023's by hand on 2026-10-27; this one got "
+               "none, and it was the only one of the three a pause could falsely cash. "
+               "NEW EVIDENCE FOUND TODAY, AND IT STRENGTHENS THE 2026-09-28 READING ONE LEVEL "
+               "UP. The refusal is not specific to this tier: /dc/ and /la/ — the pre-existing "
+               "SPA map shells, NOT this technique's pages — are themselves "
+               "`unknown_to_google` in the census, and /sf/ has been fetched exactly once "
+               "(2026-07-28) and sits 'crawled, currently not indexed'. All three are linked "
+               "three times each from the homepage, which is the one URL on this domain Google "
+               "has ever kept indexed, and all three sit in sitemap-main.xml at priority 0.9. "
+               "So Google is declining the city ROOTS, not merely the hubs behind them, and no "
+               "link this technique can place reaches above that. "
+               "RESEARCH CHECKED AND IT OFFERS NO NEW LEVER: 2026 guidance still attributes "
+               "crawl demand to site-level quality and popularity for any site under ~1M "
+               "pages, and the staged-rollout advice it adds is T027's argument, already in "
+               "the ledger as a candidate. BOTH STANDING REFUSALS HOLD, now for the third "
+               "time: do not re-retire on an impression count (2026-08-29), and do not link "
+               "this tier from the NYC building/borough/neighborhood tier (2026-09-27, "
+               "2026-10-27) — that buys discovery, and discovery is not what is being "
+               "withheld."),
     dict(slug="lastmod_integrity", status="active", kind="indexing",
          name="Audit how much of the advertised corpus claims it changed today",
          prefixes=[], metric="organic_visitors",
@@ -1228,7 +1295,12 @@ def run():
             for field, key in (("name", "name"), ("hypothesis", "hypothesis"),
                                ("evidence", "evidence"), ("notes", "notes"),
                                ("prefixes", "prefixes"), ("metric", "metric"),
-                               ("judge", "judge")):
+                               ("judge", "judge"),
+                               # Added 2026-10-28. A pre-registration is wording,
+                               # not measured history, so this file owns it and an
+                               # edit here propagates — a ledger-only edit would be
+                               # one deploy from reversion (the 2026-08-27 trap).
+                               ("pre_registered", "pre_registered")):
                 new = s.get(key, t.get(field))
                 if new is not None and t.get(field) != new:
                     t[field] = new

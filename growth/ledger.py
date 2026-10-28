@@ -592,6 +592,176 @@ def verdict_staleness(t, techs=None):
             "contradictions": contradictions}
 
 
+
+# A pre-registration is a condition written down BEFORE the evidence arrives,
+# so the verdict cannot be retrofitted. Five techniques carry one. Until today
+# every one of them lived as an English sentence inside a `notes` blob that
+# nothing read — T013's is 7,091 characters in, booked for 2026-10-28, and the
+# 2026-10-28 review found it by grepping seed.py.
+#
+# FIRES_ON IS THE WHOLE POINT OF THE SCHEMA, so it is worth being plain about
+# why a field this small earns its place. A condition is satisfied either by
+# something HAPPENING ("if any /guide/ URL has been fetched by then") or by
+# something NOT happening ("if census_known is still 0"). The two behave
+# oppositely when the engine stops measuring, and the engine did stop, on
+# 2026-10-12, for sixteen days and counting:
+#
+#   fires_on="event"    an unobserved window can only DELAY it. The gate stays
+#                       shut, the condition cannot be cashed, and the worst case
+#                       is a second look that arrives late.
+#   fires_on="absence"  an unobserved window SATISFIES IT FOR FREE. Nobody
+#                       looked, so nothing was seen, so "nothing happened" reads
+#                       as true. A stopped observer manufactures the evidence
+#                       for its own conclusion.
+#
+# That is not a hypothetical, it is the last three mornings. T023's condition
+# (event) came due 2026-10-27 on a census frozen fifteen days earlier and
+# correctly did not fire. T017's (event) came due 2026-10-26 with its ask count
+# frozen at 15, and the reviewer wrote four lines of capitals into the notes
+# warning the next reader that "still 15, still 0" is NOT new evidence. T013's
+# (absence) came due 2026-10-28 and would have retired a technique and handed
+# 251 pages to T027 on the strength of sixteen days nobody watched.
+#
+# Each of those three was caught by a human reading prose and remembering the
+# pause. The 2026-10-27 entry had already drawn the moral about a warning of
+# exactly this kind: "THE JOURNAL IS NOT WHERE THAT WARNING BELONGS ... the fix
+# had to go where the misleading text is printed." This is that fix, one class
+# up: the loop now knows the shape of the condition, so it can refuse to cash
+# an absence against a window it did not observe, instead of relying on the
+# reader to recall which crons were off.
+#
+# AND IT GIVES A PRE-REGISTRATION SOMEWHERE TO BE BOOKED OTHER THAN A DATE.
+# `decide_on` is a calendar date; `needs_nights` is measured nights. Three
+# consecutive entries (10-26 on T011, 10-27 on T023, today on T013) concluded
+# that a condition written in dates cannot tell a quiet month from a stopped
+# engine and asked for the next one to be written in measured nights. There was
+# no way to express that. Now a record with decide_on=None comes due when
+# measured_nights_since(since) reaches needs_nights, whenever that is, and no
+# pause can drift it.
+#
+# Record shape, all keys optional unless named:
+#
+#   condition      REQUIRED. One line, in the terms it will be judged on.
+#   fires_on       REQUIRED. "absence" | "event" — see above.
+#   since          the date the evidence window opens. Measured nights are
+#                  counted strictly after it. None where the window has not
+#                  opened yet (an event-gated condition whose gate is shut).
+#   needs_nights   measured nights the window requires. 0 where the condition
+#                  is a threshold on a counter rather than a duration.
+#   decide_on      calendar date it was booked for, or None to be booked in
+#                  measured nights instead. Prefer None for anything new.
+#   gate           for fires_on="event": what has to happen first, in words.
+#   written        the date the condition was pre-registered, for the record.
+PRE_REG_FIRES_ON = ("absence", "event")
+
+
+def pre_registrations(techs=None, as_of=None):
+    """Every pre-registered condition in the ledger, with the evidence behind it.
+
+    Returns one dict per condition, most urgent first, each carrying:
+
+      id slug name       the technique it belongs to
+      condition          the text, verbatim from the ledger
+      fires_on since needs_nights decide_on gate written
+                         as recorded (see the schema note above)
+      observed_nights    measured_nights_since(since); None when `since` is
+                         absent or unreadable, which is NOT the same as 0
+      shortfall          nights still owed, or None when it cannot be told
+      due                has the condition's window closed?
+      cashable           may a conclusion be drawn from it TODAY?
+      why_not            one line, when due and not cashable, or not yet due
+      malformed          a complaint about the record itself, else absent
+
+    `due` and `cashable` are deliberately two questions. A condition comes due
+    on its own terms; whether it may be CASHED depends on whether the evidence
+    its shape requires actually exists. Keeping them apart is what lets the
+    block say "due today, and you must not act on it" — which is the true
+    state of T013 on 2026-10-28 and the thing no previous run was told.
+
+    A malformed record is REPORTED, never skipped. Dropping it silently is the
+    failure this whole mechanism exists to stop: an unread condition is one
+    that gets decided by whoever remembers it.
+    """
+    as_of = as_of or today()
+    if techs is None:
+        techs = load_techniques()
+    out = []
+    for t in techs:
+        regs = t.get("pre_registered") or []
+        if not isinstance(regs, (list, tuple)):
+            regs = [regs]
+        for r in regs:
+            out.append(_pre_reg(t, r, as_of))
+    # Cashable first (something to do today), then due-but-blocked, then the
+    # rest by how much evidence they still owe. A reader who stops after the
+    # first line should have stopped on the only actionable one.
+    def rank(e):
+        return (0 if e.get("cashable") else 1 if e.get("due") else 2,
+                -(e.get("shortfall") if e.get("shortfall") is not None else 10 ** 6),
+                e.get("id") or "")
+    return sorted(out, key=rank)
+
+
+def _pre_reg(t, r, as_of):
+    """One pre-registration, resolved against the measured record."""
+    e = {"id": t.get("id"), "slug": t.get("slug"), "name": t.get("name")}
+    if not isinstance(r, dict):
+        e.update(condition=repr(r), due=False, cashable=False,
+                 malformed="not a mapping", why_not="unreadable record")
+        return e
+    e.update(condition=r.get("condition") or "", fires_on=r.get("fires_on"),
+             since=r.get("since"), needs_nights=r.get("needs_nights") or 0,
+             decide_on=r.get("decide_on"), gate=r.get("gate"),
+             written=r.get("written"))
+    bad = []
+    if not e["condition"]:
+        bad.append("no condition text")
+    if e["fires_on"] not in PRE_REG_FIRES_ON:
+        bad.append(f"fires_on={e['fires_on']!r}, expected one of {PRE_REG_FIRES_ON}")
+    if bad:
+        e.update(due=False, cashable=False, malformed="; ".join(bad),
+                 why_not="unreadable record — fix the ledger, do not act on it")
+        return e
+
+    e["observed_nights"] = obs = measured_nights_since(e["since"])
+    need = e["needs_nights"]
+    e["shortfall"] = None if obs is None else max(0, need - obs)
+
+    # Booked in measured nights (decide_on=None) or on the clock.
+    if e["decide_on"]:
+        e["due"] = e["decide_on"] <= as_of
+    else:
+        e["due"] = obs is not None and obs >= need
+
+    if not e["due"]:
+        if e["decide_on"]:
+            e["why_not"] = f"booked for {e['decide_on']}"
+        elif obs is None:
+            e["why_not"] = ("the evidence window has not opened — "
+                            + (f"waiting on {e['gate']}" if e.get("gate")
+                               else "no `since` date recorded"))
+        else:
+            e["why_not"] = (f"{e['shortfall']} more measured night"
+                            f"{'s' if e['shortfall'] != 1 else ''} needed "
+                            f"({obs} of {need} since {e['since']})")
+        e["cashable"] = False
+        return e
+
+    # Due. An absence-condition still needs its window to have been WATCHED.
+    if e["fires_on"] == "absence" and (obs is None or e["shortfall"]):
+        e["cashable"] = False
+        if obs is None:
+            e["why_not"] = ("FIRES ON AN ABSENCE and no measured nights can be counted "
+                            f"(since={e['since']!r}) — a stopped engine satisfies this "
+                            "condition for free. DO NOT CASH IT")
+        else:
+            e["why_not"] = (f"FIRES ON AN ABSENCE and only {obs} of the {need} nights it "
+                            f"needs were measured ({e['shortfall']} unobserved) — nobody "
+                            "watched the window it would be cashed against. DO NOT CASH IT")
+        return e
+    e["cashable"] = True
+    return e
+
 # -------------------------------------------------------------------- state
 
 def load_state():

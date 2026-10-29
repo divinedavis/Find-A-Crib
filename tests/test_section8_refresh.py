@@ -32,12 +32,16 @@ class Section8RefreshTests(unittest.TestCase):
                 self.assertEqual(section8_refresh.main(), 1)
             self.assertFalse(os.path.exists(os.path.join(docroot, "section8")))
 
-    def test_cron_runs_it_after_the_feed(self):
+    def test_the_growth_build_runs_after_the_feed(self):
+        # section8_refresh.py's cron line went when the engine resumed
+        # (2026-10-29); the 05:40 UTC growth build rebuilds /section8/ again.
         here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(here, "deploy/cron-rentmap-scrape")) as f:
-            lines = [l for l in f if l.strip() and not l.startswith("#")]
-        feed = next(l for l in lines if "scrape_affordablehousing.py" in l).split()
-        page = next(l for l in lines if "section8_refresh.py" in l).split()
+        def live(name):
+            with open(os.path.join(here, "deploy", name)) as f:
+                return [l for l in f if l.strip() and not l.startswith("#")]
+        feed = next(l for l in live("cron-rentmap-scrape") if "scrape_affordablehousing.py" in l).split()
+        page = next(l for l in live("cron-rentmap-growth") if "growth_run.sh build" in l).split()
+        self.assertFalse(any("section8_refresh.py" in l for l in live("cron-rentmap-scrape")))
         self.assertGreater((int(page[1]), int(page[0])), (int(feed[1]), int(feed[0])))
 
 

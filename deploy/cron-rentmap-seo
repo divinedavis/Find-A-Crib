@@ -4,5 +4,5 @@
 # (2026-10-07; was root) — /root/dhcr-build and the docroot are scraper-owned.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-#PAUSED-20261012 10 4 1 * * scraper fac-run none -- /root/dhcr-build/refresh_seo.sh >> /var/log/rentmap-seo.log 2>&1
-# PAUSED 2026-10-12 (owner: "pause seo for FAC") — monthly SEO refresh. To resume, drop the #PAUSED-20261012 prefix and run scripts/deploy_jobs.sh.
+10 4 1 * * scraper fac-run none -- /root/dhcr-build/refresh_seo.sh >> /var/log/rentmap-seo.log 2>&1
+# Paused 2026-10-12, resumed 2026-10-29 with the growth engine.

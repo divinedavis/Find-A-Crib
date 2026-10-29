@@ -33,7 +33,7 @@ def env_sets_installed():
 
 # Paused on purpose: vacancies (2026-10-06, scraping terms), growth + seo
 # (2026-10-12, owner: "pause seo for FAC").
-PAUSED = {"cron-rentmap-vacancies", "cron-rentmap-growth", "cron-rentmap-seo"}
+PAUSED = {"cron-rentmap-vacancies"}
 
 
 def test_every_cron_file_has_jobs_or_is_a_paused_one():
@@ -44,10 +44,13 @@ def test_every_cron_file_has_jobs_or_is_a_paused_one():
             assert any(n == f.name for n, _, _ in job_lines()), f.name
 
 
-def test_seo_and_growth_stay_paused():
+def test_seo_and_growth_run_again():
+    # Paused 2026-10-12, resumed 2026-10-29 (owner: get AI answer engines to
+    # find and cite the site). The 05:40 build replaces section8_refresh.py.
     for name in ("cron-rentmap-growth", "cron-rentmap-seo"):
-        assert not [l for n, _, l in job_lines() if n == name], name
-        assert "#PAUSED-20261012" in (DEPLOY / name).read_text(), name
+        assert [l for n, _, l in job_lines() if n == name], name
+        assert "#PAUSED-20261012" not in (DEPLOY / name).read_text(), name
+    assert not [l for n, _, l in job_lines() if "section8_refresh" in l]
 
 
 def test_vacancy_sweep_stays_paused():

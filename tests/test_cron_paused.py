@@ -134,7 +134,12 @@ class LivenessWording(unittest.TestCase):
         # headline is read every morning and that sentence had already talked
         # nine reviews out of shipping a page change, so it is derived from the
         # cron files now and this pins the derivation, not the sentence.
-        s = self._summary(PAUSED)
+        # The stand-in was removed when the engine resumed (2026-10-29), so the
+        # real deploy dir no longer has one; pin the derivation with a stub.
+        from unittest import mock
+        with mock.patch.object(growth_daily, "growth_live_paths",
+                               lambda *a, **k: [("cron-rentmap-scrape", "growth/section8_refresh.py")]):
+            s = self._summary(PAUSED)
         self.assertIn("the growth build publishes nothing", s)
         self.assertIn("growth/section8_refresh.py is live on cron-rentmap-scrape", s)
         self.assertIn("DOES reach readers", s)
@@ -184,13 +189,12 @@ class LivenessWording(unittest.TestCase):
 
 
 class TrackedCronMatchesReality(unittest.TestCase):
-    def test_the_repos_own_cron_is_currently_paused(self):
-        # Pins today's actual state, so resuming the engine without dropping
-        # this test's expectation is a visible decision rather than a silent
-        # drift. Companion to tests/test_job_sandbox.py's pause pins.
-        paused, marker = growth_daily.growth_paused()
-        self.assertTrue(paused, "deploy/cron-rentmap-growth has a live growth_run line")
-        self.assertEqual(marker, "#PAUSED-20261012")
+    def test_the_repos_own_cron_is_running_again(self):
+        # Pins today's actual state. Paused 2026-10-12, resumed 2026-10-29
+        # (owner: get AI answer engines to find and cite the site), so a
+        # re-pause has to drop this expectation on purpose.
+        paused, _ = growth_daily.growth_paused()
+        self.assertFalse(paused, "deploy/cron-rentmap-growth has no live growth_run line")
 
 
 if __name__ == "__main__":
@@ -222,9 +226,10 @@ class LivePathsOutsideThePause(unittest.TestCase):
             (d / name).write_text(text)
         return str(d)
 
-    def test_the_real_deploy_dir_reports_the_section8_refresh_line(self):
+    def test_the_real_deploy_dir_no_longer_runs_the_section8_stand_in(self):
+        # Removed 2026-10-29 when the engine's own 05:40 build resumed.
         found = growth_daily.growth_live_paths()
-        self.assertIn(("cron-rentmap-scrape", "growth/section8_refresh.py"), found)
+        self.assertNotIn(("cron-rentmap-scrape", "growth/section8_refresh.py"), found)
 
     def test_a_commented_out_line_is_not_live(self):
         d = self._deploy({"cron-rentmap-x":

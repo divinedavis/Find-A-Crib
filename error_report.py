@@ -162,6 +162,15 @@ def js_errors(rows):
         # iPhone visitor). Our scripts always report a findacrib.com URL.
         e["noise"] = (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
                       or "webkit-masked-url://" in at
+                      # A promise rejected with no reason at all (typeof
+                      # undefined: no message, no name, no stack). 2026-10-29
+                      # 19:31 UTC: one desktop visitor, 4 in 25 s, tab idle
+                      # 9 min with only Mediavine's ad refresh running. Our one
+                      # bare Promise.reject() (the copy button with no
+                      # clipboard) has its own failure handler, so it is
+                      # never unhandled. Nothing in such a row can be chased.
+                      or (p.get("kind") == "promise" and not at and msg == "(empty message)"
+                          and p.get("name") == "undefined")
                       or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted",
                                                                                # Safari: a response body cut off
                                                                                # mid-read (signal lost / page left);

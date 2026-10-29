@@ -53,13 +53,6 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         UILaunchScreen:
           UIColorName: LaunchNavy
-        # The app sets the status bar's style itself (StatusBarStyle.swift):
-        # white over the Search banner, which runs up under it, black
-        # everywhere else. SwiftUI's toolbarColorScheme only reaches the
-        # status bar through a visible navigation bar, and these screens
-        # hide theirs (owner, 2026-10-29).
-        UIViewControllerBasedStatusBarAppearance: false
-        UIStatusBarStyle: UIStatusBarStyleDarkContent
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # iPad (owner, 2026-09-22): every orientation, which iPadOS expects of

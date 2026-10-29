@@ -876,7 +876,7 @@ final class FindACribUITests: XCTestCase {
             // only because it started below a white strip.
             let city = app.buttons["city-field"]
             XCTAssertTrue(city.waitForExistence(timeout: 10))
-            XCTAssertGreaterThan(banner.frame.maxY, 220, "200 pt of banner below the status bar")
+            XCTAssertGreaterThanOrEqual(banner.frame.maxY, 219, "200 pt of banner below the status bar (20 pt on an SE)")
             XCTAssertLessThan(banner.frame.maxY, 270)
             XCTAssertGreaterThan(city.frame.minY, banner.frame.maxY, "the form starts below the banner")
             let name = holiday ?? "everyday"
@@ -886,6 +886,22 @@ final class FindACribUITests: XCTestCase {
         }
         app.buttons["tab-Lotteries"].tap()
         let other = XCTAttachment(screenshot: app.screenshot()); other.name = "hero-other-tab"; other.lifetime = .keepAlways; add(other)
+        // A sheet over the banner and a pushed screen keep UIKit's own status
+        // bar: only the root's answer changes, and only over the banner.
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--holiday", "halloween"]
+        app.launch()
+        let city = app.buttons["city-field"]
+        XCTAssertTrue(city.waitForExistence(timeout: 20))
+        city.tap()
+        sleep(1)
+        let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "hero-sheet"; sheet.lifetime = .keepAlways; add(sheet)
+        app.swipeDown(velocity: .fast)
+        let search = app.buttons["search-button"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        sleep(2)
+        let pushed = XCTAttachment(screenshot: app.screenshot()); pushed.name = "hero-pushed-results"; pushed.lifetime = .keepAlways; add(pushed)
     }
 
     /// The app's Plus paywall: Plus is the AI features, real-time alerts and

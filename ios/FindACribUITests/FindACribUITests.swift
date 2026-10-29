@@ -940,6 +940,51 @@ final class FindACribUITests: XCTestCase {
     /// "Edit boroughs" renamed Filter). Picking 1 bed narrows Re-rentals —
     /// listings with no size leave with no "show them" row — and the button
     /// counts it: "Filter (1)".
+    /// The Lotteries header collapses as the list scrolls (owner, 2026-10-29):
+    /// the borough line folds away and the title shrinks, the NYC /
+    /// Re-rentals / NJ tabs stay put, and scrolling back up opens it again.
+    func testLotteriesHeaderCollapsesOnScroll() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo"]
+        app.launch()
+        let card = app.descendants(matching: .any)["lottery-card"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 30))
+        let header = app.descendants(matching: .any)["lotteries-header"].firstMatch
+        let boroughs = app.descendants(matching: .any)["lotteries-boroughs"].firstMatch
+        let tabs = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        XCTAssertTrue(boroughs.exists, "the borough line shows at rest")
+        let full = header.frame.height, tabsAt = tabs.frame.minY
+        func shot(_ name: String) { let a = XCTAttachment(screenshot: app.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a) }
+        shot("lotteries-header-full")
+        app.swipeUp()
+        let slim = header.frame.height
+        XCTAssertLessThan(slim, full - 20, "the header shrinks once scrolled")
+        XCTAssertFalse(boroughs.exists, "the borough line folds away")
+        XCTAssertTrue(tabs.isHittable, "the pane tabs stay on screen")
+        XCTAssertLessThan(tabs.frame.minY, tabsAt, "the tabs ride up with the slimmer header")
+        shot("lotteries-header-collapsed")
+        app.swipeUp()
+        XCTAssertEqual(header.frame.height, slim, accuracy: 1, "it stays slim further down")
+        shot("lotteries-header-deep")
+        tabs.tap()
+        XCTAssertTrue(app.buttons["rerentals-filter"].waitForExistence(timeout: 10), "the tabs still switch panes while collapsed, to the top of the new list")
+        app.swipeUp()
+        shot("lotteries-header-rerentals")
+        for _ in 0..<4 { app.swipeDown() }
+        XCTAssertTrue(boroughs.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(boroughs.frame.height, 10, "back at the top the header opens again")
+        XCTAssertEqual(header.frame.height, full, accuracy: 1)
+        shot("lotteries-header-back-at-top")
+        // Parked part-way (where a layout loop once hung the app): the header
+        // sits between the two heights and the app keeps answering.
+        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+        mid.press(forDuration: 0.1, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: -30)), withVelocity: 60, thenHoldForDuration: 0.5)
+        let part = header.frame.height
+        XCTAssertGreaterThan(part, slim + 1, "part-way, not snapped shut")
+        XCTAssertLessThan(part, full - 1, "part-way, not snapped open")
+        shot("lotteries-header-part-way")
+    }
+
     func testLotteriesFilterHoldsBeds() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo"]

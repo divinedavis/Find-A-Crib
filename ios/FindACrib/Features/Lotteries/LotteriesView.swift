@@ -165,15 +165,42 @@ struct LotteriesView: View {
         .buttonStyle(.plain)
     }
 
-    private var list: some View {
+    /// How far the list has scrolled, in points (0 at rest, negative while
+    /// pulling to refresh), and the header's full height at rest.
+    @State private var scrolled: CGFloat = 0
+    @State private var headerFull: CGFloat = 0
+    @ScaledMetric(relativeTo: .subheadline) private var boroughLineHeight: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var titleHeight: CGFloat = 29
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 0 = full header, 1 = collapsed: the header shrinks over the first
+    /// 60 pt of scrolling (owner, 2026-10-29: "as people scroll through the
+    /// lotteries, i want the headers to collapse"). Reduce Motion snaps.
+    private var collapse: CGFloat { reduceMotion ? (scrolled > 30 ? 1 : 0) : min(max(scrolled / 60, 0), 1) }
+
+    /// The title and borough line shrink to a slim navy bar; the NYC /
+    /// Re-rentals / NJ tabs stay pinned under it.
+    private var header: some View {
         VStack(spacing: 0) {
             NavyHeader {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 2 * (1 - collapse)) {
                     Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                    Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                        .scaleEffect(1 - 0.25 * collapse, anchor: .leading)
+                        .frame(height: titleHeight * (1 - 0.25 * collapse))
+                    // One line (it was free to wrap): a fixed height is what
+                    // lets it fold away smoothly. Gone once folded, so
+                    // VoiceOver doesn't read a line no one can see.
+                    if collapse < 1 {
+                        Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                            .frame(height: boroughLineHeight * (1 - collapse), alignment: .top)
+                            .clipped()
+                            .opacity(1 - min(collapse * 1.6, 1))
+                            .accessibilityIdentifier("lotteries-boroughs")
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12 - 4 * collapse)
             }
+            .accessibilityElement(children: .contain).accessibilityIdentifier("lotteries-header")
             VStack(alignment: .leading, spacing: 10) {
                 // Three panes: "Lotteries (n)" no longer fits beside the other
                 // two on a 375 pt phone, and the header already says Lotteries.
@@ -182,6 +209,22 @@ struct LotteriesView: View {
                     .padding(.bottom, 10)
             }
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+        }
+        // Measured only while fully open: the list's inset must not move as
+        // the header shrinks, or the offset, collapse and inset chase each
+        // other (a layout loop that hung the app in testing).
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { h in
+            if collapse == 0 { headerFull = h }
+        }
+    }
+
+    private var list: some View {
+        // The header floats over the list instead of sitting above it, so its
+        // shrinking never resizes the scroll view (that would feed back into
+        // the offset and jitter a short list). The list's top inset stays the
+        // full header's height: the refresh spinner shows below it, and once
+        // collapsed the cards scroll up under the slim bar.
+        ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     if pane != .newJersey { alertsBanner }
@@ -214,12 +257,23 @@ struct LotteriesView: View {
                     }
                     Color.clear.frame(height: 120)
                 }
+                // The stack itself, not a marker row: a lazy stack drops rows
+                // far off screen, and the offset would stop updating.
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named("lotteries-scroll")).minY } action: { y in
+                    scrolled = 16 - y
+                }
                 .padding(.top, 16)
+                .id("lotteries-top")
             }
+            .coordinateSpace(.named("lotteries-scroll"))
+            .safeAreaInset(edge: .top, spacing: 0) { Color.clear.frame(height: headerFull) }
             .refreshable { await feed.refresh() }
             .background(SE.canvas)
+            .overlay(alignment: .top) { header }
+            // A pane opens at its own top (it kept the last pane's offset,
+            // halfway down a different list); the header opens with it.
+            .onChange(of: pane) { proxy.scrollTo("lotteries-top", anchor: .top) }
         }
-        .background(SE.canvas)
         .task { Analytics.shared.track("lotteries_view", ["open": feed.mine.count]) }
     }
 

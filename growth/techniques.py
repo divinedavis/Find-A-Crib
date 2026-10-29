@@ -271,6 +271,7 @@ th{background:#fbfcfd;font-weight:600;color:var(--ink2)}
 tr:last-child td{border-bottom:0}
 td a{color:var(--accent)}
 .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:#e7f3ec;color:#136c3a;border:1px solid #bfe0cc;white-space:nowrap}
+.tag.hz{background:#fdf1e3;color:#8a4b08;border-color:#f0d4ae}
 .crumbs{font-size:14px;color:var(--ink2);margin-bottom:6px}
 .crumbs a{color:var(--accent);text-decoration:none}
 .note{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px;color:var(--ink2)}
@@ -385,6 +386,12 @@ SECTION8_FAQ = [
     ("Does the absence of an “accepts vouchers” tag mean this apartment refuses Section 8?",
      "No. The tag only appears when the landlord said so in their listing. Source-of-income "
      "discrimination is illegal in New York City, so its absence never means vouchers are refused."),
+    ("Why do some of these buildings show open class C violations?",
+     "Because the building has that many on HPD’s record and a voucher holder deciding whether "
+     "to view an apartment should see it before they travel, not after. Class C is HPD’s "
+     "immediately hazardous grade, the class a landlord has 24 hours to correct. The count is for "
+     "the building, not the advertised apartment, and an address with no tag has no open class-C "
+     "record on file rather than a guarantee of no problems."),
     ("What makes this different from other Section 8 apartment lists?",
      "Every building shown is independently confirmed as registered rent-stabilized with NY State "
      "DHCR, not just marked voucher-friendly. A stabilized building means the rent is capped by the "
@@ -407,6 +414,7 @@ def _live_listings(ctx):
         b = ctx.by_bbl.get(str(bbl))
         if not b:
             continue
+        hv = ((b.get("h") or {}).get("violations") or {})
         rows.append({
             "bbl": str(bbl),
             "addr": _titlecase_addr(b.get("a")),
@@ -420,6 +428,12 @@ def _live_listings(ctx):
             "price": v.get("p"),
             "url": v.get("url"),
             "b8": bool(v.get("b8")),
+            # Open class-C violations on HPD's record for the building, clamped
+            # to the lifetime class-C record for exactly the reason build_seo's
+            # building-page sentence clamps it: oc > c is a data inconsistency
+            # rather than a real state, and a count here that exceeded the one
+            # the building page shows would cost the reader their trust in both.
+            "oc": min(hv.get("oc") or 0, hv.get("c") or 0),
         })
     rows.sort(key=lambda r: (r["price"] is None, r["price"] or 0))
     return rows
@@ -432,6 +446,12 @@ def _listing_table(rows, show_boro=True):
     for r in rows:
         price = f"${r['price']:,}/mo" if r.get("price") else "—"
         tag = ' <span class="tag">accepts vouchers</span>' if r["b8"] else ""
+        # Rendered ONLY when non-zero. A "0 open class C" badge would read as a
+        # clean bill of health on the 65 of 253 buildings that merely have no
+        # OPEN class-C row on HPD's file, which is a fact about a public record
+        # and not about the apartment. An absent tag asserts nothing.
+        if r.get("oc"):
+            tag += f' <span class="tag hz">{r["oc"]:,} open class C</span>'
         boro_td = f"<td>{_esc(r['boro_name'])}</td>" if show_boro else ""
         out.append(
             f"<tr><td><a href='{_bld_url({'b': r['boro'], 'a': r['addr'], 'bbl': r['bbl']})}'>"
@@ -447,6 +467,7 @@ def _stats_block(rows, live_label="rent-stabilized buildings with live listings"
     cheapest = min(prices) if prices else None
     total = sum(r["n"] for r in rows)
     b8 = sum(1 for r in rows if r["b8"])
+    hz = sum(1 for r in rows if r.get("oc"))
     cells = [
         (f"{len(rows):,}", live_label),
         (f"{total:,}", "individual units listed"),
@@ -454,6 +475,24 @@ def _stats_block(rows, live_label="rent-stabilized buildings with live listings"
         (f"${cheapest:,}" if cheapest else "—", "cheapest listing"),
         (f"{b8:,}", "explicitly accepting vouchers"),
     ]
+    # Deliberately a count of BUILDINGS, not a sum of violations. "3,704 open
+    # class C violations" across 253 buildings is a true number that invites the
+    # wrong reading — it sounds like a figure about the voucher programme, when
+    # it is a figure about the housing stock these listings happen to sit in.
+    # How many of the buildings on THIS page have one is the question a reader
+    # choosing between them is actually asking.
+    #
+    # SUPPRESSED AT ZERO, by the same rule as the tag in _listing_table, and
+    # caught by a test of this change rather than by review: a headline
+    # "0 — with an open class C violation" is the clean bill of health the whole
+    # feature is written not to give. 280 Targee St has no OPEN class-C row and
+    # 2 lifetime ones over 9 violations in total, so a page of such buildings is
+    # not a page of buildings without a violation history. Worse, the zero would
+    # appear on exactly the pages where _class_c_note does not, because that
+    # note renders only where a tag does — so the one sentence explaining what
+    # the number does not mean would be absent precisely when it is needed.
+    if hz:
+        cells.append((f"{hz:,}", "with an open class C violation"))
     return "<div class='stats'>" + "".join(
         f"<div class='stat'><b>{v}</b><span>{_esc(l)}</span></div>" for v, l in cells) + "</div>"
 
@@ -504,6 +543,43 @@ def _feed_freshness(ctx):
         f"holders turn over quickly, so some of these are no longer available — check the "
         f"listing itself before you travel to see one. The rent-stabilization status of each "
         f"building is unaffected: that comes from the DHCR registration, not this feed.")
+
+
+# The one fact on this tier that exists nowhere else. AffordableHousing.com
+# publishes the listing; DHCR publishes the stabilization registration; HPD
+# publishes the enforcement record. Only the join says "this voucher-friendly,
+# rent-stabilized apartment is in a building with six immediately-hazardous
+# violations still open" — and that is the fact a voucher holder most needs
+# BEFORE spending a morning travelling to a viewing, which is the same reason
+# _feed_freshness exists. 188 of the 253 currently matched buildings (74%) have
+# at least one.
+#
+# WHAT THIS MUST NOT SAY, and the three claims deliberately absent from it:
+#   * Not a verdict on the building. The tag is amber, not red, and the wording
+#     is "on HPD's record", because a violation record is a public enforcement
+#     fact and this site does not get to turn it into a recommendation.
+#   * No freshness claim. Nothing on this site dates its HPD snapshot, so
+#     neither does this. Inventing "as of" here would be the same fabrication
+#     _dataset_jsonld refuses to commit about a licence.
+#   * No safety claim from an absence. A building with no tag has no OPEN
+#     class-C row on file; that is a statement about a record, not about the
+#     apartment, and the note says so rather than letting a missing tag imply
+#     the opposite.
+# The vocabulary ("class C", "HPD's immediately hazardous grade", the 24-hour
+# correction window) is lifted verbatim from build_seo.py's building-page
+# sentence rather than reinvented, so a reader who clicks an address through to
+# its own page cannot be told two different things by two different writers.
+CLASS_C_NOTE = (
+    "<div class='note'><b>What “open class C” means.</b> Class C is HPD’s immediately hazardous "
+    "grade — the class a landlord has 24 hours to correct. The number tagged beside an address is "
+    "how many are still open on HPD’s record for the <b>building</b>, not for the apartment "
+    "advertised. Addresses with no tag have no open class-C record on file, which is a fact about "
+    "the public record rather than a clean bill of health. Open any address for its full violation "
+    "and complaint history.</div>")
+
+
+def _class_c_note(rows):
+    return CLASS_C_NOTE if any(r.get("oc") for r in rows) else ""
 
 
 SOI_NOTE = (
@@ -610,6 +686,7 @@ def t_fresh_section8(ctx):
           "16 August 2026 and is no longer updated.</p>"
         + SOI_NOTE
         + "<h2>All live listings, cheapest first</h2>"
+        + _class_c_note(rows)
         + _listing_table(rows)
         + "<div class='note'>Why this list is different: plenty of sites list voucher-friendly "
           "apartments, and plenty list rent-stabilized buildings. These are the ones that are "
@@ -714,6 +791,7 @@ def t_fresh_section8(ctx):
             + lead
             + (_stats_block(brows, stats_label) if n else "")
             + SOI_NOTE
+            + _class_c_note(brows)
             + (_listing_table(brows, show_boro=False) if n else "")
             + f"<div class='note'><a href='/borough/{slug}/'>Every rent-stabilized building in "
               f"{_esc(disp)} →</a></div>"
@@ -820,7 +898,13 @@ def t_daily_brief(ctx):
         + "<h2>By borough</h2>"
         + f"<div class='scroll'><table><tr><th>Borough</th><th>Buildings listed</th>"
           f"<th>Units listed</th><th>Median asking</th></tr>{boro_rows}</table></div>"
-        + (("<h2>Newly listed today</h2>" + _listing_table(added)) if added else "")
+        # T002 is RETIRED and nothing in ORDER rebuilds /brief/, so this branch
+        # does not run today. The note goes in anyway: _listing_table now tags
+        # open class-C counts, and a tag whose only explanation lives on another
+        # technique's pages is the kind of half-shipped caveat that becomes true
+        # the day someone reactivates this one.
+        + (("<h2>Newly listed today</h2>" + _class_c_note(added)
+            + _listing_table(added)) if added else "")
         + f"<div class='note'>This is a dated snapshot. For the current list, see "
           f"<a href='/section8/'>today's voucher listings</a>.</div>")
 

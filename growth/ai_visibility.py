@@ -176,8 +176,14 @@ def referral_reading(today, fetch=None):
     since = (today - datetime.timedelta(days=30)).isoformat()
     out = {}
     for label, needle in AI_SOURCES.items():
+        # first-touch is {at, land, source} (index.html): source is the referrer
+        # host and land keeps utm_source, so either one names the chat. "ref"
+        # is checked too for older rows. (The first run filtered on ref alone
+        # and read 0 ChatGPT visitors where there were 30.)
         q = urllib.parse.urlencode({"select": "visitor_id", "created_at": f"gte.{since}",
-                                    "props->first->>ref": f"ilike.*{needle}*"})
+                                    "or": f"(props->first->>source.ilike.*{needle}*,"
+                                          f"props->first->>land.ilike.*{needle}*,"
+                                          f"props->first->>ref.ilike.*{needle}*)"})
         if fetch:
             rows = fetch(q)
         else:

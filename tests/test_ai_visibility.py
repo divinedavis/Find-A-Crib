@@ -67,8 +67,11 @@ def test_referrals_count_unique_visitors_per_source():
         if "chatgpt" in q:
             return [{"visitor_id": "a"}, {"visitor_id": "a"}, {"visitor_id": "b"}, {"visitor_id": None}]
         return []
-    r = A.referral_reading(TODAY, fetch=fetch)
+    seen = []
+    r = A.referral_reading(TODAY, fetch=lambda q: seen.append(q) or fetch(q))
     assert r["chatgpt"] == 2 and r["perplexity"] == 0
+    # The chat is named in first.source / first.land, not first.ref.
+    assert "props-%3Efirst-%3E%3Esource.ilike" in seen[0] and "land.ilike" in seen[0]
     assert set(r) == set(A.AI_SOURCES)
 
 

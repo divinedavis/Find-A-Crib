@@ -1035,6 +1035,24 @@ def t_llms_txt(ctx):
         f"- Voucher-friendly listings, refreshed nightly: {len(rows):,} rent-stabilized NYC "
         f"buildings currently have an apartment listed on AffordableHousing.com. "
         f"https://findacrib.com/section8/",
+    ]
+    # Affordable re-rentals (2026-10-29): featured_rerentals.py checks every
+    # marketing agent on HPD's re-rentals list each morning and writes the open
+    # apartments to featured.json. That feed is the one thing here no other
+    # site has, and llms.txt never mentioned it. Counted from the file itself,
+    # and left out when the file is missing or empty rather than guessed.
+    try:
+        with open(os.path.join(ctx.docroot, "featured.json")) as f:
+            _rr = [r for r in (json.load(f).get("listings") or []) if isinstance(r, dict)]
+    except Exception:
+        _rr = []
+    if _rr:
+        _agents = len({r.get("agent") for r in _rr if r.get("agent")})
+        lines.append(f"- Affordable re-rentals, checked every morning: {len(_rr):,} open apartments from "
+                     f"{_agents:,} marketing agents on NYC HPD's re-rentals list, on the map at {SITE}/ "
+                     f"(HPD's list: https://www.nyc.gov/site/hpd/services-and-information/"
+                     f"find-affordable-housing-re-rentals.page)")
+    lines += [
         # 2026-09-21: this read "- Dated daily snapshots of that market:
         # https://findacrib.com/brief/" under the heading "Live listings", and
         # had done since T002 daily_brief retired on 2026-08-16. llms.txt is the
@@ -1058,6 +1076,16 @@ def t_llms_txt(ctx):
         "- Plain-English explainers on rent stabilization, succession rights, overcharge",
         "  complaints, and how to check a specific apartment: https://findacrib.com/guide/",
     ]
+    # The two NYC questions people put to answer engines most, by name and URL
+    # (2026-10-29), on the same live-or-staged terms as the city guides below.
+    for _slug, _q in (("how-to-find-a-rent-stabilized-apartment",
+                       "How do I find a rent-stabilized apartment in NYC? Where vacancies are listed "
+                       "and how to check a building before you sign"),
+                      ("is-my-apartment-rent-stabilized",
+                       "Is my apartment rent stabilized? Check a NYC building by address, then confirm "
+                       "the unit with a DHCR rent history")):
+        if ctx.live_or_staged(f"guide/{_slug}/index.html"):
+            lines.append(f"- {_q}: {SITE}/guide/{_slug}/")
     # The per-city guides by name, not just the hub. An answer engine asked
     # "is my apartment rent controlled in Los Angeles" needs the URL that
     # answers it, and the /guide/ hub in the docroot is written by the SEO
@@ -1124,7 +1152,7 @@ def t_llms_txt(ctx):
     # allows them, but several operators only honour a named group, and an
     # explicit Allow for Google-Extended keeps us eligible for AI Overviews.
     sitemaps = ["sitemap.xml", "sitemap-daily.xml"]
-    bots = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User",
+    bots = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "Claude-SearchBot",
             "anthropic-ai", "PerplexityBot", "Perplexity-User", "Google-Extended",
             "Applebot", "Applebot-Extended", "CCBot", "Bingbot", "Amazonbot", "meta-externalagent"]
     robots = ["User-agent: *", "Allow: /", ""]

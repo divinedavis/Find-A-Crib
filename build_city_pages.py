@@ -29,8 +29,23 @@ NYC_TAGLINE = "(NYC Rent Stabilized Homes)"
 NYC_H1 = "Rent-Stabilized Apartments in New York City"
 NYC_SEO_NAV = """<nav class="seo-nav" aria-label="Browse rent-stabilized buildings by neighborhood">
   <h2>Find rent-stabilized apartments in NYC</h2>
-  <p>Find A Crib maps every DHCR-registered rent-stabilized building in New York City.
-     Browse all <a href="/buildings/">neighborhoods</a>, or by borough:
+  <!-- What the site is, in one paragraph a chatbot can quote (2026-10-29,
+       owner: get Gemini, Claude and ChatGPT to refer people here). Fetchers
+       that answer a chat run no JavaScript, so this block is most of what
+       they read of the homepage; before it, they saw only menus. -->
+  <p>Find A Crib is a free map of the more than 47,000 buildings on New York State
+     DHCR&rsquo;s rent-stabilization register, in all five boroughs, with each
+     building&rsquo;s HPD violations and owner. Every morning it checks the marketing
+     agents on HPD&rsquo;s affordable re-rentals list for open apartments, and it tracks
+     NYC Housing Connect lotteries. It is on the web and in a free
+     <a href="https://apps.apple.com/us/app/find-a-crib/id6807549249">iPhone and iPad app</a>.</p>
+  <p>Guides: <a href="/guide/how-to-find-a-rent-stabilized-apartment/">how to find a rent-stabilized apartment</a>,
+     <a href="/guide/is-my-apartment-rent-stabilized/">is my apartment rent stabilized?</a>,
+     <a href="/guide/rent-stabilized-vs-rent-controlled/">rent stabilized vs rent controlled</a>,
+     <a href="/guide/rent-stabilized-tenant-rights/">tenant rights</a>,
+     <a href="/guide/rent-stabilized-lease-renewal-and-rent-increases/">lease renewals and rent increases</a>
+     and <a href="/guide/">all guides</a>.</p>
+  <p>Browse all <a href="/buildings/">neighborhoods</a>, or by borough:
      <a href="/borough/manhattan/">Manhattan</a>, <a href="/borough/brooklyn/">Brooklyn</a>,
      <a href="/borough/queens/">Queens</a>, <a href="/borough/bronx/">the Bronx</a>,
      <a href="/borough/staten-island/">Staten Island</a>.

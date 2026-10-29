@@ -140,15 +140,53 @@ def _related(current, guides):
     return html
 
 
+HVS_URL = "https://www.nyc.gov/assets/hpd/downloads/pdfs/about/2023-nychvs-selected-initial-findings.pdf"
+HVS_LINK = (f"<a href='{HVS_URL}' rel='nofollow noopener' target='_blank'>"
+            "2023 NYC Housing and Vacancy Survey</a>")
+RERENTALS_URL = "https://www.nyc.gov/site/hpd/services-and-information/find-affordable-housing-re-rentals.page"
+
 # The guides (order = hub display order) -------------------------------------
+# Optional keys (2026-10-29): "updated" (ISO date the text last changed),
+# "answer" (sentences for build_seo.answer_block, 45-80 words), "faq"
+# ([(question, answer)], plain text) and "lookup" (an address box). "{buildings}"
+# in any of them is the register's building count, filled at build time.
 GUIDES = [
     {
         "city": "nyc",
         "slug": "is-my-apartment-rent-stabilized",
-        "title": "Is My Apartment Rent Stabilized? How to Check (NYC)",
-        "desc": "Four free ways to find out if your NYC apartment is rent stabilized — "
-                "request your DHCR rent history, check the building, read your lease, and look it up on the map.",
+        "title": "Is My Apartment Rent Stabilized? Check Your NYC Building",
+        "desc": "Check whether your NYC building is rent stabilized by address, then confirm your apartment: "
+                "request your free DHCR rent history, read your lease, and know the signs.",
         "h1": "Is my apartment rent stabilized?",
+        "updated": "2026-10-29",
+        "lookup": True,
+        "answer": [
+            "Search your address on Find A Crib: it maps all {buildings} buildings on New York State DHCR's "
+            "rent-stabilization register.",
+            "If the building is on it, request your apartment's rent history from DHCR, which is free and the only "
+            "definitive answer for a single unit.",
+            "A Rent Stabilization Rider in your lease, or renewal offers on DHCR's form, are strong signs too.",
+        ],
+        "faq": [
+            ("How do I find out if my apartment is rent stabilized?",
+             "Check the building first: search the address on Find A Crib, which maps every building on the state's "
+             "DHCR rent-stabilization register. Then request your apartment's rent history from DHCR (free). The rent "
+             "history is the definitive record for your unit."),
+            ("Is there a list of rent-stabilized buildings in NYC?",
+             "Yes. New York State DHCR publishes building registration files listing every building that registers "
+             "rent-stabilized apartments. Find A Crib maps all {buildings} buildings on the 2024 files, with each "
+             "building's open HPD violations."),
+            ("If my building is on the list, is my apartment stabilized?",
+             "Not necessarily. The list means the building registers at least some stabilized apartments. Some units "
+             "may have left stabilization legally, so your own DHCR rent history is what settles it for your unit."),
+            ("How many rent-stabilized apartments are there in New York City?",
+             "About 996,600 in 2023, which is 41 percent of the city's rental apartments, according to the 2023 NYC "
+             "Housing and Vacancy Survey."),
+            ("Is rent stabilized the same as rent controlled?",
+             "No. Rent control covers a small number of apartments with tenants in place since before 1971. Rent "
+             "stabilization covers about a million apartments, mostly in buildings of six or more units built before "
+             "1974, and limits increases to what the Rent Guidelines Board sets each year."),
+        ],
         "body": (
             "<p class='lead'>If your building was built before 1974 and has six or more apartments, "
             "there is a good chance your unit is rent stabilized — but the only way to know for certain is to check. "
@@ -192,7 +230,7 @@ GUIDES = [
             "<p>If your rent history shows a large, unexplained jump, or you were never offered a stabilized lease you "
             "should have been, you may have an <strong>overcharge</strong> claim. Bring your rent history to a tenant "
             "attorney or a legal-aid group — do not rely on this page for a legal determination.</p>"
-            + SOURCES
+            + SOURCES.replace("</ul>", f"<li>{HVS_LINK} (NYC HPD), unit counts</li></ul>", 1)
         ),
     },
     {
@@ -300,9 +338,37 @@ GUIDES = [
         "city": "nyc",
         "slug": "how-to-find-a-rent-stabilized-apartment",
         "title": "How to Find a Rent-Stabilized Apartment in NYC",
-        "desc": "A practical guide to finding rent-stabilized apartments in New York City: where to look, "
-                "how to verify a building's status before you sign, and what to watch out for.",
+        "desc": "Where rent-stabilized vacancies in New York City are actually listed (HPD re-rentals, Housing "
+                "Connect, ordinary listings) and how to check a building against the state register before you sign.",
         "h1": "How to find a rent-stabilized apartment",
+        "updated": "2026-10-29",
+        "answer": [
+            "There is no official list of rent-stabilized vacancies in New York City, so check the building instead:",
+            "the state's DHCR register lists every building with stabilized apartments, and Find A Crib maps all "
+            "{buildings} of them.",
+            "Look for openings through HPD's affordable re-rental agents, NYC Housing Connect lotteries and ordinary "
+            "listings, then confirm the apartment with a free DHCR rent history once you move in.",
+        ],
+        "faq": [
+            ("Is there a list of rent-stabilized apartments for rent in NYC?",
+             "No official list of vacancies exists. The state publishes the buildings that register stabilized "
+             "apartments, and Find A Crib maps all {buildings} of them. Openings come through HPD's affordable "
+             "re-rental agents, NYC Housing Connect lotteries and ordinary listings, which you then check against "
+             "that register."),
+            ("How hard is it to find a vacant rent-stabilized apartment?",
+             "Very hard: the 2023 NYC Housing and Vacancy Survey measured a 0.98 percent vacancy rate for "
+             "rent-stabilized apartments, down from 4.57 percent in 2021. Alerts for new re-rentals and lotteries "
+             "help you apply early."),
+            ("What is the rent for a rent-stabilized apartment in NYC?",
+             "The median rent-stabilized apartment rented for $1,500 a month in 2023, against $2,000 for market-rate "
+             "apartments, according to the 2023 NYC Housing and Vacancy Survey."),
+            ("Can I search StreetEasy for rent-stabilized apartments?",
+             "Only partly. Listings rarely say an apartment is stabilized; searching the description for \"rent "
+             "stabilized\" finds some. Checking each address against the DHCR register finds the rest."),
+            ("Are affordable housing lottery apartments rent stabilized?",
+             "Many are, because the tax programs that pay for affordable units usually require stabilization, but "
+             "not all. Ask in writing and look for the Rent Stabilization Rider in the lease."),
+        ],
         "body": (
             "<p class='lead'>Rent-stabilized apartments rarely come with a label on the listing, so finding one takes a "
             "little detective work. The key is to check the <em>building</em>, because stabilization follows the building, "
@@ -326,7 +392,26 @@ GUIDES = [
             "<a href='/borough/staten-island/'>Staten Island</a>"
             "</div>"
 
-            "<h2>3. Verify before you sign</h2>"
+            "<h2>3. Look where stabilized vacancies are actually listed</h2>"
+            "<p>Stabilized apartments are rare on the open market: the " + HVS_LINK + " found just 0.98% of them "
+            "vacant and available. These are the places openings appear:</p>"
+            "<ul>"
+            "<li><strong>Affordable re-rentals.</strong> When an apartment in an affordable building turns over, a "
+            "marketing agent on <a href='" + RERENTALS_URL + "' rel='nofollow noopener' target='_blank'>HPD's "
+            "re-rentals list</a> re-lets it at a set rent. Find A Crib checks every agent on that list each morning "
+            "and puts their open apartments on <a href='/'>the map</a>.</li>"
+            "<li><strong>Housing Connect lotteries.</strong> New affordable buildings take applications through "
+            "<a href='https://housingconnect.nyc.gov/' rel='nofollow noopener' target='_blank'>NYC Housing Connect</a>. "
+            "Many of those apartments are rent stabilized; ask, and check the lease rider.</li>"
+            "<li><strong>Voucher listings.</strong> If you have a Section 8 or other voucher, "
+            "<a href='/section8/'>these stabilized buildings</a> have an apartment listed for voucher holders now.</li>"
+            "<li><strong>Ordinary listings.</strong> Most stabilized apartments are advertised like any other. Check "
+            "each address against the register before you tour.</li>"
+            "</ul>"
+            "<p>Openings go fast, so <a href='/alerts/'>get an email</a> when a new re-rental or lottery opens in "
+            "your borough.</p>"
+
+            "<h2>4. Verify before you sign</h2>"
             "<p>Once you have a lead, confirm it:</p>"
             "<ul>"
             "<li>Ask the landlord or broker directly whether the unit is rent stabilized, in writing.</li>"
@@ -335,12 +420,12 @@ GUIDES = [
             "registered rent and status. See <a href='/guide/is-my-apartment-rent-stabilized/'>how to check</a>.</li>"
             "</ul>"
 
-            "<h2>4. Know your rights as a renter</h2>"
+            "<h2>5. Know your rights as a renter</h2>"
             "<p>Source-of-income discrimination is illegal in NYC — a landlord cannot refuse you for using a Section 8 or "
             "other housing voucher. And once you are in a stabilized unit, you have the right to renew and to capped "
             "increases. Learn more in our guide to <a href='/guide/rent-stabilized-tenant-rights/'>rent-stabilized tenant "
             "rights</a>.</p>"
-            + TOOL_CTA + SOURCES
+            + TOOL_CTA + SOURCES.replace("</ul>", f"<li>{HVS_LINK} (NYC HPD), vacancy and rent figures</li></ul>", 1)
         ),
     },
     {

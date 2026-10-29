@@ -2633,20 +2633,51 @@ def guide_page(g, browse_ok=True):
                "publisher": {"@type": "Organization", "name": "Find A Crib",
                              "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
     gcity = g.get("city", "nyc")
+    # Answer-first, dated, with a matching FAQ (2026-10-29, owner: get Gemini,
+    # Claude and ChatGPT to cite us). An answer engine lifts a self-contained
+    # paragraph or a question/answer pair; the dated line says how fresh the
+    # facts are without churning lastmod, since it changes only when the
+    # guide's text does. "{buildings}" is filled from the register at build.
+    st = guide_stats() if gcity == "nyc" else {}
+    n_bld = f"{st['buildings']:,}" if st.get("buildings") else "the"
+
+    def fill(text):
+        return text.replace("{buildings}", n_bld)
+
+    faq = [(fill(q), fill(a)) for q, a in g.get("faq", [])]
+    if g.get("updated"):
+        article["dateModified"] = g["updated"]
+    top = ""
+    if g.get("updated"):
+        d = datetime.date.fromisoformat(g["updated"])
+        top += f"<p class='note'>Updated {d.strftime('%B')} {d.day}, {d.year}</p>"
+    if g.get("answer"):
+        top += answer_block([fill(x) for x in g["answer"]])
+    if g.get("lookup"):
+        # The map's own ?q= prefill (index.html) does the search; no new code.
+        top += ("<form action='/' method='get' class='lookup' style='display:flex;gap:8px;flex-wrap:wrap;margin:14px 0'>"
+                "<label for='lookup-q' style='width:100%;font-weight:600'>Check a building now</label>"
+                "<input id='lookup-q' name='q' type='search' required maxlength='80' "
+                "placeholder='Street address, e.g. 1245 Edward L Grant Hwy' "
+                "style='flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px'>"
+                "<button type='submit' class='cta' style='margin:0;border:0;cursor:pointer;font-size:16px'>Check</button></form>")
     # A guide about San Francisco footed "Data: NYC DHCR…" is simply wrong,
     # and these three shipped that way on 2026-07-29. Each non-NYC guide now
     # carries its own city's provenance, and links into that city's browse
     # tier — the contextual link the new hubs need to not be orphans.
     body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
             f"<h1>{esc(g['h1'])}</h1>"
+            + top +
             f"<div class='guide-body'>{g['body']}</div>"
             + (guide_numbers_html(g["slug"]) if gcity == "nyc" else "")
+            + (faq_html(faq) if faq else "")
             + (f"<p><a href='/{gcity}/buildings/'>Browse "
                f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
                if browse_ok and gcity in CITY_HUBS else "")
             + _related(g["slug"], GUIDES))
+    ld = [article, crumb] + ([faq_jsonld(faq)] if faq else [])
     return canonical, page(g["title"] + " | Find A Crib", g["desc"], canonical, body,
-                           [article, crumb], footer=CITY_FOOTER.get(gcity))
+                           ld, footer=CITY_FOOTER.get(gcity))
 
 
 # --- the sibling-link ring on building pages -------------------------------

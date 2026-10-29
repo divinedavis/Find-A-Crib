@@ -34,6 +34,9 @@ BEAT_KEEP=200          # ~50 days at two crons a day
 #
 # Only filled in when the caller passed no --email of its own, so running
 # `growth_run.sh report --email someone@else` by hand still works.
+# owner.env carries only ERROR_REPORT_EMAIL (2026-10-29), which is the owner's
+# address too, so fall back to it rather than mail nobody.
+GROWTH_REPORT_EMAIL=${GROWTH_REPORT_EMAIL:-${ERROR_REPORT_EMAIL:-}}
 if [ "${1:-}" = "report" ] && [ -n "${GROWTH_REPORT_EMAIL:-}" ]; then
   case " $* " in
     *" --email "*|*" --email="*) ;;

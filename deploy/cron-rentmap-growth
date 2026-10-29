@@ -41,6 +41,15 @@ CRON_TZ=America/New_York
 # recipient lives in growth.env as GROWTH_REPORT_EMAIL and growth_run.sh appends
 # it. If the report stops arriving, check that variable first — an unset one is
 # silent by design, because the alternative was publishing the address.
-0 6 * * 5 scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1
+0 6 * * 5 scraper fac-run supabase,smtp,gsc,owner -- /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1
+# (owner added 2026-10-29: the report's recipient lives in that set. Without it
+# GROWTH_REPORT_EMAIL was unset under cron and the report went unmailed, silently.)
+
+# 07:30 America/New_York on the 1st — are AI chatbots sending people here?
+# growth/ai_visibility.py: five renter questions to Claude with web search
+# (~$1/month, priced into api_spend), Search Console for Gemini, our own
+# analytics for ChatGPT. Mails the owner; one line per month in
+# growth/ai_visibility.jsonl. Owner, 2026-10-29.
+30 7 1 * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase,smtp,gsc,owner -- /opt/findacrib/venv/bin/python -m growth.ai_visibility >> /var/log/rentmap-growth.log 2>&1
 # Paused 2026-10-12 (owner: "pause seo for FAC"); resumed 2026-10-29 so AI answer engines
 # (Gemini, Claude, ChatGPT) can find and cite the site (owner: "lets do it").

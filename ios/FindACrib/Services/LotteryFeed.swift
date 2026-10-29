@@ -67,6 +67,9 @@ final class LotteryFeed {
     private(set) var statusUnknown = false
     /// Borough codes from the signup: M, Bk, Q, Bx, SI.
     private(set) var boroughs: [String] = []
+    /// What the signup alerts on ("lottery", "rerental", "voucher"); empty
+    /// when unknown (a remembered answer), read as everything.
+    private(set) var kinds: [String] = []
     private(set) var income: Int?
     private(set) var all: [Lottery] = []
     /// Every NJ drawing in the file; `njOpen` drops the ones already closed.
@@ -82,6 +85,18 @@ final class LotteryFeed {
     /// should be able to see lotteries and rerentals"); alerts need an account.
     var viewBoroughs: [String] { subscribed && !boroughs.isEmpty ? boroughs : Borough.all.map(\.code) }
 
+    /// Their alerts already cover a re-rental in this borough, so a card
+    /// shouldn't offer to sign them up again (owner, 2026-10-29).
+    func alertsCover(rerentalIn borough: String?) -> Bool {
+        Self.covers(subscribed: subscribed, boroughs: boroughs, kinds: kinds, borough: borough)
+    }
+
+    nonisolated static func covers(subscribed: Bool, boroughs: [String], kinds: [String], borough: String?) -> Bool {
+        guard subscribed, kinds.isEmpty || kinds.contains("rerental") else { return false }
+        guard let borough else { return true }
+        return boroughs.isEmpty || boroughs.contains(borough)
+    }
+
     /// Open lotteries in those boroughs, soonest deadline first.
     var mine: [Lottery] { Self.filter(all, boroughs: viewBoroughs, today: Self.todayKey()) }
 
@@ -96,13 +111,14 @@ final class LotteryFeed {
         // answer now would be a wrong "not subscribed". Wait for it.
         if !demo, let auth, !auth.restored { return }
         if demo {
-            subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; income = 70_000; checked = true
+            subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; kinds = []; income = 70_000; checked = true
         } else if let token = auth?.session?.accessToken {
             let uid = auth?.session?.user.id.uuidString ?? ""
             let j = await Self.prefs(token: token)
             if let j {
                 subscribed = PushService.isSubscribed(prefs: j)
                 boroughs = (j["boroughs"] as? [String]) ?? []
+                kinds = (j["kinds"] as? [String]) ?? []
                 income = j["income"] as? Int
                 checked = true; statusUnknown = false
                 Self.remember(uid: uid, subscribed: subscribed, boroughs: boroughs)
@@ -117,7 +133,7 @@ final class LotteryFeed {
                 checked = true
             }   // checked already: keep what we had, a flaky network should not hide the tab
         } else {
-            subscribed = false; boroughs = []; income = nil; checked = true; statusUnknown = false
+            subscribed = false; boroughs = []; kinds = []; income = nil; checked = true; statusUnknown = false
         }
         await loadLotteries()
     }

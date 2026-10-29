@@ -253,6 +253,53 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sign in for re-rental alerts"].waitForExistence(timeout: 10), "signed out, alerts open the sign-in")
     }
 
+    /// Already getting re-rental alerts (owner, 2026-10-29: "i shouldnt see
+    /// sign up for alerts if im already signed up"): a Plus member's card
+    /// offers a tool they haven't tried, prefilled from the listing; without
+    /// Plus it offers real-time alerts instead.
+    func testSubscribedRerentalCardOffersAnUnusedFeature() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo", "--reset-tool-usage"]
+        app.launch()
+        let pane = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        XCTAssertTrue(pane.waitForExistence(timeout: 30))
+        pane.tap()
+        let card = app.descendants(matching: .any)["rerental-card"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        let fees = app.buttons["rerental-broker_fee"].firstMatch
+        bringClearOfTabBar(fees)
+        XCTAssertTrue(fees.isHittable, "a Plus subscriber gets Broker fee check on the card")
+        XCTAssertFalse(app.buttons["rerental-alerts"].exists, "no alerts sign-up for someone already getting them")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-card-plus"; shot.lifetime = .keepAlways; add(shot)
+        fees.tap()
+        XCTAssertTrue(app.navigationBars["Broker fee check"].waitForExistence(timeout: 10))
+        let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "rerental-broker-fee-sheet"; sheet.lifetime = .keepAlways; add(sheet)
+        app.buttons["Close"].tap()
+
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launch()
+        XCTAssertTrue(pane.waitForExistence(timeout: 30))
+        pane.tap()
+        let realtime = app.buttons["rerental-realtime"].firstMatch
+        bringClearOfTabBar(realtime)
+        XCTAssertTrue(realtime.isHittable, "a subscriber without Plus gets real-time alerts on the card")
+        XCTAssertFalse(app.buttons["rerental-alerts"].exists)
+        let free = XCTAttachment(screenshot: app.screenshot()); free.name = "rerental-card-free"; free.lifetime = .keepAlways; add(free)
+    }
+
+    /// Scroll in short drags until the element sits in the middle band: the
+    /// floating tab bar covers the bottom of the screen while still counting
+    /// as "hittable", and a tap there lands on the tab instead.
+    private func bringClearOfTabBar(_ e: XCUIElement) {
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<12 {
+            if e.exists, e.frame.minY > 200, e.frame.maxY < h - 160 { return }
+            let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: e.exists && e.frame.minY < 200 ? 220 : -220)), withVelocity: .slow, thenHoldForDuration: 0.2)
+        }
+    }
+
     /// Re-rentals ride along in the results feed: the 3rd tile is one, with a
     /// "Rerental" flag and a hand-off button, and it never displaces a building
     /// (the count headline is unchanged). The default route is Brooklyn, and

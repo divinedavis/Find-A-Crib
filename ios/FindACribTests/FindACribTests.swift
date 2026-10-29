@@ -1753,6 +1753,24 @@ final class MapGridTests: XCTestCase {
 
 /// Qualify-check and AI search mapping (2026-10-03).
 final class QualifyAndAITests: XCTestCase {
+    /// The re-rental card's third button (owner, 2026-10-29): alerts only for
+    /// someone not already getting re-rental alerts in that borough; then
+    /// real-time without Plus; with Plus, a tool they haven't run, or none.
+    @MainActor func testRerentalCardOffersWhatTheyDontAlreadyHave() {
+        XCTAssertFalse(LotteryFeed.covers(subscribed: false, boroughs: [], kinds: [], borough: "Bk"))
+        XCTAssertTrue(LotteryFeed.covers(subscribed: true, boroughs: ["Bk", "M"], kinds: ["lottery", "rerental"], borough: "Bk"))
+        XCTAssertFalse(LotteryFeed.covers(subscribed: true, boroughs: ["Bk", "M"], kinds: ["rerental"], borough: "Q"), "another borough still offers alerts")
+        XCTAssertFalse(LotteryFeed.covers(subscribed: true, boroughs: ["Bk"], kinds: ["lottery"], borough: "Bk"), "lottery-only alerts don't cover re-rentals")
+        XCTAssertTrue(LotteryFeed.covers(subscribed: true, boroughs: ["Bk"], kinds: [], borough: "Bk"), "unknown kinds read as everything")
+        typealias A = RerentalCard.CardAction
+        XCTAssertEqual(RerentalCard.action(covered: false, plus: true, used: { _ in false }), .alerts)
+        XCTAssertEqual(RerentalCard.action(covered: true, plus: false, used: { _ in false }), .realtime)
+        XCTAssertEqual(RerentalCard.action(covered: true, plus: true, used: { _ in false }), .brokerFee)
+        XCTAssertEqual(RerentalCard.action(covered: true, plus: true, used: { $0 == A.brokerFee }), .leaseReview)
+        XCTAssertNil(RerentalCard.action(covered: true, plus: true, used: { _ in true }), "nothing left to offer: no button")
+        XCTAssertEqual(Set(ToolUsage.ids), [A.brokerFee.rawValue, A.leaseReview.rawValue])
+    }
+
     /// Re-rental bedroom sizes (2026-10-04): the feed's own plus the unit
     /// table's rows; none stated = empty, which a Beds filter leaves out.
     func testRerentalBedroomsComeFromFeedAndUnitTable() {

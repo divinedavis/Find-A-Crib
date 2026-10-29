@@ -83,6 +83,19 @@ extension AIService {
 
 // MARK: - Broker fee check
 
+/// Which Plus tools this phone has run to a result, so a card can offer one
+/// they haven't tried instead of something they already have (owner,
+/// 2026-10-29: "a button of some feature that i am not using").
+enum ToolUsage {
+    static let ids = ["broker_fee", "lease_review"]
+    /// UI tests start with nothing tried (--reset-tool-usage), once per launch.
+    private static let reset: Void = {
+        if CommandLine.arguments.contains("--reset-tool-usage") { ids.forEach { UserDefaults.standard.removeObject(forKey: "fac.used." + $0) } }
+    }()
+    static func used(_ id: String) -> Bool { _ = reset; return UserDefaults.standard.bool(forKey: "fac.used." + id) }
+    static func markUsed(_ id: String) { _ = reset; UserDefaults.standard.set(true, forKey: "fac.used." + id) }
+}
+
 struct BrokerFeeView: View {
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
@@ -102,6 +115,13 @@ struct BrokerFeeView: View {
     @State private var busy = false
     @State private var error: String?
     @State private var needsPlus = false
+
+    init() {}
+    /// From a re-rental card: its rent and listing filled in.
+    init(rent: Int?, listingText: String) {
+        _rent = State(initialValue: rent.map(String.init) ?? "")
+        _listingText = State(initialValue: listingText)
+    }
 
     private static let foundOptions: [(String, String)] = [
         ("listing_agent", String(localized: "Through the listing's agent")), ("own_broker", String(localized: "Through a broker I hired")),
@@ -203,6 +223,7 @@ struct BrokerFeeView: View {
             "listing_text": String(listingText.prefix(4000))]
         do {
             result = try await AIService.brokerFee(answers, auth: auth)
+            ToolUsage.markUsed("broker_fee")
             Analytics.shared.track("broker_fee_check", ["verdict": result?.verdict ?? "", "src": "app"])
         } catch {
             switch error as? AIError {
@@ -314,6 +335,7 @@ struct LeaseReviewView: View {
         busy = true; error = nil; defer { busy = false }
         do {
             review = try await AIService.leaseReview(pdf: pdf, text: text, stabilized: stabilized, auth: auth)
+            ToolUsage.markUsed("lease_review")
             Analytics.shared.track("lease_review_done", ["flags": review?.flags.count ?? 0, "src": "app"])
         } catch LeaseUploadError.code(let c) {
             error = AIService.leaseErrorText(c)

@@ -13,6 +13,45 @@ struct RerentalCard: View {
     @State private var photo = 0
     @State private var showAlerts = false
     @State private var showSignIn = false
+    @State private var sheet: CardAction?
+    private var feed: LotteryFeed { LotteryFeed.shared }
+
+    /// The one button under Share / Apply.
+    enum CardAction: String, Identifiable {
+        case alerts, realtime, brokerFee = "broker_fee", leaseReview = "lease_review"
+        var id: String { rawValue }
+        var icon: String {
+            switch self {
+            case .alerts: "bell.badge.fill"
+            case .realtime: "bolt.fill"
+            case .brokerFee: "dollarsign.circle"
+            case .leaseReview: "doc.text.magnifyingglass"
+            }
+        }
+        var title: String {
+            switch self {
+            case .alerts: String(localized: "Get alerts on new re-rentals")
+            case .realtime: String(localized: "Get these alerts the minute they post")
+            case .brokerFee: String(localized: "Check the fees they're asking")
+            case .leaseReview: String(localized: "Have AI review the lease")
+            }
+        }
+    }
+
+    /// Not getting re-rental alerts for this borough: the alerts button.
+    /// Getting them without Plus: real-time alerts. With Plus: the first of
+    /// Broker fee check and Lease review this phone hasn't run, else nothing.
+    private var cardAction: CardAction? {
+        // subscribed is false whenever signed out (LotteryFeed.refresh).
+        Self.action(covered: feed.alertsCover(rerentalIn: listing.boroughCode), plus: auth.hasPlus,
+                    used: { ToolUsage.used($0.rawValue) })
+    }
+
+    static func action(covered: Bool, plus: Bool, used: (CardAction) -> Bool) -> CardAction? {
+        guard covered else { return .alerts }
+        guard plus else { return .realtime }
+        return [CardAction.brokerFee, .leaseReview].first { !used($0) }
+    }
 
     var body: some View {
         let f = listing
@@ -146,20 +185,40 @@ struct RerentalCard: View {
                 .frame(maxWidth: .infinity)
                 // Where Help me apply was (owner, 2026-10-27): alerts for the
                 // next re-rental in this borough. Signed out, sign in first.
-                Button {
-                    Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "rerental_card"])
-                    if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "bell.badge.fill").font(.system(size: 15, weight: .bold))
-                        Text("Get alerts on new re-rentals").font(.se(compact ? 15 : 17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                    }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
-                }
-                .buttonStyle(.plain).accessibilityIdentifier("rerental-alerts")
-                .sheet(isPresented: $showAlerts) { AlertsSheet(rerentalBorough: f.boroughCode) }
-                .sheet(isPresented: $showSignIn, onDismiss: { if auth.isSignedIn { showAlerts = true } }) {
-                    EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for re-rental alerts"), forAlerts: true)
+                // Already getting them (owner, 2026-10-29: "i shouldnt see
+                // sign up for alerts if im already signed up"): a feature
+                // they have and haven't used, or nothing.
+                if let action = cardAction {
+                    Button {
+                        Analytics.shared.track("rerental_card_action", ["action": action.id, "signed_in": auth.isSignedIn])
+                        switch action {
+                        case .alerts: if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+                        case .realtime: sheet = .realtime
+                        case .brokerFee: sheet = .brokerFee
+                        case .leaseReview: sheet = .leaseReview
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: action.icon).font(.system(size: 15, weight: .bold))
+                            Text(action.title).font(.se(compact ? 15 : 17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                        }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
+                            .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                    }
+                    .buttonStyle(.plain).accessibilityIdentifier("rerental-\(action.id)")
+                    // Saved: re-read the prefs, so this card stops offering alerts.
+                    .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet(rerentalBorough: f.boroughCode) }
+                    .sheet(isPresented: $showSignIn, onDismiss: { if auth.isSignedIn { showAlerts = true } }) {
+                        EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for re-rental alerts"), forAlerts: true)
+                    }
+                    .sheet(item: $sheet) { which in
+                        switch which {
+                        case .realtime: PaywallView(source: "realtime")
+                        case .brokerFee: BrokerFeeView(rent: f.moneyKind == "rent" ? f.moneyLow : nil,
+                                                       listingText: [f.title, f.address, String(localized: "Listed by \(f.agent)"), f.href].compactMap { $0 }.joined(separator: "\n"))
+                        case .leaseReview: LeaseReviewView()
+                        case .alerts: EmptyView()   // its own sheets above
+                        }
+                    }
                 }
             }
             .padding(compact ? 14 : 18)

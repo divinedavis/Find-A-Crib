@@ -700,7 +700,7 @@ def sweep(pages, only=None):
                     # applications for the buildings it lists, which carry no
                     # rent of their own (Reclaim HDFC, East Village Homes).
                     if meta.get("available") or (meta.get("also_available") and c.get("_from") != meta["url"]):
-                        rec["_available"] = True
+                        rec["_available"] = rec["_vouched"] = True
                     if meta.get("link") == "board":
                         # The card's own links are known to be wrong for this
                         # board (Sterling23's "StreetEasy" button opens a
@@ -1217,7 +1217,11 @@ def jev_review(records):
             if a["open"].noul < JEV_DROP_BELOW:
                 changes.append(f"drop closed   {label}  open={a['open'].noul:.2f}")
                 continue
-            if a["listing"].noul < JEV_DROP_BELOW:
+            # A page we checked by hand and marked "available" is a building's
+            # own site, not a unit card, and Jev reads it as "not a listing"
+            # (East Village Homes: kept 2026-10-28, dropped at 0.14 on 10-29).
+            # Its "closed" veto above still applies.
+            if a["listing"].noul < JEV_DROP_BELOW and not r.get("_vouched"):
                 changes.append(f"drop not-apt  {label}  listing={a['listing'].noul:.2f}")
                 continue
             if figure:

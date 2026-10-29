@@ -62,3 +62,43 @@ def test_the_name_before_an_embedded_address_is_the_title():
     r = parse("Greenpoint Central Apartments - 65 Dupont Street", "65 Dupont Street",
               "Rent: $3423.00 - $4376.00")
     assert r["title"] == "Greenpoint Central Apartments"
+
+
+def jev_run(records, listing):
+    """jev_review with a stand-in TypeSafe client that answers every card alike."""
+    import os, sys, types
+    from unittest import mock
+
+    class A:
+        def __init__(self, p):
+            self.noul = p
+
+    class Client:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def system_one(self, state, questions):
+            return types.SimpleNamespace(usage=types.SimpleNamespace(input_tokens=1),
+                                         answers={"open": A(0.9), "listing": A(listing), "rent": A(0.5)})
+
+    sdk = types.SimpleNamespace(TypeSafeClient=Client, Noul=lambda instructions: instructions)
+    with mock.patch.dict(sys.modules, {"typesafe_sdk": sdk}), \
+         mock.patch.dict(os.environ, {"TYPESAFE_API_KEY": "test"}):
+        return F.jev_review(records)[0]
+
+
+def jev_card(**extra):
+    return dict({"_amounts": [], "money_kind": None, "money_low": None, "_card": ["302 East 2nd Street"],
+                 "address": "302 East 2nd Street", "agent": "Stanton Norfolk"}, **extra)
+
+
+def test_jev_still_drops_a_card_it_reads_as_no_apartment():
+    assert jev_run([jev_card()], listing=0.14) == []
+
+
+def test_a_page_checked_by_hand_survives_jevs_not_a_listing_veto():
+    # East Village Homes' RentCafe homepage: kept 10-28, dropped at 0.14 on 10-29.
+    assert len(jev_run([jev_card(_vouched=True)], listing=0.14)) == 1

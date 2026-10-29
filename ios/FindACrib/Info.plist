@@ -70,6 +70,10 @@
 		<string>SourceSans3-Bold.ttf</string>
 		<string>SourceSans3-Black.ttf</string>
 	</array>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDarkContent</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

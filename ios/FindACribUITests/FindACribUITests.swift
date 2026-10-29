@@ -859,6 +859,35 @@ final class FindACribUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "hero-halloween"; shot.lifetime = .keepAlways; add(shot)
     }
 
+    /// The banner runs up under the status bar and Dynamic Island, with no
+    /// white strip above it (owner, 2026-10-29), on an ordinary day and on a
+    /// holiday. Screenshots: top at rest, scrolled, and another tab, which
+    /// is where the status bar's text turns back to black.
+    func testHeroBannerRunsUnderTheStatusBar() throws {
+        for holiday in [nil, "halloween"] as [String?] {
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"] + (holiday.map { ["--holiday", $0] } ?? [])
+            app.launch()
+            let banner = app.descendants(matching: .any)["hero-banner"].firstMatch
+            XCTAssertTrue(banner.waitForExistence(timeout: 20))
+            // Its frame runs far above the screen (the field drawn for pulling
+            // past the top), so measure the bottom edge: 200 pt of banner
+            // below a status bar of 20-62 pt, where it used to end at ~259
+            // only because it started below a white strip.
+            let city = app.buttons["city-field"]
+            XCTAssertTrue(city.waitForExistence(timeout: 10))
+            XCTAssertGreaterThan(banner.frame.maxY, 220, "200 pt of banner below the status bar")
+            XCTAssertLessThan(banner.frame.maxY, 270)
+            XCTAssertGreaterThan(city.frame.minY, banner.frame.maxY, "the form starts below the banner")
+            let name = holiday ?? "everyday"
+            let top = XCTAttachment(screenshot: app.screenshot()); top.name = "hero-top-\(name)"; top.lifetime = .keepAlways; add(top)
+            app.swipeUp()
+            let scrolled = XCTAttachment(screenshot: app.screenshot()); scrolled.name = "hero-scrolled-\(name)"; scrolled.lifetime = .keepAlways; add(scrolled)
+        }
+        app.buttons["tab-Lotteries"].tap()
+        let other = XCTAttachment(screenshot: app.screenshot()); other.name = "hero-other-tab"; other.lifetime = .keepAlways; add(other)
+    }
+
     /// The app's Plus paywall: Plus is the AI features, real-time alerts and
     /// agent phone numbers (plus no ads) — and NO invite-a-friend route
     /// (App Review 3.1.1; referrals live on the website).

@@ -48,6 +48,14 @@ struct LetterSplash: View {
 
     @State private var shown = 0            // how many letters have started
     @State private var leaving = false
+    /// The holiday field fades in over LaunchNavy rather than replacing it.
+    /// iOS's launch screen is one colour fixed at build time (Info.plist
+    /// UILaunchScreen), so on a holiday it still shows teal first; cutting
+    /// straight to the day's field read as a second splash popping in
+    /// (owner, 2026-10-29: "i still see a green splash page initially before
+    /// the halloween splash page pops up").
+    @State private var fieldIn = false
+    static let fieldFade = 0.45
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     private var reduceMotion: Bool { systemReduceMotion || forceReducedMotion }
 
@@ -55,7 +63,11 @@ struct LetterSplash: View {
         GeometryReader { screen in
             let fit: CGFloat = wordWidth > 0 ? min(1.4, max(0.4, screen.size.width * Self.widthShare / wordWidth)) : 0.001
             ZStack {
-                (holiday?.background ?? Color("LaunchNavy")).ignoresSafeArea()
+                Color("LaunchNavy").ignoresSafeArea()
+                if let holiday {
+                    holiday.background.opacity(fieldIn || reduceMotion ? 1 : 0).ignoresSafeArea()
+                        .animation(.easeInOut(duration: Self.fieldFade), value: fieldIn)
+                }
                 if holiday?.effect == "fireworks", !reduceMotion { Fireworks(colors: holiday!.colors + [.white]).ignoresSafeArea() }
                 HStack(spacing: 0) {
                     ForEach(Array(Self.word.enumerated()), id: \.offset) { i, ch in
@@ -81,6 +93,16 @@ struct LetterSplash: View {
         }
         .dynamicTypeSize(.large)
         .ignoresSafeArea()
+        .task {
+            // A beat after the first frame, not in onAppear: during launch
+            // the view appears before the window is on screen, and a change
+            // made then lands without its animation (2026-10-29 recording:
+            // teal, then the day's field in one frame).
+            if holiday != nil, !reduceMotion {
+                try? await Task.sleep(for: .milliseconds(120))
+                fieldIn = true
+            }
+        }
         .task { await play() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Find A Crib")

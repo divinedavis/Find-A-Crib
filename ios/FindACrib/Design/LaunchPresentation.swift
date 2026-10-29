@@ -74,7 +74,9 @@ struct LaunchPresentation<Content: View>: View {
             .opacity(finished ? 1 : 0)
             .background {
                 if !finished {
-                    (HolidayCalendar.today?.background ?? Color("LaunchNavy")).ignoresSafeArea()
+                    // LaunchNavy, as iOS's launch screen is: the splash fades
+                    // its own field to the holiday's over this (LetterSplash).
+                    Color("LaunchNavy").ignoresSafeArea()
                 }
             }
             .overlay {

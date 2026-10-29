@@ -13,161 +13,196 @@ struct SearchHomeView: View {
     @State private var showAlertsSignIn = false
     @State private var showCity = false
     @State private var count = 0
+    /// While the banner is behind the status bar the clock and battery draw
+    /// white on it; once the form scrolls up under them, black again.
+    @State private var bannerBehindStatusBar = true
+    /// Only while Search's own page is what sits under the status bar: not
+    /// under another tab, and not under a building page pushed on top.
+    private var lightStatusBar: Bool {
+        bannerBehindStatusBar && nav.tab == .search && nav.searchPath.isEmpty
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                HeroBanner().padding(.bottom, 22)
-
-
-                VStack(alignment: .leading, spacing: 18) {
-                    // City first: it decides what the Location field can offer.
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: String(localized: "City"))
-                        SEFieldBox {
-                            HStack(spacing: 10) {
-                                Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(store.city.name).font(.se(19)).foregroundStyle(SE.ink)
-                                    Text(store.loaded ? String(localized: "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings")
-                                                      : String(localized: "Loading \(store.city.name)…"))
-                                        .font(.se(13)).foregroundStyle(SE.ink3)
-                                }
-                                Spacer(minLength: 0)
-                                Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3)
-                            }
-                            .padding(.horizontal, 12).padding(.vertical, 6)
+        // The banner runs up under the status bar and Dynamic Island (owner,
+        // 2026-10-29: "extend the header past the dynamic island so we dont
+        // see white at the top"). Inside a ScrollView a child cannot reach
+        // the safe area itself, so the scroll view ignores the top edge and
+        // the banner grows by the inset it would otherwise have sat below.
+        GeometryReader { outer in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HeroBanner(topInset: outer.safeAreaInsets.top)
+                        .onGeometryChange(for: Bool.self) { g in
+                            g.frame(in: .global).maxY > outer.safeAreaInsets.top
+                        } action: { behind in
+                            bannerBehindStatusBar = behind
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture { showCity = true }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityIdentifier("city-field")
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel("City: \(store.city.name)")
-                    }
+                        .padding(.bottom, 22)
 
-                    // Location
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: store.city.isNYC ? String(localized: "Location") : store.city.regionLabel)
-                        // Not a Button: chips inside a Button label get flattened into
-                        // one accessibility element, so their remove buttons vanish
-                        // for VoiceOver and XCUITest. The box takes the tap instead.
-                        SEFieldBox {
-                            HStack(spacing: 10) {
-                                Image(systemName: "mappin").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
-                                if query.locations.isEmpty {
-                                    Text(store.city.searchPlaceholder).font(.se(19)).foregroundStyle(SE.ink3)
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        // City first: it decides what the Location field can offer.
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: String(localized: "City"))
+                            SEFieldBox {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(store.city.name).font(.se(19)).foregroundStyle(SE.ink)
+                                        Text(store.loaded ? String(localized: "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings")
+                                                          : String(localized: "Loading \(store.city.name)…"))
+                                            .font(.se(13)).foregroundStyle(SE.ink3)
+                                    }
                                     Spacer(minLength: 0)
-                                } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(query.locations, id: \.self) { loc in
-                                                SEChip(text: loc.label) { query.locations.removeAll { $0 == loc } }
+                                    Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture { showCity = true }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier("city-field")
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityLabel("City: \(store.city.name)")
+                        }
+
+                        // Location
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: store.city.isNYC ? String(localized: "Location") : store.city.regionLabel)
+                            // Not a Button: chips inside a Button label get flattened into
+                            // one accessibility element, so their remove buttons vanish
+                            // for VoiceOver and XCUITest. The box takes the tap instead.
+                            SEFieldBox {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "mappin").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
+                                    if query.locations.isEmpty {
+                                        Text(store.city.searchPlaceholder).font(.se(19)).foregroundStyle(SE.ink3)
+                                        Spacer(minLength: 0)
+                                    } else {
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 8) {
+                                                ForEach(query.locations, id: \.self) { loc in
+                                                    SEChip(text: loc.label) { query.locations.removeAll { $0 == loc } }
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                .padding(.horizontal, 12).padding(.vertical, 6)
                             }
-                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .contentShape(Rectangle())
+                            .onTapGesture { showLocation = true }
+                            .accessibilityElement(children: .contain)
+                            .accessibilityIdentifier("location-field")
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityLabel(query.locations.isEmpty ? String(localized: "Location") : String(localized: "Location: \(query.locationLabel(city: store.city.short))"))
                         }
-                        .contentShape(Rectangle())
-                        .onTapGesture { showLocation = true }
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("location-field")
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel(query.locations.isEmpty ? String(localized: "Location") : String(localized: "Location: \(query.locationLabel(city: store.city.short))"))
-                    }
 
-                    // Bedrooms sits right under Location (owner, 2026-10-13): the
-                    // two filters people set most before searching (58% / 55%).
-                    // New York only, like Show — the size comes from its re-rental feed.
-                    if store.city.hasNYCExtras {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: String(localized: "Bedrooms"))
-                            SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
-                                .accessibilityIdentifier("beds-row")
-                        }
-                    }
-
-                    SEPrimaryButton(title: String(localized: "Search \(count.formatted()) \(query.noun)")) { runSearch() }
-                        .padding(.horizontal, 34)
-                        .padding(.top, 6)
-                        .accessibilityIdentifier("search-button")
-                        .disabled(!store.loaded)
-                    // One fixed link under Search (owner, 2026-10-14: "have AI
-                    // review your lease should be sign up for lottery alerts
-                    // instead. remove the rotating buttons"). Free with an
-                    // account, New York only (every alert feed is NY), and gone
-                    // once alerts are on — same rule as the Results pill.
-                    if store.city.isNYC && !LotteryFeed.shared.subscribed {
-                        Button {
-                            Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "search"])
-                            if auth.isSignedIn { showAlerts = true } else { showAlertsSignIn = true }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "bell.badge.fill")
-                                Text("Sign up for lottery alerts").font(.se(17, .semibold))
-                            }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain).padding(.top, 4)
-                        .accessibilityIdentifier("search-lottery-alerts")
-                    }
-
-                    // Show and Bedrooms both read New York feeds — vouchers,
-                    // lotteries and re-rentals. The other cities publish a
-                    // register and nothing else, so offering those filters there
-                    // would be offering a way to get zero results.
-                    if store.city.hasNYCExtras {
-                        // Show: multi-select. Every building here is rent-stabilized, so
-                        // that box is the always-on baseline; the others narrow it.
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: String(localized: "Show"))
-                            ShowChecklist(query: $query)
-                        }
-                    } else {
-                        Text(store.city.sourceNote).font(.se(14)).foregroundStyle(SE.ink3)
-                    }
-
-                    // Price. Los Angeles publishes no rent at all — its source is
-                    // an assessor roll — so the fields are not offered there
-                    // rather than offered and filtering everything away.
-                    if store.city.hasPrices {
-                        VStack(alignment: .leading, spacing: 8) {
-                            PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
-                            if !store.city.isNYC {
-                                Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
-                                    .font(.se(14)).foregroundStyle(SE.ink3)
-                            } else {
-                                Text("Matches the ZIP's typical rent (HUD Small-Area Fair Market Rent, studio–2BR), not a building's actual rent.")
-                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                        // Bedrooms sits right under Location (owner, 2026-10-13): the
+                        // two filters people set most before searching (58% / 55%).
+                        // New York only, like Show — the size comes from its re-rental feed.
+                        if store.city.hasNYCExtras {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: String(localized: "Bedrooms"))
+                                SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                                    .accessibilityIdentifier("beds-row")
                             }
                         }
-                    }
-                }
-                .readableColumn()
-                .padding(.horizontal, 16)
 
-                if !activity.recentSearches.isEmpty {
-                    Text("Pick up where you left off:")
-                        .font(.se(22, .bold)).foregroundStyle(SE.ink2)
-                        .padding(.horizontal, 16).padding(.top, 34).padding(.bottom, 12)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(activity.recentSearches.prefix(6).enumerated()), id: \.offset) { _, q in
-                                RecentSearchCard(query: q) {
-                                    query = q
-                                    nav.searchPath.append(.results(q))
+                        SEPrimaryButton(title: String(localized: "Search \(count.formatted()) \(query.noun)")) { runSearch() }
+                            .padding(.horizontal, 34)
+                            .padding(.top, 6)
+                            .accessibilityIdentifier("search-button")
+                            .disabled(!store.loaded)
+                        // One fixed link under Search (owner, 2026-10-14: "have AI
+                        // review your lease should be sign up for lottery alerts
+                        // instead. remove the rotating buttons"). Free with an
+                        // account, New York only (every alert feed is NY), and gone
+                        // once alerts are on — same rule as the Results pill.
+                        if store.city.isNYC && !LotteryFeed.shared.subscribed {
+                            Button {
+                                Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "search"])
+                                if auth.isSignedIn { showAlerts = true } else { showAlertsSignIn = true }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "bell.badge.fill")
+                                    Text("Sign up for lottery alerts").font(.se(17, .semibold))
+                                }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.plain).padding(.top, 4)
+                            .accessibilityIdentifier("search-lottery-alerts")
+                        }
+
+                        // Show and Bedrooms both read New York feeds — vouchers,
+                        // lotteries and re-rentals. The other cities publish a
+                        // register and nothing else, so offering those filters there
+                        // would be offering a way to get zero results.
+                        if store.city.hasNYCExtras {
+                            // Show: multi-select. Every building here is rent-stabilized, so
+                            // that box is the always-on baseline; the others narrow it.
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: String(localized: "Show"))
+                                ShowChecklist(query: $query)
+                            }
+                        } else {
+                            Text(store.city.sourceNote).font(.se(14)).foregroundStyle(SE.ink3)
+                        }
+
+                        // Price. Los Angeles publishes no rent at all — its source is
+                        // an assessor roll — so the fields are not offered there
+                        // rather than offered and filtering everything away.
+                        if store.city.hasPrices {
+                            VStack(alignment: .leading, spacing: 8) {
+                                PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
+                                if !store.city.isNYC {
+                                    Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
+                                        .font(.se(14)).foregroundStyle(SE.ink3)
+                                } else {
+                                    Text("Matches the ZIP's typical rent (HUD Small-Area Fair Market Rent, studio–2BR), not a building's actual rent.")
+                                        .font(.se(14)).foregroundStyle(SE.ink3)
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
                     }
+                    .readableColumn()
+                    .padding(.horizontal, 16)
+
+                    if !activity.recentSearches.isEmpty {
+                        Text("Pick up where you left off:")
+                            .font(.se(22, .bold)).foregroundStyle(SE.ink2)
+                            .padding(.horizontal, 16).padding(.top, 34).padding(.bottom, 12)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(Array(activity.recentSearches.prefix(6).enumerated()), id: \.offset) { _, q in
+                                    RecentSearchCard(query: q) {
+                                        query = q
+                                        nav.searchPath.append(.results(q))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                    Color.clear.frame(height: 110)
                 }
-                Color.clear.frame(height: 110)
+            }
+            .background(Color.white)
+            .ignoresSafeArea(.container, edges: .top)
+            // Once the banner has scrolled away the form would run under the
+            // clock with nothing behind it, so the status bar gets the white
+            // backing it had before.
+            .overlay(alignment: .top) {
+                Color.white
+                    .frame(height: outer.safeAreaInsets.top)
+                    .opacity(bannerBehindStatusBar ? 0 : 1)
+                    .animation(.easeOut(duration: 0.15), value: bannerBehindStatusBar)
+                    .ignoresSafeArea(.container, edges: .top)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
         }
-        .background(Color.white)
         .scrollDismissesKeyboard(.interactively)
+        .onChange(of: lightStatusBar, initial: true) { _, light in StatusBarStyle.set(light: light) }
         .sheet(isPresented: $showAlerts) { AlertsSheet() }
         .sheet(isPresented: $showAlertsSignIn, onDismiss: {
             if auth.isSignedIn { showAlerts = true }
@@ -597,6 +632,10 @@ struct HeroBanner: View {
     /// colour with a glow of the day's own, and the day's line sits under
     /// the city line, so the banner picks up where the splash left off.
     var holiday: Holiday? = HolidayCalendar.today
+    /// The status-bar inset the banner now draws under; its lockup keeps to
+    /// the 200 pt below it.
+    var topInset: CGFloat = 0
+    static let height: CGFloat = 200
 
     /// "Every rent-stabilized building in NYC" — the register's own word for
     /// what a building IS, without the qualifier the line has no room for
@@ -649,11 +688,16 @@ struct HeroBanner: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .position(x: w * 0.5, y: h * 0.5)
+                .position(x: w * 0.5, y: topInset + (h - topInset) * 0.5)
             }
         }
-        .frame(height: 200)
-        .background((holiday?.background ?? SE.navy).ignoresSafeArea(edges: .top))
+        .frame(height: Self.height + topInset)
+        // Pulled down past the top, the scroll view shows what is above the
+        // banner: more of its own field, not white. Matched to the gradient's
+        // top-left stop on an ordinary day.
+        .background(alignment: .bottom) {
+            (holiday?.background ?? Color(hex: 0x2F7A8A)).frame(height: Self.height + topInset + 800)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Find A Crib. \(Self.line(for: store.city))\(holiday.map { ". \($0.name)" } ?? "")")
         .accessibilityIdentifier("hero-banner")

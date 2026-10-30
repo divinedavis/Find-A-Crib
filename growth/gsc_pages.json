@@ -2,67 +2,61 @@
  "churn": {
   "gsc_serving_entered": 0,
   "gsc_serving_ever": 289,
-  "gsc_serving_left": 0,
-  "gsc_serving_stable": 10,
+  "gsc_serving_left": 9,
+  "gsc_serving_stable": 1,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-10-12",
+ "date": "2026-10-30",
  "discovered_untracked": [
   {
-   "clicks": 93,
-   "impressions": 103,
-   "position": 1,
+   "clicks": 37,
+   "impressions": 58,
+   "position": 1.6,
    "query": "findacrib"
   },
   {
-   "clicks": 26,
-   "impressions": 28,
-   "position": 1.0,
-   "query": "find a crib nyc"
-  },
-  {
    "clicks": 17,
-   "impressions": 26,
-   "position": 1,
+   "impressions": 46,
+   "position": 1.4,
    "query": "findacrib.com"
   },
   {
-   "clicks": 9,
-   "impressions": 10,
+   "clicks": 26,
+   "impressions": 27,
+   "position": 1,
+   "query": "find a crib nyc"
+  },
+  {
+   "clicks": 3,
+   "impressions": 6,
    "position": 1,
    "query": "findacrib.con"
   },
   {
    "clicks": 3,
-   "impressions": 7,
-   "position": 1,
+   "impressions": 4,
+   "position": 1.8,
    "query": "find a crib.com"
   },
   {
-   "clicks": 1,
-   "impressions": 3,
-   "position": 4,
-   "query": "jays home finder"
-  },
-  {
-   "clicks": 1,
-   "impressions": 2,
+   "clicks": 0,
+   "impressions": 4,
    "position": 5,
    "query": "jayshomefinder"
   },
   {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 94,
-   "query": "cribs apartment"
+   "clicks": 1,
+   "impressions": 2,
+   "position": 3,
+   "query": "jays home finder"
   }
  ],
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-10-12",
-   73
+   "2026-10-30",
+   74
   ],
   "https://findacrib.com/alerts/?src=menu": [
    "2026-09-12",
@@ -1507,128 +1501,82 @@
  },
  "pages": [
   {
-   "clicks": 165,
-   "impressions": 210,
-   "position": 1.8,
+   "clicks": 99,
+   "impressions": 172,
+   "position": 1.6,
    "url": "https://findacrib.com/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 149,
-   "position": 1.1,
-   "url": "https://findacrib.com/alerts/?src=menu"
-  },
-  {
-   "clicks": 0,
-   "impressions": 149,
-   "position": 1.1,
-   "url": "https://findacrib.com/directory/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 149,
-   "position": 1.1,
-   "url": "https://findacrib.com/marketing-agents/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 149,
-   "position": 1.1,
-   "url": "https://findacrib.com/sf/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 119,
-   "position": 1.1,
-   "url": "https://findacrib.com/dc/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 119,
-   "position": 1.1,
-   "url": "https://findacrib.com/developers/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 119,
-   "position": 1.1,
-   "url": "https://findacrib.com/la/"
-  },
-  {
-   "clicks": 1,
-   "impressions": 1,
-   "position": 4,
-   "url": "https://findacrib.com/building/brooklyn/45-diamond-st-3026840018/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 5,
-   "url": "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/"
   }
  ],
  "queries_28d": [
   {
-   "clicks": 523,
-   "ctr": 0.8879,
-   "impressions": 589,
+   "clicks": 295,
+   "ctr": 0.8501,
+   "impressions": 347,
    "page": "https://findacrib.com/",
-   "position": 1.0,
+   "position": 1.1,
    "query": "findacrib"
   },
   {
-   "clicks": 156,
-   "ctr": 0.8168,
-   "impressions": 191,
+   "clicks": 96,
+   "ctr": 0.8889,
+   "impressions": 108,
    "page": "https://findacrib.com/",
-   "position": 1,
-   "query": "findacrib.com"
-  },
-  {
-   "clicks": 44,
-   "ctr": 0.898,
-   "impressions": 49,
-   "page": "https://findacrib.com/",
-   "position": 1.1,
+   "position": 1.0,
    "query": "find a crib nyc"
   },
   {
-   "clicks": 11,
-   "ctr": 0.8462,
-   "impressions": 13,
+   "clicks": 78,
+   "ctr": 0.5166,
+   "impressions": 151,
+   "page": "https://findacrib.com/",
+   "position": 1.1,
+   "query": "findacrib.com"
+  },
+  {
+   "clicks": 25,
+   "ctr": 0.7576,
+   "impressions": 33,
    "page": "https://findacrib.com/",
    "position": 1,
    "query": "findacrib.con"
   },
   {
-   "clicks": 5,
-   "ctr": 0.4167,
-   "impressions": 12,
+   "clicks": 12,
+   "ctr": 0.6,
+   "impressions": 20,
    "page": "https://findacrib.com/",
-   "position": 1.2,
+   "position": 1.8,
    "query": "find a crib.com"
   },
   {
-   "clicks": 3,
-   "ctr": 0.1875,
-   "impressions": 16,
+   "clicks": 4,
+   "ctr": 0.3077,
+   "impressions": 13,
    "page": "https://findacrib.com/",
-   "position": 3.8,
+   "position": 2.8,
    "query": "jays home finder"
   },
   {
-   "clicks": 1,
-   "ctr": 0.0556,
-   "impressions": 18,
+   "clicks": 2,
+   "ctr": 0.1429,
+   "impressions": 14,
    "page": "https://findacrib.com/",
-   "position": 4.9,
+   "position": 4.5,
    "query": "jayshomefinder"
   },
   {
    "clicks": 0,
    "ctr": 0,
    "impressions": 1,
-   "page": "https://findacrib.com/",
+   "page": "",
+   "position": 84,
+   "query": "cribbi"
+  },
+  {
+   "clicks": 0,
+   "ctr": 0,
+   "impressions": 1,
+   "page": "",
    "position": 94,
    "query": "cribs apartment"
   }
@@ -1636,227 +1584,55 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 93,
-    "impressions": 103,
-    "position": 1,
+    "clicks": 37,
+    "impressions": 58,
+    "position": 1.6,
     "query": "findacrib"
    },
    {
-    "clicks": 26,
-    "impressions": 28,
-    "position": 1.0,
-    "query": "find a crib nyc"
-   },
-   {
     "clicks": 17,
-    "impressions": 26,
-    "position": 1,
+    "impressions": 46,
+    "position": 1.4,
     "query": "findacrib.com"
    },
    {
-    "clicks": 9,
-    "impressions": 10,
+    "clicks": 26,
+    "impressions": 27,
+    "position": 1,
+    "query": "find a crib nyc"
+   },
+   {
+    "clicks": 3,
+    "impressions": 6,
     "position": 1,
     "query": "findacrib.con"
    },
    {
     "clicks": 3,
-    "impressions": 7,
-    "position": 1,
+    "impressions": 4,
+    "position": 1.8,
     "query": "find a crib.com"
    },
    {
-    "clicks": 1,
-    "impressions": 3,
-    "position": 4,
-    "query": "jays home finder"
-   },
-   {
-    "clicks": 1,
-    "impressions": 2,
+    "clicks": 0,
+    "impressions": 4,
     "position": 5,
     "query": "jayshomefinder"
    },
    {
-    "clicks": 0,
-    "impressions": 1,
-    "position": 94,
-    "query": "cribs apartment"
-   }
-  ],
-  "https://findacrib.com/alerts/?src=menu": [
-   {
-    "clicks": 0,
-    "impressions": 101,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 23,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 10,
-    "position": 1,
-    "query": "findacrib.con"
-   },
-   {
-    "clicks": 0,
-    "impressions": 1,
-    "position": 7,
-    "query": "jayshomefinder"
-   }
-  ],
-  "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [],
-  "https://findacrib.com/building/brooklyn/45-diamond-st-3026840018/": [],
-  "https://findacrib.com/dc/": [
-   {
-    "clicks": 0,
-    "impressions": 83,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 16,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 7,
-    "position": 1,
-    "query": "findacrib.con"
-   }
-  ],
-  "https://findacrib.com/developers/": [
-   {
-    "clicks": 0,
-    "impressions": 83,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 16,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 7,
-    "position": 1,
-    "query": "findacrib.con"
-   }
-  ],
-  "https://findacrib.com/directory/": [
-   {
-    "clicks": 0,
-    "impressions": 101,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 23,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 10,
-    "position": 1,
-    "query": "findacrib.con"
-   },
-   {
-    "clicks": 0,
-    "impressions": 1,
-    "position": 7,
-    "query": "jayshomefinder"
-   }
-  ],
-  "https://findacrib.com/la/": [
-   {
-    "clicks": 0,
-    "impressions": 83,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 16,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 7,
-    "position": 1,
-    "query": "findacrib.con"
-   }
-  ],
-  "https://findacrib.com/marketing-agents/": [
-   {
-    "clicks": 0,
-    "impressions": 101,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 23,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 10,
-    "position": 1,
-    "query": "findacrib.con"
-   },
-   {
-    "clicks": 0,
-    "impressions": 1,
-    "position": 7,
-    "query": "jayshomefinder"
-   }
-  ],
-  "https://findacrib.com/sf/": [
-   {
-    "clicks": 0,
-    "impressions": 101,
-    "position": 1,
-    "query": "findacrib"
-   },
-   {
-    "clicks": 0,
-    "impressions": 23,
-    "position": 1,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 0,
-    "impressions": 10,
-    "position": 1,
-    "query": "findacrib.con"
-   },
-   {
-    "clicks": 0,
-    "impressions": 1,
-    "position": 7,
-    "query": "jayshomefinder"
+    "clicks": 1,
+    "impressions": 2,
+    "position": 3,
+    "query": "jays home finder"
    }
   ]
  },
  "serving_brand": {
-  "branded_only": 7,
-  "nonbranded": 1,
-  "unattributed": 2
+  "branded_only": 1,
+  "nonbranded": 0,
+  "unattributed": 0
  },
- "serving_pages": 10,
+ "serving_pages": 1,
  "serving_tiers": {
   "available": {
    "ever": 0,
@@ -1868,13 +1644,13 @@
    "ever": 272,
    "max_days": 39,
    "median_days": 7.0,
-   "now": 2
+   "now": 0
   },
   "city_hub": {
    "ever": 3,
    "max_days": 52,
    "median_days": 52,
-   "now": 3
+   "now": 0
   },
   "council": {
    "ever": 0,
@@ -1886,7 +1662,7 @@
    "ever": 1,
    "max_days": 31,
    "median_days": 31,
-   "now": 1
+   "now": 0
   },
   "guide": {
    "ever": 0,
@@ -1896,8 +1672,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 73,
-   "median_days": 73,
+   "max_days": 74,
+   "median_days": 74,
    "now": 1
   },
   "nyc_hub": {
@@ -1910,7 +1686,7 @@
    "ever": 3,
    "max_days": 31,
    "median_days": 31,
-   "now": 3
+   "now": 0
   },
   "voucher": {
    "ever": 0,
@@ -1919,5 +1695,5 @@
    "now": 0
   }
  },
- "window": "2026-10-03..2026-10-10"
+ "window": "2026-10-21..2026-10-28"
 }

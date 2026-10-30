@@ -10715,3 +10715,14 @@
 {"date": "2026-10-30", "technique": "account_lifecycle", "metric": "sent_saved", "value": 0, "meta": {}, "written": "2026-10-30T05:23:16+00:00"}
 {"date": "2026-10-30", "technique": "account_lifecycle", "metric": "sent_saved_paid_ask", "value": 0, "meta": {}, "written": "2026-10-30T05:23:16+00:00"}
 {"date": "2026-10-30", "technique": "account_lifecycle", "metric": "welcome_aged_out", "value": 7, "meta": {}, "written": "2026-10-30T05:23:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_borough", "value": 11.8, "meta": {"words": 602.5, "sampled": 20}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_brief", "value": 49.5, "meta": {"words": 182, "sampled": 17}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_building", "value": 37.7, "meta": {"words": 611.5, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_dc_neighborhood", "value": 37.2, "meta": {"words": 548.5, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_la_zip", "value": 20.2, "meta": {"words": 1434.5, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_neighborhood", "value": 22.7, "meta": {"words": 987.0, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_section8", "value": 21.8, "meta": {"words": 863.0, "sampled": 6}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_sf_neighborhood", "value": 16.4, "meta": {"words": 1411.5, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_pct_zip", "value": 20.4, "meta": {"words": 895.5, "sampled": 24}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_sections_read", "value": 9, "meta": {}, "written": "2026-10-30T05:40:16+00:00"}
+{"date": "2026-10-30", "technique": "page_uniqueness", "metric": "dup_sections_rising", "value": 3, "meta": {}, "written": "2026-10-30T05:40:16+00:00"}

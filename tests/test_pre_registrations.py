@@ -274,13 +274,22 @@ class TodaysLedgerHoldsTheThreeKnownConditions(unittest.TestCase):
         self.assertEqual([i for i, e in self.by_id.items() if e["fires_on"] == "absence"],
                          ["T013"])
 
-    def test_T013_is_short_of_the_nights_the_pause_cost(self):
-        """14 measured nights 2026-09-29..2026-10-12, of the 30 it needs."""
+    def test_T013_counts_its_nights_off_the_results_file(self):
+        """Was pinned to "14 of 30", the paused reading on 2026-10-12.
+
+        The engine resumed 2026-10-29 and two measured nights accrued, so the
+        hard-coded 14 became false. The clock, not the number, is what this
+        guards: observed_nights has to be the measured nights since the
+        condition was written, and the shortfall has to be the remainder — a
+        condition that cashed early because its own arithmetic drifted is the
+        failure that matters, and it would survive any fixed number.
+        """
         e = self.by_id["T013"]
-        self.assertEqual(e["observed_nights"], 14)
         self.assertEqual(e["needs_nights"], 30)
-        self.assertEqual(e["shortfall"], 16)
-        self.assertFalse(e["due"])
+        self.assertEqual(e["observed_nights"],
+                         ledger.measured_nights_since(e["written"]))
+        self.assertEqual(e["shortfall"], e["needs_nights"] - e["observed_nights"])
+        self.assertEqual(e["due"], e["observed_nights"] >= e["needs_nights"])
         self.assertFalse(e["cashable"])
 
     def test_nothing_is_cashable_while_the_engine_is_paused(self):
@@ -308,13 +317,22 @@ class TodaysLedgerHoldsTheThreeKnownConditions(unittest.TestCase):
 
 class StatusPrintsThem(unittest.TestCase):
     def test_the_block_names_the_uncashable_absence(self):
+        """The printed count is read off the ledger, not off this test.
+
+        "14 of 30 measured nights" was hard-coded here until 2026-10-30, when
+        the resumed engine made it 16 and this failed. What it is for is that
+        the block NAMES the shortfall at all — a condition that fires on an
+        absence and prints no clock is the one a future run cashes for free.
+        """
         import growth_daily
+        e = next(x for x in ledger.pre_registrations() if x["id"] == "T013")
         lines = growth_daily.pre_registration_lines(as_of="2026-10-28")
         text = "\n".join(lines)
         self.assertIn("pre-registered conditions (3)", text)
         self.assertIn("0 ready to decide", text)
         self.assertIn("T013", text)
-        self.assertIn("14 of 30 measured nights", text)
+        self.assertIn(f"{e['observed_nights']} of {e['needs_nights']} "
+                      f"measured nights", text)
 
     def test_an_empty_ledger_says_so_rather_than_printing_a_header(self):
         import growth_daily

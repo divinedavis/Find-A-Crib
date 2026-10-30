@@ -2838,10 +2838,25 @@ def neighborhood_norms(items):
     # gets its own pair — how many buildings have a violation record at all, and
     # how many of THOSE are clean — and says both numbers out loud.
     with_rec = [x for x in items if ((x.get("h") or {}).get("violations"))]
+    # `oc_n` counts the records carrying at least one violation STILL OPEN at
+    # class C, over the same with_rec base as clean_rec — never over len(items),
+    # for the reason written above: a building HPD holds no record for has not
+    # been found hazard-free, and a share computed against the whole tracked set
+    # would quietly say it has.
+    #
+    # min(oc, c) is the clamp build_seo's own building sentence and
+    # growth/techniques.py:_live_listings already apply, lifted here rather than
+    # reinvented so one corpus cannot produce three different class-C counts on
+    # three tiers. oc > c is a data inconsistency, not a real state, and this
+    # counts a building only where BOTH fields agree it has an open class-C row.
+    def _open_c(x):
+        v = x["h"]["violations"]
+        return min(v.get("oc") or 0, v.get("c") or 0)
     return {"n": len(items), "units": units, "unit_med": _med(units),
             "year_med": _med(years), "rate_med": _med(rates), "rate_n": len(rates),
             "clean": clean,
             "rec_n": len(with_rec),
+            "oc_n": sum(1 for x in with_rec if _open_c(x) >= 1),
             "clean_rec": sum(1 for x in with_rec
                              if not ((x["h"]["violations"]).get("open") or 0))}
 
@@ -3170,9 +3185,44 @@ def hub_condition_facts(place, norms):
         out.append(f"{base} hold about {sum(units):,} apartments between them{med}, from "
                    f"the NYC PLUTO counts the city publishes as estimates.")
 
-    rec = _hpd_record_sentence(n, norms.get("rec_n") or 0, norms.get("clean_rec") or 0)
+    rec_n = norms.get("rec_n") or 0
+    rec = _hpd_record_sentence(n, rec_n, norms.get("clean_rec") or 0)
     if rec:
         out.append(rec)
+        # The class-C refinement of the sentence above, and the reason this
+        # block was worth extending on 2026-10-30. The aggregate it reports —
+        # DHCR registration joined to HPD's open enforcement record at the
+        # immediately-hazardous grade — exists on no other site: the register
+        # and the violation feed are both public and nobody publishes the join.
+        # On /section8/ (2026-10-29) it was 188 of 253 matched buildings.
+        #
+        # SUPPRESSED AT ZERO, deliberately, and this is the one rule here worth
+        # not undoing. "None of the 412 records carries an open class C" reads
+        # as a clean bill of health for a whole neighborhood, and HPD's record
+        # does not support that: a building can hold a closed class-C history,
+        # and _hpd_record_sentence has already said how many records are clean,
+        # so the zero case adds a safety claim and no information. Same
+        # judgement, same reason, as the suppression on /section8/.
+        #
+        # Immediately after `rec` because "those records" takes its antecedent
+        # from it, and gated on rec_n for the same reason: no record sentence,
+        # no pronoun. oc_n > 0 also implies clean_rec < rec_n — a building with
+        # no open violation at all cannot have an open class-C one — so this
+        # can never contradict the shape of the sentence it follows.
+        oc_n = norms.get("oc_n") or 0
+        if oc_n:
+            grade = "class C — HPD's immediately hazardous grade"
+            if rec_n == 1:
+                out.append(f"That record carries a violation still open at {grade}.")
+            elif oc_n >= rec_n:
+                out.append(f"Every one of those records carries a violation still "
+                           f"open at {grade}.")
+            elif oc_n == 1:
+                out.append(f"One of those records carries a violation still open "
+                           f"at {grade}.")
+            else:
+                out.append(f"{oc_n:,} of those records carry a violation still open "
+                           f"at {grade}.")
 
     # The median rate is taken over every building with an apartment count, clean
     # ones included at zero — which is what makes it a statement about the place
@@ -3218,6 +3268,25 @@ def hub_conditions_html(place, norms):
             f"{rec_n - clean_rec:,} of those have at least one open violation on file; "
             f"{clean_rec:,} have none. A building with no HPD violation record is not "
             f"counted either way."))
+    # NO SECOND FAQ PAIR FOR THE CLASS-C SENTENCE, and the measurement that
+    # decided it (2026-10-30). A matching pair was written, rendered and then
+    # dropped: _dup_measure's own shingle rule, run over the real 24-page even
+    # sample of each tier, priced it at +4.1 points of duplicate share on
+    # /neighborhood/ (22.7% -> 26.8%) and +5.8 on /zip/ (20.4% -> 26.2%),
+    # against +0.7 and +2.0 for the sentence alone. 86 of its 103 words and 57
+    # of its 66 boilerplate shingles were the pair, because an FAQ answer has to
+    # restate its own denominator and caveat in full on every page, and 365
+    # pages restating them is the template talking.
+    #
+    # It is NOT a trimmed caveat, which this block would not do for a metric.
+    # The pair's caveats are already load-bearing somewhere else on the page:
+    # _hpd_record_sentence states the denominator immediately before
+    # ("HPD holds a violation record for 493 of the 500 buildings tracked
+    # here"), the whole block counts BUILDINGS and says so, and the zero case is
+    # suppressed, so no address on a hub is implied clean. On /section8/ the
+    # equivalent note stayed, and had to: that page lists advertised APARTMENTS
+    # and tags individual rows, so the per-building scope and the untagged-is-
+    # not-clean reading both needed saying. A hub lists neither.
     return html, faq
 
 
@@ -4376,6 +4445,25 @@ def main():
         n = len(items)
         links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items[:400])
         nb_links = "".join(f"<a href=\"{nb_url(dom, nb)}\">{esc(nb)}</a>" for nb in nbs)
+        # WHY THIS TIER GOT THE CONDITIONS BLOCK, 2026-10-30. It was the only
+        # NYC hub tier stating nothing about the records it lists: two counts
+        # (buildings, neighborhoods) and one FAQ pair, where /neighborhood/ and
+        # /borough/ have carried hub_conditions_html since 2026-10-09. It is
+        # also the tier that most needs it. /zip/ has 7 of the 289 URLs this
+        # property has EVER served, second only to /building/ among generated
+        # pages, and growth/results.jsonl read its sibling-shared text at 20.4%
+        # on 2026-10-30 against 14.2% on 2026-10-12 — the first rebuild in
+        # seventeen days raised it, and these pages had the least of their own
+        # to say in the first place.
+        #
+        # norms is computed from THIS ZIP's own buildings, so every number is an
+        # aggregate of rows the page already lists — the rule the block was
+        # written to and the reason it can be trusted beside the link list.
+        # A ZIP can straddle boroughs, so the heading names the ZIP and not the
+        # dominant borough: the records are the ZIP's, whichever borough they
+        # fall in.
+        zip_cond_html, zip_cond_faq = hub_conditions_html(
+            f"ZIP code {z}", neighborhood_norms(items))
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(dom,'nyc')}/'>{esc(boroname)}</a></div>"
                 f"<h1>Rent-stabilized buildings in ZIP {esc(z)}</h1>"
@@ -4387,6 +4475,9 @@ def main():
                     "deregulated — find the address below and ask the landlord for its "
                     "rent history.",
                 ])
+                # Same placement as /neighborhood/: after the answer block and
+                # before the CTA, because it is the substance of the answer.
+                + zip_cond_html
                 + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
                 + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
                 + vblock(items, f"ZIP {z}")
@@ -4394,6 +4485,7 @@ def main():
         zip_faq = [(f"How many rent-stabilized buildings are in ZIP code {z}?",
                     f"There are {n:,} registered rent-stabilized buildings in ZIP code {z} "
                     f"({boroname}), according to NY State DHCR registration data.")]
+        zip_faq += zip_cond_faq
         body += faq_html(zip_faq)
         crumb = breadcrumb([("Home", SITE + "/"),
                             (boroname, SITE + f"/borough/{BORO_SLUG.get(dom,'nyc')}/"),

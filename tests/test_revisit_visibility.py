@@ -173,10 +173,20 @@ class MeasuredNightsCountsNights(unittest.TestCase):
         self.assertIsNone(ledger.measured_nights_since("2026-13-99"))
         self.assertIsNone(ledger.measured_nights_since(20261012))
 
-    def test_the_live_ledger_is_frozen_where_last_run_says_it_is(self):
-        """Pins today's real reading: nothing has been measured since the
-        pause, so every revisit coming due is asked on frozen evidence."""
-        self.assertEqual(ledger.measured_nights_since("2026-10-12"), 0)
+    def test_the_live_file_is_counted_and_not_assumed(self):
+        """Was pinned to 0 nights since 2026-10-12, the pause.
+
+        The engine resumed 2026-10-29, two nights accrued, and the 0 became
+        false. The point stands in derived form: a revisit is asked on frozen
+        evidence exactly when no night has been measured since the verdict, so
+        the count has to come from results.jsonl and not from a constant.
+        """
+        dates = sorted({r.get("date") for r in ledger.read_results()
+                        if r.get("date")})
+        self.assertTrue(dates, "results.jsonl has no dated rows")
+        self.assertEqual(ledger.measured_nights_since(dates[-1]), 0)
+        self.assertEqual(ledger.measured_nights_since(dates[0]),
+                         len(dates) - 1)
 
 
 class ReportSaysItToo(unittest.TestCase):

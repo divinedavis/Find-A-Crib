@@ -50,36 +50,37 @@
   "Ibis Advisors": "HPD links ibis.powerappsportals.com; Azure says 'This web app is stopped' (2026-10-28)",
   "Riverton Square": "HPD links its StreetEasy building page; StreetEasy terms bar scraping"
  },
- "checked": "2026-10-30",
+ "checked": "2026-10-31",
  "pages": {
   "Affordable for NY": {
    "url": "https://afny.org/re-rentals",
    "title": "Outside Market / Re-rentals",
    "units_seen": true,
    "note": "Filterable board with rent + household size per unit.",
-   "unit_count": 4,
-   "last_ok": "2026-10-30"
+   "unit_count": 3,
+   "last_ok": "2026-10-31"
   },
   "iAfford NY": {
    "url": "https://iaffordny.com/re-rentals",
    "title": "Outside Market / Re-rentals",
-   "units_seen": false,
+   "units_seen": true,
    "note": "Same operator as Affordable for NY, but lists different units — check both.",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31",
+   "unit_count": 12
   },
   "The Wavecrest Management Team Ltd.": {
    "url": "https://wavecrestrentals.com/section.php?id=1",
    "title": "Wavecrest Rentals",
    "units_seen": false,
    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "waitlist": true
   },
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",
    "units_seen": false,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "waitlist": true
   },
   "Tax Solute Consulting": {
@@ -87,27 +88,27 @@
    "title": "Affordable Living NYC",
    "units_seen": true,
    "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 21
   },
   "Taxace NY LLC": {
    "url": "https://www.taxaceny.com/projects-8",
    "title": "Available Units",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 33
   },
   "SJP Tax Consultants Inc": {
    "url": "https://www.sjpny.com/affordable-rerentals",
    "title": "Affordable Re-Rentals",
    "units_seen": false,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Clinton Management": {
    "url": "https://www.clintonmanagement.com/availabilities/affordable",
    "title": "Affordable Availabilities",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 6,
    "stop_at": "Properties With No Current Vacancies"
   },
@@ -115,7 +116,7 @@
    "url": "https://www.mutualhousingny.org/affordable-re-rental-units",
    "title": "Affordable Re-Rental Units",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 2,
    "note": "First-come re-rentals (Stella Heights HDFC SROs; 1921 Cortelyou Road and 700 Manida Street in its submenu, each with a rent table on its own page). HPD links this page; the old /avaliable-properties is lotteries + contact emails (moved 2026-09-29).",
    "also": [
@@ -127,7 +128,7 @@
    "url": "https://www.housingpartnership.com/services/current-vacancies",
    "title": "Current Vacancies",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 13,
    "stop_at": "Properties With No Current Vacancies"
   },
@@ -136,14 +137,14 @@
    "title": "Available Homes & Open Houses",
    "units_seen": false,
    "note": "Homeownership, not rentals.",
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "waitlist": true
   },
   "MGNY Consulting Corp.": {
    "url": "https://mgnyconsulting.com/listings/",
    "title": "Listings",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 22,
    "pager": "li.pagination-page"
   },
@@ -151,7 +152,7 @@
    "url": "https://springmanagement.net/apartments-for-rent",
    "title": "Apartments For Rent",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 1,
    "card_max": 1400,
    "card_lines": 24,
@@ -161,7 +162,7 @@
    "url": "https://ccmanagers.com/availability/",
    "title": "Rental Availability",
    "units_seen": true,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 1
   },
   "K&G Upright Consulting, Inc.": {
@@ -170,7 +171,7 @@
    "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application.",
    "units_seen": true,
    "unit_count": 1,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Langsam Property Services Corp": {
    "url": "https://www.langsampropertyservices.com/affordable-rental-opportunities",
@@ -178,7 +179,7 @@
    "note": "AMI-banded units with stated rents; apply by email. First-come style.",
    "units_seen": true,
    "unit_count": 3,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "card_max": 1600,
    "card_lines": 30
   },
@@ -188,7 +189,7 @@
    "note": "Filterable availability table with unit-level rents across their affordable buildings.",
    "units_seen": true,
    "unit_count": 2,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Reside New York LLC": {
    "url": "https://residenewyork.com/property-status/open-market/",
@@ -204,7 +205,7 @@
    "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Bronx Pro Group LLC": {
    "url": "https://bronxprogroup.com/apartments",
@@ -212,7 +213,7 @@
    "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8).",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Breaking Ground": {
    "url": "https://www.breakingground.org/need-housing",
@@ -220,7 +221,7 @@
    "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Highbridge Community Development Corporation (HCDC)": {
    "url": "https://hcdcny.com/apply/",
@@ -228,7 +229,7 @@
    "note": "General application by mail for their Bronx portfolio; no unit board.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Fifth Avenue Committee": {
    "url": "https://fifthave.org/re-rental-availabilities/",
@@ -238,7 +239,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 2,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "names": {
     "Sunset Ridge Apartments": "6309 4th Avenue, Brooklyn, NY 11220",
     "Sunset Park Apartments": "372 51st Street, Brooklyn, NY 11220"
@@ -251,7 +252,7 @@
    "note": "re-rental vacancies are named in prose (Waterside Plaza, 3333 Broadway), no per-unit card the extractor can read",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "St. Nicks Alliance": {
    "url": "https://stnicksalliance.org/get-help-affordable-housing/",
@@ -261,7 +262,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 5,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "CAMBA Housing Ventures": {
    "url": "https://www.cambahousingventures.org/rentals/",
@@ -271,7 +272,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 1,
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "names": {
     "CAMBA GARDENS I": "690-738 Albany Avenue, Brooklyn, NY 11203"
    }
@@ -283,7 +284,7 @@
    "note": "80/20 moderate-income applications open for Barclay St and Liberty St",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Northern Manhattan Improvement Corporation": {
    "url": "https://www.nmic.org/en/housing-development/",
@@ -292,7 +293,7 @@
    "note": "Posts HDFC co-op apartments for sale to first-time buyers (21 Arden Street, 2026-10-28), not rentals; kept in the directory, left out of the tiles.",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 3,
    "sale_only": true
   },
@@ -303,7 +304,7 @@
    "units_seen": true,
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
-   "last_ok": "2026-10-30",
+   "last_ok": "2026-10-31",
    "unit_count": 1
   },
   "Concern Housing": {
@@ -313,7 +314,7 @@
    "units_seen": false,
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Front Door Management": {
    "url": "https://www.frntdoor.com/affordablehousing-existingproperties",
@@ -323,7 +324,7 @@
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
    "unit_count": 3,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Rockrose Development (affordable)": {
    "url": "https://rockrose.com/affordable-availabilities/",
@@ -333,7 +334,7 @@
    "found": "2026-09-23",
    "source": "owner sweep (2026-09-23)",
    "unit_count": 2,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "NYC Housing Development Corporation (HDC)": {
    "url": "https://www.nychdc.com/find-re-rentals",
@@ -344,7 +345,7 @@
    "unit_count": 25,
    "found": "2026-09-29",
    "source": "owner research (2026-09-29)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Related Management Companies, L.P": {
    "url": "https://ahgleasing.com/",
@@ -354,7 +355,7 @@
    "unit_count": 1,
    "found": "2026-09-29",
    "source": "owner research (2026-09-29)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Sterling23": {
    "url": "https://www.sterling23.com/?page=affordable",
@@ -370,7 +371,7 @@
    "unit_count": 1,
    "found": "2026-09-29",
    "source": "owner research (2026-09-29)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "INFINITE HORIZONS, LLC": {
    "url": "https://ihrerentals.com/photo-gallery",
@@ -380,7 +381,7 @@
    "waitlist": true,
    "found": "2026-09-29",
    "source": "owner research (2026-09-29)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "ACJ International Realty LLC": {
    "url": "https://www.acjinternationalrealty.com/affordable-re-rentals",
@@ -390,7 +391,7 @@
    "found": "2026-10-28",
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "unit_count": 1,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "LARRIS Marketing & Compliance LLC": {
    "url": "https://larrismarketing.com/re-rentals",
@@ -400,7 +401,7 @@
    "units_seen": false,
    "found": "2026-10-28",
    "source": "HPD re-rentals page (owner, 2026-10-28)",
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Sycamore Birch Management LLC (Reclaim HDFC)": {
    "url": "https://sbmgmt.sitemanager.rentmanager.com/RECLAIMHDFC.aspx",
@@ -411,7 +412,7 @@
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "available": true,
    "unit_count": 9,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Stanton Norfolk Inc. (East Village Homes)": {
    "url": "https://east-village-homes-owner-llc.rentcafewebsite.com/",
@@ -422,7 +423,7 @@
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "available": true,
    "unit_count": 1,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "The Bridge": {
    "url": "https://www.thebridgeny.org/news-and-media",
@@ -435,7 +436,7 @@
     "Morrisania, Bronx": "3500 Park Avenue, Bronx, NY 10456",
     "Brownsville, Brooklyn": "203 Newport Street, Brooklyn, NY 11212"
    },
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "Your Neighborhood Housing": {
    "url": "https://yourneighborhoodhousing.com/",
@@ -445,7 +446,7 @@
    "found": "2026-10-28",
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "unit_count": 2,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   },
   "SOIS Maintenance LLC": {
    "url": "https://soisrealestateconsulting.com/current-projects-1",
@@ -455,7 +456,7 @@
    "found": "2026-10-28",
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "unit_count": 2,
-   "last_ok": "2026-10-30"
+   "last_ok": "2026-10-31"
   }
  }
 }

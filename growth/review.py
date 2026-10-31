@@ -86,6 +86,32 @@ MIN_OWNED_IMPRESSIONS = 5
 # about nothing, and the existing path stands.
 MIN_CENSUS_READ = 3
 
+
+def never_fetched(prefixes):
+    """Does the census POSITIVELY say Google has never fetched any of these?
+
+    Returns (crawl_evidence_dict, fired). `fired` is the predicate both census
+    guards in evaluate() turn on, named here on 2026-10-31 because it now has
+    two call sites — the retirement branch (added 2026-08-29, after T002, T013
+    and T023 were retired on never-fetched URLs) and the above-the-floor
+    `unseen` branch — and a threshold that lives in two copies of an inline
+    `and` is a threshold that will eventually differ between them.
+
+    Naming it also makes the threshold testable. Reached only through
+    evaluate(), MIN_CENSUS_READ is exercised by whichever techniques happen to
+    be active tonight, and on 2026-10-31 that was none of them: deleting the
+    `>= MIN_CENSUS_READ` term changed no verdict in the live ledger and no test
+    noticed. The guard's narrowness is the whole reason it is safe to fire at
+    all, so it needs a test that does not depend on the corpus.
+
+    False where `read` is below MIN_CENSUS_READ: too few inspected URLs is
+    silence, not evidence. False where nothing is inspected at all, which is
+    also what a technique declaring no prefixes gets — crawl_evidence returns
+    read=0 for an empty prefix tuple, so that case can never fire this.
+    """
+    crawl = indexstatus.crawl_evidence(prefixes)
+    return crawl, crawl["read"] >= MIN_CENSUS_READ and crawl["fetched"] == 0
+
 # Two days of paid acquisition — 2026-07-17 and 07-18, 288 and 279 visitors
 # against a ~20/day organic baseline either side. The campaign is paused and
 # was never a property of any technique, but those two days sit inside the
@@ -994,10 +1020,10 @@ def evaluate(t, techs=None):
             # is a technique whose URLs are in no sitemap and therefore in no
             # cohort — the census cannot speak for those, and being unsubmitted
             # is its own finding rather than one to launder through this guard.
-            crawl = indexstatus.crawl_evidence(t.get("prefixes"))
+            crawl, fired = never_fetched(t.get("prefixes"))
             res["measured"]["census_read"] = crawl["read"]
             res["measured"]["census_fetched"] = crawl["fetched"]
-            if crawl["read"] >= MIN_CENSUS_READ and crawl["fetched"] == 0:
+            if fired:
                 res["why"] = (f"{total} owned visitors in {days}d and 0 search "
                               f"impressions, but Google has never fetched any of "
                               f"the {crawl['read']} of its URLs the index census "
@@ -1086,10 +1112,48 @@ def evaluate(t, techs=None):
         # list to the model under the heading ALREADY MEASURED AS WORKING, so
         # a technique that earned nothing in search becomes the template the
         # next proposals are modelled on.
+        # ZERO IMPRESSIONS HAS THE SAME TWO CAUSES HERE AS ON THE RETIREMENT
+        # PATH ABOVE, and until 2026-10-31 only the retirement path asked which.
+        # The census guard added for T002/T013/T023 sits ~60 lines up, inside
+        # the branch a technique reaches when its traffic is BELOW the floor.
+        # Nothing guarded the branch above the floor, and a technique above the
+        # floor can never reach the one that does — so it carried "its pages
+        # earned 0 search impressions ... none of those visitors arrived from a
+        # search" indefinitely, with no way to say whether Google looked.
+        #
+        # That was live on T001 /section8/ on 2026-10-31: 33 owned visitors in
+        # 67d, above the floor, 0 impressions — and the census reads 6 of 6
+        # inspected URLs never fetched, last_crawl never. crawl_evidence()'s own
+        # docstring names T001 0 of 6 as a known case of exactly this. The
+        # action was right (UNPROVEN, not retired) and the REASON was wrong,
+        # which is the expensive half: a verdict is read months later by someone
+        # with no memory of the day, and "earned 0 search impressions" reads as
+        # Google declining the pages when Google has never requested one.
+        #
+        # Same helper, same threshold, same asymmetry argument as the retirement
+        # guard — see MIN_CENSUS_READ. It changes no action: works stays None on
+        # both legs. It changes which fact the verdict states, and therefore
+        # what the next run does about it: get these crawled, not rewrite them.
+        #
+        # Fourth member of the family documented at 2026-08-25 (unconditional
+        # works=True), 08-26 (stocks through a flow test) and 08-27 (cumulative
+        # floor): one branch fixed, its twin left asserting more than its
+        # evidence carries. Techniques declaring no prefixes get read=0 from
+        # crawl_evidence() and fall through to the old wording unchanged, which
+        # is the same documented hole the retirement guard leaves open.
         unseen = ""
+        unfetched = False
         if vis["measured"] and not vis["impressions"]:
-            unseen = ("its pages earned 0 search impressions over the same window, "
-                      "so none of those visitors arrived from a search")
+            crawl, unfetched = never_fetched(t.get("prefixes"))
+            res["measured"]["census_read"] = crawl["read"]
+            res["measured"]["census_fetched"] = crawl["fetched"]
+            if unfetched:
+                unseen = (f"Google has never fetched any of the {crawl['read']} of "
+                          f"its URLs the index census has inspected, so those 0 "
+                          f"impressions measure crawl reach and not these pages")
+            else:
+                unseen = ("its pages earned 0 search impressions over the same window, "
+                          "so none of those visitors arrived from a search")
         elif vis.get("brand_measured") and vis["pages"] and not vis["nonbranded_impressions"]:
             unseen = (f"all {vis['impressions']} impressions its {vis['pages']} serving "
                       f"pages earned came from branded queries, so none of those "
@@ -1101,11 +1165,23 @@ def evaluate(t, techs=None):
                           f"(median {recent}/day{direction})" + served)
         elif alive_now and not falling:
             res["works"] = None
+            # The tail has to match which `unseen` leg fired. "Not evidence for
+            # a technique whose premise is search visibility" is true of both,
+            # but on the never-fetched leg it stops one clause short of the only
+            # actionable fact and points the reader at the pages. The wording of
+            # the unfetched tail is deliberately the same as the brand-sitelink
+            # branch above ("nothing has been measured about whether these pages
+            # can rank"), because it is the same claim: no content test has been
+            # run on these URLs, so neither a rewrite nor a retirement is owed.
+            tail = ("unproven rather than failed: nothing has been measured about "
+                    "whether these pages can rank, so the next move is to get them "
+                    "crawled rather than to rewrite or retire them"
+                    if unfetched else
+                    "unproven rather than failed: the traffic is real and above "
+                    "the floor, but it is not evidence for a technique whose "
+                    "premise is search visibility")
             res["why"] = (f"{total} owned visitors in {days}d "
-                          f"(median {recent}/day{direction}), but {unseen} — "
-                          f"unproven rather than failed: the traffic is real and above "
-                          f"the floor, but it is not evidence for a technique whose "
-                          f"premise is search visibility")
+                          f"(median {recent}/day{direction}), but {unseen} — " + tail)
         elif falling:
             res["works"] = None
             res["why"] = (f"{total} owned visitors in {days}d, but the trailing "

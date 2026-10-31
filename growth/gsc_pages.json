@@ -2,42 +2,36 @@
  "churn": {
   "gsc_serving_entered": 0,
   "gsc_serving_ever": 289,
-  "gsc_serving_left": 9,
+  "gsc_serving_left": 0,
   "gsc_serving_stable": 1,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-10-30",
+ "date": "2026-10-31",
  "discovered_untracked": [
   {
-   "clicks": 37,
-   "impressions": 58,
+   "clicks": 36,
+   "impressions": 57,
    "position": 1.6,
    "query": "findacrib"
   },
   {
-   "clicks": 17,
-   "impressions": 46,
-   "position": 1.4,
+   "clicks": 16,
+   "impressions": 34,
+   "position": 1.5,
    "query": "findacrib.com"
   },
   {
-   "clicks": 26,
-   "impressions": 27,
+   "clicks": 29,
+   "impressions": 30,
    "position": 1,
    "query": "find a crib nyc"
   },
   {
-   "clicks": 3,
-   "impressions": 6,
+   "clicks": 2,
+   "impressions": 4,
    "position": 1,
    "query": "findacrib.con"
-  },
-  {
-   "clicks": 3,
-   "impressions": 4,
-   "position": 1.8,
-   "query": "find a crib.com"
   },
   {
    "clicks": 0,
@@ -46,17 +40,17 @@
    "query": "jayshomefinder"
   },
   {
-   "clicks": 1,
-   "impressions": 2,
-   "position": 3,
-   "query": "jays home finder"
+   "clicks": 3,
+   "impressions": 3,
+   "position": 2,
+   "query": "find a crib.com"
   }
  ],
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-10-30",
-   74
+   "2026-10-31",
+   75
   ],
   "https://findacrib.com/alerts/?src=menu": [
    "2026-09-12",
@@ -1501,49 +1495,49 @@
  },
  "pages": [
   {
-   "clicks": 99,
-   "impressions": 172,
-   "position": 1.6,
+   "clicks": 98,
+   "impressions": 159,
+   "position": 1.7,
    "url": "https://findacrib.com/"
   }
  ],
  "queries_28d": [
   {
-   "clicks": 295,
-   "ctr": 0.8501,
-   "impressions": 347,
+   "clicks": 275,
+   "ctr": 0.8436,
+   "impressions": 326,
    "page": "https://findacrib.com/",
    "position": 1.1,
    "query": "findacrib"
   },
   {
-   "clicks": 96,
-   "ctr": 0.8889,
-   "impressions": 108,
+   "clicks": 100,
+   "ctr": 0.9009,
+   "impressions": 111,
    "page": "https://findacrib.com/",
    "position": 1.0,
    "query": "find a crib nyc"
   },
   {
-   "clicks": 78,
-   "ctr": 0.5166,
-   "impressions": 151,
+   "clicks": 69,
+   "ctr": 0.4894,
+   "impressions": 141,
    "page": "https://findacrib.com/",
    "position": 1.1,
    "query": "findacrib.com"
   },
   {
-   "clicks": 25,
-   "ctr": 0.7576,
-   "impressions": 33,
+   "clicks": 23,
+   "ctr": 0.7419,
+   "impressions": 31,
    "page": "https://findacrib.com/",
    "position": 1,
    "query": "findacrib.con"
   },
   {
    "clicks": 12,
-   "ctr": 0.6,
-   "impressions": 20,
+   "ctr": 0.6316,
+   "impressions": 19,
    "page": "https://findacrib.com/",
    "position": 1.8,
    "query": "find a crib.com"
@@ -1552,7 +1546,7 @@
    "clicks": 4,
    "ctr": 0.3077,
    "impressions": 13,
-   "page": "https://findacrib.com/",
+   "page": "",
    "position": 2.8,
    "query": "jays home finder"
   },
@@ -1584,34 +1578,28 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 37,
-    "impressions": 58,
+    "clicks": 36,
+    "impressions": 57,
     "position": 1.6,
     "query": "findacrib"
    },
    {
-    "clicks": 17,
-    "impressions": 46,
-    "position": 1.4,
+    "clicks": 16,
+    "impressions": 34,
+    "position": 1.5,
     "query": "findacrib.com"
    },
    {
-    "clicks": 26,
-    "impressions": 27,
+    "clicks": 29,
+    "impressions": 30,
     "position": 1,
     "query": "find a crib nyc"
    },
    {
-    "clicks": 3,
-    "impressions": 6,
+    "clicks": 2,
+    "impressions": 4,
     "position": 1,
     "query": "findacrib.con"
-   },
-   {
-    "clicks": 3,
-    "impressions": 4,
-    "position": 1.8,
-    "query": "find a crib.com"
    },
    {
     "clicks": 0,
@@ -1620,10 +1608,10 @@
     "query": "jayshomefinder"
    },
    {
-    "clicks": 1,
-    "impressions": 2,
-    "position": 3,
-    "query": "jays home finder"
+    "clicks": 3,
+    "impressions": 3,
+    "position": 2,
+    "query": "find a crib.com"
    }
   ]
  },
@@ -1672,8 +1660,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 74,
-   "median_days": 74,
+   "max_days": 75,
+   "median_days": 75,
    "now": 1
   },
   "nyc_hub": {
@@ -1695,5 +1683,5 @@
    "now": 0
   }
  },
- "window": "2026-10-21..2026-10-28"
+ "window": "2026-10-22..2026-10-29"
 }

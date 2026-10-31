@@ -21,6 +21,8 @@ Browser-only (no API): the App Privacy questionnaire and Submit for Review.
 from __future__ import annotations
 import hashlib, os, pathlib, sys, time
 import jwt, requests
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from release_notes import as_paragraphs  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
 HOST = "https://api.appstoreconnect.apple.com"
@@ -331,7 +333,7 @@ def apply(asc, cfg):
     asc.patch(f"/appStoreVersionLocalizations/{ids['version_loc']}", {"data": {"type": "appStoreVersionLocalizations", "id": ids["version_loc"],
               "attributes": {"description": DESCRIPTION, "keywords": KEYWORDS, "promotionalText": PROMO,
                              "supportUrl": SUPPORT, "marketingUrl": SITE,
-                             **({} if ids["version_string"] == "1.0" else {"whatsNew": WHATS_NEW})}}})
+                             **({} if ids["version_string"] == "1.0" else {"whatsNew": as_paragraphs(WHATS_NEW)})}}})
     print("    description, keywords, promo, URLs" + ("" if ids["version_string"] == "1.0" else ", what's new"))
     asc.patch(f"/appStoreVersions/{ids['version']}", {"data": {"type": "appStoreVersions", "id": ids["version"],
               "attributes": {"copyright": COPYRIGHT, "usesIdfa": False}}})

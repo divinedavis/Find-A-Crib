@@ -164,7 +164,7 @@ def apply():
         va = {"description": f["description"], "keywords": f["keywords"], "promotionalText": f["promo"],
               "marketingUrl": M.SITE, "supportUrl": M.SUPPORT}
         if ids["version_string"] != "1.0":
-            va["whatsNew"] = f.get("whats_new") or WHATS_NEW[loc]
+            va["whatsNew"] = M.as_paragraphs(f.get("whats_new") or WHATS_NEW[loc])
         if loc in vlocs:
             asc.patch(f"/appStoreVersionLocalizations/{vlocs[loc]}", {"data": {"type": "appStoreVersionLocalizations", "id": vlocs[loc], "attributes": va}})
         else:

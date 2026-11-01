@@ -3115,6 +3115,54 @@ def _dup_metric(prefix):
     return "dup_pct_" + (re.sub(r"[^a-z0-9]+", "_", prefix.lower()).strip("_") or "root")
 
 
+def _dup_rising(mine, readings, prior):
+    """Owned sections whose duplicate share rose by at least a point, biggest
+    mover first.
+
+    Ordered by MAGNITUDE on purpose, by the same argument the ordering comment
+    inside t_page_uniqueness makes about actionability: among sections that
+    moved, the one that moved furthest is the one worth reading first, and an
+    alphabetical list buries it. On 2026-10-31 this list was /neighborhood/,
+    /section8/, /zip/ — alphabetical — and the largest mover of the three was
+    the one in the middle.
+    """
+    out = [p for p in mine
+           if prior.get(p) is not None and readings[p][0] - prior[p] >= 1]
+    return sorted(out, key=lambda p: -(readings[p][0] - prior[p]))
+
+
+def _dup_risen_clause(rising, readings, prior):
+    """The ROSE clause, with the size of each move in it.
+
+    Added 2026-11-01, at this technique's scheduled revisit. Until tonight the
+    clause was a bare list of section names: "ROSE since the last reading:
+    /neighborhood/, /section8/, /zip/". The magnitude existed only in the
+    worst-first clause earlier in the same line, which prints at most six owned
+    sections — so a riser ranked seventh or lower had its move recorded in no
+    readable form anywhere, and even inside the top six the reader had to match
+    a name across two clauses to find out whether a section had drifted a point
+    or jumped five.
+
+    That cost real work twice. The 2026-10-30 and 10-31 reviews both used this
+    signal and both had to recompute the deltas in prose from results.jsonl to
+    say anything about them; the 10-31 entry's finding — that /section8/ had
+    moved +4.8pp while /neighborhood/ moved +1.0pp, so one was a surprise and
+    the other was the priced cost of a change shipped the day before — is
+    exactly the distinction the bare list cannot carry.
+
+    This clause is the ENTIRE interface for the riser signal. dup_sections_rising
+    is recorded as a series but nothing reads it: report.py does not mention it,
+    and the count alone cannot separate "the change we shipped did what we
+    predicted" from "something moved and nobody knows why". Both of those were
+    inside the count of 3 on 10-31. Until a reader can price each move, the
+    count is weaker than it looks, which is the open question this technique
+    carries into its next revisit rather than something fixed tonight.
+    """
+    return ", ".join(
+        f"{p} {prior[p]:.0f}% → {readings[p][0]:.0f}% "
+        f"(+{readings[p][0] - prior[p]:.1f}pp)" for p in rising)
+
+
 def t_page_uniqueness(ctx):
     """Measure how much of each published section's text is the same on every page.
 
@@ -3222,7 +3270,7 @@ def t_page_uniqueness(ctx):
     # A section whose share ROSE is the only thing here that is news, so it is
     # counted as its own series: a level this audit has never been able to set a
     # threshold on becomes a signal the moment it has a direction.
-    rising = [p for p in mine if prior.get(p) is not None and readings[p][0] - prior[p] >= 1]
+    rising = _dup_rising(mine, readings, prior)
     _rec("dup_sections_rising", len(rising))
 
     detail = (f"text shared with siblings ({DUP_SHINGLE}-word shingles, "
@@ -3233,7 +3281,7 @@ def t_page_uniqueness(ctx):
         if len(mine) > 6:
             detail += f", +{len(mine) - 6} less duplicated"
     if rising:
-        detail += (f" — ROSE since the last reading: " + ", ".join(rising))
+        detail += " — ROSE since the last reading: " + _dup_risen_clause(rising, readings, prior)
     if theirs:
         detail += (" — nothing this loop rebuilds, so these are context and not "
                    "findings: " + ", ".join(_fmt_one(p) for p in theirs[:4]))

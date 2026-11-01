@@ -87,7 +87,7 @@ MIN_OWNED_IMPRESSIONS = 5
 MIN_CENSUS_READ = 3
 
 
-def never_fetched(prefixes):
+def never_fetched(prefixes, crawl=None):
     """Does the census POSITIVELY say Google has never fetched any of these?
 
     Returns (crawl_evidence_dict, fired). `fired` is the predicate both census
@@ -108,9 +108,53 @@ def never_fetched(prefixes):
     silence, not evidence. False where nothing is inspected at all, which is
     also what a technique declaring no prefixes gets — crawl_evidence returns
     read=0 for an empty prefix tuple, so that case can never fire this.
+
+    `crawl` is an injection point, not a cache: pass a census reading and this
+    judges that instead of calling indexstatus. It exists so unseen_clause()
+    can be exercised on a constructed reading — see the 2026-11-01 note there
+    about the test that could only reach the fetched leg through whichever
+    technique happened to be on that branch that night.
     """
-    crawl = indexstatus.crawl_evidence(prefixes)
+    if crawl is None:
+        crawl = indexstatus.crawl_evidence(prefixes)
     return crawl, crawl["read"] >= MIN_CENSUS_READ and crawl["fetched"] == 0
+
+
+def unseen_clause(prefixes, crawl=None):
+    """Which of the two zero-impression sentences a technique gets.
+
+    Returns (clause, fired, crawl). Extracted from evaluate() on 2026-11-01 for
+    the same reason never_fetched() was named on 10-31: the branch was reachable
+    only by running evaluate() against the live ledger, so what got tested was
+    whichever technique happened to satisfy four conditions at once that night.
+
+    The test that broke proves the point. tests/test_unfetched_verdict.py pinned
+    the fetched leg's wording — the leg that must SURVIVE, and the only reason
+    the guard is narrow enough to be safe — through T019, which on 2026-10-31
+    was above the retirement floor, alive, at zero impressions, and had 24 of 90
+    inspected URLs fetched. On 11-01 its trailing 14d median fell to 0/day, so
+    it stopped being `alive_now`, took a different branch entirely and never
+    reached this clause. The suite went red with nothing in the guard changed,
+    and the whole of the fetched leg's wording was left unverified.
+
+    That red test had an obvious wrong fix — swap in another slug, or drop the
+    assertion to `assertNotIn(NEVER_FETCHED, ...)` — either of which looks green
+    while testing nothing and leaves the next run free to break the leg that
+    keeps a crawled-and-declined tier from being told to go get crawled.
+
+    So the choice of sentence is now a function of a census reading and nothing
+    else. Both legs are reachable by passing `crawl`; neither depends on what
+    the corpus happens to look like tonight.
+    """
+    crawl, fired = never_fetched(prefixes, crawl=crawl)
+    if fired:
+        text = (f"Google has never fetched any of the {crawl['read']} of "
+                f"its URLs the index census has inspected, so those 0 "
+                f"impressions measure crawl reach and not these pages")
+    else:
+        text = ("its pages earned 0 search impressions over the same window, "
+                "so none of those visitors arrived from a search")
+    return text, fired, crawl
 
 # Two days of paid acquisition — 2026-07-17 and 07-18, 288 and 279 visitors
 # against a ~20/day organic baseline either side. The campaign is paused and
@@ -658,6 +702,94 @@ AUDIT_DETAIL_CAP = 240
 AUDIT_READING_SOURCES = {"gsc_integration": "searchconsole"}
 
 
+def _unattributed_pages(rec):
+    """The ", N unattributed" tail that stops "0 non-branded" reading as a census.
+
+    searchconsole.serving_brand_split() returns THREE counts and its docstring
+    is explicit about why: nonbranded, branded_only, and `unattributed` —
+    "pages Search Console gave us no query rows for at all. NOT branded, NOT
+    non-branded — unknown. On a corpus of single-address pages almost every
+    query is anonymized away, so on a big serving day this is the bulk of it."
+    The three sum to the serving count, so the split itself can never lose a
+    page. The SENTENCE built from it could, and did.
+
+    Until 2026-11-01 this reading printed serving_nonbranded alone, so T010's
+    stored verdict read "10 pages served in search (0 census-contradicted, 1
+    census-indexed, 0 non-branded)" — which a reader six months out takes as
+    "all ten were checked and none served a housing-intent query". On the night
+    that line was written, NINE of the ten were unattributed: Search Console
+    returned no query rows for any of them (queries_by_page is `[]` for all
+    nine in the committed snapshot), and the zero was not a measurement of
+    those pages at all. That was also the night gsc_serving_entered went 0 -> 9
+    for the first time since the engine resumed, so the loop's one new event
+    landed entirely inside the number this sentence was hiding.
+
+    The daily report has said this correctly since the three-way split shipped
+    — "Search Console gave no query for N of them, so that first number is a
+    floor" — so the defect was one renderer disagreeing with another about the
+    same fact, with the honest copy in the email nobody reads twice and the
+    misleading copy in the verdict that gets stored, printed by `status` and
+    quoted by the next review. The wording here deliberately mirrors the
+    report's.
+
+    Silent at 0, which is a measured statement that every serving page was
+    attributable, and silent at None, which means the split did not run — the
+    `?` already printed for serving_nonbranded carries that. Never synthesize a
+    zero from a missing field: zero-because-absent and a measured zero are
+    different facts, the rule searchconsole.serving_brand_split() applies when
+    it returns None rather than three zeros.
+    """
+    n = rec.get("serving_unattributed")
+    if not n:
+        return ""
+    return (f", {_num(n)} unattributed \u2014 Search Console returned no query rows "
+            f"for those, so the non-branded count is a floor and not a census")
+
+
+def _unattributed_impressions(rec):
+    """The impression half of the same defect: a numerator and denominator one
+    dimension apart.
+
+    `nonbranded_impressions` comes from branded_split(), which runs over the
+    QUERY dimension, and that function's docstring already names the limit:
+    "Both halves are QUERY-dimension numbers and inherit that dimension's
+    limit: Search Console drops anonymized rare queries, so the totals here are
+    smaller than the page dimension and the non-branded half is a floor, not a
+    census." collect() records both totals on purpose and says why — "Two
+    metrics, two meanings."
+
+    This reading then divided the query-dimension numerator by the
+    page-dimension denominator: "0 non-branded of 202 page impressions". Both
+    numbers were right and the sentence was not, because it implies 202
+    impressions were examined for brandedness when only 145 were. The
+    denominator is now `impressions`, the total the numerator was actually
+    computed from, and the page-dimension remainder is named rather than
+    silently absorbed.
+
+    The gap is not noise and it is growing with the serving set: 25 of 172
+    page impressions on 2026-10-30, 27 of 159 on 10-31, then 57 of 202 on
+    11-01 — 28% — when nine building pages entered the serving set carrying
+    three impressions each and no query rows at all.
+
+    A NEGATIVE gap gets said rather than clamped away. The page dimension
+    should always be the larger of the two, so query > page means one of the
+    two collections is wrong, and a max(0, ...) would hide exactly the
+    anomaly worth waking up for.
+    """
+    q, p = rec.get("impressions"), rec.get("page_impressions")
+    if q is None or p is None:
+        return ""
+    gap = p - q
+    if gap > 0:
+        pct = round(100.0 * gap / p, 1) if p else 0.0
+        return (f" ({_num(gap)} of {_num(p)} page impressions, {_num(pct)}%, carry no "
+                f"query attribution at all, so that 0 is a floor)")
+    if gap < 0:
+        return (f" (ANOMALY: the query dimension exceeds the page dimension by "
+                f"{_num(-gap)} \u2014 the page total should always be the larger)")
+    return ""
+
+
 def _gsc_reading(rec):
     """last_run["searchconsole"] rendered as an audit reading.
 
@@ -680,9 +812,11 @@ def _gsc_reading(rec):
     detail = (f"{_num(rec.get('serving_pages'))} pages served in search "
               f"({_num(rec.get('serving_census_contradicted'))} census-contradicted, "
               f"{_num(rec.get('serving_census_indexed'))} census-indexed, "
-              f"{_num(rec.get('serving_nonbranded'))} non-branded); "
+              f"{_num(rec.get('serving_nonbranded'))} non-branded"
+              f"{_unattributed_pages(rec)}); "
               f"{_num(rec.get('nonbranded_impressions'))} non-branded of "
-              f"{_num(rec.get('page_impressions'))} page impressions; "
+              f"{_num(rec.get('impressions'))} query-attributed impressions"
+              f"{_unattributed_impressions(rec)}; "
               f"share {_num(rec.get('share_pct'))}%, "
               f"{_num(rec.get('tracked_ranking'))} tracked queries ranking; "
               f"window {rec.get('window') or 'not recorded'}")
@@ -1144,16 +1278,9 @@ def evaluate(t, techs=None):
         unseen = ""
         unfetched = False
         if vis["measured"] and not vis["impressions"]:
-            crawl, unfetched = never_fetched(t.get("prefixes"))
+            unseen, unfetched, crawl = unseen_clause(t.get("prefixes"))
             res["measured"]["census_read"] = crawl["read"]
             res["measured"]["census_fetched"] = crawl["fetched"]
-            if unfetched:
-                unseen = (f"Google has never fetched any of the {crawl['read']} of "
-                          f"its URLs the index census has inspected, so those 0 "
-                          f"impressions measure crawl reach and not these pages")
-            else:
-                unseen = ("its pages earned 0 search impressions over the same window, "
-                          "so none of those visitors arrived from a search")
         elif vis.get("brand_measured") and vis["pages"] and not vis["nonbranded_impressions"]:
             unseen = (f"all {vis['impressions']} impressions its {vis['pages']} serving "
                       f"pages earned came from branded queries, so none of those "

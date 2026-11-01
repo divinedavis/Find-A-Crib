@@ -108,14 +108,81 @@ class TheGuardIsNarrow(unittest.TestCase):
     """Its edges, which are the whole reason it is safe."""
 
     def test_a_fetched_tier_keeps_the_old_wording(self):
-        # T019's hubs: 24 of 90 inspected URLs HAVE been fetched, so its zero
-        # really is Google looking and not showing them. The old sentence is
-        # the correct one here and must survive.
-        t, r = _ev("hub_direct_answers")
-        ev = indexstatus.crawl_evidence(t.get("prefixes"))
-        self.assertGreater(ev["fetched"], 0)
-        self.assertIn(OLD_WORDING, r["why"])
-        self.assertNotIn(NEVER_FETCHED, r["why"])
+        # Google HAS fetched some of these, so the zero really is Google
+        # looking and not showing them. The old sentence is the correct one
+        # here and must survive — this is the leg that keeps a
+        # crawled-and-declined tier from being told to go get crawled.
+        #
+        # DRIVEN OFF A CONSTRUCTED CENSUS READING, not off a live technique,
+        # and that is the point of this version. Until 2026-11-01 this test
+        # read T019, which on 10-31 happened to be above the retirement floor
+        # AND alive AND at zero impressions AND partly fetched. On 11-01 its
+        # trailing 14d median fell to 0/day, it stopped being `alive_now`, took
+        # a branch that never builds this clause, and the test failed with
+        # nothing in the guard changed. Four coincident conditions is not a
+        # fixture. See review.unseen_clause.
+        text, fired, crawl = review.unseen_clause(("/anything/",),
+                                                  crawl={"read": 90, "fetched": 24})
+        self.assertFalse(fired)
+        self.assertIn(OLD_WORDING, text)
+        self.assertNotIn(NEVER_FETCHED, text)
+
+    def test_one_fetched_url_in_the_tier_is_enough_to_keep_it(self):
+        # The predicate is `fetched == 0`, not a rate. A tier Google has
+        # touched once has been looked at, so it does not get the crawl-reach
+        # sentence however bad the ratio is.
+        text, fired, _ = review.unseen_clause(("/anything/",),
+                                              crawl={"read": 4000, "fetched": 1})
+        self.assertFalse(fired)
+        self.assertIn(OLD_WORDING, text)
+
+    def test_the_two_legs_are_mutually_exclusive_at_every_reading(self):
+        # Neither sentence may ever carry the other's clause, on any census
+        # reading. Swapping the tails was one of the 10-31 mutations; this
+        # closes it over the whole input space instead of one live technique.
+        for read in range(0, 8):
+            for fetched in range(0, read + 1):
+                text, fired, _ = review.unseen_clause(
+                    ("/anything/",), crawl={"read": read, "fetched": fetched})
+                with self.subTest(read=read, fetched=fetched):
+                    self.assertEqual(fired,
+                                     read >= review.MIN_CENSUS_READ and fetched == 0)
+                    if fired:
+                        self.assertIn(NEVER_FETCHED, text)
+                        self.assertIn(CRAWL_REACH, text)
+                        self.assertNotIn(OLD_WORDING, text)
+                    else:
+                        self.assertIn(OLD_WORDING, text)
+                        self.assertNotIn(NEVER_FETCHED, text)
+                        self.assertNotIn(CRAWL_REACH, text)
+
+    def test_the_fired_clause_always_quotes_its_own_denominator(self):
+        # Same rule as T001's live test, held over the input space: a guard
+        # that fires on an absence must print the count it fired on.
+        for read in (3, 6, 17, 250):
+            text, fired, _ = review.unseen_clause(("/anything/",),
+                                                  crawl={"read": read, "fetched": 0})
+            self.assertTrue(fired)
+            self.assertIn(f"any of the {read} of its URLs", text)
+
+    def test_the_live_corpus_agrees_where_it_can_be_read(self):
+        # The live half of what the old test did, kept but made unable to fail
+        # for the wrong reason. Any ACTIVE technique whose census says FETCHED
+        # must get the old wording from unseen_clause; techniques that are not
+        # on the zero-impression branch tonight simply do not appear here,
+        # which is a fact about tonight's traffic and not about this guard.
+        seen = 0
+        for t in ledger.active():
+            ev = indexstatus.crawl_evidence(t.get("prefixes"))
+            if ev["read"] < review.MIN_CENSUS_READ or not ev["fetched"]:
+                continue
+            seen += 1
+            text, fired, _ = review.unseen_clause(t.get("prefixes"))
+            with self.subTest(slug=t["slug"]):
+                self.assertFalse(fired)
+                self.assertIn(OLD_WORDING, text)
+        if not seen:
+            self.skipTest("no active technique has a partly-fetched census tier")
 
     def test_below_the_read_threshold_is_silence(self):
         # Fewer than MIN_CENSUS_READ inspected URLs is a statement about

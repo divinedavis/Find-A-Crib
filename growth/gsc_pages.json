@@ -1,35 +1,41 @@
 {
  "churn": {
-  "gsc_serving_entered": 0,
-  "gsc_serving_ever": 289,
+  "gsc_serving_entered": 9,
+  "gsc_serving_ever": 296,
   "gsc_serving_left": 0,
   "gsc_serving_stable": 1,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-10-31",
+ "date": "2026-11-01",
  "discovered_untracked": [
   {
-   "clicks": 36,
-   "impressions": 57,
-   "position": 1.6,
+   "clicks": 44,
+   "impressions": 66,
+   "position": 1.5,
    "query": "findacrib"
   },
   {
-   "clicks": 16,
-   "impressions": 34,
-   "position": 1.5,
-   "query": "findacrib.com"
-  },
-  {
-   "clicks": 29,
-   "impressions": 30,
+   "clicks": 35,
+   "impressions": 37,
    "position": 1,
    "query": "find a crib nyc"
   },
   {
+   "clicks": 13,
+   "impressions": 26,
+   "position": 1.3,
+   "query": "findacrib.com"
+  },
+  {
+   "clicks": 6,
+   "impressions": 6,
+   "position": 1.5,
+   "query": "find a crib.com"
+  },
+  {
    "clicks": 2,
-   "impressions": 4,
+   "impressions": 5,
    "position": 1,
    "query": "findacrib.con"
   },
@@ -40,17 +46,17 @@
    "query": "jayshomefinder"
   },
   {
-   "clicks": 3,
-   "impressions": 3,
-   "position": 2,
-   "query": "find a crib.com"
+   "clicks": 0,
+   "impressions": 1,
+   "position": 3,
+   "query": "jays home finder"
   }
  ],
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-10-31",
-   75
+   "2026-11-01",
+   76
   ],
   "https://findacrib.com/alerts/?src=menu": [
    "2026-09-12",
@@ -76,6 +82,11 @@
    "2026-08-24",
    "2026-09-28",
    14
+  ],
+  "https://findacrib.com/building/bronx/1148-havemeyer-ave-2038280012/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
   ],
   "https://findacrib.com/building/bronx/1160-cromwell-ave-2024960034/": [
    "2026-07-30",
@@ -171,6 +182,11 @@
    "2026-08-22",
    "2026-08-28",
    7
+  ],
+  "https://findacrib.com/building/bronx/355-e-165th-st-2024280001/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
   ],
   "https://findacrib.com/building/bronx/417-e-151st-st-2023740059/": [
    "2026-08-02",
@@ -311,6 +327,11 @@
    "2026-07-30",
    "2026-08-02",
    4
+  ],
+  "https://findacrib.com/building/brooklyn/104-hicks-st-3002300011/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
   ],
   "https://findacrib.com/building/brooklyn/1048-ocean-view-ave-3087090095/": [
    "2026-07-30",
@@ -672,6 +693,11 @@
    "2026-08-01",
    3
   ],
+  "https://findacrib.com/building/brooklyn/5511-fort-hamilton-pkwy-3056810005/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
+  ],
   "https://findacrib.com/building/brooklyn/558-50th-st-3007920024/": [
    "2026-07-30",
    "2026-08-06",
@@ -726,6 +752,11 @@
    "2026-08-17",
    "2026-08-24",
    8
+  ],
+  "https://findacrib.com/building/brooklyn/673-union-st-3009520069/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
   ],
   "https://findacrib.com/building/brooklyn/761-44th-st-3007320053/": [
    "2026-07-31",
@@ -1052,6 +1083,11 @@
    "2026-08-02",
    4
   ],
+  "https://findacrib.com/building/manhattan/20-spring-st-1004790018/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
+  ],
   "https://findacrib.com/building/manhattan/200-w-72nd-st-1011637503/": [
    "2026-07-30",
    "2026-08-10",
@@ -1204,8 +1240,8 @@
   ],
   "https://findacrib.com/building/manhattan/308-mott-st-1005210030/": [
    "2026-09-16",
-   "2026-09-22",
-   7
+   "2026-11-01",
+   8
   ],
   "https://findacrib.com/building/manhattan/313-e-9th-st-1004510055/": [
    "2026-07-30",
@@ -1286,6 +1322,11 @@
    "2026-07-30",
    "2026-08-03",
    5
+  ],
+  "https://findacrib.com/building/manhattan/528-e-11th-st-1004040018/": [
+   "2026-11-01",
+   "2026-11-01",
+   1
   ],
   "https://findacrib.com/building/manhattan/529-e-13th-st-1004070046/": [
    "2026-07-30",
@@ -1384,8 +1425,8 @@
   ],
   "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/": [
    "2026-09-13",
-   "2026-09-19",
-   7
+   "2026-11-01",
+   8
   ],
   "https://findacrib.com/building/queens/144-45-35th-ave-4049950064/": [
    "2026-07-31",
@@ -1495,59 +1536,113 @@
  },
  "pages": [
   {
-   "clicks": 98,
-   "impressions": 159,
-   "position": 1.7,
+   "clicks": 113,
+   "impressions": 175,
+   "position": 1.5,
    "url": "https://findacrib.com/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 2,
+   "url": "https://findacrib.com/building/bronx/1148-havemeyer-ave-2038280012/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 8,
+   "url": "https://findacrib.com/building/bronx/355-e-165th-st-2024280001/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 5,
+   "url": "https://findacrib.com/building/brooklyn/104-hicks-st-3002300011/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 10,
+   "url": "https://findacrib.com/building/brooklyn/5511-fort-hamilton-pkwy-3056810005/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 3,
+   "url": "https://findacrib.com/building/brooklyn/673-union-st-3009520069/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 6,
+   "url": "https://findacrib.com/building/manhattan/20-spring-st-1004790018/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 4,
+   "url": "https://findacrib.com/building/manhattan/308-mott-st-1005210030/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 9,
+   "url": "https://findacrib.com/building/manhattan/528-e-11th-st-1004040018/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 7,
+   "url": "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/"
   }
  ],
  "queries_28d": [
   {
-   "clicks": 275,
-   "ctr": 0.8436,
-   "impressions": 326,
+   "clicks": 276,
+   "ctr": 0.8389,
+   "impressions": 329,
    "page": "https://findacrib.com/",
    "position": 1.1,
    "query": "findacrib"
   },
   {
-   "clicks": 100,
-   "ctr": 0.9009,
-   "impressions": 111,
+   "clicks": 104,
+   "ctr": 0.8889,
+   "impressions": 117,
    "page": "https://findacrib.com/",
    "position": 1.0,
    "query": "find a crib nyc"
   },
   {
-   "clicks": 69,
-   "ctr": 0.4894,
-   "impressions": 141,
+   "clicks": 67,
+   "ctr": 0.4926,
+   "impressions": 136,
    "page": "https://findacrib.com/",
    "position": 1.1,
    "query": "findacrib.com"
   },
   {
-   "clicks": 23,
-   "ctr": 0.7419,
-   "impressions": 31,
+   "clicks": 24,
+   "ctr": 0.7273,
+   "impressions": 33,
    "page": "https://findacrib.com/",
    "position": 1,
    "query": "findacrib.con"
   },
   {
-   "clicks": 12,
-   "ctr": 0.6316,
-   "impressions": 19,
+   "clicks": 15,
+   "ctr": 0.7143,
+   "impressions": 21,
    "page": "https://findacrib.com/",
-   "position": 1.8,
+   "position": 1.7,
    "query": "find a crib.com"
   },
   {
    "clicks": 4,
-   "ctr": 0.3077,
-   "impressions": 13,
-   "page": "",
-   "position": 2.8,
+   "ctr": 0.2857,
+   "impressions": 14,
+   "page": "https://findacrib.com/",
+   "position": 2.9,
    "query": "jays home finder"
   },
   {
@@ -1578,26 +1673,32 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 36,
-    "impressions": 57,
-    "position": 1.6,
+    "clicks": 44,
+    "impressions": 66,
+    "position": 1.5,
     "query": "findacrib"
    },
    {
-    "clicks": 16,
-    "impressions": 34,
-    "position": 1.5,
-    "query": "findacrib.com"
-   },
-   {
-    "clicks": 29,
-    "impressions": 30,
+    "clicks": 35,
+    "impressions": 37,
     "position": 1,
     "query": "find a crib nyc"
    },
    {
+    "clicks": 13,
+    "impressions": 26,
+    "position": 1.3,
+    "query": "findacrib.com"
+   },
+   {
+    "clicks": 6,
+    "impressions": 6,
+    "position": 1.5,
+    "query": "find a crib.com"
+   },
+   {
     "clicks": 2,
-    "impressions": 4,
+    "impressions": 5,
     "position": 1,
     "query": "findacrib.con"
    },
@@ -1608,19 +1709,28 @@
     "query": "jayshomefinder"
    },
    {
-    "clicks": 3,
-    "impressions": 3,
-    "position": 2,
-    "query": "find a crib.com"
+    "clicks": 0,
+    "impressions": 1,
+    "position": 3,
+    "query": "jays home finder"
    }
-  ]
+  ],
+  "https://findacrib.com/building/bronx/1148-havemeyer-ave-2038280012/": [],
+  "https://findacrib.com/building/bronx/355-e-165th-st-2024280001/": [],
+  "https://findacrib.com/building/brooklyn/104-hicks-st-3002300011/": [],
+  "https://findacrib.com/building/brooklyn/5511-fort-hamilton-pkwy-3056810005/": [],
+  "https://findacrib.com/building/brooklyn/673-union-st-3009520069/": [],
+  "https://findacrib.com/building/manhattan/20-spring-st-1004790018/": [],
+  "https://findacrib.com/building/manhattan/308-mott-st-1005210030/": [],
+  "https://findacrib.com/building/manhattan/528-e-11th-st-1004040018/": [],
+  "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/": []
  },
  "serving_brand": {
   "branded_only": 1,
   "nonbranded": 0,
-  "unattributed": 0
+  "unattributed": 9
  },
- "serving_pages": 1,
+ "serving_pages": 10,
  "serving_tiers": {
   "available": {
    "ever": 0,
@@ -1629,10 +1739,10 @@
    "now": 0
   },
   "building": {
-   "ever": 272,
+   "ever": 279,
    "max_days": 39,
-   "median_days": 7.0,
-   "now": 0
+   "median_days": 7,
+   "now": 9
   },
   "city_hub": {
    "ever": 3,
@@ -1660,8 +1770,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 75,
-   "median_days": 75,
+   "max_days": 76,
+   "median_days": 76,
    "now": 1
   },
   "nyc_hub": {
@@ -1683,5 +1793,5 @@
    "now": 0
   }
  },
- "window": "2026-10-22..2026-10-29"
+ "window": "2026-10-23..2026-10-30"
 }

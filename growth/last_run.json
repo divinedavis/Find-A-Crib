@@ -1,17 +1,17 @@
 {
   "build": {
-    "at": "2026-11-01T05:40:14+00:00",
+    "at": "2026-11-02T05:40:23+00:00",
     "changed_urls": 6,
-    "date": "2026-11-01",
+    "date": "2026-11-02",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-11-01"
+      "written": "2026-11-02"
     },
     "seo_pipeline": {
-      "at": "2026-11-01T05:41:26Z",
-      "changed_urls": 152,
+      "at": "2026-11-02T05:41:52Z",
+      "changed_urls": 212,
       "code": "synced-1",
       "corpus_pages": 49288,
       "data": "synced-1",
@@ -19,17 +19,17 @@
       "hours_ago": 0.0,
       "indexnow": "ok",
       "indexnow_http": 200,
-      "indexnow_urls": 153,
+      "indexnow_urls": 213,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-11-01T05:40:15Z",
+      "started": "2026-11-02T05:40:23Z",
       "state": "ran clean (source handed over from the checkout: synced-1) (nightly feeds handed over from the docroot: synced-1)",
       "step": "done",
       "voucher_feed_h": 1
     },
     "seo_watchdog": {
-      "at": "2026-11-01T05:41:26+00:00",
+      "at": "2026-11-02T05:41:52+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -39,8 +39,9 @@
       "canonical_integrity": {
         "detail": "canonical tags read on 1562 pages (1500 of them advertised in a sitemap of 1,711 listed \u2014 capped at 1,500 spread evenly across the whole listing) \u2014 no canonical defects found",
         "ok": true,
-        "reread": "post-seo-refresh",
-        "same_since": "2026-11-01"
+        "reread": "agreed",
+        "same_since": "2026-11-01",
+        "unchanged": true
       },
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
@@ -75,9 +76,10 @@
         "unchanged": true
       },
       "frozen_pages": {
-        "detail": "page ages across 49,329 published pages in 34 tiers (newest written 2026-11-01; frozen = older than 2026-10-30) \u2014 wholly frozen, nothing rebuilds these at all (retired tiers and the app shells this loop cannot deploy): brief/ 17 of 17 (last written 2026-09-26, oldest 2026-07-27, 97d); deck/ 5 of 5 (last written 2026-10-19, oldest 2026-10-19, 13d); / 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 3d); alerts/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 26d); brand/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 53d); casa/ 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 3d); dc/ 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 3d); directory/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 26d), +7 more \u2014 skipped: 5 not a directory index or unreadable",
+        "detail": "page ages across 49,329 published pages in 34 tiers (newest written 2026-11-02; frozen = older than 2026-10-31) \u2014 wholly frozen, nothing rebuilds these at all (retired tiers and the app shells this loop cannot deploy): brief/ 17 of 17 (last written 2026-09-26, oldest 2026-07-27, 98d); deck/ 5 of 5 (last written 2026-10-19, oldest 2026-10-19, 14d); / 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 4d); alerts/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 27d); brand/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 54d); casa/ 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 4d); dc/ 1 of 1 (last written 2026-10-29, oldest 2026-10-29, 4d); directory/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 27d), +7 more \u2014 skipped: 5 not a directory index or unreadable",
         "ok": true,
-        "reread": "agreed"
+        "reread": "post-seo-refresh",
+        "same_since": "2026-11-02"
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -86,14 +88,14 @@
         "unchanged": true
       },
       "indexnow": {
-        "detail": "submitted 6 URLs \u2192 HTTP 200",
+        "detail": "submitted 6 URLs \u2192 HTTP 200; the SEO pipeline's bulk submission sent 153 URLs \u2192 HTTP 200",
         "ok": true
       },
       "lastmod_integrity": {
-        "detail": "329 of 1,711 advertised URLs (19.2%) are dated today (2026-11-01) \u2014 22 distinct dates across the advertised set, widest first: 2026-10-06 622, 2026-10-29 456, 2026-11-01 329, 2026-10-31 285 \u2014 the widest is 2026-10-06, held by 36.4% of the set: either most pages last genuinely changed then or that night restamped them, which only 2026-10-06's own build log can settle",
+        "detail": "219 of 1,711 advertised URLs (12.8%) are dated today (2026-11-02) \u2014 23 distinct dates across the advertised set, widest first: 2026-10-06 622, 2026-10-29 438, 2026-10-31 277, 2026-11-02 219 \u2014 the widest is 2026-10-06, held by 36.4% of the set: either most pages last genuinely changed then or that night restamped them, which only 2026-10-06's own build log can settle",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-11-01"
+        "same_since": "2026-11-02"
       },
       "llms_txt": {
         "detail": "llms.txt (83 lines), robots.txt naming 16 AI crawlers",
@@ -104,17 +106,18 @@
       "page_uniqueness": {
         "detail": "text shared with siblings (8-word shingles, 187 pages read across 9 sections) \u2014 sections an ACTIVE technique owns, worst first: /building/ 38% of 612 words (n=24 of 47,165), /dc/neighborhood/ 37% of 548 words (n=24 of 103), /section8/ 27% of 1,126 words (n=6 of 6), /neighborhood/ 24% of 1,004 words (n=24 of 198), /zip/ 23% of 1,058 words (n=24 of 165), /la/zip/ 20% of 1,434 words (n=24 of 112), +2 less duplicated \u2014 nothing this loop rebuilds, so these are context and not findings: /brief/ 49% of 182 words (n=17 of 17) \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /embed/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
-        "reread": "agreed"
+        "reread": "agreed",
+        "same_since": "2026-11-02",
+        "unchanged": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /available/, /brief/), newest lastmod 2026-11-01 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /available/, /brief/), newest lastmod 2026-11-02 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       },
       "voucher_reach": {
-        "detail": "292 of 292 voucher-listed buildings carry the listing on their own page (100%), feed dated 2026-11-01",
+        "detail": "292 of 292 voucher-listed buildings carry the listing on their own page (100%), feed dated 2026-11-02",
         "ok": true,
-        "reread": "post-seo-refresh",
-        "same_since": "2026-11-01"
+        "reread": "agreed"
       }
     }
   },

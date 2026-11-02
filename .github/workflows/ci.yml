@@ -27,5 +27,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-      - run: pip install -q requests numpy pillow opencv-python-headless shapely PyJWT segno
+      - run: pip install -q requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic
       - run: python tests/run_unit.py

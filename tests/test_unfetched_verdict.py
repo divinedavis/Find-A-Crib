@@ -200,11 +200,118 @@ class TheGuardIsNarrow(unittest.TestCase):
         self.assertLess(ev["read"], review.MIN_CENSUS_READ)
 
     def test_the_brand_leg_is_untouched(self):
-        # T046 /building/ earns impressions, all branded. That is a different
-        # finding with its own wording and this change must not reach it.
+        # The brand leg is a different finding with its own wording and the
+        # census change must not reach it.
+        #
+        # RE-POINTED 2026-11-02, off T046 and onto a constructed reading, and
+        # the reason is the whole of yesterday's lesson arriving twice. This
+        # test pinned the branded sentence through derived_building_facts on
+        # the LIVE ledger — and on 2026-11-02 that sentence turned out to be
+        # false for T046: all 9 of its serving pages were unattributed, so
+        # Search Console returned no query for any of them and "came from
+        # branded queries" asserted data that does not exist. The test was
+        # therefore holding the defect in place and would have failed the fix.
+        # A test of the brand leg must drive the brand leg, not whichever
+        # technique happens to land on it tonight.
+        served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0, "unattributed_pages": 0})
+        self.assertIn("came from branded queries", unseen)
+        self.assertNotIn(NEVER_FETCHED, unseen)
+        self.assertNotIn(NEVER_FETCHED, served)
+
+    def test_the_brand_leg_does_not_claim_branded_when_nothing_was_attributed(self):
+        # T046's actual reading on 2026-11-02: 9 of 9 serving pages
+        # unattributed. The sentence must assert neither branded nor
+        # housing-intent, because the evidence separates them not at all.
+        _served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0, "unattributed_pages": 9})
+        self.assertNotIn("came from branded queries", unseen)
+        self.assertIn("no query rows for ANY of its 9 serving pages", unseen)
+        self.assertIn("27 impressions", unseen)
+
+    def test_a_partly_attributed_reading_states_the_branded_finding_as_a_floor(self):
+        _served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0, "unattributed_pages": 4})
+        self.assertIn("came from branded queries", unseen)
+        self.assertIn("4 of the 9 had none", unseen)
+        self.assertIn("floor, not a census", unseen)
+
+    def test_the_three_legs_are_mutually_exclusive_across_every_split(self):
+        # The threshold closed over its whole input space rather than at one
+        # point — the same discipline the census legs got on 2026-11-01.
+        for pages in range(1, 6):
+            for un in range(0, pages + 1):
+                _s, u = review._owned_brand_reading(
+                    {"measured": True, "brand_measured": True, "pages": pages,
+                     "impressions": 3 * pages, "nonbranded_pages": 0,
+                     "nonbranded_impressions": 0, "unattributed_pages": un})
+                none_attributed = "no query rows for ANY" in u
+                floor = "floor, not a census" in u
+                plain = u.endswith("housing-intent search")
+                self.assertEqual(sum((none_attributed, floor, plain)), 1,
+                                 f"pages={pages} unattributed={un}: {u}")
+                self.assertEqual(none_attributed, un >= pages)
+                self.assertEqual(floor, 0 < un < pages)
+
+    def test_an_older_reading_without_the_count_keeps_the_old_wording(self):
+        # Closed a surviving mutation. unattributed_pages is absent on every
+        # reading taken before the three-way split recorded it, and a missing
+        # count must not be synthesized into either a zero or a caveat.
+        served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0})
+        self.assertIn("came from branded queries", unseen)
+        self.assertNotIn("unattributed", unseen)
+        self.assertNotIn("floor", served)
+
+    def test_the_served_tail_also_names_the_withheld_count_on_the_floor_leg(self):
+        # Closed a surviving mutation: the `unseen` clause carried the count
+        # and the corroborating tail printed beside it did not, which is the
+        # same one-renderer-disagrees-with-the-other shape as 2026-11-01.
+        served, _unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0, "unattributed_pages": 4})
+        self.assertIn("4 of the 9 had no query attributed at all", served)
+        self.assertIn("floor rather than a census", served)
+
+    def test_no_serving_pages_keeps_its_own_tail(self):
+        # ", 0 pages serving in search" is the tail T019 carries, and dropping
+        # it would quietly shorten a verdict rather than correct one.
+        served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 0, "impressions": 0,
+             "nonbranded_pages": 0, "nonbranded_impressions": 0, "unattributed_pages": 0})
+        self.assertEqual(served, ", 0 pages serving in search")
+        self.assertEqual(unseen, "")
+
+    def test_nonbranded_impressions_without_a_nonbranded_page_fires_no_unseen(self):
+        # The two counts come from different Search Console dimensions and can
+        # disagree. The caller never fired `unseen` here before 2026-11-02 and
+        # must not start: non-branded impressions exist, so "no visitor arrived
+        # from a housing-intent search" would be false.
+        served, unseen = review._owned_brand_reading(
+            {"measured": True, "brand_measured": True, "pages": 9, "impressions": 27,
+             "nonbranded_pages": 0, "nonbranded_impressions": 4, "unattributed_pages": 0})
+        self.assertEqual(unseen, "")
+        self.assertIn("0 non-branded", served)
+
+    def test_the_live_T046_verdict_no_longer_asserts_branded(self):
+        # The live read, and it SKIPS rather than fails if tonight's reading
+        # moves off this branch — the 2026-11-01 rule.
         t, r = _ev("derived_building_facts")
-        self.assertIn("came from branded queries", r["why"])
-        self.assertNotIn(NEVER_FETCHED, r["why"])
+        vis_un = r["measured"].get("owned_unattributed_pages")
+        pages = r["measured"].get("owned_serving_pages")
+        if not pages or vis_un is None or vis_un < pages:
+            self.skipTest("T046 is not wholly unattributed tonight")
+        self.assertNotIn("came from branded queries", r["why"])
+        self.assertIn("unattributed", r["why"])
+        # The exact sentence only _owned_brand_reading can produce, so this
+        # also proves evaluate() is still consuming BOTH of its return values
+        # — a mutation that kept `served` and dropped `unseen` survived the
+        # 2026-11-02 round on the weaker assertion above.
+        self.assertIn(f"no query rows for ANY of its {pages} serving pages", r["why"])
 
 
 class TheEvidenceIsRecorded(unittest.TestCase):

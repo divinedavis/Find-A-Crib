@@ -498,9 +498,48 @@ SEEDS = [
                        "30 measured nights that follow — then the guides' CONTENT has failed "
                        "and they should be rewritten or replaced",
              fires_on="event",
-             gate="Google fetching any /guide/ URL at all (census 2026-10-12: guide family "
-                  "cohort 10, read 10, fetched 0, all ten unknown_to_google)",
-             since=None, needs_nights=30, decide_on=None, written="2026-09-27")],
+             gate="Google fetching any /guide/ URL at all (census 2026-11-02: guide family "
+                  "cohort 10, read 10, fetched 0, ever_indexed 0, all ten unknown_to_google, "
+                  "on checks dated 10-30 through 11-02)",
+             since=None, needs_nights=30, decide_on=None, written="2026-09-27"),
+          # THE BACKSTOP ON THE GATE, added 2026-11-02. The condition above is
+          # still the right content test and is untouched; what it lacked was
+          # any way to resolve if its gate never opens. It has not opened in 36
+          # days, and `status` has printed the identical "the evidence window
+          # has not opened" line on every one of them, so a reader cannot tell
+          # a condition written yesterday from one that has waited five weeks
+          # on an event the loop has run out of ways to cause. Four consecutive
+          # reviews flagged it and deferred it for the same good reason —
+          # changing a pre-registration deliberately rather than in passing —
+          # which by the fourth time had stopped being a good reason.
+          #
+          # BOOKED IN MEASURED NIGHTS AND NOT ON A DATE, decide_on=None, which
+          # is the 2026-10-27 rule this very technique established and the one
+          # a calendar deadline here would have broken within a fortnight: a
+          # date cannot tell a quiet month from a stopped engine, and the first
+          # version of this record (written earlier the same morning) carried
+          # decide_on="2026-12-02" until the suite caught it.
+          #
+          # fires_on="absence" is the expensive choice and is deliberate: it
+          # puts the engine's own uptime inside the evidence, so 25 nights must
+          # actually have been MEASURED before this can be cashed. A paused
+          # cron cannot satisfy it for free — the trap
+          # ledger.pre_registrations documents and the one T013 fell into.
+          dict(
+             condition="no /guide/ URL has been fetched across 25 MEASURED nights from "
+                       "2026-11-02 — then the guides' 0 impressions are a fact about crawl "
+                       "reach on this domain and NOT a verdict on their content, every "
+                       "lever this loop controls is already pulled (linked by a static href "
+                       "from a homepage Google crawled 2026-10-29 and indexed, one click "
+                       "deep, in sitemap-guide.xml which Google downloaded 2026-10-03, "
+                       "IndexNow-submitted nightly, and the same homepage footer block did "
+                       "produce fetches for /buildings/ and /borough/), and T023 is recorded "
+                       "UNMEASURABLE-ON-SEARCH as T013 was rather than left reading 'the "
+                       "evidence window has not opened' indefinitely — judged thereafter on "
+                       "the non-search merits already written in its notes",
+             fires_on="absence",
+             since="2026-11-02", needs_nights=25, decide_on=None,
+             written="2026-11-02")],
          notes="Content lives in seo_guides.py, rendered by build_seo.guide_page(). The "
                "technique verifies the three pages exist in the docroot AND still carry "
                "their data caveat — LA is derived from assessor criteria and labelled "
@@ -560,7 +599,30 @@ SEEDS = [
                "nothing here to judge. STILL DELIBERATELY NOT DONE, unchanged from September "
                "and for the same reason: do not link these from the NYC building tier to buy "
                "crawl reach — an off-topic link placed for a crawler and against the reader "
-               "trades the credibility that is this site's product."),
+               "trades the credibility that is this site's product.\n"
+               "2026-11-02 — THE SEPTEMBER NOTE ABOVE IS WRONG ON ONE FACT, and the correction "
+               "matters because it removes the last remedy anyone was holding out for. It says "
+               "'every Google-facing inbound link these three pages have comes from the SF/LA/DC "
+               "hub tier'. It does not. build_seo.py's /guide/ hub groups all nine guides under "
+               "four city headings — CITY_LABELS — so the LA, SF and DC guides are each linked "
+               "from /guide/, and the committed homepage carries a static href=\"/guide/\" in "
+               "its footer paragraph (plus five NYC guide links), outside any <script>, in a "
+               "626KB document far below the 2MB fetch cap ruled out on 11-01. So these pages "
+               "are two clicks from the homepage through a page that is NOT in the city tier. "
+               "The September conclusion survives the correction, by a different route: the "
+               "census reads the guide family at 0 of 10 inspected URLs ever fetched, /guide/ "
+               "ITSELF included, 'URL is unknown to Google' on checks dated 10-30, 10-31, 11-01 "
+               "and 11-02 — while the homepage that links it was crawled 2026-10-29 and reads "
+               "'Submitted and indexed'. The link supply still runs through a never-fetched "
+               "page; that page is one click from the homepage, not three. AND THE SAME FOOTER "
+               "PARAGRAPH CONTROLS FOR POSITION: it also links /buildings/ (1 of 1 inspected "
+               "fetched) and /borough/ (5 of 10), so a link in that block demonstrably can "
+               "produce a fetch and these did not. Link existence, link position, click depth, "
+               "sitemap submission and IndexNow are therefore all ruled out for this family by "
+               "evidence inside one page, which is why the measured-nights backstop added "
+               "to the pre-registration above is honest rather than impatient: there is no "
+               "remaining lever to pull and wait for. It is booked in MEASURED nights and "
+               "not on a date, per this technique's own 2026-10-27 rule."),
 
     dict(slug="provenance_page", status="active", kind="indexing",
          name="Published methodology: where every record comes from (/methodology/)",

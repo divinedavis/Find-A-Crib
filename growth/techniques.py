@@ -24,7 +24,7 @@ import statistics
 import urllib.error   # urllib.request pulls this in, but t_indexnow names it
 import urllib.request
 
-from . import ledger
+from . import indexstatus, ledger
 
 SITE = "https://findacrib.com"
 
@@ -2369,6 +2369,212 @@ def _crawl_link_audit(root, prefixes):
     return found, read
 
 
+# ------------------------------- is an inbound link a CRAWL path at all?
+#
+# _crawl_link_audit above answers a binary — does SOMETHING link into this
+# prefix — and that binary has read green on every published section for weeks
+# (16 of 16 on 2026-11-02) while the index census read 186 of 442 cohort URLs
+# ever fetched and `index_fetched` sat FLAT at 186 for four consecutive nights.
+# 15 crawls in 14 days, and the per-family counts sum to exactly 15 across four
+# families, so every one of those crawls was a RE-crawl of a URL Google had
+# already fetched: not one first fetch, while ten families covering 79 cohort
+# URLs sit at 0 fetched with last_crawl "never".
+#
+# A link from a page Googlebot has never requested cannot supply a crawl path.
+# So "16 of 16 published sections have an inbound internal link" is a true
+# sentence carrying an implication its evidence does not support — the same
+# defect this loop has now logged on 2026-08-25, 08-26, 08-27, 10-31 and 11-01.
+# This clause names it: for each published section, whether the page families
+# its inbound links come FROM have themselves ever been fetched.
+#
+# MEASURED 2026-11-02, and it is why this is code and not a journal note. The
+# homepage carries href="/guide/" plus five NYC guide links in static HTML (not
+# inside a <script>, in a 626KB document, so far below the 2MB fetch cap ruled
+# out on 11-01); the homepage was crawled 2026-10-29 and reads "Submitted and
+# indexed"; and all ten inspected /guide/ URLs — the hub included — still read
+# "URL is unknown to Google" on checks dated 10-30, 10-31, 11-01 and 11-02.
+# The SAME footer paragraph of the SAME page links /buildings/ (1 of 1 fetched)
+# and /borough/ (5 of 10 fetched), which controls for link position inside one
+# document: position is not the differentiator.
+#
+# REPORT-ONLY, deliberately, exactly as click depth was on its first night —
+# see CRAWL_DEPTH_MAX for the argument. t_crawl_paths' pass/fail semantics are
+# unchanged: an orphan still fails, a link whose source family is unfetched is
+# named and does not. There is no defensible threshold to fail on, because the
+# remedy is not obvious and T023's own ledger note refuses the obvious one on
+# credibility grounds (a Brooklyn building page linking to a Los Angeles
+# explainer is a link placed for a crawler's benefit and against the reader's).
+# A check that goes red on a condition nobody can act on tonight is a check
+# that gets ignored.
+
+
+def _source_family(pattern):
+    """The index-census family a crawl-source glob reads from.
+
+    indexstatus.family() is a URL's first path segment with "(root)" for the
+    homepage, and _crawl_sources' globs are docroot-relative paths, so the
+    first segment of the pattern is that same thing: "guide/index.html" ->
+    "guide", "dc/buildings/index.html" -> "dc", "index.html" -> "(root)".
+
+    Coarse on purpose, and the coarseness is the census's own — family()'s
+    docstring keeps /dc/ and /dc/neighborhood/foo/ in one stratum because the
+    three non-NYC cities are each one publishing project. The finer question
+    cannot be asked honestly: the cohort is a stratified sample of the corpus,
+    so /dc/buildings/ may hold no inspected URL at all and read=0 is silence,
+    not evidence. The error therefore runs toward UNDER-reporting — a source
+    whose family has one fetched URL somewhere else is never flagged, even when
+    that fetch was months ago and of a different page.
+    """
+    seg = pattern.split("/")[0]
+    return "(root)" if seg.endswith(".html") else seg
+
+
+def _census_family_reach():
+    """{family: {cohort, read, fetched, ...}} from the index census, or None.
+
+    None where index_status.json is absent or carries no per-family summary,
+    and every caller must stay SILENT on None rather than read it as zeros. A
+    census that never ran and a census that looked and found nothing fetched
+    are different facts; conflating them is exactly the error the serving-brand
+    guards in review.py were written to stop on 2026-11-01.
+    """
+    try:
+        bf = (indexstatus._load().get("summary") or {}).get("by_family")
+    except Exception:
+        return None
+    return bf if isinstance(bf, dict) and bf else None
+
+
+# How many sections to name before the clause is capped. Same reason as every
+# other capped clause here: the count is the finding and must not be pushed off
+# a phone-width line by the tail of a long list.
+SOURCE_REACH_SHOWN = 6
+
+
+def _family_reach(rec):
+    """(read, fetched, never_fetched) for one census stratum, or None to stay silent.
+
+    ONE copy of the judgement, called by both halves of
+    _crawl_source_reach_note. It was two character-identical `if` blocks until
+    the mutation round on 2026-11-02 — the shape that let three of 10-31's
+    first five mutations patch a twin guard and report themselves caught by a
+    test that was in fact exercising the other copy.
+
+    The asymmetry is the whole of its safety and is review.never_fetched()'s,
+    not a local rule. A stratum with ONE inspected URL that Google fetched is
+    demonstrably reachable and needs no floor, because the fetch is a positive
+    fact: the home shell is 1 of 1 inspected, crawled 2026-10-29 and indexed.
+    A stratum with one inspected URL and NO fetch is silence. Returning None
+    for the second case is what keeps "we cannot tell" out of a sentence that
+    only has words for "never fetched".
+
+    review.py imports indexstatus, ledger and searchconsole and never this
+    module, so this direction adds no cycle. The import is borrowed rather than
+    the threshold restated because "when does a 0 mean something" is ONE
+    question, and a second copy of the answer differs from the judge's the day
+    somebody tunes one of them.
+    """
+    from . import review
+    r, got = rec.get("read"), rec.get("fetched")
+    if not isinstance(r, int) or not isinstance(got, int):
+        return None
+    _, unfetched = review.never_fetched((), crawl={"read": r, "fetched": got})
+    if not unfetched and not got:
+        return None
+    return r, got, unfetched
+
+
+def _crawl_source_reach_note(found, live, reach=None):
+    """One clause naming sections whose WHOLE inbound link supply is unfetched.
+
+    `found` is _crawl_link_audit's {prefix: {source label}}; `live` the audited
+    prefixes. `reach` is an injection point, not a cache: pass a constructed
+    census reading and this judges that instead of opening index_status.json.
+    It exists for the lesson of 2026-11-01 — the only test of a branch's
+    wording reached it through whichever technique happened to satisfy four
+    live conditions that night, and went red when a traffic series moved.
+
+    Silent in four cases, each a real distinction rather than a convenience:
+
+      * no census reading at all (see _census_family_reach) — unknown, not zero
+      * a section with no inbound source — that is an ORPHAN, and the orphan
+        branches of t_crawl_paths own it; saying it twice in one line would
+        double-count the finding
+      * any one of a section's sources whose family cannot be judged — nothing
+        fetched AND too few inspected URLs for that zero to mean anything. One
+        unjudgeable source means a crawl path cannot be ruled out, so the
+        section is not judged at all
+      * every judged section's link supply reaching a fetched family AND every
+        judged source family having been fetched — the healthy case, and a
+        clause that fires on it says nothing
+
+    Both halves route every stratum through _family_reach, which owns the
+    judgement and the reason its floor is asymmetric. Neither half keeps a copy.
+    """
+    if reach is None:
+        reach = _census_family_reach()
+    if not reach:
+        return ""
+    fam_of = {label: _source_family(pattern) for label, pattern, _ in _crawl_sources()}
+    unseen, judged_sections = [], 0
+    for p in sorted(live):
+        labels = sorted(found.get(p) or ())
+        if not labels:
+            continue
+        rows, judgeable = [], True
+        for lb in labels:
+            fam = fam_of.get(lb)
+            judged = _family_reach(reach.get(fam) or {})
+            if judged is None:
+                judgeable = False      # one source we cannot read: a crawl path
+                break                  # cannot be ruled out, so judge nothing
+            r, got, unfetched = judged
+            rows.append((lb, fam, r, got, unfetched))
+        if not judgeable:
+            continue
+        judged_sections += 1
+        if all(unfetched for _, _, _, _, unfetched in rows):
+            unseen.append((p, rows))
+    # The link-SOURCE sentence, which fires independently of the section one
+    # and is the more general fact. A source family Google has never fetched
+    # supplies no crawl path to ANYTHING it links, whatever else also links
+    # those sections — and it is the only form in which 2026-11-02's finding is
+    # sayable: /guide/ is not flagged as a section, because the SF browse hub
+    # also links the city guides and the sf family has one fetched URL (/sf/,
+    # 2026-07-28). The guide HUB itself is never-fetched, and that is a fact
+    # about a source, not about a destination.
+    src_judged, src_unfetched = {}, {}
+    for lb, pat, _cap in _crawl_sources():
+        fam = _source_family(pat)
+        judged = _family_reach(reach.get(fam) or {})
+        if judged is None:
+            continue
+        r, _got, unfetched = judged
+        src_judged[fam] = r
+        if unfetched:
+            src_unfetched[fam] = r
+    note = ""
+    if src_unfetched:
+        shown = sorted(src_unfetched)[:SOURCE_REACH_SHOWN]
+        more = len(src_unfetched) - len(shown)
+        note += (f" — {len(src_unfetched)} of {len(src_judged)} link-source families this audit "
+                 f"reads FROM have never been fetched by Googlebot themselves, so no link on "
+                 f"them is a crawl path: "
+                 + ", ".join(f"{f} (0 of {src_unfetched[f]} inspected)" for f in shown)
+                 + (f", +{more} more" if more else ""))
+    if unseen:
+        shown = unseen[:SOURCE_REACH_SHOWN]
+        more = len(unseen) - len(shown)
+        body = "; ".join(
+            f"{p} ← " + ", ".join(f"{lb} ({fam}: 0 of {r} inspected URLs ever fetched)"
+                                  for lb, fam, r, _, _ in rows)
+            for p, rows in shown)
+        note += (f" — {len(unseen)} of {judged_sections} linked sections are linked ONLY from "
+                 f"page families Googlebot has never fetched, so the link exists and supplies "
+                 f"no crawl path: " + body + (f", +{more} more" if more else ""))
+    return note
+
+
 # ------------------------------------------------------- click depth from "/"
 #
 # _crawl_link_audit above answers a binary: does SOMETHING link into this
@@ -2809,6 +3015,12 @@ def t_crawl_paths(ctx):
     # a link that exists solely in growth_out is not a link Google can follow,
     # and a depth computed through one would be fiction.
     tail = _crawl_depth_note(ctx.docroot, live)
+    # Ahead of the merely-absent lists and right after depth, for depth's own
+    # reason: it is a finding about pages that exist, not context. Appended to
+    # `tail` rather than to one branch so every outcome carries it — an
+    # orphaned section and a linked-but-unfetched one are different findings
+    # and a reader needs both in the same sentence.
+    tail += _crawl_source_reach_note(found, live)
     tail += f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
     # How many audited sections have no live technique behind them. The
     # denominator grew on 2026-08-23 when this audit stopped dropping them, and

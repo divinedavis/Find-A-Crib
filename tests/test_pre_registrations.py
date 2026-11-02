@@ -257,22 +257,58 @@ class CashableSortsFirst(unittest.TestCase):
         self.assertFalse(out[2]["due"])
 
 
-class TodaysLedgerHoldsTheThreeKnownConditions(unittest.TestCase):
-    """Checkable from the repo, with no droplet, for as long as the pause lasts."""
+class TodaysLedgerHoldsTheKnownConditions(unittest.TestCase):
+    """Checkable from the repo, with no droplet.
+
+    KEYED BY (id, written) SINCE 2026-11-02, not by id. `{e["id"]: e}` was
+    written when every technique carried at most one condition, and the night
+    T023 gained a second one that dict silently dropped the first — a reader of
+    these tests would have seen three ids and four conditions and been told
+    nothing. Losing an unread condition is the exact failure
+    ledger.pre_registrations was built to stop ("A malformed record is
+    REPORTED, never skipped"), so a test harness that loses one quietly is
+    worse than no harness.
+    """
 
     def setUp(self):
         self.regs = ledger.pre_registrations(as_of="2026-10-28")
-        self.by_id = {e["id"]: e for e in self.regs}
+        self.by_key = {(e["id"], e.get("written")): e for e in self.regs}
+        self.by_id = {}
+        for e in self.regs:
+            self.by_id.setdefault(e["id"], []).append(e)
 
-    def test_exactly_T013_T017_T023_carry_one(self):
+    def test_the_harness_does_not_lose_a_condition(self):
+        self.assertEqual(len(self.by_key), len(self.regs))
+
+    def test_T013_T017_T023_are_the_techniques_carrying_one(self):
         self.assertEqual(sorted(self.by_id), ["T013", "T017", "T023"])
+
+    def test_T023_carries_both_its_content_test_and_its_backstop(self):
+        # The event-gated content test (2026-09-27) and the measured-nights
+        # backstop on that gate (2026-11-02). One without the other is either
+        # a question that cannot resolve or a verdict with no content test.
+        shapes = sorted((e["fires_on"], e.get("written")) for e in self.by_id["T023"])
+        self.assertEqual(shapes, [("absence", "2026-11-02"), ("event", "2026-09-27")])
 
     def test_none_is_malformed(self):
         self.assertEqual([e["id"] for e in self.regs if e.get("malformed")], [])
 
-    def test_T013_is_the_only_absence_shaped_one(self):
-        self.assertEqual([i for i, e in self.by_id.items() if e["fires_on"] == "absence"],
-                         ["T013"])
+    def test_no_absence_condition_can_be_cashed_without_its_nights(self):
+        """The invariant, in place of a roster.
+
+        This asserted "T013 is the only absence-shaped one" until 2026-11-02,
+        which was a snapshot of the ledger rather than a rule, and it went red
+        the moment a second absence condition was deliberately added. What is
+        actually worth guarding is the property that makes the shape safe: an
+        absence fires on nothing happening, so a stopped engine supplies its
+        evidence for free unless the nights were measured.
+        """
+        absences = [e for e in self.regs if e["fires_on"] == "absence"]
+        self.assertTrue(absences)
+        for e in absences:
+            if e["cashable"]:
+                self.assertEqual(e["shortfall"], 0, e["id"])
+                self.assertIsNotNone(e["observed_nights"], e["id"])
 
     def test_T013_counts_its_nights_off_the_results_file(self):
         """Was pinned to "14 of 30", the paused reading on 2026-10-12.
@@ -284,7 +320,7 @@ class TodaysLedgerHoldsTheThreeKnownConditions(unittest.TestCase):
         condition that cashed early because its own arithmetic drifted is the
         failure that matters, and it would survive any fixed number.
         """
-        e = self.by_id["T013"]
+        e, = self.by_id["T013"]
         self.assertEqual(e["needs_nights"], 30)
         self.assertEqual(e["observed_nights"],
                          ledger.measured_nights_since(e["written"]))
@@ -296,7 +332,13 @@ class TodaysLedgerHoldsTheThreeKnownConditions(unittest.TestCase):
         self.assertEqual([e["id"] for e in self.regs if e["cashable"]], [])
 
     def test_no_condition_is_booked_on_a_calendar_date_any_more(self):
-        """All three were re-pointed off the clock. A new one should be too."""
+        """All of them are off the clock. A new one must be too.
+
+        This caught T023's backstop on the morning it was written, 2026-11-02:
+        the first draft carried decide_on="2026-12-02". The rule is this
+        technique's own, from 2026-10-27 — a date cannot tell a quiet month
+        from a stopped engine — and it held against the run that wrote it.
+        """
         self.assertEqual([e["id"] for e in self.regs if e.get("decide_on")], [])
 
     def test_every_condition_carries_text_and_a_written_date(self):
@@ -323,12 +365,21 @@ class StatusPrintsThem(unittest.TestCase):
         the resumed engine made it 16 and this failed. What it is for is that
         the block NAMES the shortfall at all — a condition that fires on an
         absence and prints no clock is the one a future run cashes for free.
+
+        The COUNT was hard-coded as 3 for the same length of time and broke the
+        same way on 2026-11-02, when T023 gained its measured-nights backstop
+        and the block correctly printed 4. Read off the ledger now: how many
+        conditions exist is not this test's business, and pinning it meant the
+        act of pre-registering a condition — the thing this machinery is for —
+        turned the suite red.
         """
         import growth_daily
-        e = next(x for x in ledger.pre_registrations() if x["id"] == "T013")
+        regs = ledger.pre_registrations()
+        e = next(x for x in regs if x["id"] == "T013")
         lines = growth_daily.pre_registration_lines(as_of="2026-10-28")
         text = "\n".join(lines)
-        self.assertIn("pre-registered conditions (3)", text)
+        self.assertIn(f"pre-registered conditions ({len(regs)})", text)
+        self.assertGreaterEqual(len(regs), 3)
         self.assertIn("0 ready to decide", text)
         self.assertIn("T013", text)
         self.assertIn(f"{e['observed_nights']} of {e['needs_nights']} "

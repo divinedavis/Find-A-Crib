@@ -746,6 +746,91 @@ def _unattributed_pages(rec):
             f"for those, so the non-branded count is a floor and not a census")
 
 
+def _owned_brand_reading(vis):
+    """Which of three sentences a technique's serving pages have earned.
+
+    Returns (served_clause, unseen_clause). THE PER-TECHNIQUE TWIN of the
+    site-wide defect fixed on 2026-11-01, found on 11-02 still saying the
+    stronger, false version one function away.
+
+    T046's stored verdict on 2026-11-02 read "all 27 impressions its 9 serving
+    pages earned came from branded queries, so none of those visitors arrived
+    from a housing-intent search". Its own measured record on the same night
+    reads owned_nonbranded_impressions 0, owned_unattributed_pages 9, of
+    owned_serving_pages 9 — Search Console returned no query rows for ANY of
+    the nine. "Came from branded queries" is not a floor or an overstatement
+    there, it is a claim about data that does not exist, and it was the
+    load-bearing sentence: it is the `unseen` clause, so it also decided that
+    T046 reads UNPROVEN rather than WORKS.
+
+    The three cases, and why none of them can share a sentence:
+
+      unattributed == 0        every serving page was attributable, so "came
+                               from branded queries" is measured and the
+                               original wording stands VERBATIM.
+      0 < unattributed < pages the branded finding is real for the pages that
+                               were attributed and a floor for the rest, so it
+                               is stated with its withheld count beside it.
+      unattributed == pages    nothing was attributed at all. The honest
+                               sentence names the absence and asserts neither
+                               branded nor housing-intent, because the evidence
+                               distinguishes them not at all.
+
+    Gated on brand_measured for the reason searchconsole.recent_visibility
+    documents: before the three-way split shipped these readings genuinely did
+    not know, and a reading that cannot tell must not be rewritten into one
+    that says zero. Both clauses are empty where there is nothing to report, so
+    the caller's `if not unseen` branch keeps its meaning.
+    """
+    if not vis.get("measured"):
+        return "", ""
+    pages, imps = vis.get("pages") or 0, vis.get("impressions") or 0
+    if not vis.get("brand_measured") or not pages:
+        # No serving pages means there is no split to report — "0 pages
+        # serving, all brand navigation" reads as a finding about brand when it
+        # is a finding about nothing. ", 0 pages serving in search" is the tail
+        # T019 carries tonight, so it is reproduced exactly.
+        return f", {pages} pages serving in search", ""
+    if vis.get("nonbranded_pages"):
+        return (f", {vis['nonbranded_pages']} of {pages} serving pages on "
+                f"non-branded queries ({vis.get('nonbranded_impressions')} impressions)"), ""
+    plain = (f", but its {pages} serving pages earned 0 non-branded "
+             f"impressions — brand sitelinks, not search visibility")
+    branded = (f"all {imps} impressions its {pages} serving pages earned came from "
+               f"branded queries, so none of those visitors arrived from a "
+               f"housing-intent search")
+    if vis.get("nonbranded_impressions"):
+        # Non-branded IMPRESSIONS with no non-branded PAGE: the two counts come
+        # from different Search Console dimensions and can disagree. The caller
+        # never fired the `unseen` clause here, and this must not start.
+        return plain, ""
+    un = vis.get("unattributed_pages")
+    if un is None:
+        # An older reading: the split ran before this count was recorded. Keep
+        # the pre-2026-11-02 wording rather than invent a caveat for a number
+        # that was never taken.
+        return plain, branded
+    if un >= pages:
+        served = (f", and Search Console returned no query at all for any of its {pages} "
+                  f"serving pages, so their {imps} impressions are unattributed rather "
+                  f"than measured as brand")
+        unseen = (f"Search Console returned no query rows for ANY of its {pages} serving "
+                  f"pages, so the {imps} impressions they earned are unattributed — not "
+                  f"measured as branded and not measured as housing-intent, and nothing "
+                  f"has been measured about whether these pages can rank")
+        return served, unseen
+    if un:
+        served = (f", but its {pages} serving pages earned 0 non-branded impressions — "
+                  f"brand sitelinks, not search visibility, and a floor rather than a "
+                  f"census ({un} of the {pages} had no query attributed at all)")
+        unseen = (f"all {imps} impressions its {pages} serving pages earned came from "
+                  f"branded queries where a query was returned at all, and {un} of the "
+                  f"{pages} had none, so no visitor is measured as arriving from a "
+                  f"housing-intent search and that is a floor, not a census")
+        return served, unseen
+    return plain, branded
+
+
 def _unattributed_impressions(rec):
     """The impression half of the same defect: a numerator and denominator one
     dimension apart.
@@ -1187,19 +1272,10 @@ def evaluate(t, techs=None):
         # the clause has to carry which of the two it is or it is worse than
         # absent. Where the split has not been measured the old wording stands,
         # because the old readings genuinely do not know.
-        if not vis["measured"]:
-            served = ""
-        elif not vis.get("brand_measured") or not vis["pages"]:
-            # No serving pages means there is no split to report — "0 pages
-            # serving, all brand navigation" reads as a finding about brand
-            # when it is a finding about nothing.
-            served = f", {vis['pages']} pages serving in search"
-        elif vis["nonbranded_pages"]:
-            served = (f", {vis['nonbranded_pages']} of {vis['pages']} serving pages on "
-                      f"non-branded queries ({vis['nonbranded_impressions']} impressions)")
-        else:
-            served = (f", but its {vis['pages']} serving pages earned 0 non-branded "
-                      f"impressions — brand sitelinks, not search visibility")
+        # Both clauses come from one function so the corroborating tail and the
+        # load-bearing `unseen` clause cannot disagree about the same split —
+        # which is exactly how 2026-11-01's fix left this one behind.
+        served, brand_unseen = _owned_brand_reading(vis)
 
         # Reaching here means the technique cleared the floor above — but the
         # floor is `total >= MIN_TOTAL_VISITORS OR recent >= MIN_RECENT_MEDIAN`,
@@ -1281,10 +1357,8 @@ def evaluate(t, techs=None):
             unseen, unfetched, crawl = unseen_clause(t.get("prefixes"))
             res["measured"]["census_read"] = crawl["read"]
             res["measured"]["census_fetched"] = crawl["fetched"]
-        elif vis.get("brand_measured") and vis["pages"] and not vis["nonbranded_impressions"]:
-            unseen = (f"all {vis['impressions']} impressions its {vis['pages']} serving "
-                      f"pages earned came from branded queries, so none of those "
-                      f"visitors arrived from a housing-intent search")
+        elif brand_unseen:
+            unseen = brand_unseen
 
         if alive_now and not falling and not unseen:
             res["works"] = True

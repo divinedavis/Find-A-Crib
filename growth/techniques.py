@@ -955,6 +955,12 @@ def t_daily_brief(ctx):
             "state": st, "url": url, "added": len(added), "removed": len(removed)}
 
 
+# Crawlers the owner blocked (2026-11-02). One robots.txt group, Disallow: /.
+# SiteAuditBot and AhrefsSiteAudit are the two vendors' site-audit agents,
+# which do not obey the main bot's group.
+BLOCKED_SEO_BOTS = ("QlyzeBot", "SemrushBot", "SiteAuditBot", "AhrefsBot", "AhrefsSiteAudit")
+
+
 def t_llms_txt(ctx):
     """llms.txt + explicit AI-crawler permissions + a Dataset record.
 
@@ -1158,6 +1164,11 @@ def t_llms_txt(ctx):
     robots = ["User-agent: *", "Allow: /", ""]
     for b in bots:
         robots += [f"User-agent: {b}", "Allow: /", ""]
+    # SEO-audit crawlers, BLOCKED by the owner 2026-11-02. On 11-02 QlyzeBot
+    # alone made 27.6k requests (~172 MB), SemrushBot 10.4k, AhrefsBot 6.7k:
+    # ~45k a day that send no visitors. nginx also 403s these by User-Agent
+    # (sites-enabled/findacrib, $fac_blocked_bot) for any that ignore this.
+    robots += [f"User-agent: {b}" for b in BLOCKED_SEO_BOTS] + ["Disallow: /", ""]
     robots += [f"Sitemap: {SITE}/{s}" for s in sitemaps] + [""]
     ctx.write_raw("robots.txt", "\n".join(robots))
 

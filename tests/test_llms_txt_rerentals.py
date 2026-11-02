@@ -45,3 +45,20 @@ def test_the_nyc_guides_are_listed_only_when_live():
 
 def test_robots_names_claudes_search_crawler():
     assert "User-agent: Claude-SearchBot\nAllow: /" in run()["robots.txt"]
+
+
+def test_robots_blocks_the_seo_audit_crawlers():
+    txt = run()["robots.txt"]
+    group = txt.split("User-agent: QlyzeBot", 1)[1].split("\n\n", 1)[0]
+    for b in ("SemrushBot", "SiteAuditBot", "AhrefsBot", "AhrefsSiteAudit"):
+        assert f"User-agent: {b}" in group
+    assert group.rstrip().endswith("Disallow: /")
+    # the AI crawlers and everyone else stay allowed
+    assert txt.startswith("User-agent: *\nAllow: /")
+    assert "User-agent: GPTBot\nAllow: /" in txt
+
+
+def test_refresh_seo_never_overwrites_robots_txt():
+    with open(os.path.join(os.path.dirname(__file__), "..", "scripts", "refresh_seo.sh")) as f:
+        sh = f.read()
+    assert '--exclude robots.txt "$BUILD/seo/" "$DOC/"' in sh

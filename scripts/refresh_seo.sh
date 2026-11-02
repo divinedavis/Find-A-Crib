@@ -321,7 +321,10 @@ status built
 # deploy: copy changed/new pages into the docroot. NO --delete — the docroot
 # also holds the app (index.html, config.js, buildings.min.json, scraper, venv).
 STEP=deploy
-rsync -a --exclude changed_urls.txt "$BUILD/seo/" "$DOC/"
+# robots.txt is excluded: the growth engine owns it (techniques.t_llms_txt).
+# A stale 2026-07-18 copy left in $BUILD/seo was overwriting it on every run,
+# so the live file never carried the AI-crawler groups or the bot blocks.
+rsync -a --exclude changed_urls.txt --exclude robots.txt "$BUILD/seo/" "$DOC/"
 status deployed
 
 # tell IndexNow (Bing, Yandex, Seznam…) about changed URLs. Google ignores

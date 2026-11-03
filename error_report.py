@@ -281,6 +281,30 @@ def visitor_kept_going(key, visitor, booted):
         return None
 
 
+TAB_GRID_SHRINK = 0.6     # window width / screen width that no phone layout reaches
+_WIN_RESIZE = re.compile(r"win-resize (\d+)x\d+$")
+
+
+def _shrunk_away(labels, sw):
+    """True when the trace ends on window/visual-viewport resizes and the
+    window had shrunk below TAB_GRID_SHRINK of the screen width: an OS
+    transition (tab grid, closing the tab), not the page."""
+    try:
+        sw = float(sw)
+    except (TypeError, ValueError):
+        return False
+    if sw <= 0:
+        return False
+    widths = []
+    for label in reversed(labels):
+        m = _WIN_RESIZE.match(label)
+        if m:
+            widths.append(int(m.group(1)))
+        elif not label.startswith("vv-resize"):
+            break
+    return bool(widths) and widths[0] < TAB_GRID_SHRINK * sw
+
+
 def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_lookups=SHADOW_LOOKUPS):
     """Traces that look like the page died mid-work (see the module docstring).
     `found`, a list, also collects each counted (row, last step): the owner
@@ -330,6 +354,15 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_looku
             continue
         last = labels[-1]
         if last in CLEAN_LAST_STEPS:
+            continue
+        # Shrunk to a thumbnail: the window narrowed to a fraction of the
+        # screen in its last steps, then the page was gone. On an iPhone that
+        # is Safari's tab-grid / close-tab animation (innerWidth 390 -> 246 ->
+        # 157), so the visitor left; nothing died on them. 2026-11-03's digest
+        # "death" (vv-resize 252, 2e0c54…) and 2 of the 54 resize-ending traces
+        # since 9/20 had this shape. The page has to end on resize steps with
+        # no work after the shrink, so a crash during it still reports.
+        if _shrunk_away(labels, p.get("sw")):
             continue
         # A lone "boot" died before its first step, so it says nothing about
         # what to fix; it is nearly always a tap away in the first second

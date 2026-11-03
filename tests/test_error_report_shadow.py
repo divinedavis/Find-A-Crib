@@ -107,3 +107,40 @@ def test_plain_text_hides_browser_noise():
     assert "Real bug" in text
     assert "Load failed" not in text
     assert "62 browser-noise" in text
+
+
+def _censused(steps, sw=390):
+    t = trace("v1", steps, booted="2026-09-28T14:59:00Z")
+    t["props"]["sw"] = sw
+    return t
+
+
+TAB_GRID = ["boot", "tick", "la:ready 3", "tick",
+            "win-resize 383x574", "vv-resize 574 la3 ad12 img26 v0",
+            "win-resize 246x390", "vv-resize 390 la3 ad12 img26 v0",
+            "win-resize 157x267", "vv-resize 267 la3 ad12 img26 v0",
+            "vv-resize 252 la3 ad12 img26 v0"]
+
+
+def test_page_shrunk_to_a_tab_grid_thumbnail_is_not_a_death():
+    # 2026-11-03 digest: the window narrowed 390 -> 157 (Safari's tab grid),
+    # then the page was gone. The visitor left; nothing died on them.
+    assert not er.crashes([_censused(TAB_GRID)], key="k", kept_going=lambda *a: False)
+
+
+def test_full_width_resize_death_still_reports():
+    steps = ["boot", "tick", "win-resize 390x618", "vv-resize 618 la3 ad11 img26 v0"]
+    out = er.crashes([_censused(steps)], key="k", kept_going=lambda *a: False)
+    assert out["vv-resize 618 la3 ad11 img26 v0"]["n"] == 1
+
+
+def test_work_after_the_shrink_still_reports():
+    steps = TAB_GRID + ["grid:build 40"]
+    out = er.crashes([_censused(steps)], key="k", kept_going=lambda *a: False)
+    assert out["grid:build 40"]["n"] == 1
+
+
+def test_no_screen_width_keeps_the_trace():
+    t = trace("v1", TAB_GRID, booted="2026-09-28T14:59:00Z")
+    out = er.crashes([t], key="k", kept_going=lambda *a: False)
+    assert out["vv-resize 252 la3 ad12 img26 v0"]["n"] == 1

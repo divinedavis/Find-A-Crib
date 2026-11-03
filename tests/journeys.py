@@ -134,6 +134,7 @@ JOURNEY_EVENTS = {
     'tools':                ['tool_open'],
     'renter_tools':         ['tool_open', 'tool_result'],
     'qualify':              ['qualify_open', 'qualify_set', 'qualify_clear'],
+    'rerentals_chip':       ['rerentals_open'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -501,10 +502,13 @@ class Runner:
             self.ok(page.evaluate("[...document.querySelectorAll('#menu-pop a, #menu-pop button')].length") >= 8, 'menu should list the header actions', j)
             self.ok(page.evaluate("!!document.querySelector('#menu-pop a[href^=\"/alerts/\"]')") and 'Alerts' in page.evaluate("document.getElementById('menu-pop').innerText"), 'menu should offer Alerts', j)
             chips = page.evaluate("[...document.querySelectorAll('.chip-row .filter-pill:not([hidden])')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent.trim())")
-            # Owner, 2026-10-11: Lottery agents and Landlords back as chips;
-            # Saved and Get the app only in ☰; Alerts reads "Get Alerts on Lotteries".
+            # Owner, 2026-11-03: the row is only Filters, Get Alerts on Lotteries
+            # and Re-rentals; qualify, Lottery agents, Landlords, Saved and Get
+            # the app are ☰ rows.
             self.ok(any('Get Alerts on Lotteries' in c for c in chips), f'chips should offer Get Alerts on Lotteries: {chips}', j)
-            self.ok(any('Lottery agents' in c for c in chips) and any('Landlords' in c for c in chips), f'chips should show Lottery agents and Landlords: {chips}', j)
+            self.ok(not any(w in c for c in chips for w in ('qualify', 'Lottery agents', 'Landlords')), f'qualify, Lottery agents and Landlords belong in ☰: {chips}', j)
+            menu_txt = page.evaluate("document.getElementById('menu-pop').innerText")
+            self.ok(all(w in menu_txt for w in ('What do I qualify for?', 'Lottery agents', 'Landlords')), 'the menu should carry qualify, Lottery agents and Landlords', j)
             self.ok(not any('Saved' in c or 'Get the app' in c for c in chips), f'Saved and Get the app belong in ☰, not the chips: {chips}', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
@@ -515,11 +519,12 @@ class Runner:
             self.ok(self.alerts_signup_open(page), 'menu Alerts should open the sign-up modal, not the paywall, when signed out', j)
             page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         else:
-            # Phones (owner, 2026-10-11): Get Alerts on Lotteries is the FIRST chip,
-            # Lottery agents and Landlords are chips, Saved and the iPhone app are ☰ rows.
+            # Phones (owner, 2026-10-11): Get Alerts on Lotteries is the FIRST chip;
+            # since 2026-11-03 qualify, Lottery agents and Landlords are ☰ rows too,
+            # like Saved and the iPhone app.
             chips = page.evaluate("[...document.querySelectorAll('.chip-row .filter-pill:not([hidden])')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent.trim())")
             self.ok(chips and chips[0] == '🔔 Get Alerts on Lotteries', f'Get Alerts on Lotteries should be the first chip on phones: {chips}', j)
-            self.ok('🏛️ Lottery agents' in chips and '🔎 Landlords' in chips, f'Lottery agents and Landlords should be chips: {chips}', j)
+            self.ok(not any(w in c for c in chips for w in ('qualify', 'Lottery agents', 'Landlords')), f'qualify, Lottery agents and Landlords belong in ☰: {chips}', j)
             self.ok(not any('Saved' in c or 'iPhone app' in c for c in chips), f'Saved and the iPhone app belong in ☰: {chips}', j)
             self.ok(page.evaluate("document.getElementById('pill-alerts-m').getAttribute('href')").startswith('/alerts/'), 'Alerts chip should link to /alerts/', j)
             self.ok(not page.evaluate("document.documentElement.scrollWidth > innerWidth"), 'the header must not push the page sideways', j)
@@ -1764,8 +1769,9 @@ class Runner:
         if device == 'desktop':
             # A real click: self.click dispatches a non-cancelable event, which
             # no preventDefault can stop, so the page would navigate anyway.
-            # Landlords is a chip again (owner, 2026-10-11).
-            page.click('#pill-dir'); time.sleep(0.8)
+            # Landlords is a ☰ row (owner, 2026-11-03).
+            page.click('#menu-btn'); time.sleep(0.3)
+            page.click('#menu-pop a[href="/directory/"]'); time.sleep(0.8)
             self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"),
                     'signed out on a laptop, Landlords should open the account modal', j)
             sub = (page.evaluate("document.getElementById('auth-submit').textContent") or '').lower()
@@ -1780,10 +1786,10 @@ class Runner:
             # Click it, but stop the navigation in the bubble phase: the gate
             # runs in the capture phase, so if it had fired the event would
             # already be defaultPrevented here and the modal open.
-            # Listen on the chip itself: the chip row stops clicks bubbling to
-            # document. The gate runs in document's capture phase, before this.
+            # Listen on the ☰ link itself. The gate runs in document's capture
+            # phase, before this.
             gated, modal_hidden = page.evaluate("""(() => {
-                let prevented = null; const a = document.getElementById('pill-dir');
+                let prevented = null; const a = document.querySelector('#menu-pop a[href="/directory/"]');
                 a.addEventListener('click', e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true });
                 a.click();
                 return [prevented, document.getElementById('auth-modal').hidden];
@@ -2180,12 +2186,15 @@ class Runner:
         page.evaluate("try { localStorage.removeItem('fac.qualify') } catch (e) {}")
         self.boot(page)
         self.ok(not page.evaluate("!!document.querySelector('.qual-badge')"), 'no badges before a household is set', j)
-        page.evaluate("document.getElementById('pill-qualify').click()"); time.sleep(0.4)
-        self.ok(not page.evaluate("document.getElementById('qualify-modal').hidden"), 'the chip opens the qualify form', j)
+        # A ☰ row since 2026-11-03: open the menu and click it for real.
+        page.click('#menu-btn'); time.sleep(0.3)
+        page.click('#pill-qualify'); time.sleep(0.4)
+        self.ok(not page.evaluate("document.getElementById('qualify-modal').hidden"), 'the ☰ row opens the qualify form', j)
+        self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'and the menu closes behind it', j)
         page.select_option('#q-hh', '3'); page.fill('#q-income', '95000')
         page.evaluate("document.getElementById('q-save').click()"); time.sleep(1.2)
         chip = page.evaluate("document.getElementById('pill-qualify-text').textContent")
-        self.ok('qualify for' in chip and '$' not in chip and '95' not in chip, f'the chip says the filter is on, never the income: {chip!r}', j)
+        self.ok('qualify for' in chip and '$' not in chip and '95' not in chip, f'the ☰ row says the filter is on, never the income: {chip!r}', j)
         n = page.evaluate("document.querySelectorAll('.feat-card .qual-badge, .hc-card .qual-badge').length")
         tiles = page.evaluate("document.querySelectorAll('.feat-card, .hc-card').length")
         self.ok(tiles == 0 or n == tiles, f'every lottery/re-rental tile gets a badge: {n} of {tiles}', j)
@@ -2196,6 +2205,38 @@ class Runner:
         page.evaluate("document.getElementById('q-clear').click()"); time.sleep(0.5)
         self.ok(not page.evaluate("!!document.querySelector('.qual-badge')"), 'Clear removes the badges', j)
         j.notes.append(f'{n} tiles badged')
+
+    def j_rerentals_chip(self, page, j, device):
+        """Re-rentals chip (owner, 2026-11-03): second chip after Get Alerts on
+        Lotteries, phones and desktop; opens every re-rental in the picked
+        boroughs as a list of the grid's own cards, like the iPhone app's tab."""
+        page.evaluate("try { localStorage.removeItem('fac.qualify') } catch (e) {}")
+        self.boot(page)
+        if not self.wait_until(page, "[...document.querySelectorAll('.rr-chip')].some(c => !c.hidden)", timeout=15000):
+            j.notes.append('no featured.json today: chip stays hidden')
+            return
+        chips = page.evaluate("[...document.querySelectorAll('.chip-row .filter-pill:not([hidden])')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent.trim())")
+        ia = next((i for i, c in enumerate(chips) if 'Get Alerts on Lotteries' in c), None)
+        self.ok(ia is not None and ia + 1 < len(chips) and chips[ia + 1].startswith('🔑 Re-rentals'),
+                f'Re-rentals should be the chip right after Get Alerts on Lotteries: {chips}', j)
+        if device == 'phone':
+            self.ok(ia == 0, f'on phones that makes it the second chip: {chips}', j)
+        label = next((c for c in chips if c.startswith('🔑 Re-rentals')), '')
+        m = re.search(r'\((\d+)\)', label)
+        n_chip = int(m.group(1)) if m else -1
+        page.evaluate("[...document.querySelectorAll('.rr-chip')].find(c => getComputedStyle(c).display !== 'none').click()"); time.sleep(0.5)
+        st = page.evaluate("""(()=>{const m=document.getElementById('rerentals-modal'), c=m.querySelector('.auth-card').getBoundingClientRect();
+          const cards=[...m.querySelectorAll('.feat-card')];
+          return {open:!m.hidden, n:cards.length, links:cards.filter(x=>x.querySelector('a[data-action="featured"]')).length,
+            sub:document.getElementById('rr-sub').textContent, left:c.left, right:c.right, W:innerWidth,
+            wide:document.documentElement.scrollWidth > innerWidth}})()""")
+        self.ok(st['open'], 'the chip opens the re-rentals list', j)
+        self.ok(st['n'] == n_chip, f'the list shows as many re-rentals as the chip counts: {st["n"]} vs {label!r}', j)
+        self.ok(st['links'] == st['n'], f'every card links to the agent: {st["links"]} of {st["n"]}', j)
+        self.ok(st['left'] >= 0 and st['right'] <= st['W'] and not st['wide'], f'the list fits the screen: {st}', j)
+        page.keyboard.press('Escape'); time.sleep(0.2)
+        self.ok(page.evaluate("document.getElementById('rerentals-modal').hidden"), 'Escape closes the list', j)
+        j.notes.append(f'{st["n"]} re-rentals listed')
 
     def j_resume_search(self, page, j, device):
         """Remembered search (owner, 2026-10-03): with nothing saved there is
@@ -2412,7 +2453,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
+                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

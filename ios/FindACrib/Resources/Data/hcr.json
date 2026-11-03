@@ -1,6 +1,6 @@
 {
-"updated": 1793343903,
-"updated_iso": "2026-10-30T07:05:03+00:00",
+"updated": 1793736303,
+"updated_iso": "2026-11-03T20:05:03+00:00",
 "count": 54,
 "listings": [
 {
@@ -22,14 +22,14 @@
 "image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002HcLdQAAV?oid=00D8y0000008f2FEAQ",
 "senior": true,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "For more information or to request a paper application: Luna Green c/o Reside New York 349 Keap Street Brooklyn NY 11211",
-"zip": null,
+"street": "3027 West 21st Street",
+"zip": "11224",
 "bbl": null,
-"lat": 40.716831,
-"lng": -74.001432
+"lat": 40.57303,
+"lng": -73.9868
 }
 ]
 },
@@ -52,12 +52,14 @@
 "image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002OEcpvAAD?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "1919 Cornaga LLC C/O Spring Leasing and Management LLC 401 Franklin Ave Garden City, New York 11530",
-"zip": null,
-"bbl": null
+"street": "19-19 Cornaga Avenue",
+"zip": "11691",
+"bbl": null,
+"lat": 40.60203,
+"lng": -73.75223
 }
 ]
 },
@@ -80,14 +82,14 @@
 "image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002UZAAHAA5?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "Central Intake Unit, Breaking Ground, 520 8th Avenue, New York, NY 10018",
-"zip": null,
-"bbl": null,
-"lat": 40.753625,
-"lng": -73.991907
+"street": "411 East 178th Street",
+"zip": "10457",
+"bbl": "2030280003",
+"lat": 40.849463,
+"lng": -73.899626
 }
 ]
 },
@@ -110,14 +112,44 @@
 "image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002BRY4hAAH?oid=00D8y0000008f2FEAQ",
 "senior": true,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "Settlement Housing Fund 247 West 37th Street, 19th York, NY 10018",
-"zip": null,
+"street": "1405 Boston Road",
+"zip": "10456",
 "bbl": null,
-"lat": 40.753994,
-"lng": -73.99123
+"lat": 40.83359,
+"lng": -73.89691
+}
+]
+},
+{
+"id": "a0Ycs00001gK9MbEAK",
+"name": "Utica Crescent",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Bk",
+"county": "Kings (Brooklyn)",
+"min_income": 25500,
+"max_income": 150400,
+"due": "11/30/2026",
+"fee": null,
+"phone": "(718) 740-0416",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001gK9MbEAK/detail",
+"info": "For more information please contact Shinda Management Corportion, 221-10 Jamaica Avenue, 3rd Floor, Queens Village, NY 11428",
+"desc": "Utica Crescent is accepting immediate applications for 2 studio and 1 one-bedroom mobility impaired units, and 1 studio, 2 one-bedroom, and 2 two-bedroom units for hearing/visually impaired units. Accessible units are adapted and dedicated units for residents with mobility and sensory disabilities. Applications are also being accepted for future vacancies. Utica Crescent is a 100% affordable housi",
+"image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001B5w7rAAB?oid=00D8y0000008f2F",
+"senior": false,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "548 Utica Avenue",
+"zip": "11203",
+"bbl": null,
+"lat": 40.65984,
+"lng": -73.93184
 }
 ]
 },
@@ -140,14 +172,14 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001u5XU4AAM?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "NHE Management Assoc., LLC Leasing Department 90-11 160th Street Jamaica, NY 11432",
-"zip": null,
-"bbl": "4097577501",
-"lat": 40.704968,
-"lng": -73.799529
+"street": "1182 Woodycrest Avenue",
+"zip": "10452",
+"bbl": null,
+"lat": 40.83646,
+"lng": -73.9248
 }
 ]
 },
@@ -171,7 +203,15 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "4519 White Plains Road",
+"zip": "10470",
+"bbl": null,
+"lat": 40.90062,
+"lng": -73.85296
+}
+]
 },
 {
 "id": "a0Ycs00001nyK17EAE",
@@ -223,7 +263,15 @@
 "senior": true,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "334 East 176th Street",
+"zip": "10457",
+"bbl": null,
+"lat": 40.84745,
+"lng": -73.90231
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1xEAE",
@@ -275,7 +323,15 @@
 "senior": true,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "1559 Boone Avenue",
+"zip": "10460",
+"bbl": null,
+"lat": 40.83359,
+"lng": -73.88508
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1CEAU",
@@ -556,14 +612,35 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001kAxdNAAS?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": false,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "Historic Front Street, 601 West 57th Street, 5th, New York, NY 10019",
-"zip": null,
-"bbl": null,
-"lat": 40.63642,
-"lng": -74.07181
+"street": "220 Front Street",
+"zip": "10038",
+"bbl": "1000977503",
+"lat": 40.707613,
+"lng": -74.002348
+},
+{
+"street": "217 Front Street",
+"zip": "10038",
+"bbl": "1000970018",
+"lat": 40.707237,
+"lng": -74.00232
+},
+{
+"street": "225 Front Street",
+"zip": "10038",
+"bbl": "1000970024",
+"lat": 40.70737,
+"lng": -74.002055
+},
+{
+"street": "229 Front Street",
+"zip": "10038",
+"bbl": "1000970026",
+"lat": 40.707455,
+"lng": -74.001891
 }
 ]
 },
@@ -587,7 +664,22 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "407 West 206th Street",
+"zip": "10034",
+"bbl": null,
+"lat": 40.86371,
+"lng": -73.91824
+},
+{
+"street": "405 West 206th Street",
+"zip": "10034",
+"bbl": null,
+"lat": 40.86345,
+"lng": -73.9176
+}
+]
 },
 {
 "id": "a0Ycs00001nyK10EAE",
@@ -803,7 +895,15 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "101 Myrtle Avenue",
+"zip": "10310",
+"bbl": null,
+"lat": 40.630275,
+"lng": -74.115164
+}
+]
 },
 {
 "id": "a0Ycs00001nyK14EAE",
@@ -967,7 +1067,15 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "50 Nevins Street",
+"zip": "11217",
+"bbl": "3001727501",
+"lat": 40.687077,
+"lng": -73.982179
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1nEAE",
@@ -1183,7 +1291,15 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "2520 Jerome Avenue",
+"zip": "10468",
+"bbl": null,
+"lat": 40.86426,
+"lng": -73.89939
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1HEAU",
@@ -1235,7 +1351,22 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "45-25 Kissena Boulevard",
+"zip": "11355",
+"bbl": null,
+"lat": 40.751938,
+"lng": -73.820068
+},
+{
+"street": "137-47 45th Avenue",
+"zip": "11355",
+"bbl": null,
+"lat": 40.751972,
+"lng": -73.822184
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1XEAU",
@@ -1316,14 +1447,14 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00000lO1hWAAS?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": true,
-"approx": true,
+"approx": false,
 "buildings": [
 {
-"street": "1675 Broadway – 29th, New York, NY 10019",
-"zip": null,
+"street": "1366 East New York Avenue",
+"zip": "11212",
 "bbl": null,
-"lat": 40.763123,
-"lng": -73.983568
+"lat": 40.66943,
+"lng": -73.91683
 }
 ]
 },
@@ -1358,28 +1489,6 @@
 ]
 },
 {
-"id": "a0Ycs00001gK9MbEAK",
-"name": "Utica Crescent",
-"kind": "Waitlist",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Bk",
-"county": "Kings (Brooklyn)",
-"min_income": 25500,
-"max_income": 150400,
-"due": "Ongoing",
-"fee": null,
-"phone": null,
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001gK9MbEAK/detail",
-"info": null,
-"desc": null,
-"image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001B5w7rAAB?oid=00D8y0000008f2F",
-"senior": false,
-"accessible": false,
-"approx": false,
-"buildings": []
-},
-{
 "id": "a0Ycs00000iE3RfEAK",
 "name": "Vital Brookdale",
 "kind": "Waitlist",
@@ -1399,7 +1508,15 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": []
+"buildings": [
+{
+"street": "523 East 98th Street",
+"zip": "11212",
+"bbl": "3036200005",
+"lat": 40.65615,
+"lng": -73.91259
+}
+]
 },
 {
 "id": "a0Ycs00001nyK1oEAE",

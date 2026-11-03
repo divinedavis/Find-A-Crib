@@ -48,17 +48,21 @@ struct RootView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
 
-            if !nav.hideTabBar {
+            if !nav.hideTabBar && !nav.chromeHidden {
                 PillTabBar(selected: $nav.tab)
                     .padding(.bottom, 6)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        .animation(.easeInOut(duration: 0.22), value: nav.chromeHidden)
+        // A screen pushed or popped starts with its header and the bar showing.
+        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeHidden = false }
         // Search no longer leaves the screen when another tab opens, so its
         // building page's onDisappear doesn't run: set the bar per tab here.
         // Back on Search, a building page on top still hides it.
         .onChange(of: nav.tab) { _, t in
+            nav.chromeHidden = false
             if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
         }
         // A tapped alert notification opens here, on all of its items.

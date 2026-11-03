@@ -400,3 +400,76 @@ struct SECheckList: View {
         .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
     }
 }
+
+// MARK: - Hide-on-scroll chrome (owner, 2026-11-03)
+
+/// YouTube-style: scroll down a list and its header and the tab bar slide
+/// away; scroll back up, or come near the top, and they return. Direction
+/// has to hold for `threshold` points first, so a finger resting on the list
+/// doesn't flicker them.
+struct ScrollChrome {
+    static let threshold: CGFloat = 24
+    /// Within this much of the top the chrome always shows.
+    static let topZone: CGFloat = 60
+    private var last: CGFloat?
+    private var travel: CGFloat = 0
+
+    /// `userScrolling`: a finger is on the list, or it is coasting after a
+    /// flick. Anything else (the list laying itself out, more results
+    /// arriving, the bars' own animation changing the insets) only moves the
+    /// reference point, so the bars never hide on their own (2026-11-03: the
+    /// results list jumped ~300 pt as it first laid out under the UI tests).
+    mutating func next(offset y: CGFloat, hidden: Bool, userScrolling: Bool = true) -> Bool {
+        let previous = last
+        last = y
+        if y < Self.topZone { travel = 0; return false }
+        guard userScrolling else { travel = 0; return hidden }
+        guard let previous else { return hidden }
+        let dy = y - previous
+        if dy == 0 { return hidden }
+        if travel != 0 && (dy > 0) != (travel > 0) { travel = 0 }   // turned round
+        travel += dy
+        if travel > Self.threshold { return true }
+        if travel < -Self.threshold { return false }
+        return hidden
+    }
+}
+
+private struct HideChromeOnScroll: ViewModifier {
+    let enabled: Bool
+    @Environment(AppNav.self) private var nav
+    @State private var tracker = ScrollChrome()
+    @State private var userScrolling = false
+
+    func body(content: Content) -> some View {
+        // iOS 17 has no scroll-geometry callback: the bars just stay put there.
+        if #available(iOS 18, *), enabled {
+            content
+                .onScrollGeometryChange(for: CGFloat.self) { g in
+                    // Clamped to the end of the content, so the bounce at the
+                    // bottom of the list doesn't read as scrolling back up.
+                    let y = g.contentOffset.y + g.contentInsets.top
+                    let end = g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom - g.containerSize.height
+                    return min(y, max(end, 0))
+                } action: { _, y in
+                    let hide = tracker.next(offset: y, hidden: nav.chromeHidden, userScrolling: userScrolling)
+                    if hide != nav.chromeHidden {
+                        withAnimation(.easeInOut(duration: 0.22)) { nav.chromeHidden = hide }
+                    }
+                }
+                .onScrollPhaseChange { _, phase in
+                    userScrolling = phase == .interacting || phase == .decelerating
+                }
+                .onDisappear { nav.chromeHidden = false }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Apply to the ScrollView itself.
+    func hidesChromeOnScroll(_ enabled: Bool = true) -> some View {
+        modifier(HideChromeOnScroll(enabled: enabled))
+    }
+}

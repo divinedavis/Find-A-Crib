@@ -168,7 +168,7 @@ struct ResultsView: View {
             NavyBarBackdrop()
             // The city's skyline rides at the top of the list; pull past the
             // top and the night sky shows above it (CitySkyline.swift).
-            SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id)) {
+            SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id), hidesChrome: true) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
                         if searched {
@@ -264,7 +264,8 @@ struct ResultsView: View {
                     .accessibilityIdentifier("pill-Alerts")
                 }
             }
-            .padding(.bottom, 92)
+            // Down into the tab bar's space while it is scrolled away.
+            .padding(.bottom, nav.chromeHidden ? 28 : 92)
         }
         .overlay(alignment: .top) {
             if let toast {
@@ -273,6 +274,9 @@ struct ResultsView: View {
                     .task { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
+        // The filter bar rides in the navigation bar: it slides away with the
+        // tab bar as the list scrolls down (owner, 2026-11-03).
+        .toolbar(nav.chromeHidden ? .hidden : .visible, for: .navigationBar)
         .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
             onLocation: { Analytics.shared.track("location_open", ["src": "results"]); showLocation = true },
             onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true },

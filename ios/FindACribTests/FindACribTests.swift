@@ -2233,3 +2233,35 @@ final class CasaWatchMemoryTests: XCTestCase {
         XCTAssertNil(UserDefaults.standard.data(forKey: "casa.watch"), "and the phone's copy is gone")
     }
 }
+
+/// Hide-on-scroll (owner, 2026-11-03): the header and tab bar follow the
+/// direction of the user's own scrolling, never a layout jump.
+final class ScrollChromeTests: XCTestCase {
+    func testHidesAfterScrollingDownAndShowsAfterScrollingUp() {
+        var t = ScrollChrome()
+        var hidden = t.next(offset: 0, hidden: false)
+        XCTAssertFalse(hidden)
+        for y in stride(from: 10, through: 200, by: 10) { hidden = t.next(offset: CGFloat(y), hidden: hidden) }
+        XCTAssertTrue(hidden, "a scroll down past the top hides them")
+        hidden = t.next(offset: 190, hidden: hidden)
+        XCTAssertTrue(hidden, "a 10 pt wobble back doesn't bring them back")
+        for y in stride(from: 180, through: 150, by: -10) { hidden = t.next(offset: CGFloat(y), hidden: hidden) }
+        XCTAssertFalse(hidden, "scrolling back up past the threshold shows them")
+    }
+
+    func testAlwaysShownNearTheTop() {
+        var t = ScrollChrome()
+        XCTAssertFalse(t.next(offset: 40, hidden: true), "within the top zone they always show")
+    }
+
+    func testLayoutJumpsNeverHide() {
+        var t = ScrollChrome()
+        var hidden = t.next(offset: 0, hidden: false, userScrolling: false)
+        hidden = t.next(offset: 300, hidden: hidden, userScrolling: false)
+        XCTAssertFalse(hidden, "the list jumping 300 pt as it lays out is not the user scrolling")
+        hidden = t.next(offset: 310, hidden: hidden, userScrolling: true)
+        XCTAssertFalse(hidden, "and the jump doesn't count toward the next real scroll")
+        hidden = t.next(offset: 340, hidden: hidden, userScrolling: true)
+        XCTAssertTrue(hidden)
+    }
+}

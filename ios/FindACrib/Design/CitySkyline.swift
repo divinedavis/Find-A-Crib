@@ -937,6 +937,8 @@ struct NightSky: View {
 /// iOS 17 path.
 struct SkylineScrollView<Content: View>: View {
     let scene: Skyline.Scene
+    /// Scrolling down hides the header and tab bar (ResultsView).
+    var hidesChrome = false
     @ViewBuilder let content: Content
     @State private var revealed = false
     @State private var bandOnScreen = true
@@ -968,6 +970,7 @@ struct SkylineScrollView<Content: View>: View {
             } action: { _, on in
                 if on != bandOnScreen { bandOnScreen = on }
             }
+            .hidesChromeOnScroll(hidesChrome)
         } else {
             scroll.onPreferenceChange(PullKey.self) { top in
                 if restingTop == nil { restingTop = top }

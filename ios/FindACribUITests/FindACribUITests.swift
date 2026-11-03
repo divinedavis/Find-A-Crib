@@ -987,6 +987,47 @@ final class FindACribUITests: XCTestCase {
     /// "Edit boroughs" renamed Filter). Picking 1 bed narrows Re-rentals —
     /// listings with no size leave with no "show them" row — and the button
     /// counts it: "Filter (1)".
+    /// Hide-on-scroll (owner, 2026-11-03, YouTube-style): scrolling down the
+    /// results slides the filter bar and the tab bar away; scrolling back up
+    /// brings both back.
+    func testResultsHideHeaderAndTabBarOnScroll() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        let header = app.descendants(matching: .any)["results-filter"].firstMatch
+        let tab = app.buttons["tab-Lotteries"]
+        XCTAssertTrue(app.descendants(matching: .any)["results-count"].firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(header.exists && tab.exists, "both show at the top of the list")
+        XCTAssertFalse(tab.waitForNonExistence(timeout: 2), "they never hide without a swipe (the list's own layout jump hid them once)")
+        app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)
+        XCTAssertTrue(tab.waitForNonExistence(timeout: 5), "scrolling down hides the tab bar")
+        XCTAssertTrue(header.waitForNonExistence(timeout: 5), "and the filter bar")
+        XCTAssertTrue(app.buttons["Map"].exists, "the Map pill stays")
+        app.swipeDown(velocity: .slow)
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "scrolling up brings the tab bar back")
+        XCTAssertTrue(header.waitForExistence(timeout: 5), "and the filter bar")
+    }
+
+    /// The same on the Lotteries tab: its title and pane tabs slide away
+    /// with the tab bar.
+    func testLotteriesHideHeaderAndTabBarOnScroll() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launch()
+        let panes = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        let tab = app.buttons["tab-Search"]
+        XCTAssertTrue(panes.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any)["lottery-card"].firstMatch.waitForExistence(timeout: 15), "the list has lotteries to scroll")
+        XCTAssertTrue(tab.exists, "the tab bar shows at the top")
+        XCTAssertFalse(tab.waitForNonExistence(timeout: 2), "it never hides without a swipe")
+        app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)
+        XCTAssertTrue(tab.waitForNonExistence(timeout: 5), "scrolling down hides the tab bar")
+        XCTAssertTrue(panes.waitForNonExistence(timeout: 5), "and the title and pane tabs")
+        app.swipeDown(velocity: .slow)
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "scrolling up brings the tab bar back")
+        XCTAssertTrue(panes.waitForExistence(timeout: 5), "and the pane tabs")
+    }
+
     func testLotteriesFilterHoldsBeds() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo"]

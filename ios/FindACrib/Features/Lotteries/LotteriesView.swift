@@ -12,6 +12,7 @@ struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
+    @Environment(AppNav.self) private var nav
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad (owner, 2026-09-22): two columns of lottery and re-rental cards.
     private var columns: [GridItem] {
@@ -167,13 +168,24 @@ struct LotteriesView: View {
 
     private var list: some View {
         VStack(spacing: 0) {
+            // Scrolled down, the title and the pane tabs slide away with the
+            // tab bar (owner, 2026-11-03); the navy stays behind the status bar.
             NavyHeader {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                    Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                if !nav.chromeHidden {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                        Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+                    // A fade, not a slide: sliding up it would cross the clock.
+                    .transition(.opacity)
+                } else {
+                    // Keeps the header a real (1 pt) view, so its navy still
+                    // fills the status bar while the title is away.
+                    Color.clear.frame(height: 1)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
+            if !nav.chromeHidden {
             VStack(alignment: .leading, spacing: 10) {
                 // Three panes: "Lotteries (n)" no longer fits beside the other
                 // two on a 375 pt phone, and the header already says Lotteries.
@@ -182,6 +194,8 @@ struct LotteriesView: View {
                     .padding(.bottom, 10)
             }
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     if pane != .newJersey { alertsBanner }
@@ -217,6 +231,7 @@ struct LotteriesView: View {
                 .padding(.top, 16)
             }
             .refreshable { await feed.refresh() }
+            .hidesChromeOnScroll()
             .background(SE.canvas)
         }
         .background(SE.canvas)

@@ -21,6 +21,15 @@ final class FindACribUITests: XCTestCase {
         // each time. A test that wants the default app calls app.launch().
     }
 
+    /// Scrolling down a list hides the tab bar (2026-11-03, YouTube-style);
+    /// a short drag back up shows it again, as a person would do.
+    func revealTabBar() {
+        guard !app.buttons["tab-Search"].exists else { return }
+        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
+        mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: 90)))
+        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 5), "a short drag up brings the tab bar back")
+    }
+
     func testSearchToDetailAndBack() throws {
         app.launch()
         let search = app.buttons["search-button"]
@@ -341,6 +350,7 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         for _ in 0..<4 { app.swipeUp() }
+        revealTabBar()   // scrolled down, the tab bar is away until a drag up
         let onScreen = { [app] in
             app.descendants(matching: .any).matching(identifier: "card-address").allElementsBoundByIndex
                 .filter { $0.isHittable }.map(\.label)
@@ -736,6 +746,9 @@ final class FindACribUITests: XCTestCase {
         for _ in 0..<4 where slotCard.exists && slotCard.frame.minY > app.frame.height * 0.35 { app.swipeUp(velocity: .slow) }
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "feed-slot"; shot.lifetime = .keepAlways; add(shot)
         XCTAssertFalse(app.descendants(matching: .any)["ad.slot"].exists, "the bottom banner is gone")
+        // Scrolled down, the tab bar is away (2026-11-03); one drag up and it
+        // must be tappable over the feed's ad slot.
+        revealTabBar()
         XCTAssertTrue(app.buttons["Profile"].isHittable, "the tab bar stays tappable")
     }
 
@@ -1017,7 +1030,10 @@ final class FindACribUITests: XCTestCase {
         let panes = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
         let tab = app.buttons["tab-Search"]
         XCTAssertTrue(panes.waitForExistence(timeout: 30))
-        XCTAssertTrue(app.descendants(matching: .any)["lottery-card"].firstMatch.waitForExistence(timeout: 15), "the list has lotteries to scroll")
+        // The Re-rentals pane: ~120 listings to scroll. The NYC pane follows
+        // live Housing Connect and read "NYC (0)" in one full-suite run.
+        panes.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-card"].firstMatch.waitForExistence(timeout: 15), "the list has re-rentals to scroll")
         XCTAssertTrue(tab.exists, "the tab bar shows at the top")
         XCTAssertFalse(tab.waitForNonExistence(timeout: 2), "it never hides without a swipe")
         app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)

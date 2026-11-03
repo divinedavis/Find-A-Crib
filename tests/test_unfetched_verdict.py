@@ -168,9 +168,21 @@ class TheGuardIsNarrow(unittest.TestCase):
     def test_the_live_corpus_agrees_where_it_can_be_read(self):
         # The live half of what the old test did, kept but made unable to fail
         # for the wrong reason. Any ACTIVE technique whose census says FETCHED
-        # must get the old wording from unseen_clause; techniques that are not
-        # on the zero-impression branch tonight simply do not appear here,
-        # which is a fact about tonight's traffic and not about this guard.
+        # must NOT get the never-fetched leg; techniques that are not on the
+        # zero-impression branch tonight simply do not appear here, which is a
+        # fact about tonight's traffic and not about this guard.
+        #
+        # STRENGTHENED 2026-11-04 and left pinning the same sentence, which is
+        # the point worth recording. review.seen_and_declined() landed tonight
+        # and says, for a tier Google has fetched and kept none of, what this
+        # leg could not: that the pages were judged. It is a SEPARATE clause
+        # appended by evaluate() from a separate instrument, so unseen_clause's
+        # own two-leg partition is untouched and OLD_WORDING is still the right
+        # assertion here — had the new leg been bolted into this function
+        # instead, this test would have gone red and the honest fix would have
+        # been to narrow it. The two assertNotIn lines are what that near-miss
+        # bought: they pin the half this file is actually about, that a fetched
+        # tier is never told to go get crawled, independently of the prose.
         seen = 0
         for t in ledger.active():
             ev = indexstatus.crawl_evidence(t.get("prefixes"))
@@ -180,6 +192,8 @@ class TheGuardIsNarrow(unittest.TestCase):
             text, fired, _ = review.unseen_clause(t.get("prefixes"))
             with self.subTest(slug=t["slug"]):
                 self.assertFalse(fired)
+                self.assertNotIn(NEVER_FETCHED, text)
+                self.assertNotIn(CRAWL_REACH, text)
                 self.assertIn(OLD_WORDING, text)
         if not seen:
             self.skipTest("no active technique has a partly-fetched census tier")

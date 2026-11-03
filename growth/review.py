@@ -120,6 +120,133 @@ def never_fetched(prefixes, crawl=None):
     return crawl, crawl["read"] >= MIN_CENSUS_READ and crawl["fetched"] == 0
 
 
+# How many SETTLED fetched URLs a technique needs before "Google looked at
+# these and kept none" counts as evidence rather than as a thin sample.
+#
+# Ten, not MIN_CENSUS_READ's three, and the asymmetry argument runs the OTHER
+# WAY from that one. MIN_CENSUS_READ guards a sentence that WITHHOLDS a verdict:
+# firing it wrongly costs one revisit cycle on a technique that was going to be
+# retired anyway, so three is cheap. This guards a sentence that ASSERTS a
+# judgement of Google's — that these pages have been seen and declined — and
+# firing that wrongly tells the next run to go rewrite or consolidate pages
+# Google simply has not got to a decision on. Rewrites are expensive and not
+# reversible in the way a retirement is: the old pages are gone.
+#
+# So this one is deliberately the conservative end. On 2026-11-03 the only live
+# tier that clears it clears it by a wide margin — /building/ at 159 settled —
+# and the tier that does NOT clear it, T019's 24, is excluded by ever_indexed
+# rather than by this count anyway. A threshold nothing is sitting next to is
+# the right place for one.
+MIN_CENSUS_SETTLED = 10
+
+
+def seen_and_declined(prefixes, crawl=None):
+    """Does the census POSITIVELY say Google fetched these and kept none?
+
+    Returns (crawl_evidence_dict, fired). The MISSING HALF of never_fetched(),
+    written 2026-11-04 and named for the same reason both of its neighbours
+    were: it is a threshold that decides a sentence, so it needs to be testable
+    without running the live ledger.
+
+    indexstatus.crawl_evidence's docstring has said since 2026-08-29 that a
+    zero-impression reading has two causes which "call for opposite decisions —
+    retire the pages, or go get them crawled". Only the second of those two was
+    ever stated. never_fetched() fires on `fetched == 0` and says "go get them
+    crawled"; its else-leg said "its pages earned 0 search impressions", which
+    is a fact about Search Console and says nothing at all about what Google
+    decided. So the opposite decision had no sentence, and the verdict that
+    needed it most got the weakest wording on the file.
+
+    THE READING THAT FORCED IT. T046 /building/ on 2026-11-03: 250 inspected,
+    159 fetched, 0 indexed, 0 ever indexed, all 159 first seen by this sampler
+    more than indexstatus.MATURE_DAYS ago. Its stored verdict ended "nothing
+    has been measured about whether these pages can rank". A page Google has
+    fetched and declined cannot rank — that IS a measurement about whether
+    these pages can rank, and it is the most load-bearing one on the domain.
+    The same family as 2026-08-25, 08-26, 08-27, 10-31, 11-01 and 11-02: a
+    branch stating less or more than its evidence carries.
+
+    THREE CONDITIONS, and each one excludes a reading that would otherwise be
+    filed as a decision it is not:
+
+      settled >= MIN_CENSUS_SETTLED   enough URLs that Google has had
+                                      MATURE_DAYS with. Keyed off `settled`
+                                      rather than `fetched` so a tier Googlebot
+                                      re-crawled last night cannot read as
+                                      pending when it is a re-affirmed refusal
+                                      — see indexstatus.MATURE_DAYS.
+      ever_indexed == 0               Google has never accepted one. Where it
+                                      has, the finding is EVICTION, which this
+                                      must not swallow: T019's hub tier is 24
+                                      settled / 0 indexed / 2 ever indexed, and
+                                      "Google took two and dropped them" has a
+                                      different remedy from "Google never took
+                                      one". Those fall through to the old
+                                      wording until someone writes the
+                                      eviction sentence they deserve.
+      indexed == 0                    redundant beside ever_indexed on any
+                                      consistent reading and kept anyway: the
+                                      two come from different fields
+                                      (`first_indexed` is ours, the bucket is
+                                      Google's current answer) and the whole
+                                      point of this guard is that it asserts a
+                                      judgement, so it may not fire on a
+                                      reading that contradicts itself.
+
+    FALSE ON A READING THAT PREDATES THE MATURITY COUNTS, which is why the test
+    is `settled is None` and not `not crawl.get("settled")`. crawl_evidence
+    gained `settled` on 2026-11-04; every constructed reading written before
+    then, in this file's own tests and anywhere else, carries read/fetched and
+    no more. An absent count is silence under the same rule the whole module
+    runs on — an absent day is honest, a zero is a claim — and a guard that
+    read an absent `settled` as 0 would simply never fire, which is the safe
+    direction but for an accidental reason. This way the reason is written down.
+
+    `crawl` is the same injection point never_fetched() carries, for the same
+    purpose: both legs of the clause below must be reachable on a constructed
+    reading rather than on whichever technique happens to be on the branch
+    tonight. That lesson cost two consecutive mornings — see unseen_clause.
+    """
+    if crawl is None:
+        crawl = indexstatus.crawl_evidence(prefixes)
+    settled = crawl.get("settled")
+    if settled is None:
+        return crawl, False
+    return crawl, (settled >= MIN_CENSUS_SETTLED
+                   and not crawl.get("ever_indexed")
+                   and not crawl.get("indexed"))
+
+
+def declined_clause(prefixes, crawl=None):
+    """The sentence seen_and_declined() earns, or "" where it does not fire.
+
+    Separate from unseen_clause() because it is NOT one of that function's two
+    alternatives — it is an additional fact that stands beside whichever of
+    them fired, and beside the brand-attribution clause too. Those clauses are
+    readings of Search Console; this is a reading of the URL Inspection census,
+    and the two instruments answer different questions. A technique can
+    honestly carry one of each.
+
+    It cannot stand beside the never-fetched leg, and that is arithmetic rather
+    than a rule to remember: `settled` counts a subset of `fetched`, so
+    `fetched == 0` forces `settled == 0`, which is below any positive
+    threshold. tests/test_declined_census.py holds that over the input space.
+
+    Quotes the counts it fired on, under the rule the 2026-10-28 entry drew
+    about absence-shaped conditions and test_t001_quotes_its_own_denominator
+    enforces on the other guard: a reader six months from now must be able to
+    tell evidence from silence without the ledger in front of them.
+    """
+    crawl, fired = seen_and_declined(prefixes, crawl=crawl)
+    if not fired:
+        return ""
+    return (f", and the index census says Google has fetched {crawl['fetched']} of "
+            f"the {crawl['read']} of its URLs it has inspected and indexed none of "
+            f"them — {crawl['settled']} of those were first read as fetched more than "
+            f"{indexstatus.MATURE_DAYS} days ago and not one has ever been indexed, so "
+            f"these pages have been seen and declined rather than missed")
+
+
 def unseen_clause(prefixes, crawl=None):
     """Which of the two zero-impression sentences a technique gets.
 
@@ -746,7 +873,7 @@ def _unattributed_pages(rec):
             f"for those, so the non-branded count is a floor and not a census")
 
 
-def _owned_brand_reading(vis):
+def _owned_brand_reading(vis, declined=False):
     """Which of three sentences a technique's serving pages have earned.
 
     Returns (served_clause, unseen_clause). THE PER-TECHNIQUE TWIN of the
@@ -781,6 +908,22 @@ def _owned_brand_reading(vis):
     not know, and a reading that cannot tell must not be rewritten into one
     that says zero. Both clauses are empty where there is nothing to report, so
     the caller's `if not unseen` branch keeps its meaning.
+
+    `declined` (2026-11-04) drops ONE CLAUSE from the third sentence and
+    nothing else. That sentence ended "and nothing has been measured about
+    whether these pages can rank", which is a claim about the URL Inspection
+    census made by a function that has never read it — and on 2026-11-03 the
+    census flatly contradicted it for the one technique the sentence was
+    written for. T046 /building/: 159 of 250 inspected URLs fetched, 0 indexed,
+    0 ever indexed, every one of the 159 first read as fetched more than
+    indexstatus.MATURE_DAYS ago. A page Google has decided not to index cannot
+    rank, so that is not nothing measured, it is the decisive measurement.
+
+    The caller passes seen_and_declined()'s verdict and appends
+    declined_clause() in place of the dropped words, so the fact is stated with
+    its counts instead of being denied without any. Default False keeps every
+    reading taken before the census could answer — and every constructed
+    reading in the tests — on the wording it was written with.
     """
     if not vis.get("measured"):
         return "", ""
@@ -816,8 +959,10 @@ def _owned_brand_reading(vis):
                   f"than measured as brand")
         unseen = (f"Search Console returned no query rows for ANY of its {pages} serving "
                   f"pages, so the {imps} impressions they earned are unattributed — not "
-                  f"measured as branded and not measured as housing-intent, and nothing "
-                  f"has been measured about whether these pages can rank")
+                  f"measured as branded and not measured as housing-intent")
+        if not declined:
+            unseen += (", and nothing has been measured about whether these "
+                       "pages can rank")
         return served, unseen
     if un:
         served = (f", but its {pages} serving pages earned 0 non-branded impressions — "
@@ -1275,7 +1420,19 @@ def evaluate(t, techs=None):
         # Both clauses come from one function so the corroborating tail and the
         # load-bearing `unseen` clause cannot disagree about the same split —
         # which is exactly how 2026-11-01's fix left this one behind.
-        served, brand_unseen = _owned_brand_reading(vis)
+        # ONE census reading for the three things below that need it, taken
+        # here rather than inside each because crawl_evidence() re-reads
+        # index_status.json on every call and the three must not be allowed to
+        # disagree about the same cohort.
+        #
+        # It is taken for every technique on this path and not only for the one
+        # that ends up quoting it, because `declined` has to be known BEFORE
+        # _owned_brand_reading() builds its sentence — that is the whole of the
+        # fix: the sentence used to deny a measurement the census had already
+        # taken. A technique that declares no prefixes reads 0 everywhere and
+        # fires nothing, which is the documented hole both census guards leave.
+        census, declined_now = seen_and_declined(t.get("prefixes"))
+        served, brand_unseen = _owned_brand_reading(vis, declined=declined_now)
 
         # Reaching here means the technique cleared the floor above — but the
         # floor is `total >= MIN_TOTAL_VISITORS OR recent >= MIN_RECENT_MEDIAN`,
@@ -1354,11 +1511,32 @@ def evaluate(t, techs=None):
         unseen = ""
         unfetched = False
         if vis["measured"] and not vis["impressions"]:
-            unseen, unfetched, crawl = unseen_clause(t.get("prefixes"))
+            unseen, unfetched, crawl = unseen_clause(t.get("prefixes"),
+                                                     crawl=census)
             res["measured"]["census_read"] = crawl["read"]
             res["measured"]["census_fetched"] = crawl["fetched"]
         elif brand_unseen:
             unseen = brand_unseen
+            # The brand leg reaches a verdict about search visibility too, so
+            # it gets the same evidence recorded. Until 2026-11-04 the census
+            # counts were written into `measured` ONLY on the zero-impression
+            # leg, so T046 — the technique whose census reading is the most
+            # extreme on the site — carried none of them, and every reader had
+            # to go back to index_status.json to find out why its verdict said
+            # what it said.
+            res["measured"]["census_read"] = census["read"]
+            res["measured"]["census_fetched"] = census["fetched"]
+        # Appended to whichever Search Console clause fired, never instead of
+        # one: those are readings of Search Console and this is a reading of the
+        # URL Inspection census, and a technique can honestly carry one of each.
+        # Empty unless seen_and_declined() fired, and it cannot fire beside the
+        # never-fetched leg — `settled` counts a subset of `fetched`, so
+        # fetched == 0 forces settled == 0. See declined_clause.
+        declined = declined_clause(t.get("prefixes"), crawl=census) if unseen else ""
+        if declined:
+            res["measured"]["census_settled"] = census["settled"]
+            res["measured"]["census_ever_indexed"] = census["ever_indexed"]
+            unseen += declined
 
         if alive_now and not falling and not unseen:
             res["works"] = True
@@ -1374,13 +1552,25 @@ def evaluate(t, techs=None):
             # branch above ("nothing has been measured about whether these pages
             # can rank"), because it is the same claim: no content test has been
             # run on these URLs, so neither a rewrite nor a retirement is owed.
-            tail = ("unproven rather than failed: nothing has been measured about "
-                    "whether these pages can rank, so the next move is to get them "
-                    "crawled rather than to rewrite or retire them"
-                    if unfetched else
-                    "unproven rather than failed: the traffic is real and above "
-                    "the floor, but it is not evidence for a technique whose "
-                    "premise is search visibility")
+            # Three tails now, because there are three findings and the middle
+            # one used to be told the first one's story. The declined tail is
+            # the OPPOSITE instruction from the unfetched tail, which is the
+            # whole reason crawl_evidence() exists — see its docstring on the
+            # two causes that "call for opposite decisions". The two cannot
+            # both fire: fetched == 0 forces settled == 0.
+            if unfetched:
+                tail = ("unproven rather than failed: nothing has been measured about "
+                        "whether these pages can rank, so the next move is to get them "
+                        "crawled rather than to rewrite or retire them")
+            elif declined:
+                tail = ("unproven rather than failed: the traffic is real and above "
+                        "the floor, but these pages have had their content judged "
+                        "and rejected, so the next move is the pages themselves — "
+                        "consolidation or depth — and not more crawl or more URLs")
+            else:
+                tail = ("unproven rather than failed: the traffic is real and above "
+                        "the floor, but it is not evidence for a technique whose "
+                        "premise is search visibility")
             res["why"] = (f"{total} owned visitors in {days}d "
                           f"(median {recent}/day{direction}), but {unseen} — " + tail)
         elif falling:

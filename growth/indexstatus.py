@@ -1136,7 +1136,7 @@ def summarise(cohort, today=None):
     return {"total": total, "by_family": fams}
 
 
-def crawl_evidence(prefixes, cohort=None):
+def crawl_evidence(prefixes, cohort=None, today=None):
     """Has Google ever FETCHED any page under these URL prefixes?
 
     Exists to answer one question review.py cannot otherwise ask: when a
@@ -1167,10 +1167,57 @@ def crawl_evidence(prefixes, cohort=None):
     prefixes, so 0 means "no sampled URL has been fetched", never "no URL
     under this prefix has been fetched". Callers must treat a small `read` as
     silence rather than as proof — see MIN_CENSUS_READ in review.py.
+
+    THE OTHER HALF OF THE QUESTION THIS DOCSTRING OPENS WITH, added 2026-11-04.
+    Until tonight this function answered "did Google ever look?" and nothing
+    else, so of the two opposite decisions named three paragraphs up — retire
+    the pages, or go get them crawled — only the second could ever be
+    substantiated per technique. `fetched > 0` was the whole of the evidence
+    for the first, and `fetched > 0` says Googlebot requested a page, not that
+    Google decided anything about it.
+
+    It matters because the site-wide numbers say the decision has been made and
+    nothing carried that down to a technique. On 2026-11-03 the cohort reads
+    187 fetched, 1 indexed, accept_pct_settled 0.5% — and /building/, the tier
+    T046 owns, reads 159 fetched of 250 inspected, 0 indexed and 0 EVER
+    indexed, with every one of those 159 first seen by this sampler more than
+    MATURE_DAYS ago. A reading with those numbers in it cannot honestly be
+    summarised as "nothing has been measured about whether these pages can
+    rank", which is what T046's verdict said all week.
+
+      indexed          inspected URLs in the `indexed` bucket right now.
+      ever_indexed     URLs with a `first_indexed` stamp — Google accepted it
+                       at some point, whatever it says today. The
+                       DISCRIMINATOR between declined-on-sight and EVICTED, and
+                       the reason review.py's guard needs it: T019's hub tier
+                       is 24 fetched / 0 indexed / 2 ever indexed, so Google
+                       took two of its pages and later dropped them. That is a
+                       different finding from never having accepted one, with a
+                       different remedy, and a guard keyed on `indexed == 0`
+                       alone would file them together.
+      settled          fetched URLs whose FIRST reading by this sampler is at
+                       least MATURE_DAYS old. Keyed off `first_checked` and not
+                       off Google's lastCrawlTime for the reason MATURE_DAYS
+                       spells out at length: lastCrawlTime is the most recent
+                       fetch, so a page declined in July and re-fetched last
+                       night reads as "pending" when it is a re-affirmed
+                       refusal. This is the per-technique twin of
+                       `fetched_settled`/`accept_pct_settled` in summarise(),
+                       and it is the count a caller should gate on.
+      settled_indexed  of those, how many are indexed now. `settled` with
+                       `settled_indexed` 0 is the unconfounded statement that
+                       Google has had three weeks with these pages and kept
+                       none.
+
+    All four are floors in the same way `fetched` is, and all four are counted
+    over `read` — a URL nobody has inspected carries no evidence either way.
     """
     cohort = _load()["cohort"] if cohort is None else cohort
+    today = today or ledger.today()
     prefixes = tuple(prefixes or ())
-    out = {"cohort": 0, "read": 0, "fetched": 0, "buckets": {}}
+    out = {"cohort": 0, "read": 0, "fetched": 0, "indexed": 0,
+           "ever_indexed": 0, "settled": 0, "settled_indexed": 0,
+           "buckets": {}}
     if not prefixes:
         return out
     for url, rec in cohort.items():
@@ -1183,8 +1230,19 @@ def crawl_evidence(prefixes, cohort=None):
         out["read"] += 1
         b = bucket(rec.get("state"))
         out["buckets"][b] = out["buckets"].get(b, 0) + 1
+        if b == "indexed":
+            out["indexed"] += 1
+        # Our own history, which no answer of Google's can unmake — the same
+        # argument summarise() makes where it counts evictions.
+        if rec.get("first_indexed"):
+            out["ever_indexed"] += 1
         if rec.get("crawled"):
             out["fetched"] += 1
+            seen = _age_days(rec.get("first_checked"), today)
+            if seen is not None and seen >= MATURE_DAYS:
+                out["settled"] += 1
+                if b == "indexed":
+                    out["settled_indexed"] += 1
     return out
 
 
@@ -1203,8 +1261,10 @@ def record_technique_reach(today, cohort, techs=None):
     holds only the LATEST state per URL and therefore cannot answer "did this
     tier's door open last week" for any tier at all.
 
-    Four series per technique, because the funnel has stages that move at
-    different times and a single number hides which one moved:
+    Seven series per technique, because the funnel has stages that move at
+    different times and a single number hides which one moved. It was four
+    until 2026-11-04, and the three it stopped short of are the ones that say
+    whether anything Googlebot fetched was KEPT:
 
       census_cohort   URLs under its prefixes the sampler holds at all. Zero
                       is a finding rather than a gap: the cohort is built from
@@ -1224,6 +1284,28 @@ def record_technique_reach(today, cohort, techs=None):
                       have drawn a flat line straight through it.
       census_fetched  Googlebot has actually requested the page. The gate each
                       of those blocked verdicts is explicitly waiting on.
+      census_settled  of the fetched, how many this sampler FIRST read as
+                      fetched at least MATURE_DAYS ago. Added 2026-11-04 with
+                      the series below, and it is the denominator the other
+                      half of the funnel needs: `fetched` rising is good news
+                      and `settled` rising with census_indexed flat is the
+                      opposite, and until tonight no per-technique series could
+                      tell those apart. Keyed off first_checked rather than
+                      Google's lastCrawlTime for the reason MATURE_DAYS gives
+                      at length — a re-crawled rejection reads as pending.
+      census_indexed  inspected URLs Google says are indexed right now. The
+                      stage AFTER fetched, and the one the whole corpus is
+                      stuck at: site-wide this is 1 of 187 fetched on
+                      2026-11-03, and for /building/ it is 0 of 159. Four
+                      series that stopped one stage short of the finding were
+                      four series that could show a tier's door opening and not
+                      whether anything went through it.
+      census_ever_indexed
+                      URLs carrying a first_indexed stamp. Recorded beside
+                      census_indexed because their DIFFERENCE is the eviction
+                      count, and eviction and never-accepted need separate
+                      remedies — see review.seen_and_declined, whose guard
+                      turns on exactly this distinction.
 
     The three read-dependent series are held back when the census has read
     nothing under a technique's prefixes, under the same rule the __site__
@@ -1252,6 +1334,10 @@ def record_technique_reach(today, cohort, techs=None):
             ledger.record_result(today, slug, "census_known",
                                  ev["read"] - ev["buckets"].get("unknown_to_google", 0))
             ledger.record_result(today, slug, "census_fetched", ev["fetched"])
+            ledger.record_result(today, slug, "census_settled", ev["settled"])
+            ledger.record_result(today, slug, "census_indexed", ev["indexed"])
+            ledger.record_result(today, slug, "census_ever_indexed",
+                                 ev["ever_indexed"])
         n += 1
     return n
 

@@ -373,6 +373,14 @@
   .auth-backdrop { position: fixed; inset: 0 0 var(--ad-clear, 0px) 0; z-index: 1900; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
   .auth-backdrop[hidden] { display: none; }
+  /* Re-rentals chip + list (2026-11-03) */
+  .rr-chip[hidden] { display: none !important; }
+  .auth-card.rr-modal { max-width: 980px; }
+  .rr-grid { padding: 0; overflow: visible; }
+  .rr-grid .feat-flag { display: none; }
+  .rr-fine { font-size: 12px; color: var(--ink-2); margin: 14px 0 0; }
+  @media (min-width: 901px) { .rr-grid .card { flex-basis: calc(33.333% - 10px); } }
+  @media (max-width: 720px) { .rr-grid .card { flex-basis: 100%; } }
   .auth-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
     max-height: calc(var(--avail-h) - 32px); overflow-y: auto;
     box-shadow: 0 20px 50px rgba(0,0,0,0.3); position: relative; }
@@ -1737,6 +1745,7 @@
     <button type="button" data-menu="saved">♡ Saved</button>
     <button type="button" data-menu="filters">Filters</button>
     <a href="/alerts/?src=menu" class="nyc-only">🔔 Get Alerts on Lotteries</a>
+    <button type="button" id="pill-qualify" data-menu="qualify" class="nyc-only" title="Household size and income: see which lotteries and re-rentals you qualify for">✅ <span id="pill-qualify-text">What do I qualify for?</span></button>
     <a href="/marketing-agents/" class="nyc-only">🏛️ Lottery agents</a>
     <a href="/directory/" class="nyc-only">🔍 Landlords</a>
     <button type="button" data-menu="brokerfee" class="nyc-only">🧾 Broker fee check</button>
@@ -1760,14 +1769,17 @@
     <!-- Phones: Get Alerts on Lotteries is the first chip (owner, 2026-10-11).
          Desktop keeps its own alerts chip later in the row, so this is mobile-only. -->
     <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Get Alerts on Lotteries</a>
+    <!-- Re-rentals, right after Alerts (owner, 2026-11-03: "like how we have it
+         on mobile"): every re-rental in the boroughs and sizes picked, in a
+         list of its own, as the iPhone app's Re-rentals tab. Hidden until
+         featured.json lands. -->
+    <button type="button" class="filter-pill desktop-chip mobile-only nyc-only rr-chip" id="pill-rr-m" data-rr-src="chip-m" hidden title="Income-restricted apartments HPD-approved marketing agents are re-renting today, usually first come, first served">🔑 Re-rentals</button>
     <!-- Resume your last search (2026-10-03): a chip, never a popup. -->
     <div class="filter-pill" id="pill-resume" role="button" tabindex="0" hidden title="Pick up the search you had last time">↩ <span id="pill-resume-text">Resume</span></div>
-    <div class="filter-pill nyc-only" id="pill-qualify" role="button" tabindex="0" title="Household size and income: see which lotteries and re-rentals you qualify for">✅ <span id="pill-qualify-text">What do I qualify for?</span></div>
     <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
-    <!-- Lottery agents and Landlords back in the row, phones and desktop
-         (owner, 2026-10-11); the top-bar icons they replace are gone. -->
-    <a class="filter-pill desktop-chip nyc-only" id="pill-agents" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries">🏛️ Lottery agents</a>
-    <a class="filter-pill desktop-chip nyc-only" id="pill-dir" href="/directory/" title="Search every registered owner and managing agent in NYC by name, borough or neighborhood">🔎 Landlords</a>
+    <!-- What do I qualify for?, Lottery agents and Landlords live in ☰ since
+         2026-11-03 (owner: "we should only see filters, Get alerts on
+         lotteries and the rerental buttons"). -->
     <!-- Saved lives in ☰ now (owner, 2026-10-11). The chip stays as the
          filter's state: hidden until Saved is on, then shown so it can be
          tapped off. -->
@@ -1876,6 +1888,7 @@
       </div>
     </div>
     <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Get Alerts on Lotteries</a>
+    <button type="button" class="filter-pill desktop-chip desktop-only nyc-only rr-chip" id="pill-rr" data-rr-src="chip" hidden title="Income-restricted apartments HPD-approved marketing agents are re-renting today, usually first come, first served">🔑 Re-rentals</button>
     <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" hidden title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
     <!-- Get the app is a ☰ row now (owner, 2026-10-11), not a chip. This
          hidden button stays as the QR modal's opener the menu row clicks on a
@@ -1964,6 +1977,16 @@
     <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a>
       <span id="auth-forgot-wrap"> · <a id="auth-forgot" href="#">Forgot password?</a></span></div>
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
+  </div>
+</div>
+<!-- Re-rentals list (2026-11-03): the chip's panel. Same cards as the grid. -->
+<div id="rerentals-modal" class="auth-backdrop" hidden>
+  <div class="auth-card rr-modal" role="dialog" aria-modal="true" aria-labelledby="rr-title">
+    <button class="auth-close" data-rr="close" aria-label="Close">✕</button>
+    <h2 id="rr-title">Re-rentals</h2>
+    <p class="auth-sub" id="rr-sub"></p>
+    <div class="results-grid rr-grid" id="rr-grid"></div>
+    <p class="rr-fine">Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing’s own unit table.</p>
   </div>
 </div>
 <!-- Qualify-check (free, 2026-10-03) -->
@@ -5574,6 +5597,7 @@ function favActive() {
   const QUAL_WORDS = { yes: '✅ You qualify', high: 'Income above the limit', low: 'Income below the minimum', unknown: 'Check the listing’s income limits' };
   function paintQualify() {
     paintFlyerFacts();
+    paintRrChip();                 // its count drops listings outside the income range
     // Signed in on a new device: pick up what the account remembers.
     if (!QUAL && authUser && authUser.user_metadata && authUser.user_metadata.qualify) QUAL = authUser.user_metadata.qualify;
     const pill = document.getElementById('pill-qualify-text');
@@ -6874,6 +6898,56 @@ function favActive() {
     // 1br available should be shown").
     const want = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
     if (want.size) featPool = featPool.filter(f => [...featBedrooms(f)].some(b => want.has(b)));
+    paintRrChip();
+  }
+
+  // ---------- re-rentals chip + list (owner, 2026-11-03) ----------
+  // The iPhone app's Re-rentals tab, on the web: every re-rental in the
+  // boroughs and bedroom sizes picked (not just the ones the map is showing),
+  // minus any outside the income range from "What do I qualify for?".
+  function rrBoroughs() {
+    return [...document.querySelectorAll('#borough-list input:checked')].map(c => BORO_NAME[c.dataset.b]).filter(Boolean);
+  }
+  function rrList() {
+    const boros = new Set(rrBoroughs());
+    const want = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
+    return FEATURED.filter(f => f.borough && boros.has(f.borough)
+      && (!want.size || [...featBedrooms(f)].some(b => want.has(b)))
+      && !(QUAL && /^(high|low)$/.test(featVerdict(f.href))));
+  }
+  function paintRrChip() {
+    const n = FEATURED.length ? rrList().length : null;
+    document.querySelectorAll('.rr-chip').forEach(c => {
+      c.hidden = n == null;
+      // One text node, like the Alerts chip: on phones the chip is a flex box
+      // and a separate span loses the space next to it.
+      c.textContent = n == null ? '🔑 Re-rentals' : `🔑 Re-rentals (${n})`;
+    });
+  }
+  {
+    const modal = document.getElementById('rerentals-modal');
+    const rrGrid = document.getElementById('rr-grid');
+    const open = src => {
+      const list = rrList(), boros = rrBoroughs();
+      const where = boros.length >= N_REGIONS ? 'New York City' : boros.join(', ').replace(/, ([^,]*)$/, ' and $1') || 'no borough';
+      document.getElementById('rr-sub').textContent = list.length
+        ? `${list.length} available in ${where}. They usually go first come, first served, so apply soon.`
+        : `No HPD marketing agent is advertising a re-rental in ${where}${document.querySelector('input[name="beds"]:checked') ? ' in the sizes you picked' : ''} today.`;
+      // slot -1 marks this list in the re-rental funnel, apart from the
+      // grid's slots 0, 1, 2… (the iPhone app's Re-rentals tab does the same).
+      rrGrid.innerHTML = list.map(f => featuredCardHtml(f, -1)).join('');
+      modal.hidden = false;
+      paintQualify();
+      track('rerentals_open', { src, n: list.length });
+    };
+    const close = () => { modal.hidden = true; rrGrid.innerHTML = ''; };
+    document.querySelectorAll('.rr-chip').forEach(c => c.addEventListener('click', () => open(c.dataset.rrSrc)));
+    modal.addEventListener('click', e => {
+      if (e.target === modal || e.target.closest('[data-rr="close"]')) { close(); return; }
+      const a = e.target.closest('a[data-action="featured"]'), card = e.target.closest('.feat-card');
+      if (a && card) track('featured_click', Object.assign(featProps(card), { href: a.getAttribute('href') || '', src: 'rerentals_list' }));
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
   }
   function featBedrooms(f) {
     const out = new Set();

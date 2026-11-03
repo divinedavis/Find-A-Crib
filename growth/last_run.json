@@ -125,7 +125,7 @@
     "accept_pct": 0.5,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-11-02T05:11:05+00:00",
+    "at": "2026-11-03T05:11:03+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 16.7,
@@ -134,17 +134,17 @@
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 3,
+        "fetched": 8,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 168,
+        "fetched": 166,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 9,
+        "fetched": 7,
         "indexed": 0
       }
     },
@@ -159,40 +159,40 @@
       "note": "cohort unchanged at 442 URLs \u2014 tonight's levels compare directly with last night's",
       "pct": 0.0,
       "published": 1711,
-      "published_prev": 1704,
-      "published_shift": 7,
-      "published_shift_pct": 0.4
+      "published_prev": 1711,
+      "published_shift": 0,
+      "published_shift_pct": 0.0
     },
     "cohort": 442,
     "crawl_rate": {
       "comparable": true,
-      "crawls": 15,
-      "crawls_prev": 12,
-      "note": "15 of 442 inspected rows crawled in 14 days (3.39%), against 12 of 442 (2.71%) \u2014 the reading covers the same share of the sample (+0.0%), so the two counts compare directly",
-      "rate_pct": 3.39,
-      "rate_pct_prev": 2.71,
+      "crawls": 13,
+      "crawls_prev": 15,
+      "note": "13 of 442 inspected rows crawled in 14 days (2.94%), against 15 of 442 (3.39%) \u2014 the reading covers the same share of the sample (+0.0%), so the two counts compare directly",
+      "rate_pct": 2.94,
+      "rate_pct_prev": 3.39,
       "read": 442,
       "read_prev": 442,
       "read_shift_pct": 0.0,
       "window_days": 14
     },
-    "crawl_rate_14d": 3.39,
-    "crawl_rate_28d": 4.07,
-    "crawl_read_lag_days": 3.4,
-    "crawls_14d": 15,
-    "crawls_28d": 18,
+    "crawl_rate_14d": 2.94,
+    "crawl_rate_28d": 4.75,
+    "crawl_read_lag_days": 1.7,
+    "crawls_14d": 13,
+    "crawls_28d": 21,
     "crawls_by_week": {
       "2026-09-14": 1,
       "2026-09-21": 1,
       "2026-09-28": 2,
       "2026-10-05": 1,
-      "2026-10-12": 2,
-      "2026-10-19": 10,
-      "2026-10-26": 6,
+      "2026-10-12": 3,
+      "2026-10-19": 11,
+      "2026-10-26": 7,
       "2026-11-02": 0
     },
     "crawls_week_partial": "2026-11-02",
-    "date": "2026-11-02",
+    "date": "2026-11-03",
     "dropped": 0,
     "errors": 0,
     "ever_indexed": 3,
@@ -201,12 +201,12 @@
       "https://findacrib.com/neighborhood/queens/long-island-city-hunters-point/",
       "https://findacrib.com/zip/11356/"
     ],
-    "fetched_mature": 168,
-    "fetched_pct": 42.1,
+    "fetched_mature": 166,
+    "fetched_pct": 42.3,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-10-30",
+    "last_crawl": "2026-11-01",
     "lost_indexed": 0,
     "never_fetched": {
       "brief": 10,
@@ -226,175 +226,203 @@
     "read_pct": 100.0,
     "rechecked": 100,
     "states": {
-      "crawled_not_indexed": 185,
-      "discovered_not_indexed": 4,
+      "crawled_not_indexed": 186,
+      "discovered_not_indexed": 23,
       "indexed": 1,
-      "unknown_to_google": 252
+      "unknown_to_google": 232
     }
   },
   "measure": {
-    "at": "2026-11-02T05:11:06+00:00",
-    "coverage_pct": 80.0,
-    "date": "2026-11-02",
+    "at": "2026-11-03T05:11:05+00:00",
+    "coverage_pct": 80.3,
+    "date": "2026-11-03",
     "days": 1,
-    "keywords_covered": 532,
-    "keywords_total": 665,
-    "latest_measured_day": "2026-11-01",
+    "keywords_covered": 554,
+    "keywords_total": 690,
+    "latest_measured_day": "2026-11-02",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 34.3,
-          "n": 105,
-          "night_pct": 7.6,
-          "peak_hour_utc": 3
+          "busiest_6h_pct": 48.6,
+          "n": 144,
+          "night_pct": 2.8,
+          "peak_hour_utc": 22
         },
         "direct": {
-          "busiest_6h_pct": 36.0,
-          "n": 86,
-          "night_pct": 7.0,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 54.2,
+          "n": 118,
+          "night_pct": 2.5,
+          "peak_hour_utc": 22
+        },
+        "organic": {
+          "busiest_6h_pct": 50.0,
+          "n": 22,
+          "night_pct": 4.5,
+          "peak_hour_utc": 17
         }
       },
       "by_channel": {
-        "ai": 1,
-        "campaign": 1,
-        "direct": 86,
-        "organic": 17
+        "ai": 4,
+        "direct": 118,
+        "organic": 22
       },
       "by_hour_utc": {
         "all": [
           6,
-          8,
-          3,
-          9,
-          2,
-          5,
-          3,
-          3,
-          4,
-          0,
-          1,
-          3,
-          1,
-          5,
-          3,
           6,
           5,
+          9,
           7,
-          8,
-          4,
+          6,
+          1,
           2,
-          8,
+          0,
+          0,
+          3,
+          1,
+          4,
+          5,
+          2,
+          6,
           7,
-          2
+          7,
+          6,
+          4,
+          4,
+          12,
+          24,
+          17
         ],
         "direct": [
-          4,
-          8,
-          3,
-          8,
-          2,
-          3,
-          2,
-          3,
-          3,
-          0,
-          0,
-          3,
-          1,
-          3,
-          3,
           5,
           5,
-          4,
-          7,
-          3,
-          1,
-          7,
+          5,
           6,
-          2
+          5,
+          5,
+          1,
+          1,
+          0,
+          0,
+          2,
+          1,
+          4,
+          5,
+          2,
+          4,
+          6,
+          3,
+          6,
+          0,
+          3,
+          10,
+          23,
+          16
         ],
         "organic": [
-          2,
-          0,
-          0,
-          1,
-          0,
           1,
           1,
-          0,
-          1,
-          0,
-          1,
-          0,
           0,
           2,
+          2,
+          1,
           0,
           1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2,
+          1,
+          4,
           0,
           3,
           1,
+          1,
           0,
-          1,
-          1,
-          1,
-          0
+          1
         ]
       },
       "by_src": {
-        "chatgpt.com": 1,
-        "digest": 1
+        "chatgpt.com": 4
       },
-      "direct_deep": 3,
-      "new": 70,
+      "direct_deep": 34,
+      "new": 122,
       "new_window_days": 30,
-      "returning": 35,
+      "returning": 22,
       "top_paths": [
         [
           "/",
-          102
+          104
         ],
         [
-          "/landlord/deodat-lowtan/",
+          "/landlord/jonathan-ismaili/",
           2
         ],
         [
-          "/section8/",
+          "/sf/",
+          2
+        ],
+        [
+          "/brief/2026-07-30/",
+          1
+        ],
+        [
+          "/building/bronx/1245-edward-l-grant-hwy-2025060054/",
+          1
+        ],
+        [
+          "/building/bronx/2349-jerome-ave-2031980089/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          17
+          19
+        ],
+        [
+          "duckduckgo.com",
+          1
+        ],
+        [
+          "search.yahoo.com",
+          1
+        ],
+        [
+          "www.bing.com",
+          1
         ]
       ],
-      "visitors": 105
+      "visitors": 144
     }
   },
   "outreach": {
-    "at": "2026-11-02T05:21:05+00:00",
-    "date": "2026-11-02",
+    "at": "2026-11-03T05:19:11+00:00",
+    "date": "2026-11-03",
     "drafted": 0,
     "ok": true,
-    "segment": "press"
+    "segment": "tenant-orgs"
   },
   "scout": {
-    "at": "2026-11-02T05:18:44+00:00",
-    "date": "2026-11-02",
+    "at": "2026-11-03T05:17:08+00:00",
+    "date": "2026-11-03",
     "keywords_added": 25,
     "ok": true,
     "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-11-02T05:00:05+00:00",
-    "clicks": 102,
-    "date": "2026-11-02",
-    "impressions": 137,
+    "at": "2026-11-03T05:00:06+00:00",
+    "clicks": 90,
+    "date": "2026-11-03",
+    "impressions": 120,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 114,
-    "page_impressions": 190,
+    "page_clicks": 101,
+    "page_impressions": 171,
     "serving_branded_only": 1,
     "serving_census_contradicted": 0,
     "serving_census_indexed": 1,
@@ -405,19 +433,19 @@
     "serving_unattributed": 9,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-10-24..2026-10-31"
+    "window": "2026-10-25..2026-11-01"
   },
   "sitemapstatus": {
-    "at": "2026-11-02T05:11:05+00:00",
+    "at": "2026-11-03T05:11:03+00:00",
     "children_enumerated": true,
-    "date": "2026-11-02",
-    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 2,540 URLs out of them against 1,711 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-daily.xml (34d), sitemap-main.xml (30d), sitemap-guide.xml (30d), sitemap-Bk.xml (28d) \u2014 the index itself was last downloaded 2026-11-01 \u2014 every live shard has been downloaded at least once",
+    "date": "2026-11-03",
+    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 2,541 URLs out of them against 1,711 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-main.xml (31d), sitemap-guide.xml (31d), sitemap-Bk.xml (29d) \u2014 the index itself was last downloaded 2026-11-01 \u2014 every live shard has been downloaded at least once",
     "index_downloaded": "2026-11-01",
     "ok": true,
-    "oldest_download_days": 34,
+    "oldest_download_days": 31,
     "shards": {
       "sitemap-Bk.xml": {
-        "age_days": 28,
+        "age_days": 29,
         "downloaded": "2026-10-05",
         "errors": 0,
         "known": true,
@@ -429,7 +457,7 @@
         "warnings": 0
       },
       "sitemap-Bx.xml": {
-        "age_days": 1,
+        "age_days": 2,
         "downloaded": "2026-11-01",
         "errors": 0,
         "known": true,
@@ -441,19 +469,19 @@
         "warnings": 0
       },
       "sitemap-M.xml": {
-        "age_days": 8,
-        "downloaded": "2026-10-25",
+        "age_days": 1,
+        "downloaded": "2026-11-02",
         "errors": 0,
         "known": true,
         "pending": false,
         "source": "index",
         "submitted_at": null,
         "urls_local": 405,
-        "urls_read": 403,
+        "urls_read": 405,
         "warnings": 0
       },
       "sitemap-Q.xml": {
-        "age_days": 5,
+        "age_days": 6,
         "downloaded": "2026-10-28",
         "errors": 0,
         "known": true,
@@ -465,7 +493,7 @@
         "warnings": 0
       },
       "sitemap-SI.xml": {
-        "age_days": 3,
+        "age_days": 4,
         "downloaded": "2026-10-30",
         "errors": 0,
         "known": true,
@@ -477,7 +505,7 @@
         "warnings": 0
       },
       "sitemap-council.xml": {
-        "age_days": 12,
+        "age_days": 13,
         "downloaded": "2026-10-21",
         "errors": 0,
         "known": true,
@@ -489,19 +517,19 @@
         "warnings": 0
       },
       "sitemap-daily.xml": {
-        "age_days": 34,
-        "downloaded": "2026-09-29",
+        "age_days": 1,
+        "downloaded": "2026-11-02",
         "errors": 0,
         "known": true,
         "pending": false,
         "source": "index",
         "submitted_at": null,
         "urls_local": 24,
-        "urls_read": 25,
+        "urls_read": 24,
         "warnings": 0
       },
       "sitemap-dc.xml": {
-        "age_days": 12,
+        "age_days": 13,
         "downloaded": "2026-10-21",
         "errors": 0,
         "known": true,
@@ -513,7 +541,7 @@
         "warnings": 0
       },
       "sitemap-guide.xml": {
-        "age_days": 30,
+        "age_days": 31,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -525,7 +553,7 @@
         "warnings": 0
       },
       "sitemap-hub.xml": {
-        "age_days": 1,
+        "age_days": 2,
         "downloaded": "2026-11-01",
         "errors": 0,
         "known": true,
@@ -537,7 +565,7 @@
         "warnings": 0
       },
       "sitemap-la.xml": {
-        "age_days": 12,
+        "age_days": 13,
         "downloaded": "2026-10-21",
         "errors": 0,
         "known": true,
@@ -549,7 +577,7 @@
         "warnings": 0
       },
       "sitemap-landlord.xml": {
-        "age_days": 10,
+        "age_days": 11,
         "downloaded": "2026-10-23",
         "errors": 0,
         "known": true,
@@ -561,7 +589,7 @@
         "warnings": 0
       },
       "sitemap-main.xml": {
-        "age_days": 30,
+        "age_days": 31,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -573,7 +601,7 @@
         "warnings": 0
       },
       "sitemap-sf.xml": {
-        "age_days": 7,
+        "age_days": 8,
         "downloaded": "2026-10-26",
         "errors": 0,
         "known": true,
@@ -591,7 +619,6 @@
     "shards_never_downloaded": [],
     "shards_orphaned": [],
     "shards_stale": [
-      "sitemap-daily.xml",
       "sitemap-main.xml",
       "sitemap-guide.xml",
       "sitemap-Bk.xml"
@@ -615,6 +642,6 @@
       "sitemap-sf.xml"
     ],
     "urls_local": 1711,
-    "urls_read": 2540
+    "urls_read": 2541
   }
 }

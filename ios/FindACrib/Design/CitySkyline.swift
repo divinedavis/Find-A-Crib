@@ -939,6 +939,8 @@ struct SkylineScrollView<Content: View>: View {
     let scene: Skyline.Scene
     /// Scrolling down hides the header and tab bar (ResultsView).
     var hidesChrome = false
+    /// The header laid over the list (ResultsView): the list starts below it.
+    var chromeHeight: CGFloat = 0
     @ViewBuilder let content: Content
     @State private var revealed = false
     @State private var bandOnScreen = true
@@ -955,7 +957,9 @@ struct SkylineScrollView<Content: View>: View {
             })
         }
         .coordinateSpace(.named("skyline"))
-        .background(alignment: .top) { NightSky(revealed: revealed, scene: scene) }
+        .contentMargins(.top, chromeHeight, for: .scrollContent)
+        .contentMargins(.top, chromeHeight, for: .scrollIndicators)
+        .background(alignment: .top) { NightSky(revealed: revealed, scene: scene).padding(.top, chromeHeight) }
         .background(SE.canvas)
         .scrollBounceBehavior(.always)
 
@@ -970,7 +974,7 @@ struct SkylineScrollView<Content: View>: View {
             } action: { _, on in
                 if on != bandOnScreen { bandOnScreen = on }
             }
-            .hidesChromeOnScroll(hidesChrome)
+            .hidesChromeOnScroll(hidesChrome, height: chromeHeight)
         } else {
             scroll.onPreferenceChange(PullKey.self) { top in
                 if restingTop == nil { restingTop = top }

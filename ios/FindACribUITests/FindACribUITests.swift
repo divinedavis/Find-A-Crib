@@ -51,9 +51,9 @@ final class FindACribUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()   // the system chevron is the back control
         XCTAssertTrue(count.waitForExistence(timeout: 10))
 
-        // The results screen has no back button of its own since 2c25b69; the
-        // system chevron pops it, as it does the detail.
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        // Results draws its own chevron since 2026-11-04 (its header follows
+        // the finger, which the system bar can't); it pops like the system one.
+        app.buttons["results-back"].tap()
         XCTAssertTrue(search.waitForExistence(timeout: 10))
     }
 

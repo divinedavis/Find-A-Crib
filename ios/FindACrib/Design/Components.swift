@@ -401,48 +401,66 @@ struct SECheckList: View {
     }
 }
 
-// MARK: - Hide-on-scroll chrome (owner, 2026-11-03)
+// MARK: - Hide-on-scroll chrome (owner, 2026-11-03; smooth 2026-11-04)
 
-/// YouTube-style: scroll down a list and its header and the tab bar slide
-/// away; scroll back up, or come near the top, and they return. Direction
-/// has to hold for `threshold` points first, so a finger resting on the list
-/// doesn't flicker them.
+/// YouTube-style: the header and the tab bar move with the finger, point for
+/// point. Scroll down 20 pt and they slide 20 pt away; scroll up and they
+/// come back the same way. Let go part-way and they finish the move (owner,
+/// 2026-11-04: "right now our headers jump off/on the screen. we need to be
+/// smooth like the youtube app"). The first version waited for 24 pt of
+/// travel and then animated them off or on in one go.
+///
+/// `progress`: 0 = showing, 1 = gone. Kept on AppNav so every tab switch or
+/// push/pop can reset it; this type only does the arithmetic.
 struct ScrollChrome {
-    static let threshold: CGFloat = 24
-    /// Within this much of the top the chrome always shows.
-    static let topZone: CGFloat = 60
     private var last: CGFloat?
-    private var travel: CGFloat = 0
+    /// The way the finger last moved the list: +1 down the list, -1 back up.
+    private(set) var direction: CGFloat = 0
 
-    /// `userScrolling`: a finger is on the list, or it is coasting after a
-    /// flick. Anything else (the list laying itself out, more results
-    /// arriving, the bars' own animation changing the insets) only moves the
-    /// reference point, so the bars never hide on their own (2026-11-03: the
-    /// results list jumped ~300 pt as it first laid out under the UI tests).
-    mutating func next(offset y: CGFloat, hidden: Bool, userScrolling: Bool = true) -> Bool {
+    /// `y`: the list's offset from its top. `height`: how far the header
+    /// travels. `userScrolling`: a finger is on the list, or it is coasting
+    /// after a flick. Anything else (the list laying itself out, more results
+    /// arriving) only moves the reference point, so the chrome never moves on
+    /// its own (2026-11-03: the results list jumped ~300 pt as it first laid
+    /// out under the UI tests).
+    mutating func next(progress: CGFloat, offset y: CGFloat, height: CGFloat, userScrolling: Bool = true) -> CGFloat {
         let previous = last
         last = y
-        if y < Self.topZone { travel = 0; return false }
-        guard userScrolling else { travel = 0; return hidden }
-        guard let previous else { return hidden }
-        let dy = y - previous
-        if dy == 0 { return hidden }
-        if travel != 0 && (dy > 0) != (travel > 0) { travel = 0 }   // turned round
-        travel += dy
-        if travel > Self.threshold { return true }
-        if travel < -Self.threshold { return false }
-        return hidden
+        guard height > 0 else { return 0 }
+        var collapse = progress * height
+        if userScrolling, let previous {
+            collapse += y - previous
+            if y != previous { direction = y > previous ? 1 : -1 }
+        }
+        // At the top the header goes no further than the list has: it rides
+        // up with the first row, as YouTube's does.
+        collapse = min(max(collapse, 0), height, max(y, 0))
+        return collapse / height
+    }
+
+    /// The finger is off and the list has stopped: a half-moved header
+    /// finishes its move the way the finger was going — back in after a
+    /// scroll up, out after a scroll down — and always back in near the top.
+    /// No direction yet: whichever end is nearer.
+    static func settle(progress: CGFloat, offset y: CGFloat, height: CGFloat, direction: CGFloat = 0) -> CGFloat {
+        guard progress > 0, progress < 1 else { return progress }
+        if y <= height || direction < 0 { return 0 }
+        if direction > 0 { return 1 }
+        return progress > 0.5 ? 1 : 0
     }
 }
 
 private struct HideChromeOnScroll: ViewModifier {
     let enabled: Bool
+    /// How far the screen's header travels (its measured height).
+    let height: CGFloat
     @Environment(AppNav.self) private var nav
     @State private var tracker = ScrollChrome()
     @State private var userScrolling = false
+    @State private var offset: CGFloat = 0
 
     func body(content: Content) -> some View {
-        // iOS 17 has no scroll-geometry callback: the bars just stay put there.
+        // iOS 17 has no scroll-geometry callback: the chrome just stays put there.
         if #available(iOS 18, *), enabled {
             content
                 .onScrollGeometryChange(for: CGFloat.self) { g in
@@ -452,15 +470,21 @@ private struct HideChromeOnScroll: ViewModifier {
                     let end = g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom - g.containerSize.height
                     return min(y, max(end, 0))
                 } action: { _, y in
-                    let hide = tracker.next(offset: y, hidden: nav.chromeHidden, userScrolling: userScrolling)
-                    if hide != nav.chromeHidden {
-                        withAnimation(.easeInOut(duration: 0.22)) { nav.chromeHidden = hide }
-                    }
+                    offset = y
+                    let p = tracker.next(progress: nav.chromeProgress, offset: y, height: height, userScrolling: userScrolling)
+                    if p != nav.chromeProgress { nav.chromeProgress = p }
                 }
                 .onScrollPhaseChange { _, phase in
                     userScrolling = phase == .interacting || phase == .decelerating
+                    if phase == .idle {
+                        let p = ScrollChrome.settle(progress: nav.chromeProgress, offset: offset, height: height,
+                                                    direction: tracker.direction)
+                        if p != nav.chromeProgress {
+                            withAnimation(.easeOut(duration: 0.18)) { nav.chromeProgress = p }
+                        }
+                    }
                 }
-                .onDisappear { nav.chromeHidden = false }
+                .onDisappear { nav.chromeProgress = 0 }
         } else {
             content
         }
@@ -468,8 +492,56 @@ private struct HideChromeOnScroll: ViewModifier {
 }
 
 extension View {
-    /// Apply to the ScrollView itself.
-    func hidesChromeOnScroll(_ enabled: Bool = true) -> some View {
-        modifier(HideChromeOnScroll(enabled: enabled))
+    /// Apply to the ScrollView itself. `height`: the header's height.
+    func hidesChromeOnScroll(_ enabled: Bool = true, height: CGFloat) -> some View {
+        modifier(HideChromeOnScroll(enabled: enabled, height: height))
+    }
+}
+
+/// A screen's header that slides up under the status bar as the list
+/// scrolls (`hidesChromeOnScroll`). Lay it over the list (ZStack, top) and
+/// give the list a top content margin of `height`, so it moves without the
+/// list moving. Reads the progress itself, so the screen around it doesn't
+/// re-render every frame of a scroll.
+struct CollapsingHeader<Content: View>: View {
+    @Binding var height: CGFloat
+    @ViewBuilder var content: Content
+    @Environment(AppNav.self) private var nav
+
+    var body: some View {
+        let p = nav.chromeProgress
+        // A ZStack, not a Group: a Group hands the overlay below to each
+        // branch, and the strip flickered as one swapped for the other.
+        ZStack(alignment: .top) {
+            // All the way gone is out of the view tree, so VoiceOver and the
+            // UI tests don't find it either (opacity and accessibilityHidden
+            // still left it there for XCUITest).
+            if p < 1 {
+                content
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+                    .offset(y: -p * height)
+                    .transition(.identity)
+            } else {
+                Color.clear.frame(height: height).transition(.identity)
+            }
+        }
+        .allowsHitTesting(p < 0.5)
+            // The navy behind the clock stays put and the header slides
+            // under it, as does the list. A background on a zero-height row
+            // at the top reaches up into the status bar (NavyHeader's trick).
+            .overlay(alignment: .top) {
+                Color.clear.frame(height: 0).background(SE.navy.ignoresSafeArea(edges: .top))
+            }
+    }
+}
+
+/// Bottom padding that follows the tab bar: `shown` with the bar up,
+/// `hidden` with it scrolled away (the Map / Alerts pills on Results).
+struct ChromeBottomPadding: ViewModifier {
+    let shown: CGFloat
+    let hidden: CGFloat
+    @Environment(AppNav.self) private var nav
+    func body(content: Content) -> some View {
+        content.padding(.bottom, shown + (hidden - shown) * nav.chromeProgress)
     }
 }

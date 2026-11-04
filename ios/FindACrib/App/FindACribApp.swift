@@ -162,10 +162,11 @@ enum Route: Hashable {
 final class AppNav {
     var tab: Tab = .search
     var hideTabBar = false
-    /// Scrolled down a list: its header and the tab bar slide away until the
-    /// list scrolls back up (YouTube-style, owner 2026-11-03). Set only by
-    /// `hidesChromeOnScroll`; every tab switch and push/pop clears it.
-    var chromeHidden = false
+    /// How far a list's header and the tab bar have slid away: 0 showing,
+    /// 1 gone. They follow the finger (YouTube-style, owner 2026-11-03/04).
+    /// Set only by `hidesChromeOnScroll`; every tab switch and push/pop
+    /// resets it.
+    var chromeProgress: CGFloat = 0
     var searchPath: [Route] = []
     var activityPath: [Route] = []
     var profilePath: [Route] = []

@@ -87,7 +87,7 @@ final class IPadTourTests: XCTestCase {
         sleep(2); shot("\(tag)-3-detail")
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(count.waitForExistence(timeout: 10), "\(tag): back returns to the results")
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["results-back"].tap()
         XCTAssertTrue(search.waitForExistence(timeout: 10), "\(tag): back again returns to the search")
     }
 

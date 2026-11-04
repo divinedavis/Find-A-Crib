@@ -2237,31 +2237,58 @@ final class CasaWatchMemoryTests: XCTestCase {
 /// Hide-on-scroll (owner, 2026-11-03): the header and tab bar follow the
 /// direction of the user's own scrolling, never a layout jump.
 final class ScrollChromeTests: XCTestCase {
-    func testHidesAfterScrollingDownAndShowsAfterScrollingUp() {
+    /// The header follows the finger point for point (owner, 2026-11-04),
+    /// not a threshold and a snap.
+    func testFollowsTheFingerPointForPoint() {
         var t = ScrollChrome()
-        var hidden = t.next(offset: 0, hidden: false)
-        XCTAssertFalse(hidden)
-        for y in stride(from: 10, through: 200, by: 10) { hidden = t.next(offset: CGFloat(y), hidden: hidden) }
-        XCTAssertTrue(hidden, "a scroll down past the top hides them")
-        hidden = t.next(offset: 190, hidden: hidden)
-        XCTAssertTrue(hidden, "a 10 pt wobble back doesn't bring them back")
-        for y in stride(from: 180, through: 150, by: -10) { hidden = t.next(offset: CGFloat(y), hidden: hidden) }
-        XCTAssertFalse(hidden, "scrolling back up past the threshold shows them")
+        var p = t.next(progress: 0, offset: 200, height: 100)
+        XCTAssertEqual(p, 0)
+        p = t.next(progress: p, offset: 220, height: 100)
+        XCTAssertEqual(p, 0.2, accuracy: 0.001, "20 pt down moves the header 20 of its 100 pt")
+        p = t.next(progress: p, offset: 300, height: 100)
+        XCTAssertEqual(p, 1, "and no further than all the way")
+        p = t.next(progress: p, offset: 270, height: 100)
+        XCTAssertEqual(p, 0.7, accuracy: 0.001, "30 pt back up brings 30 pt of it back")
     }
 
-    func testAlwaysShownNearTheTop() {
+    func testRidesWithTheFirstRowAtTheTop() {
         var t = ScrollChrome()
-        XCTAssertFalse(t.next(offset: 40, hidden: true), "within the top zone they always show")
+        var p = t.next(progress: 0, offset: 0, height: 100)
+        p = t.next(progress: p, offset: 40, height: 100)
+        XCTAssertEqual(p, 0.4, accuracy: 0.001)
+        p = t.next(progress: 1, offset: 30, height: 100)
+        XCTAssertEqual(p, 0.3, accuracy: 0.001, "near the top it can't be more hidden than the list is scrolled")
+        XCTAssertEqual(t.next(progress: p, offset: -20, height: 100), 0, "pulled past the top it is all there")
     }
 
-    func testLayoutJumpsNeverHide() {
+    func testLayoutJumpsNeverMoveIt() {
         var t = ScrollChrome()
-        var hidden = t.next(offset: 0, hidden: false, userScrolling: false)
-        hidden = t.next(offset: 300, hidden: hidden, userScrolling: false)
-        XCTAssertFalse(hidden, "the list jumping 300 pt as it lays out is not the user scrolling")
-        hidden = t.next(offset: 310, hidden: hidden, userScrolling: true)
-        XCTAssertFalse(hidden, "and the jump doesn't count toward the next real scroll")
-        hidden = t.next(offset: 340, hidden: hidden, userScrolling: true)
-        XCTAssertTrue(hidden)
+        var p = t.next(progress: 0, offset: 0, height: 100, userScrolling: false)
+        p = t.next(progress: p, offset: 300, height: 100, userScrolling: false)
+        XCTAssertEqual(p, 0, "the list jumping 300 pt as it lays out is not the user scrolling")
+        p = t.next(progress: p, offset: 310, height: 100, userScrolling: true)
+        XCTAssertEqual(p, 0.1, accuracy: 0.001, "and the jump doesn't count toward the next real scroll")
+    }
+
+    func testLettingGoPartWayFinishesTheMoveTheFingerWasMaking() {
+        XCTAssertEqual(ScrollChrome.settle(progress: 0.9, offset: 500, height: 100, direction: -1), 0,
+                       "a short scroll back up brings it all the way back")
+        XCTAssertEqual(ScrollChrome.settle(progress: 0.2, offset: 500, height: 100, direction: 1), 1,
+                       "a short scroll down takes it all the way away")
+        XCTAssertEqual(ScrollChrome.settle(progress: 0.7, offset: 500, height: 100), 1, "no direction: nearer end")
+        XCTAssertEqual(ScrollChrome.settle(progress: 0.3, offset: 500, height: 100), 0)
+        XCTAssertEqual(ScrollChrome.settle(progress: 0.7, offset: 70, height: 100, direction: 1), 0, "at the top it comes back")
+        XCTAssertEqual(ScrollChrome.settle(progress: 1, offset: 500, height: 100, direction: -1), 1, "a settled header stays")
+    }
+
+    func testRemembersWhichWayTheFingerWent() {
+        var t = ScrollChrome()
+        _ = t.next(progress: 0, offset: 200, height: 100)
+        _ = t.next(progress: 0, offset: 260, height: 100)
+        XCTAssertEqual(t.direction, 1)
+        _ = t.next(progress: 0.6, offset: 250, height: 100)
+        XCTAssertEqual(t.direction, -1)
+        _ = t.next(progress: 0.5, offset: 400, height: 100, userScrolling: false)
+        XCTAssertEqual(t.direction, -1, "a layout jump isn't the finger")
     }
 }

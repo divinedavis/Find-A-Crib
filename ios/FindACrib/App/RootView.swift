@@ -48,21 +48,19 @@ struct RootView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
 
-            if !nav.hideTabBar && !nav.chromeHidden {
-                PillTabBar(selected: $nav.tab)
-                    .padding(.bottom, 6)
+            if !nav.hideTabBar {
+                ChromeTabBar(selected: $nav.tab)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
-        .animation(.easeInOut(duration: 0.22), value: nav.chromeHidden)
         // A screen pushed or popped starts with its header and the bar showing.
-        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeHidden = false }
+        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeProgress = 0 }
         // Search no longer leaves the screen when another tab opens, so its
         // building page's onDisappear doesn't run: set the bar per tab here.
         // Back on Search, a building page on top still hides it.
         .onChange(of: nav.tab) { _, t in
-            nav.chromeHidden = false
+            nav.chromeProgress = 0
             if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
         }
         // A tapped alert notification opens here, on all of its items.
@@ -174,6 +172,28 @@ struct PillTabBar: View {
             LinearGradient(colors: holiday.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
         } else {
             Color.white.opacity(0.7)
+        }
+    }
+}
+
+/// The tab bar, sliding down with a list's header as the list scrolls
+/// (`hidesChromeOnScroll`). Its own view, so only it re-renders while the
+/// finger moves.
+private struct ChromeTabBar: View {
+    @Binding var selected: Tab
+    @Environment(AppNav.self) private var nav
+    @State private var height: CGFloat = 90
+
+    var body: some View {
+        let p = nav.chromeProgress
+        // All the way down it leaves the view tree (CollapsingHeader).
+        if p < 1 {
+            PillTabBar(selected: $selected)
+                .padding(.bottom, 6)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.bottom } action: { height = $0 }
+                .offset(y: p * height)
+                .allowsHitTesting(p < 0.5)
+                .transition(.identity)
         }
     }
 }

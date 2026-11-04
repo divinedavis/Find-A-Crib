@@ -41,7 +41,8 @@ final class FreezeTest: XCTestCase {
                 XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 120), "run \(run)")
             }
             sleep(6)
-            let back = app.navigationBars.buttons.element(boundBy: 0)
+            // Results draws its own chevron (2026-11-04); the detail keeps the system one.
+            let back = anchorIsResults ? app.buttons["results-back"] : app.navigationBars.buttons.element(boundBy: 0)
             _ = back.exists
             NSLog("FREEZE-TAP run \(run)")
             back.tap()

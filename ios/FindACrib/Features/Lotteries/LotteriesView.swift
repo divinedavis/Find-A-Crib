@@ -12,7 +12,6 @@ struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
-    @Environment(AppNav.self) private var nav
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad (owner, 2026-09-22): two columns of lottery and re-rental cards.
     private var columns: [GridItem] {
@@ -34,6 +33,9 @@ struct LotteriesView: View {
     @State private var showRealtimePlus = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
+    /// The title + pane tabs' measured height: the list's top margin and
+    /// how far they slide away (CollapsingHeader).
+    @State private var headerHeight: CGFloat = 120
     /// Bedrooms they need, kept across launches: "0,1" = studio or 1-bed.
     /// Empty = any size.
     @AppStorage("lotteries.beds") private var bedsRaw = ""
@@ -167,35 +169,10 @@ struct LotteriesView: View {
     }
 
     private var list: some View {
-        VStack(spacing: 0) {
-            // Scrolled down, the title and the pane tabs slide away with the
-            // tab bar (owner, 2026-11-03); the navy stays behind the status bar.
-            NavyHeader {
-                if !nav.chromeHidden {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                        Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
-                    // A fade, not a slide: sliding up it would cross the clock.
-                    .transition(.opacity)
-                } else {
-                    // Keeps the header a real (1 pt) view, so its navy still
-                    // fills the status bar while the title is away.
-                    Color.clear.frame(height: 1)
-                }
-            }
-            if !nav.chromeHidden {
-            VStack(alignment: .leading, spacing: 10) {
-                // Three panes: "Lotteries (n)" no longer fits beside the other
-                // two on a 375 pt phone, and the header already says Lotteries.
-                SEUnderlineTabs(options: [(Pane.lotteries, String(localized: "NYC (\(lotteries.count))")), (.rerentals, String(localized: "Re-rentals (\(rerentals.count))")),
-                                          (.newJersey, String(localized: "NJ (\(feed.njOpen.count))"))], selection: $pane)
-                    .padding(.bottom, 10)
-            }
-            .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
-            .transition(.move(edge: .top).combined(with: .opacity))
-            }
+        // The title and the pane tabs ride over the list and slide up under
+        // the status bar with the finger as it scrolls down (owner,
+        // 2026-11-03/04); the list starts below them.
+        ZStack(alignment: .top) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     if pane != .newJersey { alertsBanner }
@@ -230,9 +207,30 @@ struct LotteriesView: View {
                 }
                 .padding(.top, 16)
             }
+            .contentMargins(.top, headerHeight, for: .scrollContent)
+            .contentMargins(.top, headerHeight, for: .scrollIndicators)
             .refreshable { await feed.refresh() }
-            .hidesChromeOnScroll()
+            .hidesChromeOnScroll(height: headerHeight)
             .background(SE.canvas)
+            CollapsingHeader(height: $headerHeight) {
+                VStack(spacing: 0) {
+                    NavyHeader {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                            Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+                    }
+                    VStack(alignment: .leading, spacing: 10) {
+                        // Three panes: "Lotteries (n)" no longer fits beside the other
+                        // two on a 375 pt phone, and the header already says Lotteries.
+                        SEUnderlineTabs(options: [(Pane.lotteries, String(localized: "NYC (\(lotteries.count))")), (.rerentals, String(localized: "Re-rentals (\(rerentals.count))")),
+                                                  (.newJersey, String(localized: "NJ (\(feed.njOpen.count))"))], selection: $pane)
+                            .padding(.bottom, 10)
+                    }
+                    .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+                }
+            }
         }
         .background(SE.canvas)
         .task { Analytics.shared.track("lotteries_view", ["open": feed.mine.count]) }

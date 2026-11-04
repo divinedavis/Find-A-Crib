@@ -161,14 +161,15 @@ struct ResultsView: View {
     @State private var showAlerts = false
     @State private var showSignIn = false
     @State private var toast: String?
+    /// The filter bar's measured height (CollapsingHeader).
+    @State private var headerHeight: CGFloat = 70
 
     var body: some View {
         let _ = Perf.mark("ResultsView.body shown=\(shown) results=\(results.count)")
-        VStack(spacing: 0) {
-            NavyBarBackdrop()
+        ZStack(alignment: .top) {
             // The city's skyline rides at the top of the list; pull past the
             // top and the night sky shows above it (CitySkyline.swift).
-            SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id), hidesChrome: true) {
+            SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id), hidesChrome: true, chromeHeight: headerHeight) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
                         if searched {
@@ -233,6 +234,28 @@ struct ResultsView: View {
                     Color.clear.frame(height: 150)
                 }
             }
+            // The filter bar: once the system navigation bar's middle item,
+            // now drawn here so it can follow the finger as the list scrolls
+            // (owner, 2026-11-04). The chevron does what the system one did.
+            CollapsingHeader(height: $headerHeight) {
+                NavyHeader {
+                    HStack(spacing: 10) {
+                        Button { dismiss() } label: {
+                            Image(systemName: "chevron.left").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
+                                .frame(width: 44, height: 44).background(Color.white.opacity(0.14), in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("Back"))
+                        .accessibilityIdentifier("results-back")
+                        ResultsHeader(query: query,
+                            onLocation: { Analytics.shared.track("location_open", ["src": "results"]); showLocation = true },
+                            onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true },
+                            edit: $query)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.leading, 16).padding(.top, 4).padding(.bottom, 12)
+                }
+            }
         }
         .background(SE.canvas)
         .overlay(alignment: .bottom) {
@@ -264,8 +287,8 @@ struct ResultsView: View {
                     .accessibilityIdentifier("pill-Alerts")
                 }
             }
-            // Down into the tab bar's space while it is scrolled away.
-            .padding(.bottom, nav.chromeHidden ? 28 : 92)
+            // Down into the tab bar's space as it scrolls away.
+            .modifier(ChromeBottomPadding(shown: 92, hidden: 28))
         }
         .overlay(alignment: .top) {
             if let toast {
@@ -274,13 +297,8 @@ struct ResultsView: View {
                     .task { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
-        // The filter bar rides in the navigation bar: it slides away with the
-        // tab bar as the list scrolls down (owner, 2026-11-03).
-        .toolbar(nav.chromeHidden ? .hidden : .visible, for: .navigationBar)
-        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
-            onLocation: { Analytics.shared.track("location_open", ["src": "results"]); showLocation = true },
-            onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true },
-            edit: $query) } }
+        // The filter bar is the CollapsingHeader above, not the system bar.
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations, applyIntent: { query.apply($0) }) }
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }

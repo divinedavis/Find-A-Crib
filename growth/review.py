@@ -247,6 +247,191 @@ def declined_clause(prefixes, crawl=None):
             f"these pages have been seen and declined rather than missed")
 
 
+# How many EVICTED URLs a technique needs before "Google accepted these and
+# took it back" counts as evidence. ONE, and the asymmetry argument runs a
+# third way from the two above it.
+#
+# MIN_CENSUS_READ's three guards a sentence that WITHHOLDS a verdict, so it is
+# cheap. MIN_CENSUS_SETTLED's ten guards a sentence that INFERS a judgement
+# FROM AN ABSENCE — Google has had three weeks and has not indexed these — and
+# an inference from absence over a sample needs volume before it means
+# anything, so it sits at the conservative end.
+#
+# This one guards a POSITIVE TRANSITION THIS LOOP RECORDED ITSELF. A URL
+# carrying `first_indexed` was read as indexed by this sampler on that date and
+# reads un-indexed tonight: that is not an estimate over a sample, it is one
+# page's history, and a second page cannot make it more true. Demanding ten
+# would be demanding nine more of the same event before believing the first.
+#
+# The count is a FLOOR and the clause says so, which is the other reason a
+# volume bar would be wrong here: indexstatus documents that of the eleven URLs
+# evicted in August 2026 the cohort still carries `first_indexed` for three, so
+# a threshold of ten would mostly be measuring how much history the file has
+# kept rather than how many pages Google dropped.
+MIN_CENSUS_EVICTED = 1
+
+
+def seen_and_evicted(prefixes, crawl=None):
+    """Does the census POSITIVELY say Google took these pages and gave them back?
+
+    Returns (crawl_evidence_dict, fired). THE THIRD FINDING, and the one
+    2026-11-03's entry pre-registered as "the next sentence owed": a tier
+    Google accepted and later dropped is neither never-fetched nor
+    fetched-and-refused, and until tonight it fell through to wording that
+    named neither.
+
+    THE READING THAT FORCED IT. T019's hub tier on 2026-11-04: 90 inspected, 24
+    fetched, 24 settled, 0 indexed, 2 EVER indexed. seen_and_declined() is
+    explicitly built to fall through on that shape — `ever_indexed == 0` is one
+    of its three conditions and its docstring names T019 as the excluded case,
+    "until someone writes the eviction sentence they deserve". This is it.
+
+    TWO CONDITIONS:
+
+      evicted >= MIN_CENSUS_EVICTED   at least one URL under these prefixes
+                                      carries the date this sampler first read
+                                      it as indexed and does not read as
+                                      indexed tonight.
+      indexed == 0                    and the tier holds no index slot now.
+                                      Where some of its pages ARE indexed the
+                                      finding is churn inside a partly-indexed
+                                      tier, which is a different shape with a
+                                      different remedy — a tier that still has
+                                      a foothold is not one to rewrite — so it
+                                      falls through to the existing wording
+                                      rather than being filed under this one.
+
+    KEYED ON `evicted` AND NOT ON `ever_indexed and not indexed`, which is the
+    arithmetic a reader would write and is wrong. crawl_evidence's `evicted`
+    excludes the `unknown` bucket, as summarise() has since 2026-09-30: that
+    bucket means Google returned no coverageState at all, so it is the
+    Inspection API being quiet about a page, not Google dropping it. The
+    subtraction cannot make that exclusion and therefore RISES WHEN THE API
+    GOES QUIET — it would turn an instrument outage into a finding, which is
+    the one failure mode this guard exists to avoid, since the whole point of
+    it is that it ASSERTS something about Google's behaviour.
+
+    FALSE ON A READING THAT PREDATES THE COUNT, by the same rule and for the
+    same reason as seen_and_declined: `evicted is None` is silence, not zero.
+    Every constructed reading written before 2026-11-05 carries no `evicted`
+    key, and a guard that read an absent count as 0 would never fire — the safe
+    direction, for an accidental reason.
+
+    Cannot fire beside seen_and_declined() by arithmetic rather than by
+    convention: that guard requires `ever_indexed == 0`, and `evicted` counts a
+    subset of `ever_indexed`, so a positive `evicted` forces it False. Held
+    over the input space in tests/test_evicted_census.py.
+    """
+    if crawl is None:
+        crawl = indexstatus.crawl_evidence(prefixes)
+    evicted = crawl.get("evicted")
+    if evicted is None:
+        return crawl, False
+    return crawl, evicted >= MIN_CENSUS_EVICTED and not crawl.get("indexed")
+
+
+def evicted_clause(prefixes, crawl=None):
+    """The sentence seen_and_evicted() earns, or "" where it does not fire.
+
+    Quotes its counts for the reason declined_clause does, and says in the
+    sentence itself that the count is a FLOOR — indexstatus can only count a
+    URL whose `first_indexed` the cohort still holds, and it lost that field
+    for eight of the eleven URLs evicted in August 2026. A reader six months
+    from now must not read "2" as "two pages in total were ever dropped".
+
+    NAMES THE LAST FETCH WHEN THERE IS ONE, which is the half that makes the
+    clause actionable rather than merely true. The remedy for an eviction is a
+    change to the page; a change to the page reaches Google only when Googlebot
+    comes back to read it. On the tier this fires on tonight the two dropped
+    URLs were last fetched 2026-08-19 and 2026-08-24 — eleven weeks — so
+    "rewrite them" is not yet a lever, and a clause that stopped at "accepted
+    then dropped" would have sent the next run to rewrite pages nothing is
+    scheduled to re-read.
+
+    It reports that date as a LEVEL and not as an age, deliberately. An age is
+    a subtraction against a clock, the clause is read months later out of a
+    stored verdict, and "eleven weeks ago" in a string written in November is
+    wrong by the time anyone reads it. The date stays true.
+    """
+    crawl, fired = seen_and_evicted(prefixes, crawl=crawl)
+    if not fired:
+        return ""
+    text = (f", and the index census says {crawl['ever_indexed']} of its URLs were "
+            f"read as indexed by this sampler at some point and {crawl['evicted']} of "
+            f"those read un-indexed tonight, with none of the {crawl['read']} it has "
+            f"inspected indexed now — so these pages were accepted and later dropped "
+            f"rather than never taken, and {crawl['evicted']} is a floor: the census "
+            f"can only count a URL whose first-indexed date it still holds")
+    last = crawl.get("evicted_last_crawl")
+    if last:
+        text += (f"; the newest fetch of any of the dropped URLs is {last}")
+    return text
+
+
+# The instruction each census finding carries, kept in one place because the
+# per-prefix path builds four different verdicts and every one of them must say
+# the same thing about the same reading. Until 2026-11-05 the declined
+# instruction existed only as an inline tail on ONE of those four branches —
+# see _census_reading on what that cost.
+#
+# They are OPPOSITE instructions, which is the whole reason
+# indexstatus.crawl_evidence exists: its docstring has said since 2026-08-29
+# that a zero-impression reading has causes that "call for opposite decisions".
+CENSUS_TAILS = {
+    "declined": ("these pages have had their content judged and rejected, so the "
+                 "next move is the pages themselves — consolidation or depth — "
+                 "and not more crawl or more URLs"),
+    # Says nothing the clause has not already measured, which is why the
+    # delivery-mechanism point is phrased as a thing to CHECK rather than as a
+    # fact: `evicted_last_crawl` is None on a reading that holds no crawl date,
+    # and a tail that asserted "Googlebot has not been back" would then be
+    # claiming something the clause beside it never established.
+    "evicted": ("these pages cleared Google's bar once and lost it, which is "
+                "neither never-seen nor refused-on-sight, so what to find out "
+                "is what changed — compare what the page carried when it was "
+                "accepted against what it carries now, and read the dropped "
+                "URLs' last fetch above before treating a rewrite as the "
+                "lever, because a rewrite reaches Google only when Googlebot "
+                "comes back for the page"),
+}
+
+
+def _census_reading(prefixes, crawl=None):
+    """Which census clause a technique has earned, and which tail goes with it.
+
+    Returns (clause, kind) with kind in ("", "declined", "evicted"). One door
+    for the two mutually-exclusive findings, so a caller cannot take one and
+    forget the other — which is exactly what happened to the first of them.
+
+    WHY THIS EXISTS AT ALL, and it is the more expensive half of tonight's
+    finding. declined_clause() shipped on 2026-11-04 appended to the `unseen`
+    string, and `unseen` is read on exactly ONE of the four verdicts the
+    per-prefix path can build: the `alive_now and not falling` branch. The
+    other three — works=True, falling, and above-the-floor-but-not-alive —
+    record census_read and census_fetched into `measured` and then publish a
+    verdict with no census word in it.
+
+    So the census apparatus was unreachable for the technique its own guard
+    docstring was written around. T019 is not alive_now: its trailing 14d
+    median is 0.0/day, so it lands on the below-the-floor branch, and on
+    2026-11-04 its stored verdict ended ", 0 pages serving in search" while its
+    own measured record carried census_read 90 and census_fetched 24. The
+    reading was taken, written down, and dropped on the floor.
+
+    That is the seventh member of the family the journal documents by date —
+    2026-08-25, 08-26, 08-27, 10-31, 11-01, 11-02, 11-03 — with one turn of the
+    screw: the previous six were branches asserting more or less than their
+    evidence carried. This one is a branch that HELD the evidence and said
+    nothing at all, which no verdict audit catches, because the sentence it
+    published was true.
+    """
+    crawl, evicted = seen_and_evicted(prefixes, crawl=crawl)
+    if evicted:
+        return evicted_clause(prefixes, crawl=crawl), "evicted"
+    declined = declined_clause(prefixes, crawl=crawl)
+    return (declined, "declined") if declined else ("", "")
+
+
 def unseen_clause(prefixes, crawl=None):
     """Which of the two zero-impression sentences a technique gets.
 
@@ -1532,16 +1717,52 @@ def evaluate(t, techs=None):
         # Empty unless seen_and_declined() fired, and it cannot fire beside the
         # never-fetched leg — `settled` counts a subset of `fetched`, so
         # fetched == 0 forces settled == 0. See declined_clause.
-        declined = declined_clause(t.get("prefixes"), crawl=census) if unseen else ""
-        if declined:
+        # ONE DOOR FOR BOTH CENSUS FINDINGS, and it is reached on every branch
+        # below rather than only on the one that reads `unseen`. Until
+        # 2026-11-05 this line was `... if unseen else ""`, and `unseen` is
+        # read by exactly one of the four verdicts this path can build — so the
+        # three others took the census reading, wrote it into `measured`, and
+        # published a verdict with no census word in it. T019, the technique
+        # seen_and_declined's own docstring is written around, is on one of
+        # those three. See _census_reading.
+        census_text, census_kind = _census_reading(t.get("prefixes"), crawl=census)
+        if census_kind:
+            res["measured"]["census_read"] = census["read"]
+            res["measured"]["census_fetched"] = census["fetched"]
             res["measured"]["census_settled"] = census["settled"]
             res["measured"]["census_ever_indexed"] = census["ever_indexed"]
-            unseen += declined
+            res["measured"]["census_evicted"] = census["evicted"]
+        # Where the `unseen` sentence fired, the clause goes INSIDE it, exactly
+        # where declined_clause has gone since 2026-11-04: that branch puts the
+        # instruction in its own tail, so the two must stay one sentence.
+        # Everywhere else the clause carries its instruction with it, because
+        # those branches have no tail slot to put one in.
+        #
+        # GATED ON THE BRANCH THAT WILL ACTUALLY FIRE, not on `unseen` being
+        # non-empty, and that distinction is the whole bug. `unseen` is BUILT
+        # for every technique whose pages earned no impressions and READ by one
+        # branch only, so "unseen is truthy" and "the verdict will contain
+        # unseen" are different propositions. T019 satisfies the first and not
+        # the second: appending to `unseen` there puts the sentence into a
+        # string the below-the-floor branch never reads, which is the same
+        # dropped-on-the-floor shape one level down.
+        uses_unseen = bool(unseen) and alive_now and not falling
+        census_tail = ""
+        if census_kind and uses_unseen:
+            unseen += census_text
+        elif census_kind:
+            census_tail = census_text + " — " + CENSUS_TAILS[census_kind]
 
         if alive_now and not falling and not unseen:
             res["works"] = True
+            # A census clause on a WORKS verdict is not a contradiction and is
+            # deliberately not suppressed: works is a reading of owned traffic
+            # and the clause is a reading of the index, a technique can have
+            # both, and the 2026-09-20 defect on this very branch was a verdict
+            # that carried a clause it disagreed with and said nothing about
+            # it. It changes no decision — see the journal for 2026-11-05.
             res["why"] = (f"{total} owned visitors in {days}d "
-                          f"(median {recent}/day{direction})" + served)
+                          f"(median {recent}/day{direction})" + served + census_tail)
         elif alive_now and not falling:
             res["works"] = None
             # The tail has to match which `unseen` leg fired. "Not evidence for
@@ -1562,11 +1783,14 @@ def evaluate(t, techs=None):
                 tail = ("unproven rather than failed: nothing has been measured about "
                         "whether these pages can rank, so the next move is to get them "
                         "crawled rather than to rewrite or retire them")
-            elif declined:
+            elif census_kind:
+                # Reads the instruction out of CENSUS_TAILS rather than holding
+                # its own copy, so this branch and the three that append
+                # `census_tail` cannot come to say different things about one
+                # reading. The declined wording is unchanged, character for
+                # character, from the inline string this replaces.
                 tail = ("unproven rather than failed: the traffic is real and above "
-                        "the floor, but these pages have had their content judged "
-                        "and rejected, so the next move is the pages themselves — "
-                        "consolidation or depth — and not more crawl or more URLs")
+                        "the floor, but " + CENSUS_TAILS[census_kind])
             else:
                 tail = ("unproven rather than failed: the traffic is real and above "
                         "the floor, but it is not evidence for a technique whose "
@@ -1579,7 +1803,7 @@ def evaluate(t, techs=None):
                           f"{WINDOW}d median is {recent}/day against {prior}/day "
                           f"in the {WINDOW}d before — the cumulative total clears "
                           f"the floor because it cannot fall, while the rate is "
-                          f"declining" + served)
+                          f"declining" + served + census_tail)
         else:
             res["works"] = None
             thin = ("" if trend["recent_covered"] else
@@ -1589,7 +1813,8 @@ def evaluate(t, techs=None):
                           f"{MIN_TOTAL_VISITORS}-visitor floor, but the trailing "
                           f"{WINDOW}d median is {recent}/day — below the "
                           f"{MIN_RECENT_MEDIAN}/day that counts as alive, so the "
-                          f"total is carried by days outside the window" + thin + served)
+                          f"total is carried by days outside the window" + thin
+                          + served + census_tail)
         return res
 
     # Site-wide technique: judged on its declared global metric, comparing the

@@ -1208,16 +1208,46 @@ def crawl_evidence(prefixes, cohort=None, today=None):
                        `settled_indexed` 0 is the unconfounded statement that
                        Google has had three weeks with these pages and kept
                        none.
+      evicted          URLs carrying `first_indexed` whose bucket tonight is
+                       neither `indexed` NOR `unknown`. Added 2026-11-05, and
+                       it is NOT `ever_indexed - indexed`, which is what
+                       record_technique_reach's docstring called "the eviction
+                       count" until tonight. summarise() has excluded `unknown`
+                       from its own eviction half since 2026-09-30 and says at
+                       length why: `unknown` means Google returned no
+                       coverageState at all, which is an INSTRUMENT CONDITION,
+                       so a night the API answers thinly about a page we have
+                       seen indexed must not read as Google throwing it out.
+                       The subtraction cannot make that exclusion — it has no
+                       access to the buckets — so a caller doing it by hand
+                       gets an eviction count that rises when the API goes
+                       quiet. It happened to agree site-wide on 2026-11-04
+                       (ever_indexed 3, indexed 1, evicted 2) because no
+                       ever-indexed URL sat in `unknown` that night, which is
+                       the most dangerous way for a wrong formula to read.
+                       A FLOOR, and more so than its neighbours: it can only
+                       see URLs that still carry `first_indexed`, and of the
+                       eleven evicted in August 2026 the cohort retains that
+                       field for three.
+      evicted_last_crawl
+                       the NEWEST `crawled` date among those evicted URLs, or
+                       None. Here because the remedy for an eviction is a
+                       change to the page, and a page change only reaches
+                       Google when Googlebot comes back for it: both URLs this
+                       fires on tonight were last fetched in August, so
+                       "rewrite it" has no delivery mechanism yet, and a clause
+                       that said only "accepted then dropped" would send the
+                       next run to rewrite pages nothing will re-read.
 
-    All four are floors in the same way `fetched` is, and all four are counted
-    over `read` — a URL nobody has inspected carries no evidence either way.
+    All six are floors in the same way `fetched` is, and all are counted over
+    `read` — a URL nobody has inspected carries no evidence either way.
     """
     cohort = _load()["cohort"] if cohort is None else cohort
     today = today or ledger.today()
     prefixes = tuple(prefixes or ())
     out = {"cohort": 0, "read": 0, "fetched": 0, "indexed": 0,
            "ever_indexed": 0, "settled": 0, "settled_indexed": 0,
-           "buckets": {}}
+           "evicted": 0, "evicted_last_crawl": None, "buckets": {}}
     if not prefixes:
         return out
     for url, rec in cohort.items():
@@ -1236,6 +1266,14 @@ def crawl_evidence(prefixes, cohort=None, today=None):
         # argument summarise() makes where it counts evictions.
         if rec.get("first_indexed"):
             out["ever_indexed"] += 1
+            # `unknown` excluded here and ONLY here, exactly as summarise()
+            # does it: no coverageState came back, which is the instrument
+            # being quiet and not Google changing its mind. ever_indexed keeps
+            # counting it, because that half is a fact about our own history.
+            if b not in ("indexed", "unknown"):
+                out["evicted"] += 1
+                if (rec.get("crawled") or "") > (out["evicted_last_crawl"] or ""):
+                    out["evicted_last_crawl"] = rec.get("crawled")
         if rec.get("crawled"):
             out["fetched"] += 1
             seen = _age_days(rec.get("first_checked"), today)
@@ -1261,10 +1299,11 @@ def record_technique_reach(today, cohort, techs=None):
     holds only the LATEST state per URL and therefore cannot answer "did this
     tier's door open last week" for any tier at all.
 
-    Seven series per technique, because the funnel has stages that move at
+    Eight series per technique, because the funnel has stages that move at
     different times and a single number hides which one moved. It was four
-    until 2026-11-04, and the three it stopped short of are the ones that say
-    whether anything Googlebot fetched was KEPT:
+    until 2026-11-04 and seven until 2026-11-05; the four it stopped short of
+    are the ones that say whether anything Googlebot fetched was KEPT, and
+    whether anything kept was later taken back:
 
       census_cohort   URLs under its prefixes the sampler holds at all. Zero
                       is a finding rather than a gap: the cohort is built from
@@ -1302,10 +1341,17 @@ def record_technique_reach(today, cohort, techs=None):
                       whether anything went through it.
       census_ever_indexed
                       URLs carrying a first_indexed stamp. Recorded beside
-                      census_indexed because their DIFFERENCE is the eviction
-                      count, and eviction and never-accepted need separate
-                      remedies — see review.seen_and_declined, whose guard
-                      turns on exactly this distinction.
+                      census_indexed because eviction and never-accepted need
+                      separate remedies — see review.seen_and_declined, whose
+                      guard turns on exactly this distinction.
+      census_evicted  of those, how many read un-indexed tonight. THIS, and
+                      NOT census_ever_indexed - census_indexed, is the eviction
+                      count: this line said the difference was it from
+                      2026-11-04 until 2026-11-05, and the subtraction cannot
+                      make the `unknown` exclusion that crawl_evidence and
+                      summarise both make deliberately — see `evicted` there.
+                      The two agreed on the night the claim was written, which
+                      is why it survived review.
 
     The three read-dependent series are held back when the census has read
     nothing under a technique's prefixes, under the same rule the __site__
@@ -1338,6 +1384,7 @@ def record_technique_reach(today, cohort, techs=None):
             ledger.record_result(today, slug, "census_indexed", ev["indexed"])
             ledger.record_result(today, slug, "census_ever_indexed",
                                  ev["ever_indexed"])
+            ledger.record_result(today, slug, "census_evicted", ev["evicted"])
         n += 1
     return n
 

@@ -75,6 +75,7 @@ final class AccessibilityAuditTests: XCTestCase {
     }
 
     private func audit(_ screen: String) {
+        waitForStillScreen()
         var found: [String] = []
         do {
             // Every audit type except Dynamic Type: RootView caps text at
@@ -110,6 +111,24 @@ final class AccessibilityAuditTests: XCTestCase {
         let b = app.buttons["tab-\(name)"]
         XCTAssertTrue(b.waitForExistence(timeout: 20), "the \(name) tab should show")
         b.tap(); sleep(2)
+    }
+
+    /// Waits (up to 15 s) until two reads of the screen's elements and frames,
+    /// a second apart, match. The audit reads frames and pixels at different
+    /// moments: on a busy Mac (2026-11-04 manual ship, during another app's
+    /// catalog steps) Lotteries' alerts card arrived after the fixed 2 s
+    /// wait, pushed the list down mid-audit, and "29 open", Filter and the
+    /// "First month free" tag (all well over 4.5:1) were measured against
+    /// pixels that had moved: "Contrast failed", twice in a row. Alone,
+    /// the same test passed.
+    private func waitForStillScreen() {
+        var last = app.debugDescription
+        for _ in 0..<15 {
+            sleep(1)
+            let now = app.debugDescription
+            if now == last { return }
+            last = now
+        }
     }
 
     func testSearchScreen() throws {

@@ -206,7 +206,15 @@ def js_errors(rows):
                                                                                # scriptwrapper threw "$adManagementConfig.web.init
                                                                                # is not a function" and three "Script error."s.
                                                                                # Our awaited supabase calls never resolve to null.
-                                                                               "Cannot destructure property 'data' from null or undefined value"))
+                                                                               "Cannot destructure property 'data' from null or undefined value",
+                                                                               # 2026-11-05 01:18 UTC: its twin, one
+                                                                               # iPhone visitor on /, stackless, 10 s
+                                                                               # after landing and 11 s before the
+                                                                               # page's first ad_impression. Nothing in
+                                                                               # our pages or static/supabase/supabase.js
+                                                                               # destructures `body` (searched: every
+                                                                               # `{body` there is an object literal).
+                                                                               "Cannot destructure property 'body' from null or undefined value"))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

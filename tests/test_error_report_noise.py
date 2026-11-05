@@ -9,12 +9,15 @@ def row(msg, kind="promise", at="", name=None):
 
 def test_stackless_timeout_and_unavailable_are_noise():
     js = E.js_errors([row("operation timed out"), row("UnavailableError"),
-                      row("Cannot destructure property 'data' from null or undefined value")])
+                      row("Cannot destructure property 'data' from null or undefined value"),
+                      row("Cannot destructure property 'body' from null or undefined value")])
     assert all(v["noise"] for v in js.values())
 
 
 def test_the_same_words_with_our_stack_are_not():
-    js = E.js_errors([row("operation timed out", at="https://findacrib.com/:5123")])
+    js = E.js_errors([row("operation timed out", at="https://findacrib.com/:5123"),
+                      row("Cannot destructure property 'body' from null or undefined value",
+                          at="https://findacrib.com/:5123")])
     assert not any(v["noise"] for v in js.values())
 
 

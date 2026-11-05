@@ -393,6 +393,17 @@ CENSUS_TAILS = {
                 "URLs' last fetch above before treating a rewrite as the "
                 "lever, because a rewrite reaches Google only when Googlebot "
                 "comes back for the page"),
+    # Added 2026-11-05, and it is the OPPOSITE instruction from "declined" —
+    # which is the whole reason crawl_evidence() exists. Lifted verbatim out of
+    # the per-prefix `unfetched` tail below, which now reads it from here, so
+    # the sentence has exactly one copy: the two call sites are a verdict about
+    # owned traffic and a verdict about a site-wide metric, and 2026-11-04's
+    # lesson was that four verdicts must not come to say different things about
+    # one reading. There is no "thin" key on purpose — see
+    # unfetched_thin_clause on why a reading too thin for a verdict must not
+    # carry an instruction.
+    "unfetched": ("the next move is to get them crawled rather than to "
+                  "rewrite or retire them"),
 }
 
 
@@ -430,6 +441,131 @@ def _census_reading(prefixes, crawl=None):
         return evicted_clause(prefixes, crawl=crawl), "evicted"
     declined = declined_clause(prefixes, crawl=crawl)
     return (declined, "declined") if declined else ("", "")
+
+
+def unfetched_thin(prefixes, crawl=None):
+    """Has the census looked at these URLs, found none fetched, and stayed too
+    thin to SAY so?
+
+    Returns (crawl_evidence_dict, fired). Fires on `0 < read < MIN_CENSUS_READ
+    and fetched == 0` — the gap never_fetched() leaves behind, and it is a live
+    gap rather than a theoretical one. On 2026-11-05 two active techniques sit
+    in it, both one-URL sections: T085 provenance_page (/methodology/, read 1,
+    fetched 0, `crawled` null on every check since 2026-09-08) and T016
+    embeddable_building_lookup_widget (/embed/, read 1, fetched 0).
+
+    WHY THE GAP IS WORTH A SENTENCE OF ITS OWN. MIN_CENSUS_READ is three
+    because `read` is a STRATIFIED SAMPLE of the corpus and not a census of
+    these prefixes — crawl_evidence says so in its own docstring — so two
+    inspected URLs out of a large tier cannot carry "Google has never fetched
+    any of these". That reasoning is sound and this does not weaken it: the
+    threshold guards the GENERALISING SENTENCE, and nothing about it requires
+    the loop to also withhold the COUNTS it actually holds.
+
+    The distinction cost a real conclusion. T085's claim is that publishing the
+    site's provenance raises the site-level judgement that gates acceptance.
+    On 2026-10-06 its revisit read index_accept_pct_mature flat at 0.0% and
+    filed the hypothesis as WRONG. But /methodology/ has read
+    `unknown_to_google` with `crawled: null` on every check since two days
+    after activation, so Google has never fetched the page whose publication
+    IS the intervention. A trust signal that was never delivered cannot have
+    been refuted by the metric it was supposed to move staying flat. The census
+    held that fact the whole time, under the threshold, with nothing willing to
+    print it.
+
+    So this fires a DISCLOSURE and never a verdict, and the clause below
+    asserts nothing but counts — see unfetched_thin_clause on why it carries no
+    entry in CENSUS_TAILS.
+
+    False where `fetched` is absent rather than zero, for the reason
+    seen_and_evicted() gives: absent is silence, not zero. False at read == 0,
+    which is also what a technique declaring no prefixes gets. False at or
+    above MIN_CENSUS_READ, where never_fetched() speaks instead and says more.
+    """
+    if crawl is None:
+        crawl = indexstatus.crawl_evidence(prefixes)
+    read = crawl.get("read") or 0
+    return crawl, (0 < read < MIN_CENSUS_READ and crawl.get("fetched") == 0)
+
+
+def unfetched_thin_clause(prefixes, crawl=None):
+    """The sentence unfetched_thin() earns, or "" where it does not fire.
+
+    STATES THE READING AND NAMES THE LIMIT, and deliberately stops there. It
+    quotes `read`, says Google has fetched none of them, and then says in the
+    sentence rather than in a comment that the count is below the threshold
+    this loop requires before a zero means "never fetched" — so a reader gets
+    the fact and the reason no verdict is attached to it, and can judge a
+    one-page section for themselves.
+
+    NO ENTRY IN CENSUS_TAILS, which is the point and not an omission. Both
+    tails there carry an INSTRUCTION — rewrite the pages, or find out what
+    changed — because both fire on a finding that warrants an action. This
+    fires on a reading too thin to warrant one, so a tail here would be the
+    loop asserting exactly the thing the threshold exists to withhold. The
+    kinds _census_reading() routes all keep their tails; this is reached
+    separately, so that invariant is not weakened either.
+
+    It also asserts nothing about the published section's size, because
+    index_status.json cannot support such a claim: `published_urls` is a single
+    site-wide scalar (1,711 on 2026-11-05) and there is no per-prefix published
+    count anywhere in the file, so "the sample is the whole section" is true of
+    /methodology/ and unprovable from the stored data. The clause gives the
+    counts it has.
+    """
+    crawl, fired = unfetched_thin(prefixes, crawl=crawl)
+    if not fired:
+        return ""
+    n = crawl["read"]
+    return (f"the index census has inspected {n} of its URLs and Google has "
+            f"fetched none of them, so nothing here has been delivered to the "
+            f"crawler at all — {n} is below the {MIN_CENSUS_READ} this loop "
+            f"requires before reading a zero as 'never fetched', so that is "
+            f"the reading and not yet a verdict on it")
+
+
+def census_sentence(prefixes, crawl=None):
+    """The whole census finding as ONE self-contained sentence, or ("", "").
+
+    Returns (text, kind) with kind in ("", "evicted", "declined", "unfetched",
+    "thin"). Unlike _census_reading() the text already carries its own
+    instruction where one is warranted, because this serves call sites that
+    have no `unseen` string to fold a clause into and therefore no tail slot of
+    their own: the site-judged path, and the thin-window branch of the
+    per-prefix path.
+
+    FOUR CASES, in the order of how much they say, which is also the order of
+    how specific the evidence is:
+
+      evicted    Google accepted these and took them back.
+      declined   Google fetched them and kept none.
+      unfetched  the census has inspected at or above MIN_CENSUS_READ of them
+                 and Google has fetched none — the never_fetched() reading,
+                 stated here without the "those 0 impressions" framing
+                 unseen_clause() gives it, because a caller judging a site-wide
+                 metric is not making a claim about impressions at all.
+      thin       the same zero under MIN_CENSUS_READ: a disclosure, not a
+                 verdict. See unfetched_thin_clause.
+
+    The first two delegate to _census_reading() so their routing and their
+    tails have one home. The four are mutually exclusive by arithmetic and not
+    merely by the `elif` chain: `declined` and `evicted` both require
+    fetched > 0, and the two unfetched cases require fetched == 0 and split on
+    a threshold.
+    """
+    if crawl is None:
+        crawl = indexstatus.crawl_evidence(prefixes)
+    text, kind = _census_reading(prefixes, crawl=crawl)
+    if kind:
+        return text + " — " + CENSUS_TAILS[kind], kind
+    crawl, fired = never_fetched(prefixes, crawl=crawl)
+    if fired:
+        return (f"the index census has inspected {crawl['read']} of its URLs "
+                f"and Google has never fetched one of them, so nothing under "
+                f"these prefixes has been delivered to the crawler — "
+                + CENSUS_TAILS["unfetched"]), "unfetched"
+    thin = unfetched_thin_clause(prefixes, crawl=crawl)
+    return (thin, "thin") if thin else ("", "")
 
 
 def unseen_clause(prefixes, crawl=None):
@@ -1504,12 +1640,48 @@ def evaluate(t, techs=None):
             # this thin makes every branch under it unsafe, not just the
             # retirement.
             if not trend["recent_covered"]:
+                # THE CENSUS REACHES THIS BRANCH TOO, added 2026-11-05, and it
+                # corrects an overstatement in last night's journal entry:
+                # "the census clause NOW REACHES THE VERDICT ON ALL FOUR
+                # BRANCHES OF THE PER-PREFIX PATH" counted the four TERMINAL
+                # verdict branches at the bottom of this path and missed that
+                # six exits above them return first, this one included. The
+                # census block sits below all six, so the claim was true of the
+                # branches it had looked at and false of the path.
+                #
+                # It is not academic: T023 city_guides is on this branch
+                # tonight with read 3 / fetched 0 — a reading that satisfies
+                # never_fetched() — and its stored verdict ends "Nothing to
+                # retire on until the window refills" with no census word in
+                # it, while its own pre-registered condition is precisely
+                # whether Google ever fetches a /guide/ URL. The reading was
+                # taken and dropped, which is the same shape as T019's on
+                # 2026-11-04 and T085's on the site path above.
+                #
+                # Computed locally rather than by hoisting the census block
+                # above these six exits: hoisting would re-sequence the four
+                # terminal branches whose wording is pinned by tests and
+                # load-bearing for T019 and T046, to fix a branch that needs
+                # one call. never_fetched()'s threshold is not duplicated here
+                # — census_sentence() routes through the named predicates,
+                # which is what naming them was for.
+                _ccrawl = indexstatus.crawl_evidence(t.get("prefixes"))
+                _ctext, _ckind = census_sentence(t.get("prefixes"), crawl=_ccrawl)
+                if _ccrawl.get("read"):
+                    # Written whether or not a clause fired, for the reason the
+                    # site path above gives: a reader should not have to open
+                    # index_status.json to find out why a verdict says what it
+                    # says, and a branch that holds a reading and records
+                    # nothing is how this defect family keeps recurring.
+                    res["measured"]["census_read"] = _ccrawl["read"]
+                    res["measured"]["census_fetched"] = _ccrawl["fetched"]
                 res["why"] = (f"{total} owned visitors in {days}d and a trailing median of "
                               f"{recent}/day, but that window holds only "
                               f"{trend.get('recent_readings', 0)} of its {WINDOW} days — "
                               f"the engine did not run for most of it, so the median "
                               f"measures the gap and not the technique. Nothing to retire "
-                              f"on until the window refills")
+                              f"on until the window refills"
+                              + (f" — {_ctext}" if _ckind else ""))
                 return res
             # Check the leading indicator too — a technique whose pages Google
             # serves is early, not dead, and the two look identical in a
@@ -1780,9 +1952,13 @@ def evaluate(t, techs=None):
             # two causes that "call for opposite decisions". The two cannot
             # both fire: fetched == 0 forces settled == 0.
             if unfetched:
+                # The instruction half now comes out of CENSUS_TAILS["unfetched"]
+                # rather than being a second copy of it here. Byte-identical to
+                # the string this replaces — verified by diffing every active
+                # technique's verdict before and after.
                 tail = ("unproven rather than failed: nothing has been measured about "
-                        "whether these pages can rank, so the next move is to get them "
-                        "crawled rather than to rewrite or retire them")
+                        "whether these pages can rank, so "
+                        + CENSUS_TAILS["unfetched"])
             elif census_kind:
                 # Reads the instruction out of CENSUS_TAILS rather than holding
                 # its own copy, so this branch and the three that append
@@ -1824,8 +2000,69 @@ def evaluate(t, techs=None):
     pairs = _global(metric)
     after = [(d, v) for d, v in pairs if d >= (t.get("activated") or "")]
     pre = [(d, v) for d, v in pairs if d < (t.get("activated") or "")]
+
+    # THE CENSUS READING REACHES THE SITE-JUDGED PATH TOO, added 2026-11-05 and
+    # the direct twin of what shipped into the per-prefix path the night before.
+    #
+    # `judge: "site"` routes a technique past the whole per-prefix block above,
+    # census apparatus included, so every census clause this loop has built
+    # since 2026-08-29 was unreachable from here. T085 provenance_page is the
+    # only technique on this path and it OWNS /methodology/: its reading is
+    # taken nightly, recorded in results.jsonl as `provenance_page census_read
+    # 1 / census_fetched 0`, and its stored verdict said only
+    # "index_accept_pct_mature median 0.0/day vs 0.0/day before activation".
+    # The one fact that explains that zero — Google has never fetched the page
+    # whose publication is the intervention — was held in the file and absent
+    # from every sentence the loop published about it.
+    #
+    # That is the eighth member of the family the journal lists by date
+    # (2026-08-25, 08-26, 08-27, 10-31, 11-01, 11-02, 11-03, 11-04), and the
+    # second consecutive night it is the SAME shape: a branch holding a
+    # measurement and publishing a true sentence that omits it. Last night's
+    # entry fixed four branches of one path and named the retirement branch as
+    # the remaining hole; it did not look one routing decision further up, at
+    # the path that skips the block entirely.
+    #
+    # Computed here, ahead of the STOCK_METRICS exit, so both exits get it. The
+    # `measured` keys are applied after each exit builds its own dict, because
+    # both overwrite res["measured"] wholesale.
+    census_measured = {}
+    census_tail = ""
+    # The gate is a COST guard and not a correctness one, stated here because
+    # mutation testing on 2026-11-05 left replacing it with `if True:` alive and
+    # that survivor is an equivalent mutant rather than a missing test:
+    # crawl_evidence() returns its zeroed dict for an empty prefix tuple, so
+    # read is 0, census_measured stays empty and census_sentence() returns
+    # ("", "") — identical output. What the gate buys is not loading
+    # index_status.json for the prefixless majority of this path. Do not write
+    # a test that pins `if t.get("prefixes")`: there is no behaviour to pin.
+    if t.get("prefixes"):
+        _census = indexstatus.crawl_evidence(t.get("prefixes"))
+        if _census.get("read"):
+            # Recorded whenever the census has inspected anything, including on
+            # readings too thin for any clause to fire, for the reason the
+            # 2026-11-04 note on the brand leg gives: a reader should not have
+            # to open index_status.json to find out why a verdict says what it
+            # says. `cohort` sits beside `read` because read < cohort means the
+            # sampler has URLs still waiting its turn, which is a different
+            # thing from a section it has finished with.
+            census_measured = {"census_read": _census["read"],
+                               "census_fetched": _census["fetched"],
+                               "census_cohort": _census["cohort"]}
+        _text, _kind = census_sentence(t.get("prefixes"), crawl=_census)
+        if _kind:
+            census_tail = " — " + _text
+        if _kind in ("declined", "evicted"):
+            census_measured.update({"census_settled": _census["settled"],
+                                    "census_ever_indexed": _census["ever_indexed"],
+                                    "census_evicted": _census["evicted"]})
+
     if metric in STOCK_METRICS:
-        return _guard_shared_metric(_judge_stock(res, metric, after, pre, days), metric, co)
+        res = _guard_shared_metric(_judge_stock(res, metric, after, pre, days), metric, co)
+        res.setdefault("measured", {}).update(census_measured)
+        if census_tail:
+            res["why"] = (res.get("why") or "") + census_tail
+        return res
 
     # Both windows cut by DATE, for the reason _trend gives at length: a slice
     # of the last WINDOW READINGS is only the last WINDOW DAYS while the engine
@@ -1856,6 +2093,7 @@ def evaluate(t, techs=None):
                        "window_readings_after": len(a_vals),
                        "window_readings_before": len(b_vals),
                        "trend_comparable": comparable}
+    res["measured"].update(census_measured)
     totals = (f" [{a_sum} in the last {len(a_vals)}d"
               + (f" vs {b_sum} in the {len(b_vals)}d before]" if b_vals else "]")) if a_vals else ""
     if len(after) < GRACE_DAYS // 2:
@@ -1868,10 +2106,10 @@ def evaluate(t, techs=None):
         if not a_sum:
             res["why"] = (f"{metric} has totalled {a_sum or 0} across all {len(after)}d since "
                           f"activation, and there is no pre-activation baseline — nothing "
-                          f"measured either way")
+                          f"measured either way" + census_tail)
         else:
             res["why"] = (f"{metric} median {a_med}/day since activation{totals}, but no "
-                          f"pre-activation baseline to attribute it to")
+                          f"pre-activation baseline to attribute it to" + census_tail)
         return res
     if not comparable:
         # Neither "no lift" nor "works" can be asserted across windows of
@@ -1885,15 +2123,21 @@ def evaluate(t, techs=None):
                       f"activation{totals} — but the trailing window holds "
                       f"{len(a_vals)} of {WINDOW} days and the baseline {len(b_vals)} of "
                       f"{WINDOW}, so the two are not the same length of time and the "
-                      f"difference between them is not a lift either way")
+                      f"difference between them is not a lift either way" + census_tail)
         return res
     if a_med is not None and a_med <= b_med:
         res["action"] = "flag"
         res["why"] = (f"{metric} median {a_med}/day vs {b_med}/day before activation{totals} — "
-                      f"no measurable lift after {days}d")
+                      f"no measurable lift after {days}d" + census_tail)
         return res
     res["works"] = True
-    res["why"] = f"{metric} median {a_med}/day vs {b_med}/day before activation{totals}"
+    # Stated and not suppressed on a WORKS verdict, for the reason the
+    # per-prefix works branch gives: the metric reading and the census reading
+    # are readings of different instruments, a technique can honestly carry
+    # both, and 2026-09-20's defect on that path was a verdict that carried a
+    # clause it disagreed with and said nothing about it. It changes no action.
+    res["why"] = (f"{metric} median {a_med}/day vs {b_med}/day before activation{totals}"
+                  + census_tail)
     return _guard_shared_metric(res, metric, co)
 
 

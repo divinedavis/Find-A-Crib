@@ -1,61 +1,61 @@
 {
   "PerformanceTests/testLaunch() :: Duration (ApplicationFirstFramePresentationResponsive)": {
     "history": [
-      1.0257,
       0.9025,
       0.8923,
       0.9268,
-      0.9062
+      0.9062,
+      0.9069
     ],
     "unit": "s"
   },
   "PerformanceTests/testLaunchToSearchReady() :: Clock Monotonic Time": {
     "history": [
-      5.2147,
       5.1489,
       5.1985,
       5.2538,
-      5.0955
+      5.0955,
+      5.1646
     ],
     "unit": "s"
   },
   "PerformanceTests/testResultsScroll() :: Absolute Memory Physical (findacrib)": {
     "history": [
-      324274.792,
       305711.72,
       292031.08,
       351570.512,
-      321407.592
+      321407.592,
+      291588.736
     ],
     "unit": "kB"
   },
   "PerformanceTests/testResultsScroll() :: Duration (Scroll_Deceleration)": {
     "history": [
-      2.4335,
       2.4338,
       2.4174,
       2.4175,
-      2.4171
+      2.4171,
+      2.4173
     ],
     "unit": "s"
   },
   "PerformanceTests/testResultsScroll() :: Memory Peak Physical (findacrib)": {
     "history": [
-      331729.512,
       305891.944,
       295783.016,
       351799.888,
-      324897.384
+      324897.384,
+      295275.136
     ],
     "unit": "kB"
   },
   "PerformanceTests/testResultsScroll() :: Memory Physical (findacrib)": {
     "history": [
-      81.92,
       212.992,
       -196.608,
       622.592,
-      -65.536
+      -65.536,
+      -458.752
     ],
     "unit": "kB"
   }

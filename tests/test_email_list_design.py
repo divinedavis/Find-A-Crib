@@ -1,6 +1,6 @@
-"""The alert emails' iPhone-style list (owner, 2026-10-27, design #2 of three):
-linked items render as one white group with the price on the right, a list of
-two or more opens with count tiles, and the page stays inline-styled."""
+"""The alert emails' list (owner, 2026-10-27; restyled as the alert card
+2026-11-05): linked items render as rows with the price on the right, a list
+of two or more opens with its count, and the page stays inline-styled."""
 import sys
 import pathlib
 
@@ -35,7 +35,20 @@ def test_alert_renders_group_and_tiles_inline():
     from growth import emailkit
     sub = {"email": "d@x.com", "boroughs": ["M", "Bk"], "kinds": ["rerental"], "token": "0" * 8}
     _, html, text, _ = la.render_alert(_items(), sub, emailkit)
-    assert "border-radius:14px" in html and "&rsaquo;" in html      # the white group, the chevron
-    assert "$4,176" in html and "new</div>" in html                  # price column, count tile
+    # The alert card (owner, 2026-11-05): white card, label top right, the
+    # count large, rows with a coloured square and the price on the right.
+    assert "border-radius:22px" in html and ">Re-rental</span>" in html
+    assert "$4,176" in html and ">new</span>" in html and ">2</span>" in html
     assert "<style" not in html                                      # Gmail strips <style>
     assert "2171 Frederick Douglass Blvd — $4,176" in text           # the text part keeps the price
+
+
+def test_single_item_is_a_building_card():
+    import lottery_alerts as la
+    from growth import emailkit
+    sub = {"email": "d@x.com", "boroughs": ["M"], "kinds": ["rerental"], "token": "0" * 8}
+    _, html, text, _ = la.render_alert(_items()[1:], sub, emailkit)
+    assert "No lottery needed" in html and "First come, first served" in html
+    assert "$4,176" in html and "/ mo" in html
+    assert "Open the listing" in html                                # the button goes to the listing
+    assert "<style" not in html

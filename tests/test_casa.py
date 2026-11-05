@@ -105,8 +105,12 @@ class CasaAlertText(unittest.TestCase):
         calls = [{"complaint_type": "Rodent", "descriptor": "Rat Sighting", "created_date": "2026-10-12T14:00:33.000", "status": "In Progress"}]
         subject, html, text = self.c.email_parts(emailkit, w, calls)
         self.assertEqual(subject, "New 311 call at 1919 Madison Avenue")
-        self.assertIn("Rodent — Rat Sighting\n  Oct 12, 2026 · In Progress · pests", text)
+        self.assertIn("• Rodent — Rat Sighting\n        Oct 12, 2026 · In Progress · pests", text)
         self.assertIn("/casa/?bbl=1017480035", html)
+        # The alert card (2026-11-05): label top right, count large, open call red.
+        self.assertIn("Your Casa", html)
+        self.assertIn("1 still open", html)
+        self.assertNotIn("<style", html)
 
     def test_alerts_wait_for_8_am(self):
         self.assertEqual(self.c.SEND_HOURS, range(8, 21))

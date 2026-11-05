@@ -207,18 +207,18 @@ def diff_building(rec, prev, cur, s8):
                     "text": f"An apartment here is listed for voucher holders on AffordableHousing.com{p}.",
                     "url": av.get("url")})
     elif cur.get("s8p") and prev.get("s8p") and cur["s8p"] < prev["s8p"]:
-        out.append({"kind": "price", "price": cur["s8p"],
+        out.append({"kind": "price", "price": cur["s8p"], "was": prev["s8p"],
                     "text": f"Voucher listing rent dropped: {money(prev['s8p'])} → {money(cur['s8p'])}/mo.",
                     "url": av.get("url")})
     pv, cv = prev.get("vo"), cur.get("vo")
     if isinstance(pv, int) and isinstance(cv, int):
         if cv > pv:
-            out.append({"kind": "violations", "price": None,
+            out.append({"kind": "violations", "price": None, "n": cv - pv, "open": cv,
                         "text": f"{cv - pv} new open HPD violation{'' if cv - pv == 1 else 's'} "
                                 f"({cv} open now). Worth asking the landlord about before you sign.",
                         "url": None})
         elif pv > 0 and cv == 0:
-            out.append({"kind": "cleared", "price": None,
+            out.append({"kind": "cleared", "price": None, "n": pv,
                         "text": f"All {pv} open HPD violation{'' if pv == 1 else 's'} cleared.",
                         "url": None})
     if prev.get("s") is not None and (prev.get("s") != cur.get("s") or
@@ -229,6 +229,7 @@ def diff_building(rec, prev, cur, s8):
         if prev.get("u") and cur.get("u") and prev["u"] != cur["u"]:
             bits.append(f"registered units {prev['u']} → {cur['u']}")
         out.append({"kind": "status", "price": None,
+                    "units": (prev.get("u"), cur.get("u")) if prev.get("u") and cur.get("u") else None,
                     "text": "DHCR registration changed: " + "; ".join(bits) + ".", "url": None})
     return out
 
@@ -341,6 +342,74 @@ def subject_for(items, buildings, home_bbl=None):
     return f"{len(bbls)} buildings you saved changed"
 
 
+# The label top right, the headline and the button, per kind of change
+# (owner, 2026-11-05, the alert-card design).
+CARD = {"s8": (("Vouchers", "voucher"), "A building you saved has a listing for voucher holders."),
+        "price": (("Saved building", "good"), "Rent dropped at a building you saved."),
+        "lottery": (("Housing lottery", "lottery"), "A housing lottery opened at a building you saved."),
+        "rerental": (("Re-rental", "info"), "A re-rental opened at a building you saved."),
+        "violations": (("Heads up", "bad"), "New HPD violations at a building you saved."),
+        "cleared": (("Good news", "good"), "Violations cleared at a building you saved."),
+        "status": (("Saved building", "info"), "The DHCR registration changed at a building you saved.")}
+HOME_CARD = {"s8": "Your building has a listing for voucher holders.",
+             "price": "Rent dropped in your building.",
+             "lottery": "A housing lottery opened in your building.",
+             "rerental": "A re-rental opened in your building.",
+             "violations": "New HPD violations in your building.",
+             "cleared": "Violations cleared in your building.",
+             "status": "Your building's DHCR registration changed."}
+
+
+def change_blocks(rec, c, home=False):
+    """One building with one change: the building row, the change's number
+    large and its facts as pills. Only numbers the change carries are shown."""
+    where = ", ".join(x for x in (rec.get("nb"), BORO_NAME.get(rec.get("b"))) if x)
+    meta = ("Your apartment · " if home else "") + (where or "Rent-stabilized building")
+    k = c["kind"]
+    blocks = [{"type": "building", "heading": titlecase_addr(rec.get("a")), "meta": meta,
+               "tone": CARD.get(k, (("", "mute"),))[0][1]}]
+    pills = []
+    if k == "price" and c.get("price") and c.get("was"):
+        drop = c["was"] - c["price"]
+        blocks.append({"type": "big", "value": money(c["price"]), "was": money(c["was"])})
+        pills = [(f"↓ {money(drop)} / mo · {round(100 * drop / c['was'])}%", "good"), ("Voucher listing", "voucher")]
+    elif k == "s8":
+        if c.get("price"):
+            blocks.append({"type": "big", "value": money(c["price"]), "sub": "/ mo"})
+        pills = [("Voucher holders welcome", "voucher"), ("On AffordableHousing.com", None)]
+    elif k == "violations" and c.get("n"):
+        blocks.append({"type": "big", "value": str(c["n"]), "tone": "bad",
+                       "sub": f"new open violation{'' if c['n'] == 1 else 's'}"})
+        pills = [(f"{c['open']} open now", "bad")]
+    elif k == "cleared" and c.get("n"):
+        blocks.append({"type": "big", "value": str(c["n"]), "tone": "good",
+                       "sub": f"violation{'' if c['n'] == 1 else 's'} cleared"})
+        pills = [("0 open now", "good")]
+    elif k == "status" and c.get("units"):
+        was, now = c["units"]
+        blocks.append({"type": "big", "value": str(now), "was": str(was), "sub": "registered units"})
+    elif k in ("lottery", "rerental") and c.get("price"):
+        blocks.append({"type": "big", "value": money(c["price"]),
+                       "sub": "/ mo rent from" if k == "lottery" else "/ mo"})
+    if k == "lottery":
+        try:
+            pills.append(("Closes " + datetime.date.fromisoformat(c["closes"]).strftime("%b %-d"), "bad"))
+        except (KeyError, TypeError, ValueError):
+            pass
+        pills.append(("Apply before the deadline", "lottery"))
+    elif k == "rerental":
+        pills += [("No lottery needed", "info"), ("First come, first served", "warn")]
+    if pills:
+        blocks.append({"type": "pills", "items": pills})
+    # The sentence stays where it adds something the number does not ("worth
+    # asking the landlord", who listed it); where the big number already says
+    # all of it (a rent drop, a voucher price, a count cleared), it would only
+    # repeat it.
+    if not (len(blocks) > 1 and k in ("price", "s8", "cleared", "status")):
+        blocks.append({"type": "paragraph", "text": c["text"]})
+    return blocks
+
+
 def render_changes(user, items, buildings, emailkit):
     """items: [{bbl, kind, text, url, price}] pending for this user."""
     blocks = []
@@ -349,26 +418,38 @@ def render_changes(user, items, buildings, emailkit):
         by_bbl.setdefault(it["bbl"], []).append(it)
     home = user.get("home_bbl")
     # Your own building leads.
-    ordered = sorted(by_bbl.items(), key=lambda kv: 0 if kv[0] == home else 1)
-    for bbl, group in ordered[:MAX_CARDS]:
-        rec = buildings.get(bbl)
-        if not rec:
-            continue
-        if len(group) == 1:
-            blocks.append(card_for(rec, group[0], home=(bbl == home)))
-        else:
+    ordered = [(b, g) for b, g in sorted(by_bbl.items(), key=lambda kv: 0 if kv[0] == home else 1)
+               if buildings.get(b)]
+    one = ordered[0] if len(ordered) == 1 and len(ordered[0][1]) == 1 else None
+    if one:
+        bbl, (c,) = one
+        rec = buildings[bbl]
+        tag, title = CARD.get(c["kind"], (("Saved building", "info"), "A building you saved changed."))
+        if bbl == home:
+            title = HOME_CARD.get(c["kind"], "Your building changed.")
+        blocks = change_blocks(rec, c, home=(bbl == home))
+        cta = (("See the listing", c["url"]) if c.get("url") else
+               ("Open my apartment", f"{SITE}/#home") if bbl == home else
+               ("See the building", building_url(rec)))
+    else:
+        for bbl, group in ordered[:MAX_CARDS]:
+            rec = buildings[bbl]
             merged = {"text": " ".join(g["text"] for g in group),
                       "url": next((g["url"] for g in group if g.get("url")), None)}
             blocks.append(card_for(rec, merged, home=(bbl == home)))
-    if len(by_bbl) > MAX_CARDS:
-        blocks.append({"type": "note", "text": f"…and {len(by_bbl) - MAX_CARDS} more — "
-                                               f"everything you saved is on the map."})
+        if len(by_bbl) > MAX_CARDS:
+            blocks.append({"type": "note", "text": f"…and {len(by_bbl) - MAX_CARDS} more — "
+                                                   f"everything you saved is on the map."})
+        bad = {g["kind"] for _, grp in ordered for g in grp} <= {"violations"}
+        tag = ("Heads up", "bad") if bad else ("Saved buildings", "info")
+        title = f"{len(ordered)} buildings you saved changed." if len(ordered) > 1 else "A building you saved changed."
+        cta = ("Open your saved buildings", f"{SITE}/?src=saved#list")
     subject = subject_for(items, buildings, home)
     unsub = f"{SITE}/#unsub={user['token']}"
-    html, text = emailkit.render(
-        title=subject, eyebrow="A building you saved",
-        intro="You saved it, so we watch it. Here is what changed.",
-        blocks=blocks, cta=("Open your saved buildings", f"{SITE}/?src=saved#list"),
+    html, text = emailkit.render_alert(
+        title=title, eyebrow="A building you saved", tag=tag,
+        blocks=blocks, cta=cta,
+        link=("Open your saved buildings", f"{SITE}/?src=saved#list") if one else None,
         footer_note="You get these because you saved buildings on Find A Crib. "
                     "Never more than one email a day.",
         unsub_url=unsub)
@@ -500,8 +581,9 @@ def render_digest(user, pending, buildings, s8, feeds, seen, emailkit, now,
     blocks.append({"type": "note",
                    "text": "Stop just this round-up (alerts on your saved buildings keep working): "
                            f"{unsub}"})
-    html, text = emailkit.render(
+    html, text = emailkit.render_alert(
         title=subject, eyebrow=eyebrow, intro=intro, blocks=blocks,
+        tag=("Weekly" if not day3 else "Saved buildings", "info"),
         cta=("Open the map", f"{SITE}/?src=digest"),
         footer_note="You get this because you have a Find A Crib account and saved buildings. "
                     "Never more than one email a day.",
@@ -595,7 +677,7 @@ def main():
         if fresh and bbl in st["snap"] and not first:
             i = fresh[0]
             changes.setdefault(bbl, []).append(
-                {"kind": "lottery", "price": i.get("rent_low"), "url": i.get("url"),
+                {"kind": "lottery", "price": i.get("rent_low"), "url": i.get("url"), "closes": i.get("closes"),
                  "text": f"A housing lottery opened here: {i['text']}"
                          + (f" ({i['sub']})" if i.get("sub") else "") + ". Apply before the deadline."})
     for bbl, its in rerental_hits(watched, feeds).items():

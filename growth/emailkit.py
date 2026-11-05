@@ -507,6 +507,274 @@ RENDERERS = {"paragraph": _paragraph, "card": _card, "steps": _steps,
              "callout": _callout, "counts": _counts, "chips": _chips, "note": _note, "upsell": _upsell}
 
 
+# ------------------------------------------------------------ alert card
+#
+# The look every alert a USER gets (owner, 2026-11-05, picked "rent dropped"
+# of five designs and said "lets use it"): one white card on the grey page,
+# the logo and a coloured label on top, a big headline over a hairline, the
+# building as a row with a coloured square, one big number with pills under
+# it, an optional comparison bar, a full-width blue button and a quieter
+# link. Internal reports keep render()'s plain style.
+#
+# The same constraints as above: inline CSS, tables for anything side by
+# side, no images (the coloured square is a filled cell, its gradient a
+# progressive extra a client without background-image support shows flat).
+# Blocks only ever show numbers the caller has; a block with nothing real to
+# say is left out, never filled with a guess.
+
+PURPLE, PURPLE_BG = "#6a3df0", "#f0ebff"
+TEAL, TEAL_BG = "#0e7490", "#e0f5f8"
+TONES.update({"lottery": (PURPLE, PURPLE_BG), "voucher": (TEAL, TEAL_BG)})
+RULE = "#eef2f7"
+# Square colour per tone, and the order rows in a list cycle through.
+SQUARES = {"good": ("#34c48b", "#0b7a4b"), "bad": ("#f87171", "#dc2626"),
+           "warn": ("#fbbf24", "#d97706"), "info": ("#7cb4ff", "#3b82f6"),
+           "lottery": ("#c4b5fd", "#7c3aed"), "voucher": ("#67d4e4", "#0e7490"),
+           "mute": ("#f6c08b", "#d9734e")}
+CYCLE = ["mute", "lottery", "info", "good", "voucher", "warn"]
+
+
+def _square(tone, size=52):
+    a, b = SQUARES.get(tone or "mute", SQUARES["mute"])
+    return (f'<td width="{size}" valign="middle" style="width:{size}px;padding:0 14px 0 0">'
+            f'<div style="width:{size}px;height:{size}px;border-radius:{size // 4}px;background:{b};'
+            f'background-image:linear-gradient(135deg,{a},{b});font-size:1px;line-height:{size}px">'
+            f'&nbsp;</div></td>')
+
+
+def _a_building(b, tone=None):
+    """A building (or anything with a name): square, name, a muted line under
+    it, and optionally a value on the right. `body` and `link` from a plain
+    card follow under the row, so every existing card renders in the new look."""
+    right = ""
+    if b.get("right") or b.get("right_sub"):
+        rt = TONES.get(b.get("right_tone"), (INK, None))[0] if b.get("right_tone") else INK
+        right = (f'<td align="right" valign="middle" style="padding:0 0 0 10px;white-space:nowrap">'
+                 + (f'<div style="font-size:17px;font-weight:800;color:{rt}">{esc(b["right"])}</div>'
+                    if b.get("right") else "")
+                 + (f'<div style="font-size:12px;font-weight:600;color:{INK2}">{esc(b["right_sub"])}</div>'
+                    if b.get("right_sub") else "") + "</td>")
+    row = _tbl(f'<tr>{_square(b.get("tone") or tone)}'
+               f'<td valign="middle"><div style="font-size:16px;font-weight:700;color:{INK};line-height:1.3">'
+               f'{esc(b["heading"])}</div>'
+               + (f'<div style="font-size:14px;color:{INK2};margin-top:2px;line-height:1.4">{esc(b["meta"])}</div>'
+                  if b.get("meta") else "")
+               + f'</td>{right}</tr>', "margin:0 0 14px")
+    body = (f'<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:{INK};background:{PAPER}">'
+            f'{esc(b["body"])}</p>') if b.get("body") else ""
+    link = ""
+    if b.get("link"):
+        label, url = b["link"]
+        link = (f'<p style="margin:0 0 16px"><a href="{esc(safe_url(url))}" style="color:{BLUE};'
+                f'font-weight:600;font-size:15px;text-decoration:none">{esc(label)} &rarr;</a></p>')
+    return row + body + link, _card(b)[1]
+
+
+def _a_big(b):
+    """The one number that matters: $2,195 with $2,450 struck through, or
+    "3 new this week". {value, was?, sub?, tone?}"""
+    colour = TONES.get(b.get("tone"), (INK, None))[0] if b.get("tone") else INK
+    html = (f'<div style="margin:4px 0 8px;line-height:1.1">'
+            f'<span style="font-size:42px;font-weight:800;letter-spacing:-1px;color:{colour}">{esc(b["value"])}</span>'
+            + (f'&nbsp;&nbsp;<span style="font-size:21px;font-weight:600;color:{INK3};'
+               f'text-decoration:line-through">{esc(b["was"])}</span>' if b.get("was") else "")
+            + (f'&nbsp;&nbsp;<span style="font-size:16px;font-weight:600;color:{INK2}">{esc(b["sub"])}</span>'
+               if b.get("sub") else "") + "</div>")
+    text = str(b["value"]) + (f" (was {b['was']})" if b.get("was") else "") + (f" {b['sub']}" if b.get("sub") else "")
+    return html, text
+
+
+def _a_pills(b):
+    """Toned pills: [(text, tone)] or plain strings."""
+    items = [(i, None) if isinstance(i, str) else (i[0], i[1] if len(i) > 1 else None)
+             for i in b["items"] if i and (i if isinstance(i, str) else i[0])]
+    if not items:
+        return "", ""
+    spans = "".join(
+        f'<span style="display:inline-block;background:{TONES.get(t, (INK2, "#f1f5f9"))[1] if t else "#f1f5f9"};'
+        f'color:{TONES.get(t, ("#334155", None))[0] if t else "#334155"};border-radius:99px;'
+        f'padding:6px 11px;margin:0 6px 7px 0;font-size:13px;font-weight:600">{esc(x)}</span>'
+        for x, t in items)
+    return f'<div style="margin:0 0 12px">{spans}</div>', " · ".join(x for x, _ in items)
+
+
+def _a_compare(b):
+    """A labelled bar: {label, pct, tone, caption}. Only for a real
+    comparison the caller computed; there is no default number."""
+    pct = max(0.0, min(100.0, float(b.get("pct") or 0)))
+    colour = TONES.get(b.get("tone") or "info", (BLUE, None))[0]
+    fill = (f'<td width="{pct:.1f}%" style="height:10px;line-height:10px;font-size:0;'
+            f'background:{colour};border-radius:99px">&nbsp;</td>') if pct >= 0.5 else ""
+    html = (f'<div style="margin:4px 0 14px">'
+            f'<div style="font-size:14px;color:{INK2};margin:0 0 7px">{esc(b["label"])}</div>'
+            + _tbl(f'<tr>{fill}<td style="height:10px;line-height:10px;font-size:0">&nbsp;</td></tr>',
+                   f"background:{RULE};border-radius:99px")
+            + (f'<div style="font-size:14px;color:{INK2};margin:7px 0 0;line-height:1.5">{esc(b["caption"])}</div>'
+               if b.get("caption") else "") + "</div>")
+    return html, f"{b['label']}: {b.get('caption') or ''}".rstrip(": ")
+
+
+def _a_section(b):
+    html = (f'<div style="font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;'
+            f'color:{INK2};margin:20px 0 8px">{esc(b["label"])}</div>')
+    return html, "\n" + str(b["label"]).upper()
+
+
+def _a_list(b):
+    """Linked items as rows: square, name, line under it, price on the right.
+    Every cell is the same link, so the whole row is the tap target (see
+    _callout for why a wrapped inline link is not)."""
+    tone = b.get("tone")
+    head = _a_section({"label": b["heading"]})[0] if b.get("heading") else ""
+    rows = []
+    for n, it in enumerate(b["items"]):
+        it = it if isinstance(it, dict) else {"text": it}
+        url = esc(safe_url(it.get("url") or "#"))
+        rule = f"border-top:1px solid {RULE};" if n else ""
+        sq = (it.get("tone") or (tone if tone in SQUARES and tone not in ("good", "info", "warn")
+                                 else CYCLE[n % len(CYCLE)]))
+        a, c = SQUARES.get(sq, SQUARES["mute"])
+
+        def cell(inner, style):
+            return (f'<td valign="middle" style="{rule}{style}"><a href="{url}" style="display:block;'
+                    f'text-decoration:none;color:{INK}">{inner}</a></td>')
+        right = ""
+        if it.get("right") or it.get("right_sub"):
+            right = ((f'<span style="display:block;font-size:16px;font-weight:800;color:{INK}">{esc(it["right"])}</span>'
+                      if it.get("right") else "")
+                     + (f'<span style="display:block;font-size:12px;font-weight:600;color:{INK2}">{esc(it["right_sub"])}</span>'
+                        if it.get("right_sub") else ""))
+        rows.append(
+            "<tr>"
+            + cell(f'<span style="display:block;width:44px;height:44px;border-radius:12px;background:{c};'
+                   f'background-image:linear-gradient(135deg,{a},{c})">&nbsp;</span>', "width:44px;padding:12px 12px 12px 0")
+            + cell(f'<span style="display:block;font-size:15px;font-weight:700;line-height:1.3;color:{INK}">'
+                   f'{esc(it.get("text", ""))}</span>'
+                   + (f'<span style="display:block;font-size:13px;line-height:1.4;color:{INK2};margin-top:2px">'
+                      f'{esc(it["sub"])}</span>' if it.get("sub") else ""), "padding:12px 0")
+            + cell(right, "padding:12px 0 12px 8px;text-align:right;white-space:nowrap")
+            + "</tr>")
+    html = (f'<div style="margin:0 0 10px">{head}'
+            + _tbl("".join(rows), "table-layout:auto") + "</div>")
+    return html, _group(b)[1]
+
+
+def _a_callout(b):
+    if b.get("items") and any(isinstance(it, dict) and it.get("url") for it in b["items"]):
+        return _a_list(b)
+    return _callout(b)
+
+
+def _a_counts(b):
+    """Counts tiles become the big number and pills: "4 new" over
+    "2 Brooklyn · 1 Manhattan"."""
+    items = list(b["items"])[:3]
+    if not items:
+        return "", ""
+    n, label = items[0]
+    big = _a_big({"value": n, "sub": label})
+    pills = _a_pills({"items": [(f"{c} {l}", "info") for c, l in items[1:]]})
+    return big[0] + pills[0], " · ".join(f"{c} {l}" for c, l in items)
+
+
+def _a_note(b):
+    return (f'<p style="margin:0 0 12px;font-size:13px;color:{INK2};line-height:1.55;'
+            f'background:{PAPER}">{esc(b["text"])}</p>', f"  {b['text']}")
+
+
+def _a_stats(b):
+    """A row of up to three numbers as soft tiles, one table row, so they
+    sit side by side on a phone too (inline-blocks stacked raggedly)."""
+    items = list(b["items"])[:3]
+    w = f"{100 // max(1, len(items))}%"
+    tds = "".join(
+        f'<td width="{w}" valign="top" style="padding:0 0 0 {0 if i == 0 else 8}px">'
+        f'<div style="background:#f8fafc;border:1px solid #e9eef5;border-radius:14px;padding:12px">'
+        f'<div style="font-size:22px;font-weight:800;color:{INK};line-height:1.1">{esc(v)}</div>'
+        f'<div style="font-size:12px;color:{INK2};margin-top:3px;line-height:1.3">{esc(l)}</div></div></td>'
+        for i, (v, l) in enumerate(items))
+    return _tbl(f"<tr>{tds}</tr>", "margin:0 0 14px;table-layout:fixed"), " · ".join(f"{v} {l}" for v, l in items)
+
+
+ALERT_RENDERERS = dict(RENDERERS, stats=_a_stats, card=_a_building, building=_a_building, big=_a_big,
+                       pills=_a_pills, compare=_a_compare, section=_a_section,
+                       callout=_a_callout, counts=_a_counts, note=_a_note)
+
+
+def render_alert(title, blocks=None, intro=None, cta=None, link=None, tag=None,
+                 footer_note=None, unsub_url=None, unsub_label="Unsubscribe", eyebrow=None):
+    """(html, text) in the alert-card look. `tag` is (label, tone) for the
+    pill top right; `link` a (label, url) under the button. `eyebrow` is
+    kept for the text part only; the tag carries it in the HTML."""
+    body_html, body_text = [], []
+    for b in blocks or []:
+        fn = ALERT_RENDERERS.get(b.get("type"))
+        if not fn:
+            continue
+        h, t = fn(b)
+        # Text blocks shared with render() paint the grey page behind
+        # themselves (the dark-mode rule above); on the card it is white.
+        body_html.append(h.replace(f"background:{PAGE}", f"background:{PAPER}"))
+        if t:
+            body_text.append(t)
+    tag_html = ""
+    if tag:
+        label, tone = tag
+        c, bg = TONES.get(tone, (BLUE, "#e8f0fe"))
+        tag_html = (f'<td align="right" valign="middle"><span style="display:inline-block;background:{bg};'
+                    f'color:{c};font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;'
+                    f'padding:6px 11px;border-radius:99px;white-space:nowrap">{esc(label)}</span></td>')
+    cta_html = ""
+    if cta:
+        label, url = cta
+        cta_html = (f'<a href="{esc(safe_url(url))}" style="display:block;text-align:center;background:{BLUE};'
+                    f'color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:16px 20px;'
+                    f'border-radius:14px;margin:20px 0 4px">{esc(label)}</a>')
+        body_text.append(f"{label}: {url}")
+    link_html = ""
+    if link:
+        label, url = link
+        link_html = (f'<a href="{esc(safe_url(url))}" style="display:block;text-align:center;color:{BLUE};'
+                     f'text-decoration:none;font-weight:600;font-size:15px;padding:12px 10px 0">'
+                     f'{esc(label)} &rarr;</a>')
+        body_text.append(f"{label}: {url}")
+    foot = []
+    if footer_note:
+        foot.append(esc(footer_note))
+    if unsub_url:
+        foot.append(f'<a href="{esc(safe_url(unsub_url))}" style="color:{INK2}">{esc(unsub_label)}</a>')
+    foot.append(f"{BRAND} &middot; Brooklyn, NY")
+    html = (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;background:{PAGE};margin:0;-webkit-text-size-adjust:100%"><tr>'
+        f'<td align="center" style="padding:24px 10px 32px;background:{PAGE}">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;max-width:600px;margin:0 auto">'
+        f'<tr><td style="font-family:{FONT};background:{PAPER};color:{INK};border-radius:22px;'
+        f'padding:24px 24px 26px;box-shadow:0 8px 28px rgba(15,23,42,.06)">'
+        + _tbl(f'<tr><td width="30" valign="middle" style="width:30px;padding:0 10px 0 0">'
+               f'<div style="width:30px;height:30px;line-height:30px;border-radius:9px;background:{BLUE};'
+               f'color:#ffffff;font-size:12px;font-weight:800;text-align:center">FAC</div></td>'
+               f'<td valign="middle" style="font-size:15px;font-weight:700;color:{INK}">{BRAND}</td>'
+               f'{tag_html}</tr>')
+        + f'<h1 style="font-size:26px;line-height:1.18;letter-spacing:-.4px;font-weight:800;color:{INK};'
+          f'margin:20px 0 14px;padding:0 0 14px;border-bottom:1px solid {RULE}">{esc(title)}</h1>'
+        + (f'<p style="color:{INK2};font-size:15px;margin:0 0 16px;line-height:1.5">{esc(intro)}</p>'
+           if intro else "")
+        + "".join(body_html) + cta_html + link_html
+        + f'</td></tr><tr><td align="center" style="font-family:{FONT};padding:18px 16px 0;'
+          f'color:{INK3};font-size:12px;line-height:1.7;background:{PAGE}">'
+        + "<br>".join(foot) + "</td></tr></table></td></tr></table>")
+    parts = [f"{eyebrow} — {title}" if eyebrow else title]
+    if intro:
+        parts.append(intro)
+    parts += body_text
+    parts.append(f"—\n{BRAND} · {SITE}" + (f"\n{footer_note}" if footer_note else ""))
+    if unsub_url:
+        parts.append(f"{unsub_label}: {unsub_url}")
+    return html, "\n\n".join(p for p in parts if p) + "\n"
+
+
 # ------------------------------------------------------------------- render
 
 def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url=None,

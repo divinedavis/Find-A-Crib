@@ -179,21 +179,31 @@ def push_text(address, calls):
 
 def email_parts(emailkit, watch, calls):
     address = watch.get("address") or "your building"
+    link = f"{SITE}/casa/?bbl={watch['bbl']}&src=casa_alert"
     rows = []
     for c in calls[-MAX_PER_ALERT:][::-1]:
         try:
             day = datetime.date.fromisoformat((c.get("created_date") or "")[:10]).strftime("%b %-d, %Y")
         except ValueError:
             day = (c.get("created_date") or "")[:10]
-        rows.append({"type": "card", "heading": label(c),
-                     "meta": f"{day} · {(c.get('status') or '').title()}" + (" · pests" if is_pest(c) else "")})
+        status = (c.get("status") or "").title()
+        rows.append({"text": label(c), "url": link,
+                     "tone": "good" if status.lower() == "closed" else "bad",
+                     "sub": f"{day} · {status}" + (" · pests" if is_pest(c) else "")})
     n = len(calls)
-    link = f"{SITE}/casa/?bbl={watch['bbl']}&src=casa_alert"
-    html, text = emailkit.render(
-        title=f"{n} new 311 call{'s' if n != 1 else ''} at {address}",
+    # The alert-card design (owner, 2026-11-05): your building, the count
+    # large, then each call as a row coloured by whether it is still open.
+    open_n = sum(1 for c in calls if (c.get("status") or "").lower() != "closed")
+    blocks = [{"type": "building", "heading": address, "meta": "Your building", "tone": "warn"},
+              {"type": "big", "value": str(n), "sub": f"new 311 call{'s' if n != 1 else ''}"},
+              {"type": "pills", "items": [(f"{open_n} still open", "bad") if open_n else ("All closed", "good")]},
+              {"type": "callout", "heading": "The calls", "items": rows}]
+    html, text = emailkit.render_alert(
+        title=f"{n} new 311 call{'s' if n != 1 else ''} at your building.",
         intro="New calls the City published for the building you watch in Your Crib.",
-        blocks=rows,
+        tag=("Your Casa", "warn"), blocks=blocks,
         cta=("See every call on your building", link),
+        link=("File your own 311 complaint", "https://portal.311.nyc.gov/"),
         footer_note=f"You're watching {address} with Find A Crib Plus. Stop any time in Your Crib: {SITE}/casa/")
     return f"New 311 call{'s' if n != 1 else ''} at {address}", html, text
 
@@ -261,8 +271,11 @@ def run_crime(w, key, newest, dry):
             print(f"{w['bbl']}: crime {counts}")
             from growth import emailkit
             title, body = crime_text(w.get("address"), counts, seen, newest)
-            html, text = emailkit.render(
+            html, text = emailkit.render_alert(
                 title=title, intro=body + ". From the NYPD's newest quarterly release.",
+                tag=("Your Casa", "warn"),
+                blocks=[{"type": "building", "heading": w.get("address") or "Your building",
+                         "meta": "Your building", "tone": "warn"}],
                 cta=("See the chart for your building", f"{SITE}/casa/?bbl={w['bbl']}&src=casa_crime"),
                 footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
             sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry)
@@ -291,8 +304,11 @@ def send_test(key, email, bbl, lat, lng, address=""):
     if any(counts.values()):
         title, body = crime_text(w["address"], counts, after, newest)
         from growth import emailkit
-        html, text = emailkit.render(
+        html, text = emailkit.render_alert(
             title=title, intro=body + ". From the NYPD's newest quarterly release.",
+            tag=("Your Casa", "warn"),
+            blocks=[{"type": "building", "heading": w.get("address") or "Your building",
+                     "meta": "Your building", "tone": "warn"}],
             cta=("See the chart for your building", f"{SITE}/casa/?bbl={bbl}&src=casa_crime"),
             footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
         print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False))

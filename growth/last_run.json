@@ -1,17 +1,17 @@
 {
   "build": {
-    "at": "2026-11-04T05:40:21+00:00",
+    "at": "2026-11-05T05:40:22+00:00",
     "changed_urls": 6,
-    "date": "2026-11-04",
+    "date": "2026-11-05",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-11-04"
+      "written": "2026-11-05"
     },
     "seo_pipeline": {
-      "at": "2026-11-04T05:41:43Z",
-      "changed_urls": 233,
+      "at": "2026-11-05T05:41:48Z",
+      "changed_urls": 164,
       "code": "synced-1",
       "corpus_pages": 49288,
       "data": "synced-1",
@@ -19,17 +19,17 @@
       "hours_ago": 0.0,
       "indexnow": "ok",
       "indexnow_http": 200,
-      "indexnow_urls": 234,
+      "indexnow_urls": 165,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-11-04T05:40:21Z",
+      "started": "2026-11-05T05:40:22Z",
       "state": "ran clean (source handed over from the checkout: synced-1) (nightly feeds handed over from the docroot: synced-1)",
       "step": "done",
       "voucher_feed_h": 1
     },
     "seo_watchdog": {
-      "at": "2026-11-04T05:41:43+00:00",
+      "at": "2026-11-05T05:41:48+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -76,10 +76,10 @@
         "unchanged": true
       },
       "frozen_pages": {
-        "detail": "page ages across 49,329 published pages in 34 tiers (newest written 2026-11-04; frozen = older than 2026-11-02) \u2014 wholly frozen, nothing rebuilds these at all (retired tiers and the app shells this loop cannot deploy): brief/ 17 of 17 (last written 2026-09-26, oldest 2026-07-27, 100d); deck/ 5 of 5 (last written 2026-10-19, oldest 2026-10-19, 16d); alerts/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 29d); brand/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 56d); directory/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 29d); privacy/ 1 of 1 (last written 2026-10-12, oldest 2026-10-12, 23d); report-ready/ 1 of 1 (last written 2026-07-27, oldest 2026-07-27, 100d); reset/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 56d), +1 more \u2014 skipped: 5 not a directory index or unreadable",
+        "detail": "page ages across 49,329 published pages in 34 tiers (newest written 2026-11-05; frozen = older than 2026-11-03) \u2014 wholly frozen, nothing rebuilds these at all (retired tiers and the app shells this loop cannot deploy): brief/ 17 of 17 (last written 2026-09-26, oldest 2026-07-27, 101d); deck/ 5 of 5 (last written 2026-10-19, oldest 2026-10-19, 17d); alerts/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 30d); brand/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 57d); directory/ 1 of 1 (last written 2026-10-06, oldest 2026-10-06, 30d); privacy/ 1 of 1 (last written 2026-10-12, oldest 2026-10-12, 24d); report-ready/ 1 of 1 (last written 2026-07-27, oldest 2026-07-27, 101d); reset/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 57d), +1 more \u2014 skipped: 5 not a directory index or unreadable",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-11-04"
+        "same_since": "2026-11-05"
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -88,14 +88,14 @@
         "unchanged": true
       },
       "indexnow": {
-        "detail": "submitted 6 URLs \u2192 HTTP 200; the SEO pipeline's bulk submission sent 305 URLs \u2192 HTTP 200",
+        "detail": "submitted 6 URLs \u2192 HTTP 200; the SEO pipeline's bulk submission sent 234 URLs \u2192 HTTP 200",
         "ok": true
       },
       "lastmod_integrity": {
-        "detail": "240 of 1,711 advertised URLs (14.0%) are dated today (2026-11-04) \u2014 25 distinct dates across the advertised set, widest first: 2026-10-06 622, 2026-10-29 402, 2026-11-04 240, 2026-10-31 225 \u2014 the widest is 2026-10-06, held by 36.4% of the set: either most pages last genuinely changed then or that night restamped them, which only 2026-10-06's own build log can settle",
+        "detail": "171 of 1,711 advertised URLs (10.0%) are dated today (2026-11-05) \u2014 26 distinct dates across the advertised set, widest first: 2026-10-06 622, 2026-10-29 401, 2026-10-31 222, 2026-11-05 171 \u2014 the widest is 2026-10-06, held by 36.4% of the set: either most pages last genuinely changed then or that night restamped them, which only 2026-10-06's own build log can settle",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-11-04"
+        "same_since": "2026-11-05"
       },
       "llms_txt": {
         "detail": "llms.txt (83 lines), robots.txt naming 16 AI crawlers",
@@ -111,11 +111,11 @@
         "unchanged": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /available/, /brief/), newest lastmod 2026-11-04 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /available/, /brief/), newest lastmod 2026-11-05 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       },
       "voucher_reach": {
-        "detail": "292 of 292 voucher-listed buildings carry the listing on their own page (100%), feed dated 2026-11-04",
+        "detail": "292 of 292 voucher-listed buildings carry the listing on their own page (100%), feed dated 2026-11-05",
         "ok": true,
         "reread": "agreed"
       }

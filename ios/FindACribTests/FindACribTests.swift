@@ -2311,3 +2311,35 @@ final class ScrollChromeTests: XCTestCase {
         XCTAssertEqual(t.direction, -1, "a layout jump isn't the finger")
     }
 }
+
+/// Your Crib's list of each NYPD report (owner, 2026-11-06). Same rules as
+/// casa_alerts.crime_reports, so the app lists what the alert counted.
+final class CasaReportTests: XCTestCase {
+    func testDetailsReadLikeEnglish() {
+        XCTAssertEqual(Casa.reportDetail(kind: "burglary", ofns: "BURGLARY", pd: "BURGLARY,RESIDENCE,UNKNOWN TIM"), "residence")
+        XCTAssertEqual(Casa.reportDetail(kind: "burglary", ofns: "BURGLARY", pd: "BURGLARY,TRUCK DAY"), "truck")
+        XCTAssertEqual(Casa.reportDetail(kind: "robbery", ofns: "ROBBERY", pd: "ROBBERY,BEGIN AS SHOPLIFTING"), "begin as shoplifting")
+        XCTAssertEqual(Casa.reportDetail(kind: "theft", ofns: "PETIT LARCENY", pd: "LARCENY,PETIT OF BICYCLE"), "bicycle")
+        XCTAssertEqual(Casa.reportDetail(kind: "assault", ofns: "FELONY ASSAULT", pd: "ASSAULT 2,1,UNCLASSIFIED"), "felony")
+        XCTAssertEqual(Casa.reportDetail(kind: "harassment", ofns: "HARRASSMENT 2", pd: "HARASSMENT,SUBD 3"), "")
+    }
+
+    func testCompassAndDistance() {
+        XCTAssertEqual(Casa.compass(40.0, -74.0, 40.01, -74.0), "N")
+        XCTAssertEqual(Casa.compass(40.0, -74.0, 39.99, -73.99), "SE")
+        XCTAssertEqual(Casa.metres(40.0, -74.0, 40.01, -74.0), 1112, accuracy: 3)
+    }
+
+    func testRowTitleAndLine() {
+        let r = Casa.CrimeReport(id: "1", kind: "robbery", detail: "personal electronic device", day: "2026-08-14", time: "20:00",
+                                 place: "street", metres: 640, dir: "S", attempted: true)
+        XCTAssertEqual(r.title, "Robbery — personal electronic device (attempted)")
+        XCTAssertTrue(r.sub.hasPrefix("Aug 14 · "), r.sub)
+        XCTAssertTrue(r.sub.hasSuffix(" · street · 0.4\u{00a0}mi\u{00a0}S"), r.sub)
+    }
+
+    func testListWindowIsTheNewestRelease() {
+        let newest = Casa.parseMonth("2026-09-30")!
+        XCTAssertEqual(Casa.soql(Casa.reportWindowStart(endingWith: newest)).prefix(10), "2026-07-01", "Jul 1 – Sep 30, as the alert says")
+    }
+}

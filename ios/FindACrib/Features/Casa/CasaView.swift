@@ -21,6 +21,10 @@ struct CasaView: View {
     @State private var crime: [Casa.CrimeMonth] = []
     @State private var crimeThrough: Date?
     @State private var crimeFailed = false
+    /// Each report under the chart (owner, 2026-11-06). nil while loading.
+    @State private var reports: [Casa.CrimeReport]?
+    @State private var reportsFailed = false
+    @State private var showAllReports = false
     /// When the shown calls/crime came from the phone because NYC's data
     /// couldn't be reached: the time they were saved.
     @State private var offlineSince: Date?
@@ -376,10 +380,90 @@ struct CasaView: View {
                 if crimeThrough != nil {
                     Text("NYPD complaint reports, \(Self.monthRange(crime)).")
                         .font(.se(14)).foregroundStyle(SE.ink3)
+                    reportList
                 }
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .task(id: reportsKey) { await loadReports() }
+    }
+
+    /// The kinds the list shows: this building's alert kinds, or the serious
+    /// three when none are picked.
+    private var reportKinds: [String] {
+        if let w = watch.watch, w.bbl == place?.bbl, let k = w.crime_kinds, !k.isEmpty { return k }
+        return Casa.defaultReportKinds
+    }
+    private var reportsKey: String {
+        "\(place?.bbl ?? "")|\(reportKinds.joined(separator: ","))|\(crimeThrough?.timeIntervalSince1970 ?? 0)"
+    }
+    private var reportRange: String {
+        guard let newest = crime.last?.month, let through = crimeThrough else { return "" }
+        let from = Casa.reportWindowStart(endingWith: newest)
+        return "\(from.formatted(.dateTime.month(.abbreviated).day())) – \(through.formatted(.dateTime.month(.abbreviated).day()))"
+    }
+
+    /// Every report the alert counted, newest first (owner, 2026-11-06: "i
+    /// dont think i actually see the listing of these robberies").
+    @ViewBuilder private var reportList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("The reports, \(reportRange)").font(.se(16, .bold)).foregroundStyle(SE.ink).padding(.top, 8)
+                .accessibilityIdentifier("casa-reports-title")
+            if let reports {
+                Text(reportSummary(reports)).font(.se(14)).foregroundStyle(SE.ink3)
+                ForEach(reports.prefix(showAllReports ? reports.count : 5)) { reportRow($0) }
+                if reports.count > 5 && !showAllReports {
+                    Button("Show all \(reports.count) reports") {
+                        showAllReports = true
+                        Analytics.shared.track("casa_crime_list_all", ["n": reports.count])
+                    }
+                    .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-reports-more")
+                } else if reports.count > 5 {
+                    Button("Show fewer") { withAnimation { showAllReports = false } }
+                        .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-reports-less")
+                }
+            } else if reportsFailed {
+                Text("Couldn't load the reports right now.").font(.se(14)).foregroundStyle(SE.ink3)
+            } else {
+                ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.vertical, 8)
+            }
+        }
+    }
+
+    private func reportSummary(_ list: [Casa.CrimeReport]) -> String {
+        let kinds = reportKinds
+        let counts = Dictionary(grouping: list, by: \.kind).mapValues(\.count)
+        let mine = watch.watch?.bbl == place?.bbl && !(watch.watch?.crime_kinds ?? []).isEmpty
+        let head = list.isEmpty ? String(localized: "None reported within half a mile.")
+            : String(localized: "\(list.count) within half a mile: ") + kinds.compactMap { k in
+                counts[k].map { "\(Casa.crimeSingular[k] ?? k) \($0)" } }.joined(separator: " · ") + "."
+        return head + " " + (mine ? String(localized: "The kinds your alerts watch.")
+                                  : String(localized: "Shootings, robberies and burglaries. Turn on crime alerts to choose."))
+    }
+
+    private func reportRow(_ r: Casa.CrimeReport) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Circle().fill(SE.bad).frame(width: 9, height: 9).padding(.top, 7)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(r.title).font(.se(16, .semibold)).foregroundStyle(SE.ink)
+                Text(r.sub).font(.se(14)).foregroundStyle(SE.ink3)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("casa-report")
+    }
+
+    private func loadReports() async {
+        guard let p = place, let through = crimeThrough, let newest = crime.last?.month else { return }
+        if CommandLine.arguments.contains("--casa-demo") { return }   // showDemo filled them
+        reports = nil; reportsFailed = false; showAllReports = false
+        do {
+            let r = try await Casa.reports(lat: p.lat, lng: p.lng, kinds: reportKinds,
+                                           from: Casa.reportWindowStart(endingWith: newest), through: through)
+            if place?.bbl == p.bbl { reports = r }
+        } catch {
+            if place?.bbl == p.bbl, !(error is CancellationError) { reportsFailed = true }
+        }
     }
 
     @ViewBuilder private var olderCard: some View {
@@ -430,7 +514,7 @@ struct CasaView: View {
         place = p
         older = nil
         showAllCalls = false
-        crime = []; crimeThrough = nil; crimeFailed = false; offlineSince = nil; serverFailed = false; interrupted = false
+        crime = []; crimeThrough = nil; crimeFailed = false; reports = nil; reportsFailed = false; showAllReports = false; offlineSince = nil; serverFailed = false; interrupted = false
         savedPlace = (try? JSONEncoder().encode(p)) ?? Data()
         Analytics.shared.track("casa_lookup", ["bbl": p.bbl])
         failed = false
@@ -493,6 +577,15 @@ struct CasaView: View {
             Casa.CrimeMonth(month: $0.0, felonies: $0.1 / 3, total: $0.1)
         }
         crimeThrough = ISO8601DateFormatter.socrata.date(from: "2026-06-30T00:00:00")
+        func r(_ i: String, _ k: String, _ d: String, _ day: String, _ t: String, _ pl: String, _ m: Double, _ dir: String) -> Casa.CrimeReport {
+            Casa.CrimeReport(id: i, kind: k, detail: d, day: day, time: t, place: pl, metres: m, dir: dir, attempted: false)
+        }
+        reports = [r("1", "robbery", "personal electronic device", "2026-06-24", "20:10", "street", 410, "SW"),
+                   r("2", "burglary", "residence", "2026-06-11", "03:30", "residence - apt. house", 260, "N"),
+                   r("3", "robbery", "begin as shoplifting", "2026-05-30", "14:05", "chain store", 700, "E"),
+                   r("4", "shootings", "", "2026-05-02", "23:40", "street", 780, "SE"),
+                   r("5", "burglary", "commercial", "2026-04-19", "06:15", "grocery/bodega", 520, "W"),
+                   r("6", "robbery", "", "2026-04-08", "18:00", "street", 330, "NW")]
     }
 
     static func dayText(_ day: String) -> String {

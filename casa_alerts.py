@@ -32,8 +32,11 @@ import datetime
 import json
 import math
 import os
+import re
 import sys
 import urllib.parse
+import time
+import urllib.error
 import urllib.request
 from zoneinfo import ZoneInfo
 
@@ -98,9 +101,20 @@ def new_calls(bbl, since_iso):
          "$order": "created_date ASC", "$limit": "200"})
 
 
-def socrata(url, q):
-    with urllib.request.urlopen(url + "?" + urllib.parse.urlencode(q), timeout=90) as r:
-        return json.loads(r.read())
+def socrata(url, q, tries=3):
+    # NYC Open Data answers a stray 503 now and then (the app and web page
+    # retry too): a busy moment gets two more tries.
+    for attempt in range(tries):
+        try:
+            with urllib.request.urlopen(url + "?" + urllib.parse.urlencode(q), timeout=90) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if attempt == tries - 1 or not (e.code == 429 or e.code >= 500):
+                raise
+        except urllib.error.URLError:
+            if attempt == tries - 1:
+                raise
+        time.sleep(1.5 * (attempt + 1))
 
 
 def nypd_newest():
@@ -136,6 +150,145 @@ def crime_counts(lat, lng, kinds, after, through):
         out["shootings"] = sum(1 for r in rows if r.get("latitude") and r.get("longitude")
                                and metres(lat, lng, float(r["latitude"]), float(r["longitude"])) <= RADIUS_M)
     return out
+
+
+# Each report the alert counted, listed (owner, 2026-11-06: "i dont think i
+# actually see the listing of these robberies"). Suspect and victim fields
+# are left out on purpose: they are in the NYPD file, but not what a tenant
+# asked for, and a list of them reads as profiling.
+COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+
+def tidy(s):
+    s = (s or "").strip()
+    return s[:1] + s[1:].lower() if s.isupper() else s
+
+
+# Parts of the NYPD's pd_desc that say nothing to a tenant: the time-of-day
+# split ("BURGLARY,RESIDENCE,NIGHT"), its own truncated "unclassified" and
+# bare degree numbers ("ASSAULT 2,1,UNCLASSIFIED").
+DETAIL_NOISE = {"DAY", "NIGHT", "UNKNOWN TIM", "UNKNOWN TIME", "UNCL", "UNCLASSIFIE", "UNCLASSIFIED", "UNCLASSIFI"}
+
+
+# Only these kinds carry a detail worth reading; the rest are statute
+# shorthand ("HARASSMENT 2,SUBD 3", "CRIMINAL MISCHIEF 4TH, UNCL").
+DETAIL_KINDS = {"robbery", "burglary", "theft", "car_theft"}
+
+
+def detail(kind, ofns, pd_desc):
+    """"BURGLARY,RESIDENCE,UNKNOWN TIM" -> "residence"; "ROBBERY,BEGIN AS
+    SHOPLIFTING" -> "begin as shoplifting"; FELONY ASSAULT -> "felony"."""
+    if kind == "assault":
+        return "felony" if ofns == "FELONY ASSAULT" else ""
+    if kind not in DETAIL_KINDS:
+        return ""
+    parts = []
+    for x in (pd_desc or "").split(",")[1:]:
+        x = re.sub(r"\s+(DAY|NIGHT)$", "", x.strip())
+        x = re.sub(r"^((PETIT|GRAND)\s+)?(OF\s+)?", "", x)
+        if x and x.upper() not in DETAIL_NOISE and not x.isdigit():
+            parts.append(x)
+    return ", ".join(parts).lower()
+
+
+def bearing(a_lat, a_lng, b_lat, b_lng):
+    """Compass point from the building to the report: "NE"."""
+    x = math.radians(b_lng - a_lng) * math.cos(math.radians((a_lat + b_lat) / 2))
+    y = math.radians(b_lat - a_lat)
+    return COMPASS[round((math.degrees(math.atan2(x, y)) % 360) / 45) % 8]
+
+
+def crime_reports(lat, lng, kinds, after, through):
+    """Every report behind crime_counts, newest first: dicts with kind (the
+    CRIME_KINDS key), title, detail, date (YYYY-MM-DD), time ("20:00"),
+    place, metres, dir and attempted."""
+    out = []
+    by_offense = {o: k for k in kinds if CRIME_KINDS[k][2] for o in CRIME_KINDS[k][2]}
+    if by_offense:
+        listed = ",".join("'" + o.replace("'", "''") + "'" for o in sorted(by_offense))
+        rows = socrata(COMPLAINTS, {
+            "$select": "cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, ofns_desc, pd_desc, prem_typ_desc, crm_atpt_cptd_cd, latitude, longitude",
+            "$where": (f"within_circle(lat_lon, {lat}, {lng}, {RADIUS_M}) AND cmplnt_fr_dt > '{after}T23:59:59'"
+                       f" AND cmplnt_fr_dt <= '{through}T23:59:59' AND ofns_desc in ({listed})"),
+            "$order": "cmplnt_fr_dt DESC, cmplnt_fr_tm DESC", "$limit": "2000"})
+        for r in rows:
+            k = by_offense.get(r.get("ofns_desc"))
+            if not k or not r.get("latitude"):
+                continue
+            b_lat, b_lng = float(r["latitude"]), float(r["longitude"])
+            place = tidy(r.get("prem_typ_desc") if r.get("prem_typ_desc") not in (None, "(null)") else "")
+            out.append({"kind": k, "title": CRIME_KINDS[k][0].capitalize(), "detail": detail(k, r.get("ofns_desc"), r.get("pd_desc")),
+                        "date": (r.get("cmplnt_fr_dt") or "")[:10], "time": (r.get("cmplnt_fr_tm") or "")[:5],
+                        "place": place.lower() if place else "",
+                        "metres": round(metres(lat, lng, b_lat, b_lng)), "dir": bearing(lat, lng, b_lat, b_lng),
+                        "attempted": (r.get("crm_atpt_cptd_cd") or "") == "ATTEMPTED"})
+    if "shootings" in kinds:
+        dlat, dlng = RADIUS_M / 111_000, RADIUS_M / (111_000 * math.cos(math.radians(lat)))
+        rows = socrata(SHOOTINGS, {
+            "$select": "incident_key, occur_date, occur_time, location_desc, latitude, longitude",
+            "$where": (f"latitude between {lat - dlat} and {lat + dlat} AND longitude between {lng - dlng} and {lng + dlng}"
+                       f" AND occur_date > '{after}T23:59:59' AND occur_date <= '{through}T23:59:59'"),
+            "$limit": "500"})
+        seen = set()
+        for r in rows:
+            if not (r.get("latitude") and r.get("longitude")):
+                continue
+            b_lat, b_lng = float(r["latitude"]), float(r["longitude"])
+            m = metres(lat, lng, b_lat, b_lng)
+            # One incident can be several rows (one per victim).
+            if m > RADIUS_M or r.get("incident_key") in seen:
+                continue
+            seen.add(r.get("incident_key"))
+            loc = r.get("location_desc")
+            out.append({"kind": "shootings", "title": "Shooting", "detail": "",
+                        "date": (r.get("occur_date") or "")[:10], "time": (r.get("occur_time") or "")[:5],
+                        "place": tidy(loc).lower() if loc and loc not in ("(null)", "NONE") else "",
+                        "metres": round(m), "dir": bearing(lat, lng, b_lat, b_lng), "attempted": False})
+    out.sort(key=lambda r: (r["date"], r["time"]), reverse=True)
+    return out
+
+
+def report_line(r):
+    """("Robbery — personal electronic device", "Aug 14 · 8:00 PM · chain store · 0.4 mi S")."""
+    title = r["title"] + (f" — {r['detail']}" if r["detail"] else "") + (" (attempted)" if r["attempted"] else "")
+    try:
+        day = datetime.date.fromisoformat(r["date"]).strftime("%b %-d")
+    except ValueError:
+        day = r["date"]
+    bits = [day]
+    if r["time"]:
+        try:
+            bits.append(datetime.datetime.strptime(r["time"], "%H:%M").strftime("%-I:%M %p"))
+        except ValueError:
+            pass
+    if r["place"]:
+        bits.append(r["place"])
+    bits.append(f"{r['metres'] / 1609.34:.1f}\u00a0mi\u00a0{r['dir']}")
+    return title, " · ".join(bits)
+
+
+EMAIL_REPORTS = 8
+
+
+def crime_email(emailkit, bbl, address, counts, reports, after, through):
+    """The crime alert's (html, text): the count, then each report listed,
+    newest first, and a link to the full list on Your Crib."""
+    title, body = crime_text(address, counts, after, through)
+    link = f"{SITE}/casa/?bbl={bbl}&src=casa_crime#crime-list"
+    rows = []
+    for r in reports[:EMAIL_REPORTS]:
+        head, sub = report_line(r)
+        rows.append({"text": head, "sub": sub, "tone": "bad"})
+    n = len(reports)
+    blocks = [{"type": "building", "heading": address or "Your building", "meta": "Your building", "tone": "warn"}]
+    if rows:
+        more = f" — newest {len(rows)} of {n}" if n > len(rows) else ""
+        blocks.append({"type": "callout", "heading": f"The reports{more}", "items": rows})
+    return emailkit.render_alert(
+        title=title, intro=body + ". From the NYPD's newest quarterly release. Locations are rounded to the block by the NYPD.",
+        tag=("Your Casa", "warn"), blocks=blocks,
+        cta=(f"See all {n} on Your Crib" if n > len(rows) else "See them on Your Crib", link),
+        footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
 
 
 def metres(a_lat, a_lng, b_lat, b_lng):
@@ -271,13 +424,12 @@ def run_crime(w, key, newest, dry):
             print(f"{w['bbl']}: crime {counts}")
             from growth import emailkit
             title, body = crime_text(w.get("address"), counts, seen, newest)
-            html, text = emailkit.render_alert(
-                title=title, intro=body + ". From the NYPD's newest quarterly release.",
-                tag=("Your Casa", "warn"),
-                blocks=[{"type": "building", "heading": w.get("address") or "Your building",
-                         "meta": "Your building", "tone": "warn"}],
-                cta=("See the chart for your building", f"{SITE}/casa/?bbl={w['bbl']}&src=casa_crime"),
-                footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
+            try:
+                reports = crime_reports(w["lat"], w["lng"], kinds, seen, newest)
+            except Exception as e:   # the count still goes out without the list
+                print(f"   report list failed: {type(e).__name__}")
+                reports = []
+            html, text = crime_email(emailkit, w["bbl"], w.get("address"), counts, reports, seen, newest)
             sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry)
     if not dry:
         rest(f"casa_watches?user_id=eq.{w['user_id']}", key, "PATCH", {"crime_seen": newest}, prefer="return=minimal")
@@ -300,17 +452,13 @@ def send_test(key, email, bbl, lat, lng, address=""):
         print("311: no calls on this building in the past 30 days to sample")
     newest = nypd_newest()
     after = (datetime.date.fromisoformat(newest) - datetime.timedelta(days=91)).isoformat()
-    counts = crime_counts(float(lat), float(lng), ["shootings", "robbery", "burglary", "car_theft"], after, newest)
+    kinds = ["shootings", "robbery", "burglary", "car_theft"]
+    counts = crime_counts(float(lat), float(lng), kinds, after, newest)
     if any(counts.values()):
         title, body = crime_text(w["address"], counts, after, newest)
         from growth import emailkit
-        html, text = emailkit.render_alert(
-            title=title, intro=body + ". From the NYPD's newest quarterly release.",
-            tag=("Your Casa", "warn"),
-            blocks=[{"type": "building", "heading": w.get("address") or "Your building",
-                     "meta": "Your building", "tone": "warn"}],
-            cta=("See the chart for your building", f"{SITE}/casa/?bbl={bbl}&src=casa_crime"),
-            footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
+        reports = crime_reports(float(lat), float(lng), kinds, after, newest)
+        html, text = crime_email(emailkit, bbl, w["address"], counts, reports, after, newest)
         print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False))
 
 

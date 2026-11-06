@@ -1402,6 +1402,25 @@ final class FindACribUITests: XCTestCase {
         let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "your-crib-signin"; sheet.lifetime = .keepAlways; add(sheet)
     }
 
+    /// Each NYPD report under the crime chart (owner, 2026-11-06: the alert
+    /// said "11 robberies" and Your Crib only had the chart).
+    func testYourCribListsEachCrimeReport() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo", "--tab", "casa"]
+        app.launch()
+        let title = app.staticTexts["casa-reports-title"]
+        for _ in 0..<6 where !title.exists { app.swipeUp() }
+        XCTAssertTrue(title.waitForExistence(timeout: 10), "the reports sit under the crime chart")
+        let rows = app.descendants(matching: .any).matching(identifier: "casa-report")
+        XCTAssertEqual(rows.count, 5, "five, then the rest on a tap")
+        XCTAssertTrue(rows.firstMatch.label.contains("Robbery"), rows.firstMatch.label)
+        let more = app.buttons["casa-reports-more"]
+        for _ in 0..<3 where !more.isHittable { app.swipeUp() }
+        more.tap()
+        XCTAssertEqual(rows.count, 6, "Show all lists every report")
+        add(XCTAttachment(screenshot: app.screenshot()))
+    }
+
     /// Building chat (owner, 2026-10-17): a button right under the address
     /// in Your Crib opens the building's chat; signed out, it asks to sign in
     /// and says the chat is end-to-end encrypted.

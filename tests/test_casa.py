@@ -98,6 +98,44 @@ class CasaAlertText(unittest.TestCase):
         self.assertEqual(title, "New NYPD reports near 350 W 42nd Street")
         self.assertEqual(body, "Apr 1 – Jun 30, within half a mile: 2 shootings, 1 robbery")
 
+    def test_report_details_read_like_english(self):
+        # Owner, 2026-11-06: each robbery the alert counted, listed.
+        d = self.c.detail
+        self.assertEqual(d("burglary", "BURGLARY", "BURGLARY,RESIDENCE,UNKNOWN TIM"), "residence")
+        self.assertEqual(d("burglary", "BURGLARY", "BURGLARY,TRUCK DAY"), "truck")
+        self.assertEqual(d("robbery", "ROBBERY", "ROBBERY,BEGIN AS SHOPLIFTING"), "begin as shoplifting")
+        self.assertEqual(d("theft", "PETIT LARCENY", "LARCENY,PETIT OF BICYCLE"), "bicycle")
+        self.assertEqual(d("car_theft", "GRAND LARCENY OF MOTOR VEHICLE", "LARCENY,GRAND OF AUTO"), "auto")
+        self.assertEqual(d("assault", "FELONY ASSAULT", "ASSAULT 2,1,UNCLASSIFIED"), "felony")
+        self.assertEqual(d("assault", "ASSAULT 3 & RELATED OFFENSES", "ASSAULT 3"), "")
+        self.assertEqual(d("harassment", "HARRASSMENT 2", "HARASSMENT,SUBD 3"), "", "statute shorthand is left out")
+
+    def test_report_line_has_date_time_place_and_distance(self):
+        r = {"kind": "robbery", "title": "Robbery", "detail": "personal electronic device", "date": "2026-08-14",
+             "time": "20:00", "place": "street", "metres": 640, "dir": "S", "attempted": True}
+        head, sub = self.c.report_line(r)
+        self.assertEqual(head, "Robbery — personal electronic device (attempted)")
+        self.assertEqual(sub, "Aug 14 · 8:00 PM · street · 0.4\u00a0mi\u00a0S")
+        self.assertEqual(self.c.bearing(40.0, -74.0, 40.01, -74.0), "N")
+        self.assertEqual(self.c.bearing(40.0, -74.0, 39.99, -73.99), "SE")
+
+    def test_reports_never_ask_for_suspect_or_victim_fields(self):
+        import inspect
+        src = inspect.getsource(self.c.crime_reports)
+        self.assertNotRegex(src, r"susp_|vic_", "the list never fetches who the suspect or victim was")
+
+    def test_crime_email_lists_each_report_and_links_to_the_list(self):
+        from growth import emailkit
+        reports = [{"kind": "robbery", "title": "Robbery", "detail": "dwelling", "date": f"2026-09-{d:02d}", "time": "08:00",
+                    "place": "residence - apt. house", "metres": 600, "dir": "SW", "attempted": False} for d in range(11, 0, -1)]
+        html, text = self.c.crime_email(emailkit, "1010330001", "350 W 42nd Street, New York", {"robbery": 11},
+                                        reports, "2026-06-30", "2026-09-30")
+        self.assertIn("Robbery — dwelling", text)
+        self.assertEqual(text.count("Robbery — dwelling"), self.c.EMAIL_REPORTS, "the newest few in the email")
+        self.assertIn("See all 11 on Your Crib", html)
+        self.assertRegex(html, r"/casa/\?bbl=1010330001&(amp;)?src=casa_crime#crime-list", "the button opens the list")
+        self.assertIn("newest 8 of 11", html)
+
     def test_email_renders(self):
         # emailkit cards need "heading" (a dry run on the droplet caught "title").
         from growth import emailkit

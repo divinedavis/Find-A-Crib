@@ -91,6 +91,132 @@ enum Casa {
         }
     }
 
+    /// One NYPD report near the building, listed under the chart (owner,
+    /// 2026-11-06: the alert said "11 robberies" and Your Crib had only the
+    /// chart). Same rules as casa_alerts.crime_reports on the server, so the
+    /// list matches the alert. Suspect and victim fields are in the NYPD file
+    /// and left out on purpose.
+    struct CrimeReport: Codable, Hashable, Identifiable {
+        let id: String
+        let kind: String
+        let detail: String
+        let day: String
+        let time: String
+        let place: String
+        let metres: Double
+        let dir: String
+        let attempted: Bool
+        var title: String {
+            var t = Casa.crimeSingular[kind] ?? kind
+            if !detail.isEmpty { t += " — \(detail)" }
+            if attempted { t += String(localized: " (attempted)") }
+            return t
+        }
+        /// "Aug 14 · 8:00 PM · street · 0.4 mi S"
+        var sub: String {
+            var bits: [String] = []
+            let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+            if let d = f.date(from: day) { bits.append(d.formatted(.dateTime.month(.abbreviated).day())) } else { bits.append(day) }
+            let h = DateFormatter(); h.locale = Locale(identifier: "en_US_POSIX"); h.dateFormat = "HH:mm"
+            if let t = h.date(from: time) { bits.append(t.formatted(date: .omitted, time: .shortened)) }
+            if !place.isEmpty { bits.append(place) }
+            bits.append(String(format: "%.1f\u{00a0}mi\u{00a0}%@", metres / 1609.34, dir))
+            return bits.joined(separator: " · ")
+        }
+    }
+
+    static let shootingsURL = "https://data.cityofnewyork.us/resource/5ucz-vwe8.json"
+    /// casa_alerts.CRIME_KINDS: each kind's NYPD offense names.
+    static let crimeOffenses: [String: [String]] = [
+        "robbery": ["ROBBERY"], "burglary": ["BURGLARY"], "assault": ["FELONY ASSAULT", "ASSAULT 3 & RELATED OFFENSES"],
+        "theft": ["PETIT LARCENY", "GRAND LARCENY"], "car_theft": ["GRAND LARCENY OF MOTOR VEHICLE"], "weapons": ["DANGEROUS WEAPONS"],
+        "drugs": ["DANGEROUS DRUGS"], "vandalism": ["CRIMINAL MISCHIEF & RELATED OF"], "harassment": ["HARRASSMENT 2"]]
+    static let crimeSingular: [String: String] = [
+        "shootings": String(localized: "Shooting"), "robbery": String(localized: "Robbery"), "burglary": String(localized: "Burglary"),
+        "assault": String(localized: "Assault"), "theft": String(localized: "Theft"), "car_theft": String(localized: "Car theft"),
+        "weapons": String(localized: "Weapons offense"), "drugs": String(localized: "Drug offense"),
+        "vandalism": String(localized: "Vandalism report"), "harassment": String(localized: "Harassment report")]
+    /// With no alert kinds picked, the list shows the serious three.
+    static let defaultReportKinds = ["shootings", "robbery", "burglary"]
+    private static let detailNoise: Set<String> = ["DAY", "NIGHT", "UNKNOWN TIM", "UNKNOWN TIME", "UNCL", "UNCLASSIFIE", "UNCLASSIFIED", "UNCLASSIFI"]
+
+    /// "BURGLARY,RESIDENCE,UNKNOWN TIM" → "residence". Only robbery,
+    /// burglary and theft carry a detail worth reading; assault says felony.
+    static func reportDetail(kind: String, ofns: String?, pd: String?) -> String {
+        if kind == "assault" { return ofns == "FELONY ASSAULT" ? "felony" : "" }
+        guard ["robbery", "burglary", "theft", "car_theft"].contains(kind) else { return "" }
+        return (pd ?? "").split(separator: ",", omittingEmptySubsequences: false).dropFirst().compactMap { raw -> String? in
+            var x = raw.trimmingCharacters(in: .whitespaces)
+            x = x.replacingOccurrences(of: #"\s+(DAY|NIGHT)$"#, with: "", options: .regularExpression)
+            x = x.replacingOccurrences(of: #"^((PETIT|GRAND)\s+)?(OF\s+)?"#, with: "", options: .regularExpression)
+            guard !x.isEmpty, !detailNoise.contains(x.uppercased()), Int(x) == nil else { return nil }
+            return x
+        }.joined(separator: ", ").lowercased()
+    }
+
+    static func metres(_ aLat: Double, _ aLng: Double, _ bLat: Double, _ bLng: Double) -> Double {
+        let x = (bLng - aLng) * .pi / 180 * cos((aLat + bLat) / 2 * .pi / 180)
+        return 6_371_000 * hypot(x, (bLat - aLat) * .pi / 180)
+    }
+
+    /// Compass point from the building to the report: "NE".
+    static func compass(_ aLat: Double, _ aLng: Double, _ bLat: Double, _ bLng: Double) -> String {
+        let x = (bLng - aLng) * cos((aLat + bLat) / 2 * .pi / 180), y = bLat - aLat
+        let deg = (atan2(x, y) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+        return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Int((deg / 45).rounded()) % 8]
+    }
+
+    /// The list's window: one NYPD release, the three newest months.
+    static func reportWindowStart(endingWith newest: Date) -> Date { lastSixMonths(endingWith: newest)[3] }
+
+    /// Every report of `kinds` within half a mile from `from` through
+    /// `through`, newest first.
+    static func reports(lat: Double, lng: Double, kinds: [String], from: Date, through: Date) async throws -> [CrimeReport] {
+        let end = String(soql(startOfDay(through)).prefix(10)) + "T23:59:59"
+        var byOfns: [String: String] = [:]
+        for k in kinds { for o in crimeOffenses[k] ?? [] { byOfns[o] = k } }
+        var out: [CrimeReport] = []
+        if !byOfns.isEmpty {
+            struct Row: Decodable {
+                let cmplnt_num: String?; let cmplnt_fr_dt: String?; let cmplnt_fr_tm: String?; let ofns_desc: String?
+                let pd_desc: String?; let prem_typ_desc: String?; let crm_atpt_cptd_cd: String?; let latitude: String?; let longitude: String?
+            }
+            let listed = byOfns.keys.sorted().map { "'" + $0.replacingOccurrences(of: "'", with: "''") + "'" }.joined(separator: ",")
+            let rows = try await get(crimeYTDURL, [
+                "$select": "cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, ofns_desc, pd_desc, prem_typ_desc, crm_atpt_cptd_cd, latitude, longitude",
+                "$where": "within_circle(lat_lon, \(lat), \(lng), \(radiusMeters)) AND cmplnt_fr_dt >= '\(soql(startOfDay(from)))' AND cmplnt_fr_dt <= '\(end)' AND ofns_desc in (\(listed))",
+                "$order": "cmplnt_fr_dt DESC, cmplnt_fr_tm DESC", "$limit": "2000"], as: [Row].self)
+            for (i, r) in rows.enumerated() {
+                guard let o = r.ofns_desc, let k = byOfns[o], let la = Double(r.latitude ?? ""), let lo = Double(r.longitude ?? "") else { continue }
+                let prem = r.prem_typ_desc.flatMap { $0 == "(null)" ? nil : $0.lowercased() } ?? ""
+                out.append(CrimeReport(id: r.cmplnt_num ?? "c\(i)", kind: k, detail: reportDetail(kind: k, ofns: o, pd: r.pd_desc),
+                                       day: String((r.cmplnt_fr_dt ?? "").prefix(10)), time: String((r.cmplnt_fr_tm ?? "").prefix(5)),
+                                       place: prem, metres: metres(lat, lng, la, lo), dir: compass(lat, lng, la, lo),
+                                       attempted: r.crm_atpt_cptd_cd == "ATTEMPTED"))
+            }
+        }
+        if kinds.contains("shootings") {
+            struct Shot: Decodable { let incident_key: String?; let occur_date: String?; let occur_time: String?; let location_desc: String?; let latitude: String?; let longitude: String? }
+            let dLat = Double(radiusMeters) / 111_000, dLng = Double(radiusMeters) / (111_000 * cos(lat * .pi / 180))
+            let rows = try await get(shootingsURL, [
+                "$select": "incident_key, occur_date, occur_time, location_desc, latitude, longitude",
+                "$where": "latitude between \(lat - dLat) and \(lat + dLat) AND longitude between \(lng - dLng) and \(lng + dLng) AND occur_date >= '\(soql(startOfDay(from)))' AND occur_date <= '\(end)'",
+                "$limit": "500"], as: [Shot].self)
+            var seen = Set<String>()
+            for (i, r) in rows.enumerated() {
+                guard let la = Double(r.latitude ?? ""), let lo = Double(r.longitude ?? "") else { continue }
+                let m = metres(lat, lng, la, lo)
+                // One incident is one row per victim.
+                guard m <= Double(radiusMeters), seen.insert(r.incident_key ?? "s\(i)").inserted else { continue }
+                let loc = r.location_desc.flatMap { ["(null)", "NONE"].contains($0) ? nil : $0.lowercased() } ?? ""
+                out.append(CrimeReport(id: "s" + (r.incident_key ?? "\(i)"), kind: "shootings", detail: "",
+                                       day: String((r.occur_date ?? "").prefix(10)), time: String((r.occur_time ?? "").prefix(5)),
+                                       place: loc, metres: m, dir: compass(lat, lng, la, lo), attempted: false))
+            }
+        }
+        return out.sorted { ($0.day, $0.time) > ($1.day, $1.time) }
+    }
+
     /// One month of reported crime near the building.
     struct CrimeMonth: Codable, Hashable, Identifiable {
         let month: Date

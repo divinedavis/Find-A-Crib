@@ -161,6 +161,11 @@
           <div id="chart"></div>
           <p class="muted" id="crime-note"></p>
         </div>
+        <div id="crime-list" hidden>
+          <h2 style="font-size:16px;margin-top:16px" id="cl-title"></h2>
+          <p class="muted" id="cl-sub" style="margin:0 0 6px"></p>
+          <div id="cl-rows"></div>
+        </div>
       </div>
 
       <div class="card"><h2>311 calls, past 12 months</h2><div class="tally" id="tally"></div><div id="calls"></div></div>
@@ -264,6 +269,7 @@
     $('out').hidden = false; $('place').textContent = short(p.label);
     $('loading').hidden = false; $('failed').hidden = true; $('results').hidden = true;
     resetOlder(); renderAlerts();
+    lastWindow = null; reportsFor = ''; reports = []; $('crime-list').hidden = true;
     q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + p.bbl + "' AND created_date >= '" + soql(yearAgo) + "'",
               $order: 'created_date DESC', $limit: '200' })
       .then(function (calls) { $('loading').hidden = true; $('results').hidden = false; renderCalls(calls); })
@@ -332,9 +338,107 @@
         $('crime-note').textContent = 'NYPD complaint reports, ' + mon(months[0]) + ' – ' + mon(months[5]) + '. The NYPD publishes these every three months; the newest are through ' +
           new Date(newest.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + '.';
         $('crime-loading').hidden = true; $('crime').hidden = false;
+        lastWindow = { from: months[3] + '-01T00:00:00', through: newest.slice(0, 10) + 'T23:59:59', label: new Date(months[3] + '-01T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' – ' +
+          new Date(newest.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+        loadReports(p);
       });
     }).catch(function () { $('crime-loading').textContent = "Couldn't load NYPD data right now."; });
   }
+  // ---- each report, listed (owner, 2026-11-06: the alert said "11 robberies"
+  // and Your Crib only had the chart). The three newest months — one NYPD
+  // release — for the kinds this building's alerts watch, or the serious
+  // three if none are picked. Same rules as casa_alerts.crime_reports.
+  // Suspect and victim fields are left out on purpose.
+  var OFNS = { robbery: ['ROBBERY'], burglary: ['BURGLARY'], assault: ['FELONY ASSAULT', 'ASSAULT 3 & RELATED OFFENSES'],
+               theft: ['PETIT LARCENY', 'GRAND LARCENY'], car_theft: ['GRAND LARCENY OF MOTOR VEHICLE'], weapons: ['DANGEROUS WEAPONS'],
+               drugs: ['DANGEROUS DRUGS'], vandalism: ['CRIMINAL MISCHIEF & RELATED OF'], harassment: ['HARRASSMENT 2'] };
+  var SINGLE = { shootings: 'Shooting', robbery: 'Robbery', burglary: 'Burglary', assault: 'Assault', theft: 'Theft', car_theft: 'Car theft',
+                 weapons: 'Weapons offense', drugs: 'Drug offense', vandalism: 'Vandalism report', harassment: 'Harassment report' };
+  var PLURAL = { shootings: 'shootings', robbery: 'robberies', burglary: 'burglaries', assault: 'assaults', theft: 'thefts', car_theft: 'car thefts',
+                 weapons: 'weapons offenses', drugs: 'drug offenses', vandalism: 'vandalism reports', harassment: 'harassment reports' };
+  var DEFAULT_KINDS = ['shootings', 'robbery', 'burglary'];
+  var NOISE = ['DAY', 'NIGHT', 'UNKNOWN TIM', 'UNKNOWN TIME', 'UNCL', 'UNCLASSIFIE', 'UNCLASSIFIED', 'UNCLASSIFI'];
+  var SHOOT = 'https://data.cityofnewyork.us/resource/5ucz-vwe8.json';
+  var lastWindow = null, reports = [], reportsFor = '';
+  function detail(kind, ofns, pd) {
+    if (kind === 'assault') return ofns === 'FELONY ASSAULT' ? 'felony' : '';
+    if (['robbery', 'burglary', 'theft', 'car_theft'].indexOf(kind) < 0) return '';
+    return (pd || '').split(',').slice(1).map(function (x) {
+      return x.trim().replace(/\s+(DAY|NIGHT)$/, '').replace(/^((PETIT|GRAND)\s+)?(OF\s+)?/, '');
+    }).filter(function (x) { return x && NOISE.indexOf(x.toUpperCase()) < 0 && !/^\d+$/.test(x); }).join(', ').toLowerCase();
+  }
+  function metres(a, b, c, d) { var x = (d - b) * Math.PI / 180 * Math.cos((a + c) / 2 * Math.PI / 180), y = (c - a) * Math.PI / 180; return 6371000 * Math.hypot(x, y); }
+  function compass(a, b, c, d) {
+    var x = (d - b) * Math.cos((a + c) / 2 * Math.PI / 180), y = c - a;
+    return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((Math.atan2(x, y) * 180 / Math.PI) + 360) % 360 / 45) % 8];
+  }
+  function clock(t) { if (!t) return ''; var h = +t.slice(0, 2), m = t.slice(3, 5); return (h % 12 || 12) + ':' + m + ' ' + (h < 12 ? 'AM' : 'PM'); }
+  function listKinds() { var on = watch && place && watch.bbl === place.bbl && watch.crime_kinds; return on && on.length ? on : DEFAULT_KINDS; }
+  function loadReports(p) {
+    if (!lastWindow) return;
+    var kinds = listKinds(), key = p.bbl + '|' + kinds.join(',');
+    if (key === reportsFor) return;
+    reportsFor = key;
+    $('crime-list').hidden = false; $('cl-title').textContent = 'The reports, ' + lastWindow.label;
+    $('cl-sub').textContent = 'Loading…'; $('cl-rows').innerHTML = '';
+    var ofns = [], byOfns = {};
+    kinds.forEach(function (k) { (OFNS[k] || []).forEach(function (o) { ofns.push(o); byOfns[o] = k; }); });
+    var jobs = [];
+    if (ofns.length) jobs.push(q(CRIME, {
+      $select: 'cmplnt_num, cmplnt_fr_dt, cmplnt_fr_tm, ofns_desc, pd_desc, prem_typ_desc, crm_atpt_cptd_cd, latitude, longitude',
+      $where: 'within_circle(lat_lon, ' + p.lat + ', ' + p.lng + ', 800) AND cmplnt_fr_dt >= \'' + lastWindow.from + '\' AND cmplnt_fr_dt <= \'' + lastWindow.through +
+        '\' AND ofns_desc in (' + ofns.map(function (o) { return "'" + o.replace(/'/g, "''") + "'"; }).join(',') + ')',
+      $order: 'cmplnt_fr_dt DESC, cmplnt_fr_tm DESC', $limit: '2000' }).then(function (rows) {
+        return rows.filter(function (r) { return r.latitude && byOfns[r.ofns_desc]; }).map(function (r) {
+          var k = byOfns[r.ofns_desc], la = +r.latitude, lo = +r.longitude, pl = r.prem_typ_desc && r.prem_typ_desc !== '(null)' ? r.prem_typ_desc.toLowerCase() : '';
+          return { kind: k, title: SINGLE[k], detail: detail(k, r.ofns_desc, r.pd_desc), date: (r.cmplnt_fr_dt || '').slice(0, 10), time: (r.cmplnt_fr_tm || '').slice(0, 5),
+                   place: pl, m: metres(p.lat, p.lng, la, lo), dir: compass(p.lat, p.lng, la, lo), attempted: r.crm_atpt_cptd_cd === 'ATTEMPTED' };
+        });
+      }));
+    if (kinds.indexOf('shootings') >= 0) {
+      var dla = 800 / 111000, dlo = 800 / (111000 * Math.cos(p.lat * Math.PI / 180));
+      jobs.push(q(SHOOT, { $select: 'incident_key, occur_date, occur_time, location_desc, latitude, longitude',
+        $where: 'latitude between ' + (p.lat - dla) + ' and ' + (p.lat + dla) + ' AND longitude between ' + (p.lng - dlo) + ' and ' + (p.lng + dlo) +
+          ' AND occur_date >= \'' + lastWindow.from + '\' AND occur_date <= \'' + lastWindow.through + '\'', $limit: '500' }).then(function (rows) {
+        var seen = {};
+        return rows.filter(function (r) {
+          if (!r.latitude || seen[r.incident_key]) return false;
+          var ok = metres(p.lat, p.lng, +r.latitude, +r.longitude) <= 800; if (ok) seen[r.incident_key] = 1; return ok;
+        }).map(function (r) {
+          var la = +r.latitude, lo = +r.longitude, loc = r.location_desc && ['(null)', 'NONE'].indexOf(r.location_desc) < 0 ? r.location_desc.toLowerCase() : '';
+          return { kind: 'shootings', title: 'Shooting', detail: '', date: (r.occur_date || '').slice(0, 10), time: (r.occur_time || '').slice(0, 5),
+                   place: loc, m: metres(p.lat, p.lng, la, lo), dir: compass(p.lat, p.lng, la, lo), attempted: false };
+        });
+      }));
+    }
+    Promise.all(jobs).then(function (parts) {
+      if (place !== p || reportsFor !== key) return;
+      reports = [].concat.apply([], parts).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : (b.date + b.time) > (a.date + a.time) ? 1 : 0; });
+      var counts = {}; reports.forEach(function (r) { counts[r.kind] = (counts[r.kind] || 0) + 1; });
+      var names = kinds.map(function (k) { return PLURAL[k]; });
+      var said = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+      var mine = watch && watch.bbl === place.bbl && (watch.crime_kinds || []).length;
+      $('cl-sub').textContent = (reports.length ? kinds.filter(function (k) { return counts[k]; }).map(function (k) { return counts[k] + ' ' + (counts[k] === 1 ? SINGLE[k].toLowerCase() : PLURAL[k]); }).join(' · ')
+          : 'No ' + said + ' reported') + ' within half a mile. ' + (mine ? 'The kinds your alerts watch.' : 'Showing ' + said + '; pick crime alerts above to choose.');
+      showReports(10);
+    }).catch(function () { if (reportsFor === key) { reportsFor = ''; $('cl-sub').textContent = "Couldn't load the reports right now."; } });
+  }
+  function reportRow(r) {
+    var d = new Date(r.date + 'T12:00:00');
+    var bits = [isNaN(d) ? r.date : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })];
+    if (r.time) bits.push(clock(r.time)); if (r.place) bits.push(r.place); bits.push((r.m / 1609.34).toFixed(1) + '\u00a0mi\u00a0' + r.dir);
+    return '<div class="call"><span class="dot pest"></span><div><b>' + esc(r.title + (r.detail ? ' — ' + r.detail : '') + (r.attempted ? ' (attempted)' : '')) +
+      '</b><span class="muted">' + esc(bits.join(' · ')) + '</span></div></div>';
+  }
+  function showReports(n) {
+    var btn = reports.length > n ? '<button class="link-btn" id="cl-more" type="button">Show all ' + reports.length + ' reports</button>'
+      : reports.length > 10 ? '<button class="link-btn" id="cl-less" type="button">Show fewer</button>' : '';
+    $('cl-rows').innerHTML = reports.slice(0, n).map(reportRow).join('') + (btn ? '<p style="margin:10px 0 0">' + btn + '</p>' : '');
+    var m = $('cl-more'); if (m) m.addEventListener('click', function () { showReports(reports.length); track('casa_crime_list_all', { n: reports.length, web: true }); });
+    var l = $('cl-less'); if (l) l.addEventListener('click', function () { showReports(10); $('crime-list').scrollIntoView({ block: 'start' }); });
+    if (location.hash === '#crime-list' && !showReports.jumped) { showReports.jumped = true; $('crime-list').scrollIntoView({ block: 'start' }); }
+  }
+
   function drawChart(data) {
     var W = 420, H = 210, L = 38, R = 10, T = 12, B = 30;
     var max = Math.max(10, Math.max.apply(null, data.map(function (d) { return d.total; })));
@@ -396,7 +500,7 @@
   function save(kinds) {
     $('a-on').disabled = true;
     return api('POST', { bbl: place.bbl, address: short(place.label), lat: place.lat, lng: place.lng, crime_kinds: kinds })
-      .then(function (j) { watch = j.watch; renderAlerts(); })
+      .then(function (j) { watch = j.watch; renderAlerts(); if (place) loadReports(place); })
       .catch(function (e) { $('a-err').textContent = "Couldn't save. Try again in a minute."; $('a-err').hidden = false; })
       .then(function () { $('a-on').disabled = false; });
   }
@@ -413,7 +517,7 @@
     save(KINDS.map(function (x) { return x[0]; }).filter(function (x) { return on.indexOf(x) >= 0; }));
   });
   $('a-off').addEventListener('click', function () {
-    api('DELETE').then(function () { watch = null; renderAlerts(); track('casa_watch_off', { web: true }); })
+    api('DELETE').then(function () { watch = null; renderAlerts(); if (place) loadReports(place); track('casa_watch_off', { web: true }); })
       .catch(function () { $('a-err').textContent = "Couldn't turn off alerts. Try again in a minute."; $('a-err').hidden = false; });
   });
 
@@ -427,7 +531,7 @@
       sb.auth.getSession().then(function (r) {
         var sess = r && r.data && r.data.session; if (!sess || !sess.access_token) return;
         token = sess.access_token;
-        return api('GET').then(function (j) { plus = !!j.plus; watch = j.watch; renderAlerts(); resetOlder(); });
+        return api('GET').then(function (j) { plus = !!j.plus; watch = j.watch; renderAlerts(); resetOlder(); if (place) loadReports(place); });
       }).catch(function () {}).then(alertsKnown);
     } else alertsKnown();
   } catch (e) { alertsKnown(); }

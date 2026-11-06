@@ -40,7 +40,7 @@ re-rental opens up.
 | Data builders (one script per source) | `parse_pdfs.py`, `fetch_hpd.py`, `scrape_hcr.py`, `build_*.py` |
 | API (Flask) | `api_server.py`, `ai_gateway.py`, `deploy/api/` |
 | Alerts | `lottery_alerts.py`, `saved_alerts.py`, `apns.py` |
-| AI features | `flyer_reader.py`, `nl_search.py`, `rent_check.py`, `claude_features.py` |
+| AI features | `flyer_reader.py`, `nl_search.py`, `claude_features.py`, `ai_gateway.py` |
 | Database (Supabase / Postgres) | `db/` migrations, `supabase/functions/` |
 | iOS app (SwiftUI) | `ios/` (see [ios/README.md](ios/README.md)) |
 | Growth engine (SEO pages, outreach) | `growth/`, `growth_daily.py` |

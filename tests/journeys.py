@@ -180,6 +180,12 @@ def ad_noise(m):
     txt = m.text or ""
     if any(h in txt or h in loc for h in AD_HOSTS):
         return True
+    # An ad creative's tracking image that failed (2026-11-06: ila3.co, a
+    # Mediavine partner's click pixel, logged from our page's context). The
+    # image's own host decides; one of ours failing still fails the journey.
+    m_img = re.match(r"Cannot load image (https?://\S+)", txt)
+    if m_img:
+        return third_party_only(m_img.group(1))
     generic = ("is not allowed by Access-Control-Allow-Origin", "Preflight response is not successful",
                "no video to play",
                # an ad creative's sandboxed about:blank frame refused scripts —

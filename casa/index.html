@@ -217,7 +217,13 @@
       if (attempt >= 2) throw e;
       return new Promise(function (ok) { setTimeout(ok, 700 * (attempt + 1)); }).then(function () { return q(base, params, attempt + 1); });
     };
-    return fetch(base + '?' + new URLSearchParams(params).toString(), { headers: { Accept: 'application/json' } })
+    // A request NYC's server sits on gets cut off and tried again: on
+    // 2026-11-06 the 311 lookup hung past a minute about one time in three,
+    // while the same request a moment later answered in under a second.
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 15000) : null;
+    return fetch(base + '?' + new URLSearchParams(params).toString(), { headers: { Accept: 'application/json' }, signal: ctl ? ctl.signal : undefined })
+      .finally(function () { if (timer) clearTimeout(timer); })
       .then(function (r) {
         if (r.ok) return r.json();
         var e = new Error(r.status);

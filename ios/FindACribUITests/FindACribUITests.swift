@@ -21,14 +21,6 @@ final class FindACribUITests: XCTestCase {
         // each time. A test that wants the default app calls app.launch().
     }
 
-    /// Scrolling down a list hides the tab bar (2026-11-03, YouTube-style);
-    /// a short drag back up shows it again, as a person would do.
-    func revealTabBar() {
-        guard !app.buttons["tab-Search"].exists else { return }
-        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
-        mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: 90)))
-        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 5), "a short drag up brings the tab bar back")
-    }
 
     func testSearchToDetailAndBack() throws {
         app.launch()
@@ -350,7 +342,6 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         for _ in 0..<4 { app.swipeUp() }
-        revealTabBar()   // scrolled down, the tab bar is away until a drag up
         let onScreen = { [app] in
             app.descendants(matching: .any).matching(identifier: "card-address").allElementsBoundByIndex
                 .filter { $0.isHittable }.map(\.label)
@@ -746,9 +737,8 @@ final class FindACribUITests: XCTestCase {
         for _ in 0..<4 where slotCard.exists && slotCard.frame.minY > app.frame.height * 0.35 { app.swipeUp(velocity: .slow) }
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "feed-slot"; shot.lifetime = .keepAlways; add(shot)
         XCTAssertFalse(app.descendants(matching: .any)["ad.slot"].exists, "the bottom banner is gone")
-        // Scrolled down, the tab bar is away (2026-11-03); one drag up and it
-        // must be tappable over the feed's ad slot.
-        revealTabBar()
+        // Scrolled down, the tab bar stays (owner, 2026-11-05) and must be
+        // tappable over the feed's ad slot.
         XCTAssertTrue(app.buttons["Profile"].isHittable, "the tab bar stays tappable")
     }
 
@@ -1001,9 +991,9 @@ final class FindACribUITests: XCTestCase {
     /// listings with no size leave with no "show them" row — and the button
     /// counts it: "Filter (1)".
     /// Hide-on-scroll (owner, 2026-11-03, YouTube-style): scrolling down the
-    /// results slides the filter bar and the tab bar away; scrolling back up
-    /// brings both back.
-    func testResultsHideHeaderAndTabBarOnScroll() throws {
+    /// results slides the filter bar away; scrolling back up brings it back.
+    /// The tab bar never leaves (owner, 2026-11-05).
+    func testResultsHideHeaderButKeepTabBarOnScroll() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
@@ -1011,19 +1001,19 @@ final class FindACribUITests: XCTestCase {
         let tab = app.buttons["tab-Lotteries"]
         XCTAssertTrue(app.descendants(matching: .any)["results-count"].firstMatch.waitForExistence(timeout: 30))
         XCTAssertTrue(header.exists && tab.exists, "both show at the top of the list")
-        XCTAssertFalse(tab.waitForNonExistence(timeout: 2), "they never hide without a swipe (the list's own layout jump hid them once)")
+        XCTAssertFalse(header.waitForNonExistence(timeout: 2), "the header never hides without a swipe (the list's own layout jump hid it once)")
         app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)
-        XCTAssertTrue(tab.waitForNonExistence(timeout: 5), "scrolling down hides the tab bar")
-        XCTAssertTrue(header.waitForNonExistence(timeout: 5), "and the filter bar")
+        XCTAssertTrue(header.waitForNonExistence(timeout: 5), "scrolling down hides the filter bar")
+        XCTAssertTrue(tab.isHittable, "the tab bar stays, tappable")
         XCTAssertTrue(app.buttons["Map"].exists, "the Map pill stays")
+        XCTAssertLessThan(app.buttons["Map"].frame.maxY, tab.frame.minY, "above the tab bar, not under it")
         app.swipeDown(velocity: .slow)
-        XCTAssertTrue(tab.waitForExistence(timeout: 5), "scrolling up brings the tab bar back")
-        XCTAssertTrue(header.waitForExistence(timeout: 5), "and the filter bar")
+        XCTAssertTrue(header.waitForExistence(timeout: 5), "scrolling up brings the filter bar back")
     }
 
-    /// The same on the Lotteries tab: its title and pane tabs slide away
-    /// with the tab bar.
-    func testLotteriesHideHeaderAndTabBarOnScroll() throws {
+    /// The same on the Lotteries tab: its title and pane tabs slide away;
+    /// the tab bar stays.
+    func testLotteriesHideHeaderButKeepTabBarOnScroll() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
         app.launch()
@@ -1035,13 +1025,12 @@ final class FindACribUITests: XCTestCase {
         panes.tap()
         XCTAssertTrue(app.descendants(matching: .any)["rerental-card"].firstMatch.waitForExistence(timeout: 15), "the list has re-rentals to scroll")
         XCTAssertTrue(tab.exists, "the tab bar shows at the top")
-        XCTAssertFalse(tab.waitForNonExistence(timeout: 2), "it never hides without a swipe")
+        XCTAssertFalse(panes.waitForNonExistence(timeout: 2), "the header never hides without a swipe")
         app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)
-        XCTAssertTrue(tab.waitForNonExistence(timeout: 5), "scrolling down hides the tab bar")
-        XCTAssertTrue(panes.waitForNonExistence(timeout: 5), "and the title and pane tabs")
+        XCTAssertTrue(panes.waitForNonExistence(timeout: 5), "scrolling down hides the title and pane tabs")
+        XCTAssertTrue(tab.isHittable, "the tab bar stays, tappable")
         app.swipeDown(velocity: .slow)
-        XCTAssertTrue(tab.waitForExistence(timeout: 5), "scrolling up brings the tab bar back")
-        XCTAssertTrue(panes.waitForExistence(timeout: 5), "and the pane tabs")
+        XCTAssertTrue(panes.waitForExistence(timeout: 5), "scrolling up brings the pane tabs back")
     }
 
     func testLotteriesFilterHoldsBeds() throws {

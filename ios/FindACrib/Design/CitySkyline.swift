@@ -937,7 +937,7 @@ struct NightSky: View {
 /// iOS 17 path.
 struct SkylineScrollView<Content: View>: View {
     let scene: Skyline.Scene
-    /// Scrolling down hides the header and tab bar (ResultsView).
+    /// Scrolling down hides the header (ResultsView); the tab bar stays.
     var hidesChrome = false
     /// The header laid over the list (ResultsView): the list starts below it.
     var chromeHeight: CGFloat = 0

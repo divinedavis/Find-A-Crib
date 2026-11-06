@@ -534,14 +534,3 @@ struct CollapsingHeader<Content: View>: View {
             }
     }
 }
-
-/// Bottom padding that follows the tab bar: `shown` with the bar up,
-/// `hidden` with it scrolled away (the Map / Alerts pills on Results).
-struct ChromeBottomPadding: ViewModifier {
-    let shown: CGFloat
-    let hidden: CGFloat
-    @Environment(AppNav.self) private var nav
-    func body(content: Content) -> some View {
-        content.padding(.bottom, shown + (hidden - shown) * nav.chromeProgress)
-    }
-}

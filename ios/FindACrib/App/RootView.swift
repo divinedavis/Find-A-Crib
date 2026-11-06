@@ -176,24 +176,13 @@ struct PillTabBar: View {
     }
 }
 
-/// The tab bar, sliding down with a list's header as the list scrolls
-/// (`hidesChromeOnScroll`). Its own view, so only it re-renders while the
-/// finger moves.
+/// The tab bar. It stays on screen while a list scrolls: only the
+/// screen's header slides away (owner, 2026-11-05).
 private struct ChromeTabBar: View {
     @Binding var selected: Tab
-    @Environment(AppNav.self) private var nav
-    @State private var height: CGFloat = 90
 
     var body: some View {
-        let p = nav.chromeProgress
-        // All the way down it leaves the view tree (CollapsingHeader).
-        if p < 1 {
-            PillTabBar(selected: $selected)
-                .padding(.bottom, 6)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height + $0.safeAreaInsets.bottom } action: { height = $0 }
-                .offset(y: p * height)
-                .allowsHitTesting(p < 0.5)
-                .transition(.identity)
-        }
+        PillTabBar(selected: $selected)
+            .padding(.bottom, 6)
     }
 }

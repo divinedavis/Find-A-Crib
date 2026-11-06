@@ -162,8 +162,9 @@ enum Route: Hashable {
 final class AppNav {
     var tab: Tab = .search
     var hideTabBar = false
-    /// How far a list's header and the tab bar have slid away: 0 showing,
-    /// 1 gone. They follow the finger (YouTube-style, owner 2026-11-03/04).
+    /// How far a list's header has slid away: 0 showing, 1 gone. It follows
+    /// the finger (YouTube-style, owner 2026-11-03/04); the tab bar stays put
+    /// (owner, 2026-11-05).
     /// Set only by `hidesChromeOnScroll`; every tab switch and push/pop
     /// resets it.
     var chromeProgress: CGFloat = 0

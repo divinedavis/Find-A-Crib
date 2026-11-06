@@ -287,8 +287,8 @@ struct ResultsView: View {
                     .accessibilityIdentifier("pill-Alerts")
                 }
             }
-            // Down into the tab bar's space as it scrolls away.
-            .modifier(ChromeBottomPadding(shown: 92, hidden: 28))
+            // Above the tab bar, which stays put while the list scrolls.
+            .padding(.bottom, 92)
         }
         .overlay(alignment: .top) {
             if let toast {

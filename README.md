@@ -1,611 +1,110 @@
-# Find A Crib — Rent-Stabilized Buildings Explorer (NYC · SF · LA · DC)
+# Find A Crib
 
-An interactive map of every DHCR rent-stabilized building in **Manhattan**,
-**the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with the
-building's HPD owner / managing agent and open violation & complaint counts,
-and a one-tap **View on StreetEasy ↗** (NYC) / **View on Zillow ↗** (other
-cities) address search for current listings.
+[![ci](https://github.com/divinedavis/Find-A-Crib/actions/workflows/ci.yml/badge.svg)](https://github.com/divinedavis/Find-A-Crib/actions/workflows/ci.yml)
+[![journeys](https://github.com/divinedavis/Find-A-Crib/actions/workflows/journeys.yml/badge.svg)](https://github.com/divinedavis/Find-A-Crib/actions/workflows/journeys.yml)
+[![App Store](https://img.shields.io/badge/App_Store-Find_A_Crib-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/us/app/find-a-crib/id6807549249)
 
-Three more cities ride the same frontend (see **Other cities** below):
-**San Francisco** at [/sf/](https://findacrib.com/sf/) (SF Rent Board Housing
-Inventory, block-level, with median reported rents), **Los Angeles** at
-[/la/](https://findacrib.com/la/) (buildings meeting the RSO criteria, derived
-from LA County assessor rolls), and **Washington DC** at
-[/dc/](https://findacrib.com/dc/) (properties registered with DHCD as holding
-rent-controlled units, with median *registered* rents).
+**Find the affordable apartments renters can actually get.** Find A Crib maps
+every rent-stabilized building in New York City, plus rent-controlled and
+income-restricted housing in San Francisco, Los Angeles, Washington DC and
+more, and alerts renters the moment a housing lottery or affordable
+re-rental opens up.
 
-🔗 **Live at [findacrib.com](https://findacrib.com)**
+🔗 **[findacrib.com](https://findacrib.com)** · 📱 **[iPhone & iPad app](https://apps.apple.com/us/app/find-a-crib/id6807549249)**
 
-![Find A Crib demo — searching the map, opening a building, filtering by borough](docs/demo.gif)
+![Find A Crib: searching the map, opening a building, filtering by borough](docs/demo.gif)
 
-## How it works
+## What it does
 
-Search by address, neighborhood, ZIP, or BBL, or just pan the map. Every pin is
-a rent-stabilized building; clusters show how many sit in an area. Open a
-building to see its operator, violation/complaint history, and a link to its
-full HPD Online record. Filter by borough, neighborhood, and violation/complaint
-status. Sign in to save buildings across devices.
+- **Map of covered buildings.** Every NYC building on the DHCR rent-stabilization
+  rolls, with its HPD owner / managing agent, open violations and complaints.
+  SF, LA and DC run on the same front end from each city's own records.
+- **Lotteries and re-rentals.** NYC Housing Connect and HCR lotteries, plus
+  marketing-agent re-rentals that go first come, first served.
+- **Alerts.** Email and iPhone push when a lottery, re-rental or saved
+  building matches what you're looking for. Alerts can be filtered by
+  borough, household size and income.
+- **AI that shows its sources.** A nightly reader turns each listing's flyer
+  into a unit table (rent, household size, income limits). Every number it
+  extracts must appear in the source text, or that row is dropped
+  (`claude_features.ungrounded`).
+- **"Do I qualify?"** Checks household size and income against each listing's
+  limits.
 
-## No listing data (since 2026-10-06)
+## How the code is laid out
 
-The map carries **no** rental-listing data. The Zumper scrape and the
-StreetEasy (Apify) feed — asking rents, "recently advertised" flags, listing
-counts and links — were removed on 2026-10-06 (Zumper's Terms forbid scraping;
-the owner dropped all portal-derived data). Every building card and detail
-sheet instead has one outbound button: NYC → `https://streeteasy.com/search?search=<address, borough>`,
-other cities → `https://www.zillow.com/homes/<address, city, state>_rb/`.
-Do not reinstate a portal scrape.
+| Area | Where |
+|------|-------|
+| Web app (one file, Leaflet, no build step) | `index.html`, `static/` |
+| City pages generated from the root page | `build_city_pages.py` → `sf/`, `la/`, `dc/` |
+| Data builders (one script per source) | `parse_pdfs.py`, `fetch_hpd.py`, `scrape_hcr.py`, `build_*.py` |
+| API (Flask) | `api_server.py`, `ai_gateway.py`, `deploy/api/` |
+| Alerts | `lottery_alerts.py`, `saved_alerts.py`, `apns.py` |
+| AI features | `flyer_reader.py`, `nl_search.py`, `rent_check.py`, `claude_features.py` |
+| Database (Supabase / Postgres) | `db/` migrations, `supabase/functions/` |
+| iOS app (SwiftUI) | `ios/` (see [ios/README.md](ios/README.md)) |
+| Growth engine (SEO pages, outreach) | `growth/`, `growth_daily.py` |
+| Deploy + cron jobs | `deploy/`, `scripts/deploy_*.sh` |
+| Tests | `tests/` |
 
-## Data pipeline
+More detail:
+[data pipeline, alerts and cities](docs/data-pipeline.md) ·
+[growth engine](docs/growth-engine.md) ·
+[traffic report](docs/traffic-report.md) ·
+[backlog](BACKLOG.md)
 
-| Step | Script | Output |
-|------|--------|--------|
-| 1. Parse raw DHCR building files | `parse_pdfs.py` | `buildings.json` |
-| 2. Geocode addresses (NYC PLUTO) | `geocode.py` | `buildings_geo.json` |
-| 3. Assign neighborhood (NTA 2020) | `assign_nta.py` | `buildings_geo_nta.json` |
-| 4. Pull HPD owner / manager / violations / complaints | `fetch_hpd.py` | `buildings_hpd.json` |
-| 5. Slim + merge HPD into a browser-ready blob | `slim.py` | `buildings.min.json` |
-| 7. Section 8 building signals (monthly) | `fetch_section8.py` — HPD Affordable Housing Production (BBL join) + HUD project-based Section 8 contracts (address→BBL) | `s8.json` (`bldg` half) |
-| 8. Live voucher listings (nightly) | `scrape_affordablehousing.py` — AffordableHousing.com search API, address→BBL | `s8.json` (`avail` half) |
+## Quick start
 
-Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`
-(split into `buildings.slim.json` + `buildings.hpd.json` by `split_hpd.py`),
-`s8.json` and `fmr.json` are the files the front end fetches.
-
-### Section 8 / housing vouchers
-
-The **Section 8** filter and the green badges have two tiers:
-
-- **Listed for voucher holders now** — the building has a live listing on
-  [AffordableHousing.com](https://www.affordablehousing.com) (ex-GoSection8),
-  the site NYCHA/HPD point voucher holders to. Landlords there are explicitly
-  soliciting voucher tenants; the badge links to the cheapest such listing.
-- **Subsidized / voucher-friendly building** — the building appears in HPD's
-  *Affordable Housing Production by Building* (city-financed, income-restricted
-  rentals, `hg8x-zxpr`) and/or HUD's *Multifamily Properties – Assisted* with a
-  project-based Section 8 contract.
-
-Source-of-income discrimination is illegal in NYC, so the absence of a badge
-never means "vouchers not accepted" — the UI says so wherever badges appear and
-links to the NYC Commission on Human Rights complaint page.
-
-### Saved-building alert emails
-
-Saving a building is subscribing to it. `saved_alerts.py` (06:20 ET daily on
-the web droplet, `saved_alerts.sh`, `/etc/cron.d/rentmap-saved`) emails every
-signed-in saver when a saved building gets a voucher listing (`s8.json`) or
-its voucher-listing rent drops,
-hosts a Housing Connect / HCR lottery or a marketing-agent re-rental (matched by
-house number + lot distance / street), gains or clears open HPD violations, or
-has its DHCR registration change. Only a *change* alerts: the first run seeds a
-snapshot (`saved_alerts_state.json`) and sends nothing; each (user, building,
-kind) is announced at most once per cooldown (`listing_alert_state`, via the
-`saved_alert_state` / `saved_alert_mark` RPCs in `db/0024`). Tuesdays the same
-run sends the weekly round-up instead: pending changes, the state of everything
-saved, and what opened / closes this week in the boroughs the person saves and
-browses in (`building_view` events). New accounts that saved something get a
-"status" email 2–8 days in. Opt-outs: `findacrib.com/#unsub=<token>` (alerts)
-and `#unsub=<token>&k=digest` (round-up only), tokens in `alert_prefs`.
-
-**One email a day, per address, across every job.** `growth/mailcap.py` claims
-the New York day in `public.email_sends` (`email_claim` / `email_release`)
-before any send; the borough dispatcher, this job, the account lifecycle and
-the report sequence all use it. A job that loses the slot holds its content
-(`state["held"]` per subscriber, `state["pending"]` per user) for tomorrow.
+You need Python 3.14 (what CI runs) and no API keys.
 
 ```sh
-python3 saved_alerts.py --dry-run                        # print, no sends
-python3 saved_alerts.py --weekly --dry-run               # force the digest
-python3 saved_alerts.py --test-email you@x.com           # one sample email
-python3 lottery_alerts.py --nudge --dry-run              # first-week round-up
-python3 lottery_alerts.py --weekly --test-email you@x.com
+git clone https://github.com/divinedavis/Find-A-Crib.git
+cd Find-A-Crib
+python3.14 -m venv .venv && . .venv/bin/activate
+pip install requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic playwright==1.62.0
+python3 tests/run_unit.py                 # unit tests (same as CI)
 ```
 
-The map's first view: `/api/geo` resolves the visitor's network address
-against DB-IP City Lite (`scripts/refresh_geoip.sh`, monthly cron) and returns
-a ~1 km point plus the borough of the nearest building; `index.html` opens
-there on a bare landing with a dismissible chip. No browser permission prompt,
-nothing stored.
-
-### HPD data
-
-`fetch_hpd.py` pulls four NYC Open Data datasets and joins them on BBL:
-
-- **Property Registrations** (`tesw-yqqr`) → who registered the building
-- **Registration Contacts** (`feu5-w2e2`) → owner / managing agent / head officer name + business address
-- **HPD Violations** (`wvxf-dwi5`) → open vs. closed, severity class A/B/C, recency
-- **HPD Complaints** (`ygpa-z7cr`) → open vs. closed, recency
-
-Each building shows the operator info, violation/complaint counts, and a
-link to that building's full record on HPD Online.
-
-## Other cities
-
-Each city is a directory (`sf/`, `la/`, `dc/`) holding its own
-`buildings.min.json` plus an `index.html` generated from the root one by
-`build_city_pages.py` — the frontend is city-aware at runtime via
-`<html data-city="…">` and the `CITIES` config inside `index.html`, so a new
-city is a builder script, a `CITIES` entry, and a `CITY_META` entry.
-
-Only cities that publish **property-level** coverage data get a map (see
-`BACKLOG.md` for the ones that don't — most rent-controlled jurisdictions in
-the US publish nothing below the municipality level).
-
-| City | Script | Source | Records |
-|------|--------|--------|---------|
-| San Francisco | `build_sf.py` | DataSF `gdc7-dmcn`, SF Rent Board Housing Inventory (owner-reported, anonymized to the block) | ~12k block-sides |
-| Los Angeles | `build_la.py` | LA County Assessor parcels filtered by LAHD's RSO criteria — *derived*, labelled "likely RSO" | ~68k parcels |
-| Washington DC | `build_dc.py` | DHCD RentRegistry nightly public CSV exports | ~4.3k properties / 78k covered units |
-
-DC is the only one besides NYC that is an authoritative registry rather than a
-derivation. Its exports are discovered at runtime from an unauthenticated
-`api/ListExports` endpoint (see the `build_dc.py` docstring); coverage there is
-a *per-unit* determination, so the script counts non-exempt units from the unit
-file rather than trusting a building-level flag.
-
-## Front end
-
-`index.html` — a single-file Leaflet map (marker clustering + Street View
-thumbnails). No build step; serve the directory statically. An optional Supabase
-backend powers email accounts, cross-device saved buildings, and privacy-safe
-usage analytics. Copy `config.example.js` → `config.js` and fill in keys.
-
-## Growth engine
-
-`growth_daily.py` + the `growth/` package run a self-improving loop for organic
-traffic and revenue. Two crons on the web droplet (`/etc/cron.d/rentmap-growth`):
-
-| When | Command | What it does |
-|------|---------|--------------|
-| 05:40 UTC | `growth_daily.py build --deploy` | Rebuilds the daily pages from the overnight voucher feed, deploys them, submits new URLs to IndexNow |
-| 06:00 ET | `growth_daily.py daily --email …` | Measures yesterday, judges every active technique, retires the dead ones, scouts for new techniques, mails the report |
-
-A third job runs in Anthropic's cloud, not on the droplet:
-
-| When | What |
-|------|------|
-| 06:00 ET | **Daily growth review** — a Claude Code routine reads the ledger, journal and measurements, judges whether last week's changes worked, researches what's currently working, changes something, and logs its reasoning |
-
-That agent has only a git checkout — no SSH, no keys, no database. **Git is the
-channel between it and production:** it pushes ledger and code changes, and
-`growth_run.sh` pulls them in before each droplet run and pushes the night's
-measurements back. The droplet's daily pass therefore runs at 05:00 ET, an hour
-ahead of the review, so the agent always reads fresh numbers.
-
-**Reading whether the droplet ran at all.** Because git is the only channel,
-silence in git is the only symptom the review agent sees — and silence has three
-causes needing three different fixes: the cron never fired, it fired and the run
-crashed, or it ran and the push was lost. `growth_run.sh` therefore appends a
-`start` and a `finish` record to `growth/cron_heartbeat.jsonl` around every
-invocation, carrying the exit code, the pull's outcome and — on failure only —
-the last two lines of output, and commits that file whether or not the run
-succeeded. **Every invocation leaves a commit**, so no commit for a morning now
-means the script did not run, full stop. `growth_daily.py status` prints the
-verdict first; read it before anything else. Two failure modes it names directly:
-a `start` with no `finish` is a run that died mid-flight, and `"pull":"recovered"`
-means an operator push collided with the droplet's own ledger write. That
-collision used to be silent and permanent — `git pull --rebase --autostash`
-exits **0** when the autostash pop conflicts, leaving `<<<<<<<` markers in
-`growth/techniques.json`, which `ledger.load_techniques()` refuses to parse on
-that run and every run after it. The script now checks `git ls-files -u`
-independently of the pull's exit code and resets the conflicted paths to
-`origin/main`, which is safe because the droplet is their only writer and pushes
-them every run.
-
-**Deploying the app shell.** `scripts/deploy_app.sh` is the only way to
-ship `index.html`: it runs `tests/journeys.py` (every visitor path, as an
-iPhone and as a desktop browser) against the local file, regenerates the
-city pages, copies everything to the docroot, and runs the journeys again
-against the live site. A real-iPhone lane is described in `tests/DEVICE.md`.
-
-**What a git push does and does not deploy.** Only two paths reach the docroot
-on their own: `growth_daily.py build --deploy` rsyncs `growth_out/`, and
-`scripts/refresh_seo.sh` rsyncs `build_seo.py`'s `seo/`. **Nothing in either
-cron deploys the root `index.html`** — the app shell is copied to the docroot by
-hand ("no build step; serve the directory statically", above). So a change the
-review agent pushes to `index.html` sits in git until someone deploys the app,
-while a change to `build_seo.py` or `growth/techniques.py` goes live the next
-morning. This is not obvious from the checkout and has already cost one review
-cycle: on 2026-08-05 the review fixed two orphaned sections by adding links to
-`index.html`, and the 2026-08-06 audit correctly still reported them orphaned.
-
-Those two paths are not equally reliable, either. `refresh_seo.sh` (historically chained
-after the listings scrape, which no longer exists) stops when anything ahead of it fails — it wrote
-nothing between 2026-08-01 and 08-08, so a `build_seo.py` change is only live
-once that pipeline recovers. The growth build's own rsync is the path that can
-be observed working every morning (`growth/last_run.json` → `build.deployed`,
-and `build.seo_corpus` for how stale the other one is). So prefer whichever of
-the two is currently running for anything site-wide, and check `seo_corpus`
-before assuming a `build_seo.py` edit shipped.
-
-**Reading why the SEO pipeline stopped.** `build.seo_corpus` is an mtime: it
-dates the freeze but never explains it, and "the cron never fired", "`build_seo.py`
-crashed" and "the rsync failed" are three different owner actions behind one
-identical number. Four mornings in August 2026 were spent unable to tell them
-apart. Since 2026-08-12 `refresh_seo.sh` writes `.seo-build-status.json` into
-the **docroot** at start and again on exit — naming the step in flight, the exit
-code, the commit it built from and how many pages the build produced — and the
-05:40 growth build reads it (`techniques._seo_pipeline_status`) into
-`growth/last_run.json` → `build.seo_pipeline`, which it commits. The docroot is
-the only place both pipelines can see, and the growth build's push is the only
-channel that reaches the cloud review; `refresh_seo.sh` runs from a different
-checkout and never commits. `growth_daily.py status` prints the verdict under
-the cron line, and the daily report names the failing step in its "SEO corpus
-frozen" callout. Unlike `cron_heartbeat.jsonl`, that record carries **structured
-fields only, never captured output** — the docroot is web-served and `$BUILD`
-holds `indexnow.key`. It also catches one failure the mtime cannot: a build that
-completes and rsyncs a *truncated* corpus looks freshly written, so a clean run
-reporting fewer than 1,000 pages is reported as a break.
-
-Read a **missing** status record carefully, because it is the one case with two
-meanings. The script pulls itself (`STEP=pull` is inside it), and bash has
-already read the file by then, so a cron that fires at all picks the new version
-up on one run and self-reports from the *next* one. An absence on its own, with
-a fresh corpus, therefore means nothing.
-
-**A frozen `seo_corpus` is decisive on its own, though, and does not need the
-status record at all** — this was worked out on 2026-08-14 and it settles the
-question a day earlier than the rule that used to sit here. `build_seo.py`'s
-`write()` opens and rewrites *every* file it emits on *every* run, unconditionally
-(only `<lastmod>` is content-aware, via `LM_STATE`), and `sitemap-main.xml`
-embeds `BUILD_DATE`. So a healthy run gives each `sitemap-*.xml` in `$BUILD` a
-fresh mtime and fresh bytes even on a night when no page changed, and `rsync -a`
-copies them across. **A docroot `sitemap-*.xml` older than a day therefore proves
-`refresh_seo.sh` did not reach `STEP=deploy`, whatever the status record says.**
-The status record then only distinguishes *how* it stopped: present means it ran
-and died at the named step; absent means it never started, because `status start`
-is written before the pull and before the build, so even an instant crash leaves
-the file behind.
-
-**The watchdog.** On 2026-08-14 the corpus had been frozen since 08-08 with no
-status record, i.e. six nights of the 04:10 cron not firing, which stranded every
-`build_seo.py` change since 08-01 in git. The cloud review cannot touch cron —
-but `growth_run.sh` is on the droplet, in the right checkout, with `GROWTH_DOCROOT`
-already set, and it demonstrably runs every morning. It now re-runs the refresh
-the missing cron owes: `seo_watchdog()` fires only on the `build` job, only when
-every non-growth-owned `sitemap-*.xml` in the docroot is more than `SEO_STALE_DAYS`
-(default 1) old, under `flock` and `timeout` (default 3600s), with every failure
-swallowed so it can never cost the night's ledger push. It runs
-`./scripts/refresh_seo.sh` from the growth checkout — which `growth_run.sh` has
-just pulled — rather than the copy in `$SEO_BUILD`, so the script is always the
-newest version instead of one night behind its own self-pull; `refresh_seo.sh`
-cds to `$SEO_BUILD` and pulls it, so the data and build dir are unchanged. Its
-outcome lands in `cron_heartbeat.jsonl` as `seo_watchdog_start` /
-`seo_watchdog_finish`, which is committed and pushed, so the review reads the
-result the same morning. Set `GROWTH_SEO_WATCHDOG=0` in `growth.env` to stop it —
-that is the switch to use if the pipeline is ever stopped on purpose. **If a new
-growth-written `sitemap-*.xml` is ever added to the docroot it must be excluded
-in `seo_watchdog()` as well as in `GROWTH_OWNED_SITEMAPS`, or the watchdog reads
-it as freshness and silently stops firing.**
-
-`SEO_STALE_DAYS` was 2 until 2026-08-18, and at 2 the watchdog was firing only
-every third night: `find -mtime -2` still matches a sitemap written 48h ago, so
-the night after a watchdog run and the night after that both read as fresh. With
-the 04:10 cron dead since at least 08-14 the watchdog is the *only* route from
-this repo to the 47,600 published pages, so that made the corpus deploy on a
-three-day cycle — `seo_watchdog_finish` appears in the heartbeat on 08-15 and
-then not again until 08-18. At 1 it *still* did not run nightly, and the reason
-is that a threshold in whole days cannot express this question. The watchdog ran
-at 05:40:18 on 08-18 and `refresh_seo.sh` finished at 05:41:33; the next night
-the test ran at 05:40:18 again, 23h58m later, and `-mtime -1` matches anything
-under 24h — so the sitemaps the watchdog had written itself the previous morning
-read as fresh by a two-minute margin and it stood down. Two crons on a fixed
-daily clock chasing a 24h window can only fire on alternate nights, which is
-exactly what the heartbeat shows for 08-18 and 08-19.
-
-Since 2026-08-19 the threshold is therefore in **minutes**, with an explicit
-guard band: `SEO_FRESH_MINS = SEO_STALE_DAYS * 1440 - SEO_GUARD_MINS`, guard 120,
-so 1,320 minutes (22h). The question it actually asks is "was the corpus rebuilt
-in *this* daily cycle", and the guard band is the width of the window between the
-two crons. The anti-race property is unchanged: a healthy 04:10 cron's sitemaps
-are ~90 minutes old when the 05:40 build looks, well inside 22h, so the watchdog
-still stands down whenever the real cron is working. Setting the band too wide
-costs at most a duplicate rebuild, which `flock` already makes safe; setting it
-too narrow costs a day of every content change, which is what 08-19 cost.
-
-That guard band works: on 2026-08-20 the heartbeat carries `seo_watchdog_start`
-at 05:40:15 ("corpus older than 1320min") and `seo_watchdog_finish` rc=0 at
-05:41:24 — the first nightly fire. **But that same morning `growth/last_run.json`
-said `seo_pipeline: "NO RUN FOR 2.0 DAYS — cron, the host or the checkout"`, and
-`growth_daily.py status` printed it as its headline.** Both were true readings of
-a docroot that no longer existed: `growth_run.sh` runs `build --deploy` *first*
-(and the build stamps `seo_corpus`/`seo_pipeline` from the docroot as it finds
-it), then the watchdog, then the commit. Since the watchdog only fires when those
-fields read stale, the record that got committed was guaranteed to describe a
-frozen pipeline on exactly the mornings the repair worked — in the one file the
-cloud review is told to trust as ground truth about whether the droplet ran. This
-is the same shape of error as 2026-08-01 (the deploy clock measuring our own
-nightly write) and 2026-08-08 (the orphan audit reading the docroot before its
-own rsync): the instrument was sampling before the thing it measures had
-happened.
-
-Since 2026-08-20 the watchdog therefore ends by calling
-`growth_daily.py seo-status --docroot … --watchdog-rc … --watchdog-note …`, which
-re-reads the docroot and merges the corrected `seo_corpus`/`seo_pipeline` into the
-existing `build` record via `ledger.patch_last_run()` — a merge, so `at` keeps
-meaning "when the build ran" — and records what the watchdog itself did as
-`build.seo_watchdog` (`ran`, `ok`, `rc`, `note`, `at`). `ran` is set on every
-path, per the 2026-07-28 rule that a missing field must never be readable as a
-failure. Two consequences worth knowing: the report's "SEO corpus frozen" callout
-now names the watchdog's own rc and note instead of telling the owner to go read
-the heartbeat, and a re-read that comes back **empty leaves the build's reading
-standing** rather than blanking it — both readers fall silent on a missing
-`seo_corpus`, so clobbering a real "frozen since 08-18" with null would suppress
-the alarm. Keeping the older value can only under-report freshness; it can never
-call a frozen corpus fresh.
-
-**Publishing a page and getting it into a sitemap are two separate jobs, and the
-handover between the pipelines dropped the second one.** `t_sitemap_daily` built
-`sitemap-daily.xml` purely from the lastmod state — the URLs *this* build wrote
-— and `Ctx.unstage()` deletes a URL's lastmod entry when it hands a page back to
-the SEO pipeline, reasoning that "the URL is no longer ours to list". That holds
-only if the pipeline then lists it. For the SF/LA/DC hub tier it did not: on
-2026-08-17 the docroot held 103 DC, 112 LA and 37 SF hub pages while the docroot
-sitemaps carried **two URLs per city**, so 252 finished pages had no sitemap
-entry anywhere, and the URL Inspection sample that morning came back *unknown to
-Google* — never fetched — for 80% of what it read. `t_sitemap_daily` now lists
-the union of what this build wrote and every page in a family it owns
-(`/section8/`, `/brief/`, `/guide/`, the city hub tier) that is live in the
-docroot but absent from every pipeline-owned shard. That second set is read off
-the filesystem and never asserted: a page is listed only if it exists, dated by
-its own mtime rather than today, and it leaves this shard by itself the day the
-pipeline starts listing it. The `rescued` count in the technique's detail line is
-the size of the hole — it should fall to 0 when the pipeline emits its own city
-shards, and a jump means the pipeline dropped a tier.
-
-One consequence of that ordering: **`build` runs every technique first and
-rsyncs last**, so any check that reads the docroot is scoring the *previous*
-run's deploy. `t_crawl_paths` therefore also reads `growth_out/` and says
-"awaiting this run's rsync" for a link it staged minutes earlier, rather than
-reporting an orphan that is already fixed. That fallback only works if the audit
-runs *after* the technique that stages the page — `t_hub_direct_answers` sat
-ahead of both city-hub publishers in `techniques.ORDER` until 2026-08-12 and so
-reported the previous night's docroot as though it were the current run's
-result, which cost two reviews a wrong prediction. Audits go after publishers.
-
-**Two different link audits, at two different scales.** `t_crawl_paths` asks
-whether each *section* has an inbound link at all — a whole family orphaned. It
-cannot see the other failure, which is a family that is linked but only barely:
-until 2026-08-13 every building page's "Other rent-stabilized buildings in
-&lt;neighborhood&gt;" list was `sorted_by_address[:12]`, identical on every page
-in the neighborhood, so 13 addresses per neighborhood collected every sibling
-link and **44,738 of 47,165 building pages (94.9%) had two or fewer inbound
-internal links** — 11,294 had exactly one. `build_seo.py` now takes a window
-around each page's own position in a geographically snaked order
-(`_geo_ring_order` / `_ring_window`), which makes the neighborhood a ring: every
-page links to 12 siblings and is linked from 12, and the listed buildings are
-genuinely next door (median 76 m apart in the East Village, against 466 m
-before) instead of alphabetical neighbours. The ordering is deterministic
-because `seo_lastmod.json` only bumps `<lastmod>` when a page's HTML really
-changed, and a shuffled list would rewrite 47,165 lastmods every night.
-
-**"Indexed" and "earns impressions" are different numbers, and conflating them
-cost three weeks.** `gsc_serving_pages` counts distinct URLs that earned a
-Search Console impression in the window. Until 2026-08-15 every review, the
-daily report's "Indexing" bar and `searchconsole.py`'s own docstring read that as
-*how much of the corpus is indexed* — but an impression needs the page indexed
-**and** somebody to have typed a query it could answer, and on 47,165
-single-address pages the second condition is the binding one for almost every
-page. "63 of ~47,600 pages served" is equally consistent with 63 indexed pages
-and with 47,000 of them, and the two imply opposite next moves: consolidate the
-corpus, or stop publishing address pages and go where the search demand is.
-
-`growth/indexstatus.py` measures it directly. The Search Console **URL
-Inspection API** returns Google's own coverage state per URL ("Submitted and
-indexed", "Crawled – currently not indexed", "Discovered – currently not
-indexed", a Google-chosen canonical that is not ours, …). Its quota is 2,000
-URLs/day per property against ~47,600 pages, so it samples:
-
-* a **stable cohort** (~430 URLs) persisted in `growth/index_status.json`, so a
-  move in the indexed rate is Google changing its mind rather than a different
-  draw. Members leave only when they leave the sitemaps; top-ups are picked in
-  `sha1(url)` order so they do not depend on build order.
-* **stratified by page family**, because `/building/` is 99% of the corpus and
-  0% of the interesting question. Any family not named in `COHORT` still gets
-  `DEFAULT_QUOTA` slots, so a technique that ships a new URL prefix is sampled
-  without anyone remembering to edit the dict.
-* `GROWTH_INDEX_BUDGET` (default 100) inspections per night, oldest reading
-  first *within each family* and the families interleaved in proportion to their
-  size, so the whole cohort still refreshes in ~4 days and every stratum is
-  measured on the **first** night. A single global sort by `(checked, sha1)` is
-  not equivalent and was the bug fixed on 2026-08-17: `reconcile()` tops a
-  family up with its lowest-hashing candidates, so `/building/`'s 250 URLs — the
-  250 lowest hashes out of 47,165 — sorted ahead of nearly everything else, and
-  196 of the first 198 URLs ever read were `/building/`. The interleave also
-  pins each family's oldest member to the front of the night, because a family
-  smaller than `cohort/budget` members otherwise never comes up at all.
-
-It runs inside `measure`, needs the same service-account key as the rest of
-Search Console, and never raises — a measurement job must not be why the night's
-other measurements go unrecorded. Every exit path writes an explicit `ok` into
-`last_run.indexstatus` (the 2026-07-28 lesson: `outreach.run()` omitted `ok` on
-success and the report announced a healthy job as "DID NOT RUN"). A `403` stops
-the run after one call rather than burning the quota — the URL Inspection API
-requires the service account to be an **owner or full user** of the property, and
-a restricted user gets `403` on every call. Set `GROWTH_INDEX_STATUS=0` to
-disable. The file holds public URLs and Google's public opinion of them, no PII,
-so it is tracked in git and the cloud review can read it — via the `git add`
-allowlist at the end of `growth_run.sh`, which is what "tracked" actually means
-here and which this file was missing until 2026-08-16.
-
-The rate on its own does not say what to do. `index_state_<bucket>` records the
-**site-wide coverage-state split** into `results.jsonl` every night, dense over
-`indexstatus.BUCKETS` so a zero is a recorded fact rather than a gap. It is the
-diagnosis: *unknown to Google* is Google having no record of the URL at all, so
-the problem is upstream of both of the others and the fix is discovery — a
-sitemap entry and internal links, not better pages; *discovered, never crawled*
-is Google knowing the URL and declining to spend a crawl, a budget/priority
-problem, so submit fewer and better-linked URLs; *crawled, not indexed* is
-Google fetching the page and refusing it — a quality/duplication judgement, so
-consolidate or strengthen the pages. `index_status.json` only ever holds each
-URL's latest state, so this series is the only thing that can show pages *moving*
-between those states after a fix.
-
-Read the state string literally and check the discriminator before building on
-it: `unknown_to_google` is Google's answer about the URL, `unknown` is the API
-returning no coverage state at all, and Google has been observed relabelling
-long-known URLs "unknown". A URL it has genuinely never fetched also carries no
-`lastCrawlTime` and `pageFetchState: PAGE_FETCH_STATE_UNSPECIFIED`; a relabelled
-one keeps its crawl time. On 2026-08-17 all 159 "unknown" readings had no crawl
-time and all 39 known ones had both a crawl time and `SUCCESSFUL`.
-
-**`index_pct` is a product of two independent rates, and since 2026-08-18 both
-are recorded.** `index_fetched_pct` is how many read URLs Google has ever
-fetched (`lastCrawlTime` is non-null) — a discovery number that links and
-sitemaps move and that nothing about the page itself can. `index_accept_pct` is
-how many of *those* it kept — a quality judgement that submitting more URLs
-cannot move. On 2026-08-18 they were 21.8% and 16.9%, whose product is the 3.7%
-`index_pct` that three weeks of reviews had been arguing about as though it were
-one problem. Judge a change on the half it was aimed at: a linking fix that
-moves `fetched_pct` and leaves `accept_pct` flat did exactly what it should.
-Both are also broken out per page family in the daily report's index table,
-which is where the tiers diverge — on 2026-08-18 `/building/` read 20.4% fetched
-while `/guide/`, `/brief/`, `/section8/`, `/dc/` and `/la/` read 0%.
-
-**`index_accept_pct` is confounded with crawl recency, and since 2026-08-19 the
-split is recorded too.** A page Google fetched last night has not been decided
-about; a page it fetched two months ago has. Averaging them produces a rate that
-describes neither. On 2026-08-19 the 76 fetched URLs read 22.2% / 0% / 0% / 0% /
-66.7% across crawl-age bands 0-6d, 7-13d, 14-20d, 21-27d and 28d+, which
-averages to the 15.8% `index_accept_pct` — a number no page on the site has.
-`index_accept_pct_mature` is acceptance restricted to crawls at least
-`MATURE_DAYS` (21) old, with `index_fetched_mature` as its denominator because
-on a 100-URL nightly budget that slice is small; on 2026-08-19 it was 62.5% of
-16. The daily report shows the band table under the two rate tiles.
-
-Two readings fit that shape and they imply opposite work — *latency* (Google has
-not finished deciding, real acceptance is ~62%, and consolidating would be
-self-harm) or *verdict* (Google accepted this corpus in June and stopped; of the
-61 URLs it fetched from 2026-07-06 onward it kept 2, so current acceptance is
-~3% and T027 is right). The band table does not settle it, because
-`lastCrawlTime` is the *most recent* crawl: a page declined in July and
-re-fetched last night reads as "too recent to judge", so the matured rate is
-biased optimistic by exactly the pages Google keeps returning to and refusing.
-`first_checked` and `first_bucket` are stamped on every cohort record for that
-reason — they are the one clock a re-crawl cannot reset — and
-`index_accept_pct_settled` is the unconfounded rate computed off them. It is
-`None`, and therefore absent from the series, until 2026-09-06: three weeks after
-the sampler's first night. **Do not decide T027 off `index_accept_pct` alone.**
-
-`first_indexed` is *not* Google's acceptance date and never was. It is the first
-day this sampler saw the URL indexed, so on 2026-08-19 all twelve indexed URLs
-carried 08-16..08-19 against crawls running back to June.
-
-**Every rate above is a level, and a level cannot tell "Google has not reached
-these pages yet" from "Google is taking them back."** `index_status.json` holds
-only the latest state per URL, so until 2026-08-20 the only way to see a page
-*lose* indexing was to diff that file against git by hand — which is how it was
-found, by luck. On 2026-08-20 two building pages that had been "Submitted and
-indexed" since a 2026-06-27 crawl were re-crawled on 08-18 and 08-19 and both
-came back "Crawled - currently not indexed", with zero pages gained. So
-`collect()` now counts bucket transitions among URLs it had already read once and
-records `index_rechecked`, `index_lost_indexed` and `index_gained_indexed`, and
-stamps `left_indexed` on the record of any URL that drops out (the mirror of
-`first_indexed`). **Read lost/gained against `index_rechecked`, never alone** —
-on a night the API is denied nothing is re-read, and the two counters are omitted
-entirely rather than written as zeros, for the same reason the other index
-metrics are: an absent day is honest, a zero is a claim. Both sides of the
-comparison go through `bucket()` afresh, so a new needle in `_STATE_BUCKETS`
-cannot manufacture a transition, and a move into or out of `unknown` (Google
-returning no coverage state at all — an instrument condition) is never counted.
-
-**`summarise()` re-derives every bucket from the stored raw `state` string; it
-never reads `rec["bucket"]` back.** `inspect()` stamps a bucket at read time, so
-without this a URL keeps whatever vocabulary `bucket()` knew on the night it was
-inspected until it is re-inspected, four nights later. When `bucket()` learned
-`unknown_to_google` on 08-17, 159 of 298 readings kept the stale `other` label
-and the series reported `unknown_to_google 74 / other 159` for a cohort whose
-real split was 233 / 0 — and `other` is documented to mean "a wording this module
-has not learned yet", so the report was asking the next review to hunt a needle
-that already existed. Re-deriving makes any future `bucket()` fix retroactive
-the moment it lands. The daily report follows the same rule: `_index_summary()`
-in `report.py` recomputes from the cohort rather than reading back the cached
-`summary` blob, so a counting change shows up the same morning instead of a
-night later. The append-only `results.jsonl` series is *not* rewritten — a
-frozen record of what was believed on the day is the point of it — so a row from
-before a `bucket()` fix stays as it was recorded.
-
-Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
-not the code — decides what runs. Flipping a technique to `retired` stops it
-without a deploy, which is what lets the review loop prune autonomously.
-
-| Module | Role |
-|--------|------|
-| `growth/ledger.py` | The registry + append-only measured results |
-| `growth/techniques.py` | The executable techniques (one `t_<slug>` function each) |
-| `growth/metrics.py` | Daily traffic / funnel / revenue, attributed per technique |
-| `growth/review.py` | Judges, retires, and de-duplicates techniques |
-| `growth/keywords.py` | The tracked query universe the search-share goal is measured against |
-| `growth/searchconsole.py` | Positions, serving pages and per-page impressions from Search Console |
-| `growth/indexstatus.py` | Google's own index coverage for a stable stratified sample of pages |
-| `growth/scout.py` | Researches and proposes NEW techniques (needs an Anthropic key) |
-| `growth/outreach.py` | Daily B2B prospect research + drafted outreach — **never sends** |
-| `growth/journal.py` | The decision journal: what was observed, concluded, changed, watched |
-| `growth/report.py` | The daily email |
-
-The **ledger** records what a technique is and how it scored; the **journal**
-(`growth/journal.md`) records why anything changed. Both are tracked in git, so
-the file history doubles as a tamper-evident record of when each decision was
-made — that history is the year-end "what worked" list.
-
-A technique must be **idempotent** (it runs every day), **honest** (it never
-publishes an empty page just to have a URL to submit), and **attributable** (it
-declares the URL prefixes it owns, so `review.py` can tell whether it actually
-earned traffic). Site-wide techniques declare no prefixes and are judged on a
-global series instead.
-
-The scout proposes; it does not deploy. It can write ledger candidates and add
-tracked keywords, but it cannot write code, change the live site, spend money,
-or send mail — an unattended loop with commit rights eventually ships something
-broken at 6am on a Sunday.
+To see a front-end change, run the user-journey suite. It loads **your local
+`index.html`** over the live site's data in phone, desktop and iPad browsers:
 
 ```sh
-python3 growth_daily.py build --dry-run       # what would be published
-python3 growth_daily.py status                # the ledger + keyword coverage
-python3 growth_daily.py measure --days 30     # backfill measurements
-python3 growth_daily.py report                # print the daily report
+playwright install chromium webkit
+JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/journeys.py
 ```
 
-State (`techniques.json`, `keywords.json`, `results.jsonl`, `state.json`) lives
-on the droplet at `/root/dhcr-build/growth/` and is gitignored; `seed.py` and
-`keywords.py` hold the definitions that recreate it from scratch.
+Large data files (`buildings.slim.json` and friends) are generated and
+gitignored. The journey suite fetches them from findacrib.com, so you don't
+need to build them.
 
-**Edit a seeded technique's prose in `seed.py`, never in `techniques.json`.**
-`cmd_build` calls `seed.run()` first, and for every slug in `SEEDS` it copies
-`name`, `hypothesis`, `evidence`, `notes`, `prefixes` and `metric` from the seed
-over whatever the ledger holds — deliberately, so those definitions live in code
-and in review, but it means a hand-edit to any of those six fields in
-`techniques.json` survives exactly until the next 05:40 build and then vanishes
-with no error. (`status`, `verdict`, `revisit_on`, `activated` and the measured
-history are *not* touched, so `set_status` / `set_verdict` / `set_revisit` are
-safe to call directly.) This is the likeliest explanation for the 2026-08-12
-review whose journal entry claimed a ledger note its diff did not contain: the
-note was written, committed, and then overwritten by the next build.
+## Contributing
 
-## Traffic report
+See **[CONTRIBUTING.md](CONTRIBUTING.md)**. In short, fork the repo, open a pull
+request, and keep CI green. Issues labelled
+[`good first issue`](https://github.com/divinedavis/Find-A-Crib/labels/good%20first%20issue)
+are a good place to start.
 
-`traffic_report.py` prints a traffic dashboard from the Supabase `visits` /
-`events` logs: today's numbers, a month-to-month table, the last 14 days,
-new-vs-returning, week-over-week retention, and today's activity breakdown. The
-owner's own visits are always excluded. Needs the Supabase PAT in the macOS
-keychain (`supabase-pat-clockin`).
+Found a security problem? Please don't open an issue. See [SECURITY.md](SECURITY.md).
 
-```sh
-python3 traffic_report.py                      # dashboard
-python3 traffic_report.py --json               # raw JSON
-python3 traffic_report.py --email a@b.com      # email the dashboard
-```
+## Ground rules for the data
 
-Emailing uses `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` from the
-environment. A weekly cron on the caprecruiting droplet (167.71.170.219,
-`/root/findacrib-report/`) mails this to the owner every Monday 8am ET.
+- **No listing-portal data.** The Zumper and StreetEasy feeds were removed on
+  2026-10-06 (Zumper's Terms forbid scraping). Building cards link out to
+  StreetEasy (NYC) or Zillow (other cities) instead. Don't add a portal scrape.
+- **Only cities with property-level records get a map.** See `BACKLOG.md` for
+  the ones that publish nothing below the town level.
+- **No badge never means "no."** Source-of-income discrimination is illegal in
+  NYC, so a missing Section 8 badge never means vouchers aren't accepted.
 
 ## Sources
 
 - NYC Rent Guidelines Board / DHCR 2024 building files
 - Coordinates from NYC PLUTO
 - Owner / managing agent / violations / complaints from NYC Open Data (HPD)
+- NYC Housing Connect and NY HCR HousingSearch lotteries
 - SF Rent Board Housing Inventory via DataSF (`gdc7-dmcn`)
 - LA County Assessor parcel rolls, filtered by LAHD's RSO criteria
 - DC DHCD RentRegistry public data exports; DC neighborhood label points (DCGIS)
   and Census 2020 ZCTAs for DC neighborhood/ZIP assignment
+- HUD Fair Market Rents and project-based Section 8 contracts
+

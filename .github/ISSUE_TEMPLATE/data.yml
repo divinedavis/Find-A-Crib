@@ -1,0 +1,22 @@
+name: Wrong or missing data
+description: A building, lottery, re-rental or income limit is wrong or missing
+labels: [data]
+body:
+  - type: input
+    id: building
+    attributes:
+      label: Building address or listing link
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong?
+      description: What Find A Crib shows, and what it should show.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Where the correct information comes from (flyer, HPD, DHCR, Housing Connect, ...).

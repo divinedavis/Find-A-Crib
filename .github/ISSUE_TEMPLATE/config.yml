@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/divinedavis/Find-A-Crib/security/advisories/new
+    about: Please report security problems privately, not as an issue.
+  - name: Help with your Find A Crib account
+    url: https://findacrib.com/support/
+    about: Account, alert and app questions.

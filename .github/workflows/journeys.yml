@@ -26,11 +26,11 @@ jobs:
     env:
       # These mint a test user with the Supabase service-role key from the
       # macOS keychain. The key stays off GitHub; deploy_app.sh runs them.
-      JOURNEYS_SKIP: account_delete,plus_gates
+      JOURNEYS_SKIP: account_delete,plus_gates,renter_tools,ai_features
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
       - run: pip install -q playwright==1.62.0 requests numpy opencv-python-headless pillow

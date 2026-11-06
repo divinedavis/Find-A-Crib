@@ -55,12 +55,13 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
         // A screen pushed or popped starts with its header and the bar showing.
-        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeProgress = 0 }
+        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeProgress = 0; nav.tabBarCompact = false }
         // Search no longer leaves the screen when another tab opens, so its
         // building page's onDisappear doesn't run: set the bar per tab here.
         // Back on Search, a building page on top still hides it.
         .onChange(of: nav.tab) { _, t in
             nav.chromeProgress = 0
+            nav.tabBarCompact = false
             if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
         }
         // A tapped alert notification opens here, on all of its items.
@@ -135,18 +136,22 @@ struct PillTabBar: View {
     /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With a fifth tab
     /// (Events 2026-09-22, Your Crib since 2026-10-15) the items narrow to fit
     /// a 375 pt screen; four keep their old width.
-    private var itemWidth: CGFloat { tabs.count >= 5 ? 72 : 86 }
+    private var itemWidth: CGFloat {
+        if let w = TabBarSize.current.barWidth { return (w - 8) / CGFloat(tabs.count) }
+        return tabs.count >= 5 ? 72 : 86
+    }
+    private var size: TabBarSize { .current }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in
                 let on = selected == tab
                 Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
-                        Text(tab.title).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Image(systemName: tab.icon).font(.system(size: size.icon, weight: on ? .semibold : .regular))
+                        Text(tab.title).font(.se(size.label ?? (tabs.count >= 5 ? 13 : 14), .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(on ? (holiday?.onFill ?? SE.royal) : SE.ink)
-                    .frame(width: itemWidth, height: 66)
+                    .frame(width: itemWidth, height: size.itemHeight)
                     .background { if on { selectedFill } }
                     .clipShape(Capsule())
                     // The whole 72 x 66 pill is the button, selected or not.
@@ -176,13 +181,33 @@ struct PillTabBar: View {
     }
 }
 
+/// Tab bar sizes for the minimize preview (2026-11-05). `.ours` is the
+/// shipping bar (368 x 74 with five tabs); `.instagram` is Instagram's
+/// measured from the owner's screen recording: 357 x 59 pt full,
+/// 301 x 49 shrunk (84%, about its centre). Launch with
+/// `--tabbar-size instagram` to see it.
+enum TabBarSize {
+    case ours, instagram
+    static let current: TabBarSize =
+        ProcessInfo.processInfo.arguments.contains("instagram") ? .instagram : .ours
+    var barWidth: CGFloat? { self == .instagram ? 357 : nil }
+    var itemHeight: CGFloat { self == .instagram ? 51 : 66 }
+    var icon: CGFloat { self == .instagram ? 19 : 22 }
+    var label: CGFloat? { self == .instagram ? 10.5 : nil }
+    /// Instagram's shrunk bar is 84% of its full one, both ways.
+    static let compactScale: CGFloat = 0.84
+}
+
 /// The tab bar. It stays on screen while a list scrolls: only the
-/// screen's header slides away (owner, 2026-11-05).
+/// screen's header slides away (owner, 2026-11-05). Scrolling down shrinks
+/// it to 84%, scrolling up brings it back to full size (Instagram-style).
 private struct ChromeTabBar: View {
     @Binding var selected: Tab
+    @Environment(AppNav.self) private var nav
 
     var body: some View {
         PillTabBar(selected: $selected)
+            .scaleEffect(nav.tabBarCompact ? TabBarSize.compactScale : 1)
             .padding(.bottom, 6)
     }
 }

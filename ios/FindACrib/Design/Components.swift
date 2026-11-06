@@ -470,7 +470,14 @@ private struct HideChromeOnScroll: ViewModifier {
                     let end = g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom - g.containerSize.height
                     return min(y, max(end, 0))
                 } action: { _, y in
+                    let moved = y - offset
                     offset = y
+                    // The tab bar shrinks on a scroll down and grows on a
+                    // scroll up, a beat after the finger turns (Instagram).
+                    let compact = userScrolling && y > 40 ? (moved > 2 ? true : moved < -2 ? false : nav.tabBarCompact) : (y <= 40 ? false : nav.tabBarCompact)
+                    if compact != nav.tabBarCompact {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { nav.tabBarCompact = compact }
+                    }
                     let p = tracker.next(progress: nav.chromeProgress, offset: y, height: height, userScrolling: userScrolling)
                     if p != nav.chromeProgress { nav.chromeProgress = p }
                 }
@@ -484,7 +491,7 @@ private struct HideChromeOnScroll: ViewModifier {
                         }
                     }
                 }
-                .onDisappear { nav.chromeProgress = 0 }
+                .onDisappear { nav.chromeProgress = 0; nav.tabBarCompact = false }
         } else {
             content
         }

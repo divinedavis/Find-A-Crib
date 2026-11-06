@@ -2025,3 +2025,42 @@ extension XCUIElement {
         typeText(text)
     }
 }
+
+/// Preview only (2026-11-05, branch ios-tabbar-minimize-preview): drives a
+/// slow scroll down and back up on Search results, so a screen recording
+/// shows the tab bar shrinking and growing. Real-speed animations. The host
+/// script starts and stops the recording through marker files.
+final class TabBarMinimizePreview: XCTestCase {
+    let dir = "/private/tmp/claude-501/-Users-divinedavis/fa346d2f-37a5-4a06-bf29-eff71f443b57/scratchpad/tabrec"
+    func testRecordOurs() throws { try record("ours", args: []) }
+    func testRecordInstagram() throws { try record("instagram", args: ["--tabbar-size", "instagram"]) }
+
+    private func record(_ name: String, args: [String]) throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"] + args
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        sleep(3)
+        let fm = FileManager.default
+        fm.createFile(atPath: "\(dir)/go-\(name)", contents: nil)
+        for _ in 0..<40 where !fm.fileExists(atPath: "\(dir)/rec-\(name)") { usleep(250_000) }
+        sleep(2)
+        let w = app.windows.firstMatch
+        func drag(_ from: CGFloat, _ to: CGFloat, _ secs: TimeInterval) {
+            let a = w.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: from))
+            a.press(forDuration: 0.05, thenDragTo: w.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: to)),
+                    withVelocity: .slow, thenHoldForDuration: 0.1)
+            Thread.sleep(forTimeInterval: secs)
+        }
+        // Down the list: the header slides away and the tab bar shrinks.
+        drag(0.70, 0.40, 1.0); drag(0.70, 0.40, 1.0); drag(0.70, 0.40, 2.0)
+        // A short scroll up: the tab bar grows back.
+        drag(0.40, 0.55, 2.0)
+        // Down again, then back to the top.
+        drag(0.70, 0.40, 1.0); drag(0.70, 0.40, 2.0)
+        drag(0.35, 0.75, 1.0); drag(0.35, 0.75, 1.0); drag(0.35, 0.75, 2.5)
+        fm.createFile(atPath: "\(dir)/done-\(name)", contents: nil)
+        sleep(2)
+    }
+}

@@ -168,6 +168,9 @@ final class AppNav {
     /// Set only by `hidesChromeOnScroll`; every tab switch and push/pop
     /// resets it.
     var chromeProgress: CGFloat = 0
+    /// The tab bar shrunk to 84% (Instagram-style, 2026-11-05 preview):
+    /// on while a list scrolls down, off on a scroll up or near the top.
+    var tabBarCompact = false
     var searchPath: [Route] = []
     var activityPath: [Route] = []
     var profilePath: [Route] = []

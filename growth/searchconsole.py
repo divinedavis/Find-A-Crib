@@ -43,6 +43,7 @@ can read it.
 Reuses seo_search_console.py for auth and querying rather than reimplementing
 the service-account JWT dance.
 """
+import datetime as _dt
 import json
 import os
 import re
@@ -537,6 +538,24 @@ def collect(days=7):
         if t.get("ever"):
             ledger.record_result(today, "__site__", f"gsc_serving_{name}", t.get("now"))
 
+    # ---- and how much of that "ever" is real. serving_tiers()' median_days is
+    # a median over window arithmetic, not a residence time — see the WINDOW
+    # DRAG note above serving_persistence(). Only the two site-wide counts go
+    # into the series; the per-tier split is recomputable from the committed
+    # history, like the medians one block up. Recorded as a PAIR on purpose: a
+    # lone "41 held" invites the reading that the other 255 were shown once and
+    # dropped, which is the inference this split exists to refuse.
+    # history comes off the snapshot _save_pages() just wrote, not off disk:
+    # load_pages() would re-read the same file and this way the split is taken
+    # from the record tonight's rows were already folded into.
+    persist = serving_persistence(history=(saved or {}).get("history"),
+                                  window=f"{start}..{end}")
+    if persist:
+        for metric, key in (("gsc_serving_multi_day", "proven_multi_day"),
+                            ("gsc_serving_single_day_possible",
+                             "single_day_possible")):
+            ledger.record_result(today, "__site__", metric, persist[key])
+
     ledger.write_last_run("searchconsole", {
         "window": f"{start}..{end}", "clicks": clicks,
         "impressions": impressions, "serving_pages": serving,
@@ -556,7 +575,15 @@ def collect(days=7):
         # told to read serving_pages every run out of THIS file, so the count
         # that says how much of it cannot be real belongs in it.
         "serving_census_contradicted": (census or {}).get(CENSUS_CONTRADICTED),
-        "serving_census_indexed": (census or {}).get(CENSUS_INDEXED)})
+        "serving_census_indexed": (census or {}).get(CENSUS_INDEXED),
+        # Same reason again: the review agent is told to read serving_pages out
+        # of THIS file every run, and these are the two numbers that say how
+        # much of the serving RECORD is durable rather than window drag. The
+        # window width travels with them — the threshold is meaningless without
+        # it, and `window` above is the string it was measured from.
+        "serving_multi_day": (persist or {}).get("proven_multi_day"),
+        "serving_single_day_possible": (persist or {}).get("single_day_possible"),
+        "serving_persistence_window_days": (persist or {}).get("window_days")})
 
     return {"clicks": clicks, "impressions": impressions,
             "page_clicks": page_clicks, "page_impressions": page_impressions,
@@ -747,8 +774,17 @@ def _churn(prev, rows, today):
     be consolidated. So the count is kept, and three numbers that disambiguate
     it are kept beside it:
 
-      stable   served today AND in the previous snapshot — visibility that
-               survived a day, which is the honest read on what ranks
+      stable   served today AND in the previous snapshot. NOT "visibility
+               that survived a day", which is what this line claimed until
+               2026-11-06: consecutive readings are trailing 8-day windows
+               that OVERLAP BY SEVEN DAYS, so a single impression-day makes a
+               URL "stable" on about seven straight nights without Google
+               showing it again once. What it does measure is that the two
+               windows agree, which is worth having — a URL that leaves is one
+               whose impression-day has rolled off the far edge — but it is a
+               statement about the windows, not about what ranks. For the part
+               of the record that cannot be explained by overlap, see
+               serving_persistence().
       entered  / left   the size of the nightly rotation
       ever     distinct URLs seen serving since this record began — monotone,
                so it measures how much of the corpus Google has *ever* shown,
@@ -805,6 +841,151 @@ def _churn(prev, rows, today):
     return hist, out
 
 
+# ---- how long a URL really served ----------------------------------------
+#
+# WINDOW DRAG, and why `days_seen` is not a residence time.
+#
+# Every nightly reading asks Search Console for a TRAILING window: collect()
+# takes start = d(days + 2), end = d(2), which at the default days=7 is 8 days
+# inclusive. _churn() then adds 1 to a URL's `days_seen` once per distinct DATE
+# THE MEASUREMENT RAN on which that URL came back in the set. Those two are not
+# the same quantity. A URL that earned one impression on a single day D comes
+# back in every window that still contains D — the readings ending D through
+# D + W - 1, so up to W consecutive nights — and scores days_seen up to W while
+# Google showed it exactly once.
+#
+# The stored record proves this is the normal case and not a corner. On
+# 2026-11-06, 194 of the 296 URLs in gsc_pages.json sat at days_seen 7 or 8
+# against a window of 8: a spike at the window boundary, which no real
+# distribution of residence times produces. 255 of the 296 were at or below the
+# window length.
+#
+# So ONE direction of the inference survives and the other does not:
+#
+#   days_seen >  W   PROVES at least two distinct impression-days. No single
+#                    day can appear in more than W consecutive trailing
+#                    windows, so the surplus must come from another day. A
+#                    measurement gap only ever REDUCES how many readings one
+#                    impression-day can produce, so neither the pause nor a
+#                    skipped night can manufacture this.
+#   days_seen <= W   proves nothing either way. It is consistent with one
+#                    impression-day dragged through the window AND with W
+#                    genuine days, and this file cannot separate them: the
+#                    window is an 8-day TOTAL, so per-day impressions were
+#                    never pulled and are not recoverable from what is stored.
+#
+# That is why this returns a floor and an explicit cannot-tell bucket instead
+# of a median. A median over `days_seen` is a median over window arithmetic —
+# which is what serving_tiers()' `median_days` has always been, and what the
+# daily report published as "the median run of distinct days a URL kept its
+# place" until 2026-11-06.
+#
+# Nothing here re-reads Search Console. Recovering a true residence time needs
+# per-day rows (a `date` dimension on the page query), which is a change to
+# collect() and to the stored schema, and it would only start a NEW series —
+# it cannot retrofit the 296 URLs already in the record. The split below is
+# what the existing record can honestly support.
+
+# collect(days=7) asks d(days + 2) .. d(2), which is `days + 1` dates
+# inclusive. Kept as the documented default for callers with no stored window
+# string to measure; window_span_days() is preferred because it reads the
+# window that was actually used.
+SC_WINDOW_DAYS = 8
+
+
+def window_span_days(window=None):
+    """Inclusive day count of a stored "YYYY-MM-DD..YYYY-MM-DD" window string.
+
+    Returns None rather than a guess when the string is missing or unparseable:
+    the whole point of the caller is an arithmetic threshold, and a threshold
+    quietly defaulted to the wrong width would turn window drag back into a
+    residence time without saying so. Pass None and the caller falls back to
+    SC_WINDOW_DAYS and reports which it used.
+    """
+    if not window or ".." not in str(window):
+        return None
+    a, _, b = str(window).partition("..")
+    try:
+        d0 = _dt.date.fromisoformat(a.strip())
+        d1 = _dt.date.fromisoformat(b.strip())
+    except ValueError:
+        return None
+    span = (d1 - d0).days + 1
+    return span if span > 0 else None
+
+
+def serving_persistence(history=None, window=None, window_days=None):
+    """Split the serving history into what PROVABLY held and what cannot be told.
+
+    See the WINDOW DRAG note above for the arithmetic. Two buckets, because the
+    third thing a reader wants — "shown once and dropped" — is not measurable
+    from this record and must not be implied by putting a number beside it:
+
+      proven_multi_day        days_seen > W. Google showed the URL on at least
+                              two distinct days. A floor, never a total.
+      single_day_possible     0 < days_seen <= W. Consistent with ONE
+                              impression-day dragged through the trailing
+                              window, and equally consistent with W real days.
+                              This is a cannot-tell count, not a failure count.
+
+    `window_source` says which width the split used, so a reader can see
+    whether the threshold came from the window that was actually measured or
+    from the documented default.
+
+    Returns None when there is no history to split — no record is not a record
+    of zero, and the ledger reads a missing metric as "not measured".
+    """
+    snap = None
+    if history is None:
+        snap = load_pages() or {}
+        history = snap.get("history") or {}
+    if not history:
+        return None
+
+    if window_days is None:
+        if window is None and snap is not None:
+            window = snap.get("window")
+        window_days = window_span_days(window)
+        source = "measured" if window_days else "default"
+        if not window_days:
+            window_days = SC_WINDOW_DAYS
+    else:
+        source = "caller"
+
+    order = [name for name, _ in SERVING_TIERS] + [TIER_OTHER]
+    tiers = {n: {"proven_multi_day": 0, "single_day_possible": 0,
+                 "max_days": None} for n in order}
+    proven = possible = counted = 0
+    for url, rec in history.items():
+        # Tolerate a short or non-integer record the same way serving_tiers()
+        # does: it is excluded from the split rather than counted into either
+        # bucket, because a URL whose day count cannot be read is not evidence
+        # for or against holding.
+        if not rec or len(rec) < 3 or not isinstance(rec[2], int):
+            continue
+        days = rec[2]
+        if days <= 0:
+            continue
+        t = tiers[_tier(url)]
+        counted += 1
+        if days > window_days:
+            proven += 1
+            t["proven_multi_day"] += 1
+        else:
+            possible += 1
+            t["single_day_possible"] += 1
+        if t["max_days"] is None or days > t["max_days"]:
+            t["max_days"] = days
+
+    if not counted:
+        return None
+    return {"window_days": window_days, "window_source": source,
+            "counted": counted, "proven_multi_day": proven,
+            "single_day_possible": possible,
+            "proven_pct": round(100.0 * proven / counted, 1),
+            "by_tier": tiers}
+
+
 def stable_pages(limit=25):
     """URLs that have served on the most distinct days — what actually holds.
 
@@ -839,8 +1020,17 @@ def serving_tiers(rows=None, history=None):
                   tier Google has *ever* shown — and a tier sitting at a
                   handful after weeks is one Google has declined, not one that
                   happened to miss tonight's rotation.
-      days        median / max distinct days a URL in this tier held its place.
-                  Separates "shown once and dropped" from "holds".
+      days        median / max of `days_seen` for the tier's URLs. READ THE
+                  WINDOW DRAG NOTE above serving_persistence() BEFORE QUOTING
+                  THESE. `days_seen` counts READINGS, not impression-days, and
+                  every reading covers a trailing 8-day window, so one
+                  impression-day scores up to 8. This median does NOT separate
+                  "shown once and dropped" from "holds" — it said it did until
+                  2026-11-06, and on that date 194 of the 296 URLs in the
+                  record sat at 7 or 8 against a window of 8. `max_days` above
+                  the window width IS evidence (no single day can span more
+                  windows than the window is wide); the median is not.
+                  serving_persistence() is the honest split.
 
     `now` is None when rows is not supplied — the caller asked about history
     only, and a zero there would read as a measurement rather than an absence.

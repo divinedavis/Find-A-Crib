@@ -16,6 +16,11 @@ final class AccessibilityAuditTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = true   // one screen's issues must not hide the next screen's
+        // Two audit passes per screen since 2026-11-06 (contrast first, then
+        // the rest): on iPad testEveryTab took 204 s, past the default 3-minute
+        // allowance, and the runner killed it mid-launch (run_tests.sh allows
+        // up to 10 minutes).
+        executionTimeAllowance = 420
         app = XCUIApplication()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--lotteries-demo", "--events-demo"]
         app.launch()
@@ -42,6 +47,12 @@ final class AccessibilityAuditTests: XCTestCase {
         // Anything inside a Google ad slot is drawn by the Google SDK.
         let ads = app.descendants(matching: .any).matching(identifier: "feed-ad")
         if (0..<ads.count).contains(where: { ads.element(boundBy: $0).frame.insetBy(dx: -1, dy: -1).contains(e.frame) }) { return true }
+        // A lone "—" placeholder (a count NYC's data didn't return) is a
+        // hairline glyph: the audit samples mostly background around it and
+        // calls dark ink on white low contrast (iPad, 2026-11-06, the day NYC
+        // Open Data kept failing so the building page showed dashes). Text
+        // with any letters or digits is still audited.
+        if issue.auditType.contains(.contrast), ["—", "–", "-"].contains(label) { return true }
         // MapKit's own legal link and map tiles.
         if label == "Legal" || e.elementType == .map { return true }
         return false

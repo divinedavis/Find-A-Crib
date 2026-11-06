@@ -1421,6 +1421,22 @@ final class FindACribUITests: XCTestCase {
         add(XCTAttachment(screenshot: app.screenshot()))
     }
 
+    /// The crime alert's link opens Your Crib on the list of reports, not the
+    /// top of the page (owner, 2026-11-06).
+    func testCrimeAlertLinkLandsOnTheReports() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo", "--tab", "casa"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["casa-place"].waitForExistence(timeout: 20))
+        let title = app.staticTexts["casa-reports-title"]
+        app.open(URL(string: "findacrib://casa/crime")!)
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        let shown = expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: title)
+        wait(for: [shown], timeout: 10)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "casa-report").firstMatch.isHittable, "with its first report on screen")
+        add(XCTAttachment(screenshot: app.screenshot()))
+    }
+
     /// Building chat (owner, 2026-10-17): a button right under the address
     /// in Your Crib opens the building's chat; signed out, it asks to sign in
     /// and says the chat is end-to-end encrypted.

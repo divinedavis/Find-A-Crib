@@ -136,6 +136,13 @@ class CasaAlertText(unittest.TestCase):
         self.assertRegex(html, r"/casa/\?bbl=1010330001&(amp;)?src=casa_crime#crime-list", "the button opens the list")
         self.assertIn("newest 8 of 11", html)
 
+    def test_crime_push_opens_the_list_of_reports(self):
+        import inspect
+        src = inspect.getsource(self.c.send)
+        self.assertIn('"focus": "crime"', src, "the app opens Your Crib on the reports")
+        self.assertIn("#crime-list", src)
+        self.assertEqual(inspect.getsource(self.c.run_crime).count("crime=True"), 1)
+
     def test_email_renders(self):
         # emailkit cards need "heading" (a dry run on the droplet caught "title").
         from growth import emailkit

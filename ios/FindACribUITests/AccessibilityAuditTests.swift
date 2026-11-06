@@ -85,12 +85,22 @@ final class AccessibilityAuditTests: XCTestCase {
             // when it lands, put .dynamicType back here.
             var types: XCUIAccessibilityAuditType = .all
             types.remove(.dynamicType)
-            try app.performAccessibilityAudit(for: types) { issue in
+            let collect: (XCUIAccessibilityAuditIssue) -> Bool = { issue in
                 if self.excused(issue) { return true }
                 let e = issue.element
                 found.append("\(Self.name(issue.auditType)) — \(issue.compactDescription) — [\(e?.identifier ?? "")] \"\(e?.label ?? "")\" \(e.map { "\($0.elementType.rawValue) @\(Int($0.frame.minX)),\(Int($0.frame.minY)) \(Int($0.frame.width))x\(Int($0.frame.height))" } ?? "")")
                 return true   // collected below, so every issue on the screen is listed at once
             }
+            // Contrast first, on the screen as it stands, then the rest. In
+            // one pass the other checks nudged Lotteries' list ~10 pt
+            // (2026-11-06: "32 open", Filter and "First month free" reported
+            // 10 pt above where they sit), and contrast was then sampled
+            // against pixels that had moved: five failed ships in a row, while
+            // a contrast-only audit of the same screen found nothing.
+            try app.performAccessibilityAudit(for: .contrast, collect)
+            waitForStillScreen()
+            types.remove(.contrast)
+            try app.performAccessibilityAudit(for: types, collect)
         } catch {
             XCTFail("\(screen): audit could not run: \(error)")
         }
@@ -168,3 +178,4 @@ final class AccessibilityAuditTests: XCTestCase {
         }
     }
 }
+/// TEMPORARY diagnostic (not committed): what the audit sees on Lotteries.

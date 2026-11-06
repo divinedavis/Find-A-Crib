@@ -261,6 +261,11 @@
 
   // ---- one building
   var yearAgo = new Date(Date.now() - 365 * 864e5);
+  // Whole days, as the app does (2026-10-15): the same building asks the same
+  // question all day, so NYC Open Data answers from its cache (0.3 s). The
+  // to-the-second time made every lookup a new query: 54 s on 2026-11-06,
+  // long enough that Your Crib looked empty and the live journey failed.
+  function yearAgoDay() { return soql(yearAgo).slice(0, 10) + 'T00:00:00'; }
   function open(p) {
     place = p; $('sugg').hidden = true; $('addr').value = ''; $('addr').blur();
     try { localStorage.setItem('fac.casa', JSON.stringify(p)); } catch (e) {}
@@ -270,7 +275,7 @@
     $('loading').hidden = false; $('failed').hidden = true; $('results').hidden = true;
     resetOlder(); renderAlerts();
     lastWindow = null; reportsFor = ''; reports = []; $('crime-list').hidden = true;
-    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + p.bbl + "' AND created_date >= '" + soql(yearAgo) + "'",
+    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + p.bbl + "' AND created_date >= '" + yearAgoDay() + "'",
               $order: 'created_date DESC', $limit: '200' })
       .then(function (calls) { $('loading').hidden = true; $('results').hidden = false; renderCalls(calls); })
       .catch(function () { $('loading').hidden = true; $('failed').hidden = false; });
@@ -468,7 +473,7 @@
     if (!token) return needAccount();
     if (!plus) return needPlus('history');
     $('older').innerHTML = '<p class="muted">Loading…</p>';
-    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + place.bbl + "' AND created_date < '" + soql(yearAgo) + "'",
+    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + place.bbl + "' AND created_date < '" + yearAgoDay() + "'",
               $order: 'created_date DESC', $limit: '200' }).then(function (calls) {
       $('older').innerHTML = calls.length ? '<div class="tally">' + esc(tally(calls).slice(0, 4).join(' · ')) + '</div>' + rows(calls.slice(0, 100)) +
         (calls.length >= 200 ? '<p class="muted">Showing the newest 200.</p>' : '') : '<p class="muted">No 311 calls on file before the past year.</p>';

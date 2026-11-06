@@ -361,7 +361,7 @@ def email_parts(emailkit, watch, calls):
     return f"New 311 call{'s' if n != 1 else ''} at {address}", html, text
 
 
-def send(w, title, body, key, collapse, subject, html, text, dry):
+def send(w, title, body, key, collapse, subject, html, text, dry, crime=False):
     """One push to every phone on the account and one email. Returns (pushed, emailed)."""
     if dry:
         print(f"   would send: {title} / {body}")
@@ -372,8 +372,11 @@ def send(w, title, body, key, collapse, subject, html, text, dry):
     except Exception:
         phones = []
     for dev in phones:
+        # A crime alert opens Your Crib on its list of reports (2026-11-06).
+        url = f"{SITE}/casa/?bbl={w['bbl']}" + ("&src=casa_crime#crime-list" if crime else "")
+        extra = {"casa": w["bbl"], "focus": "crime"} if crime else {"casa": w["bbl"]}
         r = apns.send(dev["token"], dev.get("env") or "production", title, body,
-                      url=f"{SITE}/casa/?bbl={w['bbl']}", collapse=collapse, extra={"casa": w["bbl"]})
+                      url=url, collapse=collapse, extra=extra)
         pushed += bool(r["ok"])
         try:
             if r["refile"]:
@@ -430,7 +433,7 @@ def run_crime(w, key, newest, dry):
                 print(f"   report list failed: {type(e).__name__}")
                 reports = []
             html, text = crime_email(emailkit, w["bbl"], w.get("address"), counts, reports, seen, newest)
-            sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry)
+            sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry, crime=True)
     if not dry:
         rest(f"casa_watches?user_id=eq.{w['user_id']}", key, "PATCH", {"crime_seen": newest}, prefer="return=minimal")
     return sent
@@ -459,7 +462,7 @@ def send_test(key, email, bbl, lat, lng, address=""):
         from growth import emailkit
         reports = crime_reports(float(lat), float(lng), kinds, after, newest)
         html, text = crime_email(emailkit, bbl, w["address"], counts, reports, after, newest)
-        print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False))
+        print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False, crime=True))
 
 
 def main():

@@ -2338,6 +2338,24 @@ final class CasaReportTests: XCTestCase {
         XCTAssertTrue(r.sub.hasSuffix(" · street · 0.4\u{00a0}mi\u{00a0}S"), r.sub)
     }
 
+    /// The crime alert's button and notification land on the list (owner,
+    /// 2026-11-06); other Your Crib links still open the top of the tab.
+    func testCrimeLinksOpenTheList() {
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/casa/?bbl=1010330001&src=casa_crime#crime-list")!), .casaCrime)
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/casa/?bbl=1010330001&src=casa_crime")!), .casaCrime)
+        XCTAssertEqual(DeepLink(URL(string: "findacrib://casa/crime")!), .casaCrime)
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/casa/?bbl=1010330001&src=casa_alert")!), .casa, "a 311 alert is not a crime alert")
+        XCTAssertEqual(DeepLink(DeepLink.casaCrime.url), .casaCrime)
+        XCTAssertEqual(DeepLink(DeepLink.casaCrime.webURL), .casaCrime)
+    }
+
+    func testYourCribReloadsAfterThreeHours() {
+        let t = Date()
+        XCTAssertFalse(CasaView.isStale(nil, now: t), "nothing loaded yet: the first load handles it")
+        XCTAssertFalse(CasaView.isStale(t.addingTimeInterval(-3600), now: t))
+        XCTAssertTrue(CasaView.isStale(t.addingTimeInterval(-4 * 3600), now: t))
+    }
+
     func testListWindowIsTheNewestRelease() {
         let newest = Casa.parseMonth("2026-09-30")!
         XCTAssertEqual(Casa.soql(Casa.reportWindowStart(endingWith: newest)).prefix(10), "2026-07-01", "Jul 1 – Sep 30, as the alert says")

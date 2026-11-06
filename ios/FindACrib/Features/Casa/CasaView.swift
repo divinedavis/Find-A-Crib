@@ -9,6 +9,11 @@ struct CasaView: View {
     @Environment(AuthService.self) private var auth
     @Environment(DataStore.self) private var store
     @Environment(AppNav.self) private var nav
+    @Environment(\.scenePhase) private var scenePhase
+    /// When this building last loaded. Back in the app hours later, Your
+    /// Crib loads again: a phone left on this tab showed January–June for
+    /// days after the NYPD's July–September release (owner, 2026-11-06).
+    @State private var loadedAt: Date?
     @AppStorage("casa.place") private var savedPlace: Data = Data()
 
     @State private var query = ""
@@ -61,6 +66,7 @@ struct CasaView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     if typing || (place == nil && !suggestions.isEmpty) {
@@ -79,6 +85,23 @@ struct CasaView: View {
             // the lookup it started (a cancelled lookup read as "Offline").
             .refreshable { if let p = place, !CommandLine.arguments.contains("--casa-demo") { await Task { await open(p) }.value } }
             .background(SE.canvas)
+            // The crime alert's button or notification lands on the list of
+            // reports, not the top of the page (owner, 2026-11-06: "when
+            // someone clicks on the email regarding there is crime, they want
+            // to see the crimes listed"). Waits for the list to load.
+            .onChange(of: reports) { _, r in if nav.casaShowCrime, r != nil { showCrimeList(proxy) } }
+            .onChange(of: nav.casaShowCrime) { _, on in
+                guard on else { return }
+                if let p = place, !CommandLine.arguments.contains("--casa-demo") { Task { await open(p) } }
+                else if reports != nil { showCrimeList(proxy) }
+            }
+            .onAppear { if nav.casaShowCrime, reports != nil { showCrimeList(proxy) } }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active, let p = place, !CommandLine.arguments.contains("--casa-demo"),
+                      Self.isStale(loadedAt, now: Date()) else { return }
+                Task { await open(p) }
+            }
+            }
         }
         .background(SE.canvas)
         .task {
@@ -409,6 +432,7 @@ struct CasaView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("The reports, \(reportRange)").font(.se(16, .bold)).foregroundStyle(SE.ink).padding(.top, 8)
                 .accessibilityIdentifier("casa-reports-title")
+                .id(Self.crimeListID)
             if let reports {
                 Text(reportSummary(reports)).font(.se(14)).foregroundStyle(SE.ink3)
                 ForEach(reports.prefix(showAllReports ? reports.count : 5)) { reportRow($0) }
@@ -451,6 +475,19 @@ struct CasaView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("casa-report")
+    }
+
+    static let crimeListID = "crime-list"
+
+    /// Three hours: the City's 311 data moves daily and the NYPD's quarterly.
+    static func isStale(_ loaded: Date?, now: Date) -> Bool {
+        guard let loaded else { return false }
+        return now.timeIntervalSince(loaded) > 3 * 3600
+    }
+
+    private func showCrimeList(_ proxy: ScrollViewProxy) {
+        nav.casaShowCrime = false
+        withAnimation { proxy.scrollTo(Self.crimeListID, anchor: .top) }
     }
 
     private func loadReports() async {
@@ -517,6 +554,7 @@ struct CasaView: View {
         crime = []; crimeThrough = nil; crimeFailed = false; reports = nil; reportsFailed = false; showAllReports = false; offlineSince = nil; serverFailed = false; interrupted = false
         savedPlace = (try? JSONEncoder().encode(p)) ?? Data()
         Analytics.shared.track("casa_lookup", ["bbl": p.bbl])
+        loadedAt = Date()
         failed = false
         // What this phone saw last time shows at once; the fresh lookup
         // replaces it, and a failed one leaves it up, marked offline.

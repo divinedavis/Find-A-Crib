@@ -9,7 +9,9 @@ import Foundation
 ///   findacrib://broker-fee                 the Broker fee check (Plus; June's moving-season event)
 ///   findacrib://search                     the Search home
 ///   findacrib://casa                       the Your Crib tab (NYC); its alerts link
+///   findacrib://casa/crime                 Your Crib, on its list of NYPD reports
 ///   https://findacrib.com/casa/            the same page on the website (Your Crib alerts link here)
+///   https://findacrib.com/casa/#crime-list the crime alert's button: the list of reports
 ///   https://findacrib.com/#d=<bbl>         the website's building link (Handoff, shared links)
 ///   https://findacrib.com/#repair …        the website's tool deep links
 ///
@@ -21,6 +23,8 @@ enum DeepLink: Equatable {
     case tool(HomeTool)
     case search
     case casa
+    /// Your Crib scrolled to the NYPD reports (the crime alert, 2026-11-06).
+    case casaCrime
     case brokerFee
 
     static let webBase = URL(string: "https://findacrib.com/")!
@@ -33,7 +37,10 @@ enum DeepLink: Equatable {
         } else if url.host?.hasSuffix("findacrib.com") == true {
             let frag = url.fragment ?? ""
             let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-            if url.path.hasPrefix("/casa") || query.contains(where: { $0.name == "casa" }) { parts = ["casa"] }
+            if url.path.hasPrefix("/casa") || query.contains(where: { $0.name == "casa" }) {
+                let crime = frag == "crime-list" || query.contains { $0.name == "src" && $0.value == "casa_crime" }
+                parts = crime ? ["casa", "crime"] : ["casa"]
+            }
             else if frag.hasPrefix("d=") { parts = ["building", String(frag.dropFirst(2))] }
             else if frag == "broker-fee" { parts = ["broker-fee"] }
             else if let t = Self.webTools[frag] { parts = ["tool", t] }
@@ -43,7 +50,7 @@ enum DeepLink: Equatable {
         switch parts.first {
         case "lotteries": self = .lotteries
         case "search": self = .search
-        case "casa": self = .casa
+        case "casa": self = parts.dropFirst().first == "crime" ? .casaCrime : .casa
         case "broker-fee": self = .brokerFee
         case "building":
             let bbl = parts.dropFirst().first.map { $0.filter(\.isNumber) } ?? ""
@@ -63,6 +70,7 @@ enum DeepLink: Equatable {
         case .lotteries: URL(string: "findacrib://lotteries")!
         case .search: URL(string: "findacrib://search")!
         case .casa: URL(string: "findacrib://casa")!
+        case .casaCrime: URL(string: "findacrib://casa/crime")!
         case .brokerFee: URL(string: "findacrib://broker-fee")!
         case .building(let b): URL(string: "findacrib://building/\(b)")!
         case .tool(let t): URL(string: "findacrib://tool/\(t.rawValue)")!
@@ -75,6 +83,7 @@ enum DeepLink: Equatable {
         case .lotteries: URL(string: "https://findacrib.com/alerts/")!
         case .search: DeepLink.webBase
         case .casa: URL(string: "https://findacrib.com/casa/")!
+        case .casaCrime: URL(string: "https://findacrib.com/casa/#crime-list")!
         case .brokerFee: URL(string: "https://findacrib.com/#broker-fee")!
         case .building(let b): URL(string: "https://findacrib.com/#d=\(b)")!
         case .tool(let t): URL(string: "https://findacrib.com/#\(t.rawValue)")!
@@ -89,6 +98,9 @@ enum DeepLink: Equatable {
             nav.tab = .search; nav.searchPath = []
         case .casa:
             nav.tab = Tab.casa.available(in: store.city) ? .casa : .search
+        case .casaCrime:
+            nav.tab = Tab.casa.available(in: store.city) ? .casa : .search
+            nav.casaShowCrime = nav.tab == .casa
         case .building(let bbl):
             guard store.byBBL[bbl] != nil else { nav.tab = .search; return }
             nav.tab = .search; nav.searchPath = [.building(bbl)]

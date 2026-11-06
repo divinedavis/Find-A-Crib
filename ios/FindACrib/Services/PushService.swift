@@ -342,7 +342,9 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         // A Your Crib alert opens the tab, where its building's calls are.
         if content.userInfo["casa"] is String {
             Task { @MainActor in
-                if let nav = AppNav.current { nav.tab = .casa } else { AppNav.launchLink = .casa }
+                // A crime alert opens on its list of reports (2026-11-06).
+                let link: DeepLink = (content.userInfo["focus"] as? String) == "crime" ? .casaCrime : .casa
+                if let nav = AppNav.current { nav.tab = .casa; nav.casaShowCrime = link == .casaCrime } else { AppNav.launchLink = link }
             }
             completionHandler(); return
         }

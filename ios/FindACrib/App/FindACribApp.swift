@@ -192,6 +192,9 @@ final class AppNav {
     /// The building whose page should open on its Managing agent section:
     /// the card's Owner Phone button (owner, 2026-10-17). Cleared once used.
     var scrollToAgent: String?
+    /// Your Crib should open on its list of NYPD reports: the crime alert's
+    /// email button or notification (owner, 2026-11-06). Cleared once used.
+    var casaShowCrime = false
     /// Set by a Siri intent that launched the app before AppNav existed.
     static var launchLink: DeepLink?
 }

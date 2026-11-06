@@ -23,27 +23,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
 0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
 
-# 06:00 America/New_York, FRIDAYS ONLY — mail the internal report.
-#
-# The report was daily until 2026-08-27 and is now weekly, at the owner's
-# request. It is a separate `report` invocation rather than an `--email` on the
-# 05:00 line because the owner asked for 6am and the engine runs at 5am; `report`
-# re-renders from the ledger the 05:00 run has already written, so it costs no
-# API calls (growth/report.py touches neither llm.py nor Anthropic) and repeats
-# no work. An hour of slack is plenty for the daily run to have finished, and
-# 06:00 still sits before the 06:45 re-rentals job, so the two never collide on
-# the git checkout.
-#
-# growth_run.sh's SEO watchdog is gated on the job name containing "build", so
-# this entry cannot trigger a corpus rebuild.
-#
-# No --email here on purpose. This file is mirrored into a PUBLIC repo, so the
-# recipient lives in growth.env as GROWTH_REPORT_EMAIL and growth_run.sh appends
-# it. If the report stops arriving, check that variable first — an unset one is
-# silent by design, because the alternative was publishing the address.
-0 6 * * 5 scraper fac-run supabase,smtp,gsc,owner -- /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1
-# (owner added 2026-10-29: the report's recipient lives in that set. Without it
-# GROWTH_REPORT_EMAIL was unset under cron and the report went unmailed, silently.)
+# The internal growth report email (Fridays 06:00, `growth_run.sh report`) was
+# turned OFF 2026-11-06 at the owner's request ("i dont need this report
+# anymore"). The 05:00 run still measures and writes the ledger, the console
+# report and reports/waiting-on-you.html; only the email is gone. To send one
+# by hand: growth_run.sh report --email <address>.
 
 # 07:30 America/New_York on the 1st — are AI chatbots sending people here?
 # growth/ai_visibility.py: five renter questions to Claude with web search

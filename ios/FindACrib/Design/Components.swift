@@ -438,6 +438,18 @@ struct ScrollChrome {
         return collapse / height
     }
 
+    /// The tab bar shrinks while the finger scrolls the list down and grows
+    /// as soon as it scrolls up (Instagram, owner 2026-11-05). Within 40 pt
+    /// of the top it is always full size. Layout jumps (no finger) and
+    /// sub-2 pt jitter leave it as it is.
+    static func tabBarCompact(_ current: Bool, offset y: CGFloat, moved: CGFloat, userScrolling: Bool) -> Bool {
+        if y <= 40 { return false }
+        guard userScrolling else { return current }
+        if moved > 2 { return true }
+        if moved < -2 { return false }
+        return current
+    }
+
     /// The finger is off and the list has stopped: a half-moved header
     /// finishes its move the way the finger was going — back in after a
     /// scroll up, out after a scroll down — and always back in near the top.
@@ -470,7 +482,12 @@ private struct HideChromeOnScroll: ViewModifier {
                     let end = g.contentSize.height + g.contentInsets.top + g.contentInsets.bottom - g.containerSize.height
                     return min(y, max(end, 0))
                 } action: { _, y in
+                    let moved = y - offset
                     offset = y
+                    let compact = ScrollChrome.tabBarCompact(nav.tabBarCompact, offset: y, moved: moved, userScrolling: userScrolling)
+                    if compact != nav.tabBarCompact {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { nav.tabBarCompact = compact }
+                    }
                     let p = tracker.next(progress: nav.chromeProgress, offset: y, height: height, userScrolling: userScrolling)
                     if p != nav.chromeProgress { nav.chromeProgress = p }
                 }
@@ -484,7 +501,7 @@ private struct HideChromeOnScroll: ViewModifier {
                         }
                     }
                 }
-                .onDisappear { nav.chromeProgress = 0 }
+                .onDisappear { nav.chromeProgress = 0; nav.tabBarCompact = false }
         } else {
             content
         }
@@ -495,6 +512,15 @@ extension View {
     /// Apply to the ScrollView itself. `height`: the header's height.
     func hidesChromeOnScroll(_ enabled: Bool = true, height: CGFloat) -> some View {
         modifier(HideChromeOnScroll(enabled: enabled, height: height))
+    }
+}
+
+/// Bottom padding for controls floating just above the tab bar (the Map /
+/// Lottery Alerts pills): follows the bar down as it shrinks.
+struct TabBarClearance: ViewModifier {
+    @Environment(AppNav.self) private var nav
+    func body(content: Content) -> some View {
+        content.padding(.bottom, PillTabBar.clearance - (nav.tabBarCompact ? PillTabBar.compactDrop : 0))
     }
 }
 

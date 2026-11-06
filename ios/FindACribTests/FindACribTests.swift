@@ -2281,6 +2281,25 @@ final class ScrollChromeTests: XCTestCase {
         XCTAssertEqual(ScrollChrome.settle(progress: 1, offset: 500, height: 100, direction: -1), 1, "a settled header stays")
     }
 
+    /// Instagram-style tab bar (owner, 2026-11-05): shrinks on a scroll
+    /// down, grows on a scroll up, always full size near the top.
+    func testTabBarShrinksDownGrowsUp() {
+        XCTAssertTrue(ScrollChrome.tabBarCompact(false, offset: 300, moved: 8, userScrolling: true), "scrolling down shrinks it")
+        XCTAssertFalse(ScrollChrome.tabBarCompact(true, offset: 300, moved: -8, userScrolling: true), "scrolling up grows it")
+        XCTAssertFalse(ScrollChrome.tabBarCompact(true, offset: 30, moved: 8, userScrolling: true), "near the top it's full size")
+        XCTAssertFalse(ScrollChrome.tabBarCompact(false, offset: 300, moved: 300, userScrolling: false), "a layout jump never shrinks it")
+        XCTAssertTrue(ScrollChrome.tabBarCompact(true, offset: 300, moved: -300, userScrolling: false), "nor grows it")
+        XCTAssertTrue(ScrollChrome.tabBarCompact(true, offset: 300, moved: -1, userScrolling: true), "jitter leaves it as it is")
+        XCTAssertFalse(ScrollChrome.tabBarCompact(false, offset: 300, moved: 1, userScrolling: true))
+    }
+
+    func testTabBarIsInstagramSize() {
+        XCTAssertEqual(PillTabBar.width, 357)
+        XCTAssertEqual(PillTabBar.height, 59)
+        XCTAssertEqual(PillTabBar.width * PillTabBar.compactScale, 300, accuracy: 1, "shrunk: Instagram's 301 pt")
+        XCTAssertEqual(PillTabBar.height * PillTabBar.compactScale, 49.5, accuracy: 1, "and 49 pt tall")
+    }
+
     func testRemembersWhichWayTheFingerWent() {
         var t = ScrollChrome()
         _ = t.next(progress: 0, offset: 200, height: 100)

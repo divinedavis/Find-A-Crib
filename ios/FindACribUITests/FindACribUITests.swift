@@ -1002,13 +1002,19 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["results-count"].firstMatch.waitForExistence(timeout: 30))
         XCTAssertTrue(header.exists && tab.exists, "both show at the top of the list")
         XCTAssertFalse(header.waitForNonExistence(timeout: 2), "the header never hides without a swipe (the list's own layout jump hid it once)")
+        let full = tab.frame.width
         app.swipeUp(velocity: .slow); app.swipeUp(velocity: .slow)
         XCTAssertTrue(header.waitForNonExistence(timeout: 5), "scrolling down hides the filter bar")
         XCTAssertTrue(tab.isHittable, "the tab bar stays, tappable")
+        // Instagram-style (owner, 2026-11-05): mid-scroll down it is 84% size.
+        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+        mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: -150)), withVelocity: .slow, thenHoldForDuration: 1.0)
+        XCTAssertLessThan(tab.frame.width, full * 0.9, "scrolling down shrinks the tab bar")
         XCTAssertTrue(app.buttons["Map"].exists, "the Map pill stays")
         XCTAssertLessThan(app.buttons["Map"].frame.maxY, tab.frame.minY, "above the tab bar, not under it")
         app.swipeDown(velocity: .slow)
         XCTAssertTrue(header.waitForExistence(timeout: 5), "scrolling up brings the filter bar back")
+        XCTAssertEqual(tab.frame.width, full, accuracy: 1, "and the tab bar back to full size")
     }
 
     /// The same on the Lotteries tab: its title and pane tabs slide away;

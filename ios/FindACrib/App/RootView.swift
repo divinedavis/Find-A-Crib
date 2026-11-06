@@ -55,12 +55,13 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
         // A screen pushed or popped starts with its header and the bar showing.
-        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeProgress = 0 }
+        .onChange(of: nav.searchPath.count) { _, _ in nav.chromeProgress = 0; nav.tabBarCompact = false }
         // Search no longer leaves the screen when another tab opens, so its
         // building page's onDisappear doesn't run: set the bar per tab here.
         // Back on Search, a building page on top still hides it.
         .onChange(of: nav.tab) { _, t in
             nav.chromeProgress = 0
+            nav.tabBarCompact = false
             if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
         }
         // A tapped alert notification opens here, on all of its items.
@@ -132,24 +133,34 @@ struct PillTabBar: View {
     /// re-rentals, matched to boroughs. In LA, SF or DC it would list another
     /// city's openings, so it is not offered there (owner, 2026-09-19).
     private var tabs: [Tab] { Tab.allCases.filter { $0.available(in: store.city) } }
-    /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With a fifth tab
-    /// (Events 2026-09-22, Your Crib since 2026-10-15) the items narrow to fit
-    /// a 375 pt screen; four keep their old width.
-    private var itemWidth: CGFloat { tabs.count >= 5 ? 72 : 86 }
+    /// Instagram's size (owner, 2026-11-05, measured from their screen
+    /// recording): 357 x 59 pt, shared by however many tabs the city has.
+    /// Was 368 x 74 with 72 x 66 items and 13 pt labels.
+    static let width: CGFloat = 357
+    static let height: CGFloat = 59
+    /// Scrolling down shrinks it to 84% about its centre (301 x 49), as
+    /// Instagram's does.
+    static let compactScale: CGFloat = 0.84
+    /// Bottom padding for a control floating just above the bar: the bar,
+    /// its 6 pt from the bottom and a 12 pt gap.
+    static let clearance: CGFloat = height + 6 + 12
+    /// How far the bar's top drops when it shrinks.
+    static let compactDrop: CGFloat = height * (1 - compactScale) / 2
+    private var itemWidth: CGFloat { (Self.width - 8) / CGFloat(max(tabs.count, 1)) }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in
                 let on = selected == tab
                 Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
-                        Text(tab.title).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Image(systemName: tab.icon).font(.system(size: 19, weight: on ? .semibold : .regular))
+                        Text(tab.title).font(.se(10.5, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(on ? (holiday?.onFill ?? SE.royal) : SE.ink)
-                    .frame(width: itemWidth, height: 66)
+                    .frame(width: itemWidth, height: Self.height - 8)
                     .background { if on { selectedFill } }
                     .clipShape(Capsule())
-                    // The whole 72 x 66 pill is the button, selected or not.
+                    // The whole item pill is the button, selected or not.
                     // Without it an unselected tab shrank to its icon and
                     // label once its clear background went (2026-10-23), and
                     // the end tabs stopped taking taps.
@@ -177,12 +188,16 @@ struct PillTabBar: View {
 }
 
 /// The tab bar. It stays on screen while a list scrolls: only the
-/// screen's header slides away (owner, 2026-11-05).
+/// screen's header slides away (owner, 2026-11-05). Scrolling down shrinks
+/// it to 84%, scrolling up brings it back to full size (Instagram-style,
+/// owner 2026-11-05).
 private struct ChromeTabBar: View {
     @Binding var selected: Tab
+    @Environment(AppNav.self) private var nav
 
     var body: some View {
         PillTabBar(selected: $selected)
+            .scaleEffect(nav.tabBarCompact ? PillTabBar.compactScale : 1)
             .padding(.bottom, 6)
     }
 }

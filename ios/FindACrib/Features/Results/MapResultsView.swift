@@ -72,7 +72,7 @@ struct MapResultsView: View {
                 }
                 FloatingPill(title: String(localized: "List"), icon: "list.bullet") { backToList() }
             }
-            .padding(.bottom, 92)
+            .padding(.bottom, PillTabBar.clearance)   // just above the tab bar
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
         }
         .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,

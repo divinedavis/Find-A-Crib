@@ -1233,7 +1233,7 @@ def email_unsubscribe():
             title="You're unsubscribed",
             body="<p>Your Crib alerts are off. Pick a building again in Your Crib any time.</p>"),
             mimetype="text/html")
-    return jsonify(ok=True, unsubscribed=bool(ok) or None)
+    return jsonify(ok=True)
 
 
 # Alert-email click counter (2026-09-12). lottery_alerts.py:track_links routes

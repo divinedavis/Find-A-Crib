@@ -1762,13 +1762,15 @@ final class QualifyAndAITests: XCTestCase {
         XCTAssertFalse(LotteryFeed.covers(subscribed: true, boroughs: ["Bk", "M"], kinds: ["rerental"], borough: "Q"), "another borough still offers alerts")
         XCTAssertFalse(LotteryFeed.covers(subscribed: true, boroughs: ["Bk"], kinds: ["lottery"], borough: "Bk"), "lottery-only alerts don't cover re-rentals")
         XCTAssertTrue(LotteryFeed.covers(subscribed: true, boroughs: ["Bk"], kinds: [], borough: "Bk"), "unknown kinds read as everything")
-        typealias A = RerentalCard.CardAction
-        XCTAssertEqual(RerentalCard.action(covered: false, plus: true, used: { _ in false }), .alerts)
-        XCTAssertEqual(RerentalCard.action(covered: true, plus: false, used: { _ in false }), .realtime)
-        XCTAssertEqual(RerentalCard.action(covered: true, plus: true, used: { _ in false }), .brokerFee)
-        XCTAssertEqual(RerentalCard.action(covered: true, plus: true, used: { $0 == A.brokerFee }), .leaseReview)
-        XCTAssertNil(RerentalCard.action(covered: true, plus: true, used: { _ in true }), "nothing left to offer: no button")
-        XCTAssertEqual(Set(ToolUsage.ids), [A.brokerFee.rawValue, A.leaseReview.rawValue])
+        // Owner, 2026-11-06: Plus gets Help me apply; free gets alerts, or
+        // real-time alerts once they already have alerts.
+        XCTAssertEqual(RerentalCard.action(covered: false, plus: false), .alerts)
+        XCTAssertEqual(RerentalCard.action(covered: true, plus: false), .realtime)
+        XCTAssertEqual(RerentalCard.action(covered: true, plus: true), .applyHelp)
+        XCTAssertEqual(RerentalCard.action(covered: false, plus: true), .applyHelp, "Plus without alerts still gets Help me apply")
+        XCTAssertEqual(RerentalCard.CardAction.applyHelp.title, "Help me apply")
+        XCTAssertEqual(RerentalCard.CardAction.realtime.title, "Get real-time alerts")
+        XCTAssertEqual(Set(ToolUsage.ids), ["broker_fee", "lease_review"])
     }
 
     /// Re-rental bedroom sizes (2026-10-04): the feed's own plus the unit
@@ -1825,6 +1827,27 @@ final class PacketTests: XCTestCase {
         XCTAssertEqual(Packet.kind(for: "Last 3 bank statements"), .bankStatements)
         XCTAssertNil(Packet.kind(for: "Application form"))
         XCTAssertNil(Packet.kind(for: "Rent paid on time"), "'paid' must not read as an ID")
+    }
+
+    /// Help me apply (owner, 2026-11-06): a W-2 has its own slot, pay stubs
+    /// count toward 2 to 4, and the email goes to the renter themselves.
+    func testHelpMeApplyDocuments() {
+        XCTAssertEqual(Packet.kind(for: "W-2 from all employers"), .w2)
+        XCTAssertEqual(Packet.kind(for: "Most recent W2"), .w2)
+        XCTAssertEqual(Packet.kind(for: "2025 federal tax return"), .taxReturn)
+        XCTAssertEqual(Packet.Kind.core, [.id, .w2, .payStubs, .taxReturn, .bankStatements, .employmentLetter])
+        XCTAssertEqual(Packet.Kind.w2.title, "W-2 for \(Packet.Kind.lastYear)")
+        XCTAssertFalse(Packet.isReady(.payStubs, pages: 1), "one pay stub isn't enough")
+        XCTAssertTrue(Packet.isReady(.payStubs, pages: 2))
+        XCTAssertTrue(Packet.isReady(.w2, pages: 1))
+        XCTAssertFalse(Packet.isReady(.id, pages: 0))
+        let now = Date()
+        XCTAssertFalse(Packet.stale([now.addingTimeInterval(-30 * 86_400)], now: now))
+        XCTAssertTrue(Packet.stale([now.addingTimeInterval(-61 * 86_400)], now: now))
+        XCTAssertFalse(Packet.stale([], now: now))
+        XCTAssertEqual(PacketView.myEmail(account: "me@example.com", details: "other@example.com"), "me@example.com", "the account's email first")
+        XCTAssertEqual(PacketView.myEmail(account: nil, details: " typed@example.com "), "typed@example.com")
+        XCTAssertNil(PacketView.myEmail(account: nil, details: ""), "no address: they fill it in")
     }
 
     func testFieldsFillFromProfileButNeverSensitiveOnes() {

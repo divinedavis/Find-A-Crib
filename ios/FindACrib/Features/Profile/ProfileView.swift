@@ -215,10 +215,11 @@ struct ProfileView: View {
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-\(t.rawValue)")
                         }
                     }
-                    // Application packet (2026-10-03): on this phone, open to all.
-                    settingRow(String(localized: "Application packet")) {
+                    // My documents (was Application packet; renamed with Help me
+                    // apply, owner 2026-11-06): on this phone, open to all.
+                    settingRow(String(localized: "My documents")) {
                         Button { showPacket = true } label: {
-                            HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? String(localized: "Set up") : String(localized: "\(Packet.shared.docs.count) documents")).font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                            HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? String(localized: "Set up") : String(localized: "\(Packet.shared.readyCount) ready")).font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-packet")
                     }

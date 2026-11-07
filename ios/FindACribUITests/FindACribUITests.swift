@@ -191,9 +191,10 @@ final class FindACribUITests: XCTestCase {
         let open = app.buttons["profile-packet"]
         let h = app.windows.firstMatch.frame.height
         for _ in 0..<6 where !open.isHittable || open.frame.maxY > h - 140 { app.swipeUp() }
-        XCTAssertTrue(open.waitForExistence(timeout: 20), "Profile should offer the application packet")
+        XCTAssertTrue(open.waitForExistence(timeout: 20), "Profile should offer My documents")
         open.tap()
-        XCTAssertTrue(app.staticTexts["Everything an agent asks for, in one place"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["My documents"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["packet-kind-w2"].exists, "a W-2 has its own slot")
         XCTAssertFalse(app.buttons["packet-email"].isEnabled, "nothing to email before documents are added")
         app.buttons["packet-edit-profile"].tap()
         let first = app.textFields["packet-first"]
@@ -202,7 +203,9 @@ final class FindACribUITests: XCTestCase {
         app.buttons["packet-save"].tap()
         XCTAssertTrue(app.staticTexts["Testy"].waitForExistence(timeout: 5), "the saved name shows on the packet")
         // leave the phone as it was
-        app.buttons["Delete my packet"].tap()
+        let del = app.buttons["Delete my documents"]
+        for _ in 0..<4 where !del.isHittable { app.swipeUp() }
+        del.tap()
         app.buttons["Delete everything"].tap()
     }
 
@@ -249,15 +252,14 @@ final class FindACribUITests: XCTestCase {
         // asks for an account first.
         let alerts = card.buttons["rerental-alerts"]
         XCTAssertTrue(alerts.exists, "a re-rental card offers alerts on new re-rentals")
-        XCTAssertFalse(card.buttons["rerental-apply-help"].exists, "Help me apply is gone")
+        XCTAssertFalse(card.buttons["rerental-apply_help"].exists, "Help me apply is for Plus members")
         alerts.tap()
         XCTAssertTrue(app.staticTexts["Sign in for re-rental alerts"].waitForExistence(timeout: 10), "signed out, alerts open the sign-in")
     }
 
-    /// Already getting re-rental alerts (owner, 2026-10-29: "i shouldnt see
-    /// sign up for alerts if im already signed up"): a Plus member's card
-    /// offers a tool they haven't tried, prefilled from the listing; without
-    /// Plus it offers real-time alerts instead.
+    /// A Plus member's card offers Help me apply (owner, 2026-11-06); someone
+    /// already getting re-rental alerts without Plus gets real-time alerts
+    /// (10/29: "i shouldnt see sign up for alerts if im already signed up").
     func testSubscribedRerentalCardOffersAnUnusedFeature() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo", "--reset-tool-usage"]
@@ -267,14 +269,25 @@ final class FindACribUITests: XCTestCase {
         pane.tap()
         let card = app.descendants(matching: .any)["rerental-card"].firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20))
-        let fees = app.buttons["rerental-broker_fee"].firstMatch
-        bringClearOfTabBar(fees)
-        XCTAssertTrue(fees.isHittable, "a Plus subscriber gets Broker fee check on the card")
-        XCTAssertFalse(app.buttons["rerental-alerts"].exists, "no alerts sign-up for someone already getting them")
+        // Help me apply for Plus (owner, 2026-11-06), where Check the fees was.
+        let help = app.buttons["rerental-apply_help"].firstMatch
+        bringClearOfTabBar(help)
+        XCTAssertTrue(help.isHittable, "a Plus member gets Help me apply on the card")
+        XCTAssertFalse(app.buttons["rerental-broker_fee"].exists, "Check the fees is off the card")
+        XCTAssertFalse(app.buttons["rerental-alerts"].exists, "no alerts sign-up for a Plus member")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-card-plus"; shot.lifetime = .keepAlways; add(shot)
-        fees.tap()
-        XCTAssertTrue(app.navigationBars["Broker fee check"].waitForExistence(timeout: 10))
-        let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "rerental-broker-fee-sheet"; sheet.lifetime = .keepAlways; add(sheet)
+        help.tap()
+        XCTAssertTrue(app.navigationBars["Help me apply"].waitForExistence(timeout: 10))
+        for k in ["id", "w2", "payStubs", "taxReturn", "bankStatements", "employmentLetter"] {
+            XCTAssertTrue(app.descendants(matching: .any)["packet-kind-\(k)"].exists, "Help me apply asks for \(k)")
+        }
+        XCTAssertTrue(app.buttons["packet-add-w2"].exists, "each document can be uploaded")
+        let email = app.buttons["packet-email"]
+        for _ in 0..<4 where !email.isHittable { app.swipeUp() }
+        XCTAssertTrue(email.label.contains("Email them to me"), email.label)
+        XCTAssertFalse(email.isEnabled, "nothing to email before documents are added")
+        XCTAssertTrue(app.buttons["packet-apply"].exists, "Apply on their site sits beside it")
+        let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "rerental-help-me-apply"; sheet.lifetime = .keepAlways; add(sheet)
         app.buttons["Close"].tap()
 
         app.terminate()

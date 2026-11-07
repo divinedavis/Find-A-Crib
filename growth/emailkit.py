@@ -56,6 +56,11 @@ def mask_email(addr):
 
 SITE = "https://findacrib.com"
 BRAND = "Find A Crib"
+# CAN-SPAM (15 U.S.C. 7704(a)(5)) wants a valid physical postal address in
+# every commercial email; we put it in EVERY email render() and
+# render_alert() build, transactional ones too, so no caller can forget it.
+# Owner approved this address on 2026-11-07.
+POSTAL = "Find A Crib · 251 Dekalb Ave, Brooklyn, NY 11205"
 
 INK = "#1a1f36"
 INK2 = "#5b6472"
@@ -701,6 +706,18 @@ ALERT_RENDERERS = dict(RENDERERS, stats=_a_stats, card=_a_building, building=_a_
                        callout=_a_callout, counts=_a_counts, note=_a_note)
 
 
+def _postal_html():
+    """The postal line for an HTML footer. Apple Mail and Gmail turn a street
+    address into a blue Maps link; the span keeps our grey where they allow."""
+    return f'<span style="color:{INK3};text-decoration:none">{esc(POSTAL)}</span>'
+
+
+def postal_text():
+    """The postal line for a hand-built email (one that doesn't go through
+    render() / render_alert()), so every sender prints the same address."""
+    return POSTAL
+
+
 def render_alert(title, blocks=None, intro=None, cta=None, link=None, tag=None,
                  footer_note=None, unsub_url=None, unsub_label="Unsubscribe", eyebrow=None):
     """(html, text) in the alert-card look. `tag` is (label, tone) for the
@@ -743,7 +760,7 @@ def render_alert(title, blocks=None, intro=None, cta=None, link=None, tag=None,
         foot.append(esc(footer_note))
     if unsub_url:
         foot.append(f'<a href="{esc(safe_url(unsub_url))}" style="color:{INK2}">{esc(unsub_label)}</a>')
-    foot.append(f"{BRAND} &middot; Brooklyn, NY")
+    foot.append(_postal_html())
     html = (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
         f'style="border-collapse:collapse;background:{PAGE};margin:0;-webkit-text-size-adjust:100%"><tr>'
@@ -772,6 +789,7 @@ def render_alert(title, blocks=None, intro=None, cta=None, link=None, tag=None,
     parts.append(f"—\n{BRAND} · {SITE}" + (f"\n{footer_note}" if footer_note else ""))
     if unsub_url:
         parts.append(f"{unsub_label}: {unsub_url}")
+    parts.append(POSTAL)
     return html, "\n\n".join(p for p in parts if p) + "\n"
 
 
@@ -814,7 +832,8 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
                          f'{esc(unsub_label)}</a>')
     foot_html = (f'<p style="margin:22px 0 0;padding-top:14px;border-top:1px solid {LINE};'
                  f'color:{INK3};font-size:12px;line-height:1.55;background:{PAGE}">'
-                 + " ".join(foot_bits) + "</p>") if foot_bits else ""
+                 + (" ".join(foot_bits) + "<br>" if foot_bits else "")
+                 + _postal_html() + "</p>")
 
     # The shell is a table, not a padded div. A div with max-width and padding
     # is content-box in mail clients, so on a 390px phone its own padding pushes
@@ -862,6 +881,7 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
         text_parts.append(f"—\n{BRAND} · {SITE}")
     if unsub_url:
         text_parts.append(f"{unsub_label}: {unsub_url}")
+    text_parts.append(POSTAL)
     text = "\n\n".join(p for p in text_parts if p) + "\n"
     return html, text
 

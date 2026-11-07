@@ -1,38 +1,8 @@
 {
-"updated": 1793833503,
-"updated_iso": "2026-11-04T23:05:03+00:00",
+"updated": 1794013503,
+"updated_iso": "2026-11-07T01:05:03+00:00",
 "count": 54,
 "listings": [
-{
-"id": "a0Ycs000028W6CjEAK",
-"name": "Luna Green",
-"kind": "Lottery",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Bk",
-"county": "Kings (Brooklyn)",
-"min_income": null,
-"max_income": 67850,
-"due": "11/6/2026",
-"fee": null,
-"phone": "7183874448",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs000028W6CjEAK/detail",
-"info": "https://residenewyork.com/property/luna-green/   Luna Green is a senior housing development. To qualify, the head of household or co-head of household must be 62 years of age or older.\r\n\r\nIf you or another member of your household meets the age requirement, we invite you to apply for the opportunity to enjoy spacious living, valuable amenities, and a welcoming community near the beach at Luna Green.\r\nResidents are responsible for paying electricity and electric stove\" \"tenant rent portion is based on 30% of the adjusted gross income and min income doesn't apply\" Asset limits may apply",
-"desc": "Apply for Senior Housing at Luna Green. Applicants applying receive a NYCHA Section 8 project based voucher. Discover comfortable seaside living at Luna Green, a thoughtfully designed senior housing development located at 3027 West 21st Street, just steps from the beach. With beautiful views, spacious apartment layouts, welcoming common areas, and a variety of convenient on-site amenities, Luna Gr",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002HcLdQAAV?oid=00D8y0000008f2FEAQ",
-"senior": true,
-"accessible": false,
-"approx": false,
-"buildings": [
-{
-"street": "3027 West 21st Street",
-"zip": "11224",
-"bbl": null,
-"lat": 40.57303,
-"lng": -73.9868
-}
-]
-},
 {
 "id": "a0Ycs00002P4ldfEAB",
 "name": "1919 Cornaga Avenue",
@@ -60,6 +30,36 @@
 "bbl": null,
 "lat": 40.60203,
 "lng": -73.75223
+}
+]
+},
+{
+"id": "a0Ycs000028W6CjEAK",
+"name": "Luna Green",
+"kind": "Lottery",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Bk",
+"county": "Kings (Brooklyn)",
+"min_income": null,
+"max_income": 67850,
+"due": "12/7/2026",
+"fee": null,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs000028W6CjEAK/detail",
+"info": "https://residenewyork.com/property/luna-green/   Luna Green is a senior housing development. To qualify, the head of household or co-head of household must be 62 years of age or older.\r\n\r\nIf you or another member of your household meets the age requirement, we invite you to apply for the opportunity to enjoy spacious living, valuable amenities, and a welcoming community near the beach at Luna Green.\r\nResidents are responsible for paying electricity and electric stove\" \"tenant rent portion is based on 30% of the adjusted gross income and min income doesn't apply\" Asset limits may apply",
+"desc": "Apply for Senior Housing at Luna Green. Applicants applying receive a NYCHA Section 8 project based voucher. Discover comfortable seaside living at Luna Green, a thoughtfully designed senior housing development located at 3027 West 21st Street, just steps from the beach. With beautiful views, spacious apartment layouts, welcoming common areas, and a variety of convenient on-site amenities, Luna Gr",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002HcLdQAAV?oid=00D8y0000008f2FEAQ",
+"senior": true,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "3027 West 21st Street",
+"zip": "11224",
+"bbl": null,
+"lat": 40.57303,
+"lng": -73.9868
 }
 ]
 },
@@ -809,7 +809,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK12EAE/detail",
 "info": null,
 "desc": "James Lenox House, located in the Upper East Side Historic District, consists of 12 floors with 99 apartments (88 studio and 11 One-bedroom). Amenities include gas and electricity (included in rent), ground flooor living room, well-stocked library, Arts and Crafts Room with three PCs for residents' use. The basement includes an activities room, laundry room and backyard patio.",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002gnl9XAAQ?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": false,
@@ -1317,7 +1317,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1HEAU/detail",
 "info": null,
 "desc": "3601 Surf Avenue in Coney Island, Brooklyn is a senior (62+) residence offering 24-hour onsite security, a garden with gazebo, a library, onsite service coordinators, and a computer room. The building is conveniently located near the D, F, N, and Q trains at Stillwell Avenue, as well as walking distance to local restaurants, pharmacies, Coney Island boardwalk and supermarkets. Residents also benef",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002h8gbRAAQ?oid=00D8y0000008f2FEAQ",
 "senior": true,
 "accessible": false,
 "approx": true,

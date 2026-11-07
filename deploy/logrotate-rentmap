@@ -16,7 +16,7 @@
 /var/log/rentmap-s8.log /var/log/rentmap-openings.log /var/log/rentmap-events.log
 /var/log/rentmap-flyers.log /var/log/rentmap-nj.log /var/log/rentmap-cities.log
 /var/log/rentmap-hpd.log /var/log/rentmap-seo.log /var/log/rentmap-dhcr.log
-/var/log/rentmap-vacancies.log {
+/var/log/rentmap-vacancies.log /var/log/rentmap-billing.log {
     weekly
     rotate 8
     compress

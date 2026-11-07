@@ -28,3 +28,9 @@ verify_jwt = false
 # itself (auth.getUser(), 401 otherwise); the platform gate uses the legacy
 # JWT secret, which breaks once user tokens are asymmetric.
 verify_jwt = false
+
+# Stripe Customer Portal (2026-11-07): verifies the user itself
+# (auth.getUser(), 401 otherwise) like create-checkout, for the same
+# asymmetric-key reason, and only ever opens the caller's own customer.
+[functions.billing-portal]
+verify_jwt = false

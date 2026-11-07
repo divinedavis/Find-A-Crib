@@ -1,4 +1,4 @@
-// Creates a Stripe Checkout Session for the Find A Crib Plus ($1.99/mo)
+// Creates a Stripe Checkout Session for the Find A Crib Plus ($4.99/mo)
 // subscription. Requires a signed-in user (JWT verified by the platform).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -87,6 +87,13 @@ Deno.serve(async (req) => {
         cancel_url: `${base}${sep}plus=cancel`,
         allow_promotion_codes: "true",
         ...(trial ? { "subscription_data[trial_period_days]": "30" } : {}),
+        // Auto-renewal terms right above the pay button (CA Bus. & Prof.
+        // Code 17602(a)(1), FTC ROSCA; 2026-11-07). Stripe's own summary shows
+        // the price and the trial; this says it renews until cancelled and
+        // how to cancel, in plain words, before the card is taken.
+        "custom_text[submit][message]": trial
+          ? "Your first 30 days cost nothing. Then Find A Crib Plus is $4.99/month, charged to this card and renewed automatically every month until you cancel. We email you 3 days before the first charge. Cancel online any time at findacrib.com in Your account › Manage or cancel Plus; cancel within the 30 days and you won’t be charged."
+          : "Find A Crib Plus is $4.99/month, charged to this card today and renewed automatically every month until you cancel. Cancel online any time at findacrib.com in Your account › Manage or cancel Plus; Plus stays on until the end of the month you’ve paid for.",
       }),
     });
     const session = await res.json();

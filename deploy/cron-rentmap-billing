@@ -1,0 +1,12 @@
+# /etc/cron.d/rentmap-billing — mirrored from deploy/cron-rentmap-billing.
+# Billing notices the law requires (2026-11-07): the trial-ending reminder
+# before a web Plus trial turns into a $4.99 charge (CA Bus. & Prof. Code
+# 17602, FTC ROSCA). stripe-webhook records customer.subscription.
+# trial_will_end in public.billing_notices; billing_notices.py mails each
+# unsent row once. Every 10 min so a reminder lands within minutes of
+# Stripe's event, three days before the charge. Never goes through the
+# one-email-a-day cap. Silent when nothing is due.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+*/10 * * * * scraper cd /root/Find-A-Crib && fac-run supabase,smtp -- sh -c '"$FAC_PY" billing_notices.py' >> /var/log/rentmap-billing.log 2>&1

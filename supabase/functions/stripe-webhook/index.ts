@@ -116,6 +116,16 @@ async function recordTrialEnding(event: any) {
   if (error) throw new Error(`billing_notices: ${error.message}`);
 }
 
+// Cancelled (or converted) before the reminder went out: close the pending
+// row so billing_notices.py never tells someone they "will be charged".
+async function closeStaleNotices(sub: any) {
+  if (!sub?.id) return;
+  if (sub.status === "trialing" && !sub.cancel_at_period_end && !sub.cancel_at) return;
+  await admin.from("billing_notices")
+    .update({ attempts: 99, last_error: `closed: ${sub.cancel_at_period_end || sub.cancel_at ? "set to cancel" : sub.status}` })
+    .eq("stripe_subscription_id", sub.id).is("sent_at", null);
+}
+
 // Keys (2026-10-25 rotation): the dedicated publishable/secret keys, set
 // as function secrets; the legacy JWT keys only as a fallback until the
 // legacy anon/service_role keys are disabled.
@@ -141,6 +151,7 @@ Deno.serve(async (req) => {
       await upsert(sub, s.client_reference_id || s.metadata?.user_id);
     } else if (event.type.startsWith("customer.subscription.")) {
       if (event.type === "customer.subscription.trial_will_end") await recordTrialEnding(event);
+      else await closeStaleNotices(event.data.object);
       await upsert(event.data.object, event.data.object?.metadata?.user_id || null);
     }
   } catch (e) {

@@ -26,7 +26,7 @@ jobs:
     env:
       # These mint a test user with the Supabase service-role key from the
       # macOS keychain. The key stays off GitHub; deploy_app.sh runs them.
-      JOURNEYS_SKIP: account_delete,plus_gates,renter_tools,ai_features
+      JOURNEYS_SKIP: account_delete,plus_gates,renter_tools,ai_features,plus_billing
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5

@@ -86,6 +86,22 @@ def supabase_admin(method, path, body=None):
         return e.code, None
 
 
+def supabase_rest(method, path, body=None):
+    """PostgREST with the service-role key from the keychain, for journeys
+    that need a row only the server may write (a subscription)."""
+    key = subprocess.check_output(['security', 'find-generic-password', '-s',
+                                   'rent-map-supabase-service-role', '-w'],
+                                  stderr=subprocess.DEVNULL).decode().strip()
+    req = urllib.request.Request(SUPABASE_URL + '/rest/v1/' + path, method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={'apikey': key, 'Authorization': 'Bearer ' + key,
+                                          'Content-Type': 'application/json', 'Prefer': 'return=minimal'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+
 
 # Which analytics event each journey exercises. tests/journey_coverage.py reads
 # this, asks the events table what real visitors actually did, and names the
@@ -128,6 +144,7 @@ JOURNEY_EVENTS = {
     'referral_gate':        ['referral_open', 'referral_share'],
     'consent_mode':         [],
     'account_delete':       [],
+    'plus_billing':         ['outbound'],
     'plus_gates':           ['outbound'],
     'resume_search':        ['resume_offer', 'resume_apply'],
     'ai_features':          ['ai_search_click', 'paywall_view'],
@@ -2456,10 +2473,88 @@ class Runner:
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
+    def j_plus_billing(self, page, j, device):
+        """Online cancel for web Plus (2026-11-07, California's auto-renewal
+        law + the FTC's ROSCA). A throwaway account gets a Stripe-shaped
+        subscriptions row (status past_due, so has_plus() and the paid
+        dashboards never count it); its profile must show Manage or cancel
+        Plus, and the button must ask the billing-portal function with the
+        session and nothing but a return url, then go where it answers. The
+        function itself is stubbed here (a real portal needs a real customer);
+        without a session the live function must answer 401. The same row
+        as an App Store one shows the iOS Settings pointer instead, and the
+        reminder email's #manage-plus link opens the account."""
+        self.boot(page)
+        st = page.evaluate("""fetch('https://dbaifotzwlxjvsxjohjt.supabase.co/functions/v1/billing-portal',
+            {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({customer:'cus_x'})}).then(r=>r.status, ()=>0)""")
+        self.ok(st == 401, f'billing-portal without a session must be 401, got {st}', j)
+        fine = page.evaluate("document.getElementById('paywall-fine').textContent")
+        self.ok(all(k in fine for k in ('$4.99', '30 days', 'renews automatically every month until you cancel', 'Manage or cancel Plus')),
+                f'the paywall states price, trial, renewal and how to cancel: {fine}', j)
+        email = f'journey-billing-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j)
+            return
+        uid = u['id']
+        seen = {}
+        def portal(route):
+            seen['auth'] = route.request.headers.get('authorization', '')
+            seen['body'] = route.request.post_data or ''
+            if route.request.method == 'OPTIONS':
+                return route.fulfill(status=200, headers={'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*'}, body='ok')
+            route.fulfill(status=200, content_type='application/json',
+                          headers={'Access-Control-Allow-Origin': '*'},
+                          body=json.dumps({'url': 'https://billing.stripe.com/p/session/journey'}))
+        try:
+            ins = supabase_rest('POST', 'subscriptions', {
+                'user_id': uid, 'provider': 'stripe', 'status': 'past_due', 'plan': 'plus',
+                'stripe_customer_id': 'cus_journeybilling', 'stripe_subscription_id': 'sub_journeybilling'})
+            self.ok(ins in (200, 201, 204), f'could not write the test subscription row (HTTP {ins})', j)
+            page.route('**/functions/v1/billing-portal', portal)
+            page.route('https://billing.stripe.com/**', lambda r: r.fulfill(status=200, content_type='text/html', body='<title>portal</title>'))
+            self.click(page, '#auth-btn'); time.sleep(0.6)
+            page.fill('#auth-email', email); page.fill('#auth-pass', password)
+            self.click(page, '#auth-submit')
+            if not self.wait_until(page, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(1)
+            self.click(page, '#auth-btn')
+            self.wait_until(page, "!document.getElementById('profile-modal').hidden", 15000)
+            shown = self.wait_until(page, "!document.getElementById('profile-billing').hidden", 8000)
+            vis = page.evaluate("""(()=>{const b=document.getElementById('profile-manage-plus'), r=b.getBoundingClientRect();
+                return {w:r.width, h:r.height, text:b.textContent, apple:!document.getElementById('profile-billing-apple').hidden}})()""")
+            self.ok(shown and vis['w'] > 0 and vis['h'] > 0 and vis['text'] == 'Manage or cancel Plus' and not vis['apple'],
+                    f'a web Plus member sees Manage or cancel Plus (and not the App Store line): {vis}', j)
+            dl = page.evaluate("(()=>{const a=document.getElementById('profile-delete-manage'); return a ? a.getAttribute('href') : null})()")
+            self.ok(dl == '#manage-plus', f'the delete-account warning links to the cancel control: {dl}', j)
+            self.click(page, '#profile-manage-plus')
+            went = self.wait_until(page, "location.href.startsWith('https://billing.stripe.com/')", 15000)
+            self.ok(went, f'Manage or cancel Plus should open the Stripe portal, page is at {page.url}', j)
+            self.ok(seen.get('auth', '').startswith('Bearer ') and len(seen['auth']) > 40,
+                    'the portal request must carry the session', j)
+            body = json.loads(seen.get('body') or '{}')
+            self.ok(set(body) == {'return_url'}, f'the page sends only a return url, never a customer: {body}', j)
+            # App Store member: the iOS Settings pointer, no portal button.
+            supabase_rest('PATCH', f'subscriptions?user_id=eq.{uid}', {'provider': 'apple'})
+            self.boot(page, '/#manage-plus')
+            opened = self.wait_until(page, "!document.getElementById('profile-modal').hidden", 15000)
+            self.ok(opened, 'findacrib.com/#manage-plus should open the account when signed in', j)
+            apple = self.wait_until(page, "!document.getElementById('profile-billing-apple').hidden", 8000)
+            self.ok(apple and page.evaluate("document.getElementById('profile-billing').hidden")
+                    and 'Settings › Apple Account › Subscriptions' in page.evaluate("document.getElementById('profile-billing-apple').textContent"),
+                    'an App Store member is sent to iOS Settings, with no portal button', j)
+            j.notes.append('portal opened for a web member; Settings line for an App Store one')
+        finally:
+            page.unroute('**/functions/v1/billing-portal')
+            if supabase_admin('GET', f'users/{uid}')[0] == 200:
+                supabase_admin('DELETE', f'users/{uid}')
+
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
+                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

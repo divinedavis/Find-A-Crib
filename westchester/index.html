@@ -431,6 +431,8 @@
     text-decoration: none; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
   .profile-cities .city-choice.cur { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
   #profile-upgrade { margin: 12px 0 2px; }
+  #profile-billing[hidden], #profile-billing-apple[hidden] { display: none; }
+  #profile-billing-apple .profile-feat-sub { margin: 0; }
   .profile-toggle-row { align-items: center; }
   .profile-feat { font-size: 14px; font-weight: 600; }
   .profile-feat-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
@@ -2181,14 +2183,18 @@
       <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
       <!-- First month on us (owner, 2026-10-04): a 30-day Stripe trial for an
            account's first subscription; the billed price stays the big one. -->
-      <div class="paywall-trial">Your first month is on us — then $4.99/month.</div>
+      <div class="paywall-trial" id="paywall-trial">Your first month is on us — then $4.99/month.</div>
       <div id="paywall-error" class="auth-error" hidden></div>
       <button id="paywall-subscribe" type="button" class="auth-submit">Start your month on us</button>
       <!-- Every $4.99 prompt also offers the referral route (owner, 2026-10-01):
            invite one friend and you both get 2 months of Plus. -->
       <button id="paywall-refer" type="button" class="paywall-refer">🎁 Or invite a friend — you both get 2 months of Plus</button>
     </div>
-    <p class="paywall-fine">New members: the first month costs nothing; $4.99 is billed via Stripe when it ends, then monthly. Cancel anytime before it ends and you won’t be charged.</p>
+    <!-- Auto-renewal terms beside the button (CA Bus. & Prof. Code 17602,
+         FTC ROSCA; 2026-11-07): price, that it renews monthly until
+         cancelled, the trial length, and how to cancel. syncPaywallTerms()
+         swaps in the no-trial version for an account that has had Plus. -->
+    <p class="paywall-fine" id="paywall-fine">New members: your first 30 days cost nothing. Then $4.99 is charged via Stripe and Plus renews automatically every month until you cancel. We email you 3 days before the first charge. Cancel online any time in Your account › Manage or cancel Plus; cancel before the 30 days end and you won’t be charged.</p>
   </div>
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
@@ -2257,6 +2263,20 @@
     <h2>Your account</h2>
     <div class="profile-row"><span class="label">Email</span><span id="profile-email"></span></div>
     <div class="profile-row"><span class="label">Membership</span><span id="profile-plan"></span></div>
+    <!-- Online cancel (2026-11-07, California's auto-renewal law + the FTC's
+         ROSCA): a web Plus member manages or cancels in Stripe's Customer
+         Portal, opened by the billing-portal edge function for the signed-in
+         account only. App Store members are pointed at iOS Settings. -->
+    <div id="profile-billing" class="profile-row profile-toggle-row" hidden>
+      <div>
+        <div class="profile-feat">💳 Your Plus billing</div>
+        <div class="profile-feat-sub">Cancel online any time, change your card or see receipts. If you cancel, Plus stays on until the end of the period you’ve paid for (or your first month on us).</div>
+      </div>
+      <button type="button" class="folder-new" id="profile-manage-plus" style="white-space:nowrap">Manage or cancel Plus</button>
+    </div>
+    <div id="profile-billing-apple" class="profile-row" hidden>
+      <div class="profile-feat-sub">Your Plus is billed by Apple. Manage or cancel it on your iPhone in Settings › Apple Account › Subscriptions.</div>
+    </div>
     <div class="profile-row profile-cities-row">
       <span class="label">City</span>
       <div id="profile-cities" class="profile-cities"></div>
@@ -2306,7 +2326,7 @@
     <button id="profile-delete" type="button" class="profile-delete-link">Delete account</button>
     <div id="profile-delete-box" class="profile-delete-box" role="alertdialog" aria-labelledby="profile-delete-title" hidden>
       <p id="profile-delete-title"><strong>Delete your account for good?</strong></p>
-      <p>This immediately and permanently deletes your account, saved buildings, folders, saved searches, home building, alert settings, subscription record, comments and likes. It can’t be undone. A Plus subscription bought on the web should be cancelled first so it stops billing.</p>
+      <p>This immediately and permanently deletes your account, saved buildings, folders, saved searches, home building, alert settings, subscription record, comments and likes. It can’t be undone. Deleting your account does not cancel a paid Plus membership: if you pay for Plus on the web, <a href="#manage-plus" id="profile-delete-manage">cancel it first with Manage or cancel Plus</a> so it stops billing; if you pay through the App Store, cancel it in Settings › Apple Account › Subscriptions.</p>
       <div class="profile-delete-actions">
         <button id="profile-delete-cancel" type="button">Cancel</button>
         <button id="profile-delete-confirm" type="button">Delete my account</button>
@@ -8947,6 +8967,7 @@ function favActive() {
     }
     const err = document.getElementById('paywall-error');
     if (err) err.hidden = true;
+    syncPaywallTerms();
     paywallModal.hidden = false;
     track('outbound', { kind: 'paywall_view', bbl: bbl || null, source: paywallSource });
   }
@@ -9179,6 +9200,7 @@ function favActive() {
       closePaywall();
       openAuthModal('Sign in to subscribe to Find A Crib Plus.', 'subscribe'); return;
     }
+    const idleLabel = btn.textContent;
     btn.disabled = true; btn.textContent = 'Starting checkout…';
     track('outbound', { kind: 'checkout_start', source: paywallSource });
     try { sessionStorage.setItem('fac.paySource', paywallSource); } catch (e) {}
@@ -9189,7 +9211,7 @@ function favActive() {
       if (error || !data?.url) throw (error || new Error('no checkout url'));
       window.location.href = data.url;   // -> Stripe Checkout
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'Start your month on us';
+      btn.disabled = false; btn.textContent = idleLabel;
       if (err) { err.textContent = 'Checkout is not available yet. Please try again shortly.'; err.hidden = false; }
     }
   }
@@ -9441,6 +9463,7 @@ function favActive() {
     plan.textContent = plusActive ? '★ Plus member' : 'Basic';
     plan.classList.toggle('plus', plusActive);
     document.getElementById('profile-upgrade').hidden = plusActive;   // Plus = the AI features now
+    await syncBillingUI();
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
     profileAlerts.checked = false;
@@ -9526,6 +9549,80 @@ function favActive() {
     CATS = []; FAVCATS = {}; folderFilter = null;
     updateAuthUI(); renderFolderBar();
   });
+  // ---------- Plus billing: manage or cancel online (2026-11-07) ----------
+  // Which billing control the profile shows comes from the account's own
+  // subscriptions row (RLS: own row only). A Stripe row with a live
+  // subscription gets the portal button; an App Store row gets the Settings
+  // pointer; comps, founding and referral Plus get neither (nothing bills).
+  const BILLING_LIVE = ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'];
+  let subRow = null, subRowKnown = false;
+  async function loadSubRow() {
+    subRow = null; subRowKnown = false;
+    if (!supaClient || !authUser) return null;
+    try {
+      const { data, error } = await supaClient.from('subscriptions')
+        .select('provider,status,plan,stripe_subscription_id').eq('user_id', authUser.id).limit(1).maybeSingle();
+      if (!error) { subRow = data || null; subRowKnown = true; }
+    } catch (e) { /* unknown: show nothing rather than guess */ }
+    return subRow;
+  }
+  async function syncBillingUI() {
+    await loadSubRow();
+    const live = !!subRow && BILLING_LIVE.includes(subRow.status);
+    const web = live && subRow.provider !== 'apple' && !!subRow.stripe_subscription_id;
+    const apple = live && subRow.provider === 'apple';
+    document.getElementById('profile-billing').hidden = !web;
+    document.getElementById('profile-billing-apple').hidden = !apple;
+  }
+  // The paywall's trial line is only true for an account's first Plus: any
+  // earlier subscriptions row means no trial (supabase/functions/create-checkout).
+  async function syncPaywallTerms() {
+    const trial = document.getElementById('paywall-trial');
+    const fine = document.getElementById('paywall-fine');
+    const btn = document.getElementById('paywall-subscribe');
+    if (!trial || !fine || !authUser) return;
+    if (!subRowKnown) await loadSubRow();
+    if (!subRowKnown || !subRow) return;   // first Plus, or unknown: the trial copy stands
+    trial.textContent = '$4.99 a month, starting today.';
+    fine.textContent = '$4.99 is charged via Stripe today, and Plus renews automatically every month until you cancel. Cancel online any time in Your account › Manage or cancel Plus; Plus stays on until the end of the month you’ve paid for.';
+    if (btn && !btn.disabled) btn.textContent = 'Subscribe for $4.99/month';
+  }
+  async function openBillingPortal(btn) {
+    if (!supaClient || !authUser) return;
+    const label = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+    profileErr.hidden = true;
+    track('outbound', { kind: 'billing_portal' });
+    try {
+      const { data, error } = await supaClient.functions.invoke('billing-portal', {
+        body: { return_url: location.origin + location.pathname }
+      });
+      if (error || !data?.url) throw (error || new Error('no portal url'));
+      window.location.href = data.url;   // -> Stripe Customer Portal
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = label; }
+      profileErr.textContent = 'Couldn’t open billing. Please try again, or email api@findacrib.com and we’ll cancel it for you.';
+      profileErr.hidden = false;
+    }
+  }
+  document.getElementById('profile-manage-plus').addEventListener('click', e => openBillingPortal(e.currentTarget));
+  document.getElementById('profile-delete-manage').addEventListener('click', e => {
+    e.preventDefault();
+    if (!document.getElementById('profile-billing').hidden) openBillingPortal(document.getElementById('profile-manage-plus'));
+    else document.getElementById('profile-billing-apple').scrollIntoView({ block: 'center' });
+  });
+  // findacrib.com/#manage-plus — the link in the trial-ending reminder email.
+  // Signed in: open the account with the billing control. Signed out: sign in
+  // first, then the account opens.
+  let manageAfterSignIn = false;
+  function handleManagePlusHash() {
+    if (location.hash !== '#manage-plus') return;
+    history.replaceState({}, '', location.pathname + location.search);
+    if (authUser) { openProfile(); return; }
+    manageAfterSignIn = true;
+    openAuthModal('Sign in to manage or cancel Find A Crib Plus.', 'manage_plus');
+  }
+
   // Delete account (privacy policy: "on the website, sign in and use Profile →
   // Delete account"). The same delete_account() RPC the iPhone app calls
   // (db/0019): it deletes auth.users for auth.uid() and every user-owned table
@@ -9776,6 +9873,7 @@ function favActive() {
     if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); maybeFoundingWelcome(); }
     if (invitePending) { invitePending = false; openReferralModal('invite_link'); }
     handleUnsubHash();
+    handleManagePlusHash();
     handleFolderHash();
     handlePortfolioParam();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
@@ -9800,6 +9898,8 @@ function favActive() {
       if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in
       updateAuthUI();
       refreshPlus();
+      subRowKnown = false;   // a different account may have signed in
+      if (authUser && manageAfterSignIn) { manageAfterSignIn = false; closeAuthModal(); openProfile(); }
       // signing in (or out) with the detail sheet open swaps the composer in/out
       // and re-marks which comments carry your Delete button
       if (detailRec) loadComments(detailRec.bbl);

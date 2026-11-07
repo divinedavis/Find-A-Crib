@@ -69,6 +69,10 @@ if [ "$SKIP" != "--skip-tests" ]; then
   # A journey that fails twice still stops the deploy.
   LFAILED=$(mktemp)
   if ! "$PY" tests/journeys.py --target local --failed-out "$LFAILED"; then
+    # A run that died (killed, crashed) writes no list: an empty re-run list
+    # would wave the deploy through without a single journey passing
+    # (2026-11-07). No list = stop.
+    [ -s "$LFAILED" ] || { echo "!! local journeys exited without a failed list (killed or crashed) — not deploying"; exit 1; }
     echo "== re-running the failed local journeys once: $(tr '\n' ' ' <"$LFAILED")"
     while read -r name; do
       net_retry "$PY" tests/journeys.py --target local --only "$name" || { echo "!! $name failed twice on the local build"; exit 1; }
@@ -109,6 +113,7 @@ if [ "$SKIP" != "--skip-tests" ]; then
   if ! "$PY" tests/journeys.py --target live --failed-out "$FAILED"; then
     echo "== re-running the failed journeys once: $(tr '\n' ' ' <"$FAILED")"
     STILL=0
+    [ -s "$FAILED" ] || { echo "!! live journeys exited without a failed list (killed or crashed)"; STILL=1; }
     while read -r name; do
       net_retry "$PY" tests/journeys.py --target live --only "$name" || STILL=1
     done <"$FAILED"

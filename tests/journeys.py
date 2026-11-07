@@ -1208,6 +1208,11 @@ class Runner:
                 'terms must say the renter tools and AI are not legal advice', j)
         self.ok('report' in terms.lower() and 'block' in terms.lower(), 'terms should explain reporting and blocking', j)
         self.ok('@gmail' not in terms, 'a personal address must not be published', j)
+        # Auto-renewal terms (CA Bus. & Prof. Code 17602, 2026-11-07): how to
+        # cancel online, and the trial, in the terms themselves.
+        self.ok('manage or cancel plus' in terms.lower() and 'settings › apple account › subscriptions' in terms.lower()
+                and '30 days' in terms, 'terms must say how to cancel online and state the trial', j)
+        self.ok('manage or cancel plus' in priv.lower(), 'privacy policy should point at Manage or cancel Plus before deleting', j)
         j.notes.append('privacy + terms carry the rules')
 
     def j_nearby_places(self, page, j, device):
@@ -2548,6 +2553,16 @@ class Runner:
             j.notes.append('portal opened for a web member; Settings line for an App Store one')
         finally:
             page.unroute('**/functions/v1/billing-portal')
+            # The browser context is shared by every journey on this device:
+            # leave it signed out, or the next ones (plus_gates, ai_features,
+            # resume_search) start inside a deleted account's session.
+            try:
+                if page.url.startswith(LIVE):
+                    page.evaluate(SIGN_OUT_JS)
+                else:
+                    self.boot(page, wait_pins=False); page.evaluate(SIGN_OUT_JS)
+            except Exception:
+                pass
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 

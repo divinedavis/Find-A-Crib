@@ -653,6 +653,44 @@ def build_blocks(run_log=None, review_out=None):
                                   f"{_fmt(serving)} is confirmed indexed by the census; "
                                   f"{_fmt(_cx[searchconsole.CENSUS_UNSAMPLED])} are outside "
                                   f"its sample, which is no evidence either way."})
+            # ...and the third qualifier on the same count, the one that
+            # needs neither a query row nor the census. Aggregated by PAGE,
+            # one query returning ten of this site's URLs is ten impressions
+            # on ten rows, so a single result page raises serving_pages by
+            # ten. A block of rows sharing one impression count on distinct
+            # consecutive ranks is the shape that leaves — see the
+            # CO-APPEARANCE note in searchconsole.py. First shipped
+            # 2026-11-07, when nine of ten serving pages sat at ranks 2-10
+            # with exactly 3 impressions each and BOTH older qualifiers were
+            # silent: no query row for any of the nine, and not one of them
+            # in the census sample.
+            _ca = searchconsole.saved_serving_coappearance()
+            if _ca and _ca["groups"]:
+                _g = _ca["groups"][0]
+                _lo, _hi = _g["positions"]
+                _tiers_txt = (f", all of them in the {_g['tiers'][0]} tier"
+                              if len(_g["tiers"]) == 1 else
+                              f", across the {', '.join(_g['tiers'])} tiers"
+                              if _g["tiers"] else "")
+                _more = (f" {_fmt(len(_ca['groups']) - 1)} smaller block(s) "
+                         f"as well." if len(_ca["groups"]) > 1 else "")
+                B.append({"type": "callout", "tone": "warn",
+                          "heading": f"{_fmt(_g['size'])} of those {_fmt(serving)} "
+                                     f"pages were shown together, not separately",
+                          "body": f"They carry {_fmt(_g['impressions_each'])} "
+                                  f"impressions each — the same number — at ranks "
+                                  f"{_lo} to {_hi}, one URL per rank, no gaps"
+                                  f"{_tiers_txt}. That is one result page listing them "
+                                  f"all, counted once per URL because this pull is "
+                                  f"aggregated by page; pages ranking on their own "
+                                  f"for their own queries do not share an impression "
+                                  f"count across consecutive ranks. So "
+                                  f"{_fmt(_g['impressions_total'])} of the window's "
+                                  f"page impressions are one visibility event, and "
+                                  f"at most {_fmt(_ca['standalone'])} of the "
+                                  f"{_fmt(serving)} can be a page holding a ranking "
+                                  f"of its own.{_more} Publishing more pages does not "
+                                  f"multiply a block — it is one query's result set."})
             # That count on its own reads as a plateau when it is really a
             # rotation: on 2026-08-04 it held at 89 while nine URLs entered the
             # set and nine left it. Say which it is, or the number misleads.

@@ -1194,6 +1194,47 @@ def _unattributed_pages(rec):
             f"for those, so the non-branded count is a floor and not a census")
 
 
+def _coappearing_pages(rec):
+    """The ", N of them shown together" tail — the third qualifier on the count.
+
+    searchconsole.serving_coappearance() (2026-11-07) reads the geometry of the
+    page rows rather than the query dimension or the census, and it exists
+    because on the night it shipped BOTH of the other two qualifiers were
+    silent on the same nine pages: Search Console returned no query row for one
+    of them (so _unattributed_pages above says the brand count is a floor and
+    can say nothing else), and the index census had never sampled one of them
+    (so serving_census_contradicted was 0 for want of evidence, not for want of
+    a defect).
+
+    What the geometry said: nine of the ten serving pages carried EXACTLY 3
+    impressions each at ranks 2 to 10, one URL per rank, no gaps. Aggregated by
+    page — which is the pull gsc_serving_pages is counted from — one query that
+    returns ten of this site's URLs is ten rows and ten impressions, so one
+    result page raises the count by ten. Nine pages ranking on their own for
+    their own queries do not share one impression count across nine
+    consecutive ranks.
+
+    Phrased as "at most N ... hold a ranking of its own" because `standalone`
+    is a CEILING: a block whose members also served elsewhere in the window has
+    fractional average positions and is not detected at all. The wording
+    mirrors the daily report's, for the reason _unattributed_pages gives — one
+    renderer disagreeing with another about the same fact is how the 2026-11-01
+    defect happened.
+
+    Silent at 0 (a measured statement that no block was found) and at None (the
+    check did not run), the same rule as every other tail on this line.
+    """
+    n = rec.get("serving_coappearing")
+    if not n:
+        return ""
+    largest = rec.get("serving_coappearing_largest") or n
+    return (f", {_num(n)} shown TOGETHER on one result page rather than "
+            f"separately — a block of {_num(largest)} sharing one impression "
+            f"count across consecutive ranks, which aggregated by page counts "
+            f"once per URL, so at most {_num(rec.get('serving_standalone'))} of "
+            f"this count can be a page holding a ranking of its own")
+
+
 def _owned_brand_reading(vis, declined=False):
     """Which of three sentences a technique's serving pages have earned.
 
@@ -1364,7 +1405,8 @@ def _gsc_reading(rec):
               f"({_num(rec.get('serving_census_contradicted'))} census-contradicted, "
               f"{_num(rec.get('serving_census_indexed'))} census-indexed, "
               f"{_num(rec.get('serving_nonbranded'))} non-branded"
-              f"{_unattributed_pages(rec)}); "
+              f"{_unattributed_pages(rec)}"
+              f"{_coappearing_pages(rec)}); "
               f"{_num(rec.get('nonbranded_impressions'))} non-branded of "
               f"{_num(rec.get('impressions'))} query-attributed impressions"
               f"{_unattributed_impressions(rec)}; "

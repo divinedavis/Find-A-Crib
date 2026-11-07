@@ -556,6 +556,19 @@ def collect(days=7):
                              "single_day_possible")):
             ledger.record_result(today, "__site__", metric, persist[key])
 
+    # ---- and how much of that count is one result page rather than N pages.
+    # See the CO-APPEARANCE note above serving_coappearance(). Aggregated by
+    # page, one query that returns ten of our URLs is ten impressions on ten
+    # rows, so gsc_serving_pages rises by ten for a single visibility event.
+    # Recorded as a PAIR for the same reason the persistence split is: a lone
+    # "9 co-appearing" invites the reading that the rest stand on their own,
+    # and `standalone` is a ceiling, not a count of pages that rank.
+    coap = serving_coappearance(page_rows)
+    if coap:
+        for metric, key in (("gsc_serving_coappearing", "coappearing"),
+                            ("gsc_serving_standalone", "standalone")):
+            ledger.record_result(today, "__site__", metric, coap[key])
+
     ledger.write_last_run("searchconsole", {
         "window": f"{start}..{end}", "clicks": clicks,
         "impressions": impressions, "serving_pages": serving,
@@ -583,7 +596,17 @@ def collect(days=7):
         # it, and `window` above is the string it was measured from.
         "serving_multi_day": (persist or {}).get("proven_multi_day"),
         "serving_single_day_possible": (persist or {}).get("single_day_possible"),
-        "serving_persistence_window_days": (persist or {}).get("window_days")})
+        "serving_persistence_window_days": (persist or {}).get("window_days"),
+        # And once more for the same reason: serving_pages is the number the
+        # 6am review is told to read out of THIS file every run, and this is
+        # the count that says how much of it is one result page. The largest
+        # group's size and the impressions it carries travel with the pair —
+        # a run of four and a run of nine are not the same evidence.
+        "serving_coappearing": (coap or {}).get("coappearing"),
+        "serving_standalone": (coap or {}).get("standalone"),
+        "serving_coappearing_largest": (coap or {}).get("largest_group"),
+        "serving_coappearing_impressions": (coap or {}).get(
+            "coappearing_impressions")})
 
     return {"clicks": clicks, "impressions": impressions,
             "page_clicks": page_clicks, "page_impressions": page_impressions,
@@ -984,6 +1007,172 @@ def serving_persistence(history=None, window=None, window_days=None):
             "single_day_possible": possible,
             "proven_pct": round(100.0 * proven / counted, 1),
             "by_tier": tiers}
+
+
+# ---- one result page, or nine pages ranking -------------------------------
+#
+# CO-APPEARANCE, and why gsc_serving_pages can count result SLOTS as pages.
+#
+# Google's own documentation for the performance report says how its two
+# aggregations differ: aggregating by PROPERTY counts all the results for one
+# query that point to this site ONCE, while aggregating by PAGE treats each
+# unique URL as its own impression. One query that returns ten of this site's
+# URLs is therefore 1 impression aggregated by property and 10 aggregated by
+# page. gsc_serving_pages is a count of distinct rows in the PAGE pull, so a
+# single result page listing ten of our URLs raises it by ten — and every
+# review since 2026-07-27 has been told to read that number as "how many of
+# the ~47,600 published pages earned a Search Console impression", which is a
+# claim about ten pages when the evidence is about one query.
+#
+# The 2026-11-07 reading is that case in its purest form. Ten serving pages:
+# the homepage at position 1.5 with 147 impressions, and NINE building pages
+# each with EXACTLY 3 impressions, holding positions 2, 3, 4, 5, 6, 7, 8, 9
+# and 10 — every integer from 2 to 10, once each, no gaps and no repeats.
+# Nine pages earning rankings of their own on nine different queries do not
+# land on nine consecutive distinct integers with one shared impression count.
+# One result page listing all ten of them does, and three views of that one
+# result page produce exactly the 3 impressions each.
+#
+# BOTH EXISTING QUALIFIERS WERE BLIND TO IT, which is why this is a third
+# check and not a rewording of either. serving_brand_split() put all nine in
+# `unattributed`: Search Console returned no query row for one of them, which
+# is what it does with a query only a few people issue, so the brand argument
+# had nothing to work with. serving_census_check() put all nine in
+# `unsampled`: the index census has never inspected one of them, so the "a URL
+# Google never fetched cannot hold a ranking" argument had no evidence either.
+# This check needs neither dimension — it reads the geometry of the page rows.
+#
+# What the geometry does and does not support:
+#
+#   * It is a SIGNATURE, not a proof. Identical impressions on distinct
+#     consecutive ranks is what one result page looks like from the page
+#     dimension; a short run of it is also what coincidence looks like, and on
+#     a serving set of a few hundred rows a run of three turns up by chance.
+#     So the group's size, its shared impression count and its rank span are
+#     all reported rather than a bare count: a run of nine at ranks 2-10 and a
+#     run of four at ranks 5-8 are not the same evidence and a reader has to
+#     be able to tell them apart.
+#   * It does not say the impressions are fake. Google did show those URLs.
+#     It says they are ONE visibility event rather than nine, so they measure
+#     one query's result set and not nine pages' ability to rank — and nine
+#     pages that can only appear together cannot be multiplied by publishing
+#     more pages, which is the instruction gsc_serving_pages keeps implying.
+#   * `coappearing` is a FLOOR and `standalone` a CEILING. A block whose
+#     members also earned impressions elsewhere in the window has non-integer
+#     average positions and is missed entirely; a rank held by two URLs at the
+#     same impression count breaks the run rather than extending it; and the
+#     snapshot this is read back from keeps only the 300 busiest rows. All
+#     three understate the artefact and overstate how many pages stand on
+#     their own — the same direction as serving_brand_split()'s `nonbranded`,
+#     and the safe one for a metric whose purpose is to stop this loop
+#     over-claiming.
+#   * It is silent about WHICH query. A `site:` search, a host-group
+#     expansion under the brand result and three ordinary rare queries that
+#     all returned the same ten URLs are indistinguishable from here, and the
+#     consequence for the count is identical in all three cases, so this file
+#     does not guess. serving_brand_split() is where that question lives, and
+#     on an unattributed block it cannot answer it.
+
+# A run shorter than this is not evidence. Four is the shortest run this file
+# is willing to name; the group's own numbers are reported beside it so a weak
+# run is discounted by the reader rather than silently by this constant.
+COAPPEARANCE_MIN_GROUP = 4
+
+
+def serving_coappearance(rows, min_group=COAPPEARANCE_MIN_GROUP):
+    """Find serving rows that Google showed TOGETHER on one result page.
+
+    See the CO-APPEARANCE note above. A group is a set of page rows sharing
+    one impression count and holding distinct CONSECUTIVE integer positions —
+    the shape one result page leaves behind in the page dimension.
+
+    Non-integer positions are excluded from grouping on purpose: Search
+    Console reports a page's position averaged over its impressions, so
+    anything but a whole number means the URL held more than one rank in the
+    window and cannot have come from a single result page alone.
+
+    Returns None when there are no rows at all — an absent measurement and a
+    measured zero are different facts, and the ledger reads a missing metric
+    as "not measured". Keys:
+
+      rows                     page rows handed in
+      coappearing              rows inside a group — a floor
+      standalone               rows in no group — a CEILING on how many of the
+                               serving pages could hold a ranking of their own
+      coappearing_impressions  page impressions those grouped rows carry
+      largest_group            size of the biggest group, 0 when there is none
+      groups                   biggest first, each with size,
+                               impressions_each, impressions_total,
+                               positions [lo, hi], tiers, urls
+
+    `coappearing` and `standalone` sum to `rows`, so the split can never
+    quietly lose a page.
+    """
+    if not rows:
+        return None
+    # impressions -> position -> rows at that exact rank. Bools are ints in
+    # Python and a True impression count is a corrupt row, not a count of one.
+    by_imp = {}
+    for r in rows:
+        imp, pos = r.get("impressions"), r.get("position")
+        if isinstance(imp, bool) or isinstance(pos, bool):
+            continue
+        if not isinstance(imp, (int, float)) or imp <= 0:
+            continue
+        if not isinstance(pos, (int, float)) or float(pos) != int(pos):
+            continue
+        if int(pos) < 1:
+            continue
+        by_imp.setdefault(int(imp), {}).setdefault(int(pos), []).append(r)
+
+    groups = []
+    for imp, at in by_imp.items():
+        run = []
+        for pos in range(min(at), max(at) + 2):
+            # Exactly one URL at this rank extends the run. Two URLs sharing a
+            # rank at the same impression count cannot both be that slot of
+            # one result page, and zero URLs ends it. Either way the run is
+            # flushed — which is the conservative direction: it can only make
+            # `coappearing` smaller.
+            if len(at.get(pos, ())) == 1:
+                run.append((pos, at[pos][0]))
+                continue
+            if len(run) >= min_group:
+                urls = [row.get("url") for _, row in run]
+                groups.append({
+                    "size": len(run),
+                    "impressions_each": imp,
+                    "impressions_total": imp * len(run),
+                    "positions": [run[0][0], run[-1][0]],
+                    "tiers": sorted({_tier(u) for u in urls}),
+                    "urls": urls,
+                })
+            run = []
+    groups.sort(key=lambda g: (-g["size"], g["positions"][0]))
+
+    coappearing = sum(g["size"] for g in groups)
+    return {
+        "rows": len(rows),
+        "min_group": min_group,
+        "coappearing": coappearing,
+        "standalone": len(rows) - coappearing,
+        "coappearing_impressions": sum(g["impressions_total"] for g in groups),
+        "largest_group": groups[0]["size"] if groups else 0,
+        "groups": groups,
+    }
+
+
+def saved_serving_coappearance(min_group=COAPPEARANCE_MIN_GROUP):
+    """serving_coappearance() over the page rows in the committed snapshot.
+
+    What the 6am review and the daily report both read, neither of which has a
+    Search Console key. The snapshot keeps only the 300 busiest serving rows,
+    so on a big serving day a block can be truncated by that cap and read
+    smaller than it was — one more reason `coappearing` is a floor. Returns
+    None when the snapshot carries no page rows.
+    """
+    pages = (load_pages() or {}).get("pages") or []
+    return serving_coappearance(pages, min_group=min_group) if pages else None
 
 
 def stable_pages(limit=25):

@@ -69,3 +69,10 @@ def test_no_exact_hit_means_no_coordinates():
     r = {"address": "1730 Harrison Ave, Bronx, NY 10453", "borough": "Bronx"}
     ra.tidy([r], lookup_zip=lambda street, b, cache: ("10453", "Bronx"), lookup_xy=lambda *a: None)
     assert "lat" not in r, "a guess would show another building's street"
+
+
+def test_a_range_or_pair_is_placed_at_its_first_building():
+    assert ra.street_candidates("263-267 West 126th Street", "Manhattan")[-1] == "263 West 126th Street"
+    assert ra.street_candidates("2317-21 Tiebout Avenue", "Bronx")[-1] == "2317 Tiebout Avenue"
+    assert "19-38 Cornaga Ave" in ra.street_candidates("19-38 Cornaga Ave & 10-18 Beach 20th Street", "Queens")
+    assert ra.street_candidates("17-11 Hancock Street", "Queens") == ["17-11 Hancock Street"], "a Queens house number is not a range"

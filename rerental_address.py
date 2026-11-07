@@ -78,7 +78,31 @@ def lookup(street, borough, cache):
     return res
 
 
+def street_candidates(street, borough):
+    """The street itself, then the first building of a range or a pair:
+    "263-267 West 126th Street" -> "263 West 126th Street"; "19-38 Cornaga
+    Ave & 10-18 Beach 20th Street" -> "19-38 Cornaga Ave". Not in Queens,
+    where "17-11 Hancock Street" is one house number, not a range."""
+    out = [street]
+    first = street.split("&")[0].split(" and ")[0].strip(" ,")
+    if first != street:
+        out.append(first)
+    m = re.match(r"^(\d+)-(\d+)\s+(.+)$", first)
+    if m and borough != "Queens":
+        out.append(f"{m.group(1)} {m.group(3)}")
+    return out
+
+
 def lookup_coords(street, borough, cache):
+    """The first exact hit among street_candidates()."""
+    for cand in street_candidates(street, borough):
+        xy = _lookup_coords(cand, borough, cache)
+        if xy:
+            return xy
+    return None
+
+
+def _lookup_coords(street, borough, cache):
     """(lat, lng) of this exact house number and street from GeoSearch, or
     None. For a card with no photo of its own: the app shows Apple's street
     view at these coordinates (owner, 2026-11-07: "there are some lotteries

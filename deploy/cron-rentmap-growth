@@ -16,12 +16,12 @@
 # UTC clock, not to the business day, so it must NOT pick up America/New_York.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-40 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh build --deploy >> /var/log/rentmap-growth.log 2>&1
+#PAUSED-20261107 40 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh build --deploy >> /var/log/rentmap-growth.log 2>&1
 
 # 05:00 America/New_York — measure, judge, prune, scout, draft outreach. Deliberately
 # an hour before the 6am review agent, so the agent always reads fresh numbers.
 CRON_TZ=America/New_York
-0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
+#PAUSED-20261107 0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
 
 # The internal growth report email (Fridays 06:00, `growth_run.sh report`) was
 # turned OFF 2026-11-06 at the owner's request ("i dont need this report
@@ -34,6 +34,11 @@ CRON_TZ=America/New_York
 # (~$1/month, priced into api_spend), Search Console for Gemini, our own
 # analytics for ChatGPT. Mails the owner; one line per month in
 # growth/ai_visibility.jsonl. Owner, 2026-10-29.
-30 7 1 * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase,smtp,gsc,owner -- /opt/findacrib/venv/bin/python -m growth.ai_visibility >> /var/log/rentmap-growth.log 2>&1
+#PAUSED-20261107 30 7 1 * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase,smtp,gsc,owner -- /opt/findacrib/venv/bin/python -m growth.ai_visibility >> /var/log/rentmap-growth.log 2>&1
 # Paused 2026-10-12 (owner: "pause seo for FAC"); resumed 2026-10-29 so AI answer engines
 # (Gemini, Claude, ChatGPT) can find and cite the site (owner: "lets do it").
+# PAUSED AGAIN 2026-11-07 (owner: "stop the growth engine") — build/deploy, the daily
+# measure/scout/outreach run and the monthly AI-visibility check. While paused,
+# growth/section8_refresh.py (cron-rentmap-scrape, 05:40 UTC) keeps /section8/
+# fresh. To resume: drop the #PAUSED-20261107 prefixes, remove that stand-in line,
+# and run scripts/deploy_jobs.sh.

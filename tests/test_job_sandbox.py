@@ -33,7 +33,7 @@ def env_sets_installed():
 
 # Paused on purpose: vacancies (2026-10-06, scraping terms), growth + seo
 # (2026-10-12, owner: "pause seo for FAC").
-PAUSED = {"cron-rentmap-vacancies"}
+PAUSED = {"cron-rentmap-vacancies", "cron-rentmap-growth"}  # growth: owner 2026-11-07
 
 
 def test_every_cron_file_has_jobs_or_is_a_paused_one():
@@ -44,13 +44,14 @@ def test_every_cron_file_has_jobs_or_is_a_paused_one():
             assert any(n == f.name for n, _, _ in job_lines()), f.name
 
 
-def test_seo_and_growth_run_again():
-    # Paused 2026-10-12, resumed 2026-10-29 (owner: get AI answer engines to
-    # find and cite the site). The 05:40 build replaces section8_refresh.py.
-    for name in ("cron-rentmap-growth", "cron-rentmap-seo"):
-        assert [l for n, _, l in job_lines() if n == name], name
-        assert "#PAUSED-20261012" not in (DEPLOY / name).read_text(), name
-    assert not [l for n, _, l in job_lines() if "section8_refresh" in l]
+def test_growth_paused_seo_refresh_runs():
+    # Growth engine paused again 2026-11-07 (owner: "stop the growth engine");
+    # the monthly SEO refresh (no LLM) keeps running. While the 05:40 build is
+    # off, section8_refresh.py stands in for it on cron-rentmap-scrape.
+    assert not [l for n, _, l in job_lines() if n == "cron-rentmap-growth"]
+    assert "#PAUSED-20261107" in (DEPLOY / "cron-rentmap-growth").read_text()
+    assert [l for n, _, l in job_lines() if n == "cron-rentmap-seo"]
+    assert [l for n, _, l in job_lines() if "section8_refresh" in l]
 
 
 def test_vacancy_sweep_stays_paused():

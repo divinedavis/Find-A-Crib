@@ -32,18 +32,17 @@ class Section8RefreshTests(unittest.TestCase):
                 self.assertEqual(section8_refresh.main(), 1)
             self.assertFalse(os.path.exists(os.path.join(docroot, "section8")))
 
-    def test_the_growth_build_runs_after_the_feed(self):
-        # section8_refresh.py's cron line went when the engine resumed
-        # (2026-10-29); the 05:40 UTC growth build rebuilds /section8/ again.
+    def test_the_stand_in_runs_after_the_feed_while_growth_is_paused(self):
+        # Growth engine paused 2026-11-07: section8_refresh.py's 05:40 UTC
+        # line is back on cron-rentmap-scrape and must run after the 04:15 feed.
         here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         def live(name):
             with open(os.path.join(here, "deploy", name)) as f:
                 return [l for l in f if l.strip() and not l.startswith("#")]
         feed = next(l for l in live("cron-rentmap-scrape") if "scrape_affordablehousing.py" in l).split()
-        page = next(l for l in live("cron-rentmap-growth") if "growth_run.sh build" in l).split()
-        self.assertFalse(any("section8_refresh.py" in l for l in live("cron-rentmap-scrape")))
+        page = next(l for l in live("cron-rentmap-scrape") if "section8_refresh.py" in l).split()
+        self.assertFalse([l for l in live("cron-rentmap-growth") if "growth_run.sh" in l])
         self.assertGreater((int(page[1]), int(page[0])), (int(feed[1]), int(feed[0])))
-
 
 if __name__ == "__main__":
     unittest.main()

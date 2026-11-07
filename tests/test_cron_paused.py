@@ -189,12 +189,13 @@ class LivenessWording(unittest.TestCase):
 
 
 class TrackedCronMatchesReality(unittest.TestCase):
-    def test_the_repos_own_cron_is_running_again(self):
-        # Pins today's actual state. Paused 2026-10-12, resumed 2026-10-29
-        # (owner: get AI answer engines to find and cite the site), so a
-        # re-pause has to drop this expectation on purpose.
-        paused, _ = growth_daily.growth_paused()
-        self.assertFalse(paused, "deploy/cron-rentmap-growth has no live growth_run line")
+    def test_the_repos_own_cron_is_paused(self):
+        # Pins today's actual state. Paused 2026-10-12, resumed 2026-10-29,
+        # paused again 2026-11-07 (owner: "stop the growth engine"), so a
+        # resume has to drop this expectation on purpose.
+        paused, marker = growth_daily.growth_paused()
+        self.assertTrue(paused, "deploy/cron-rentmap-growth still has a live growth_run line")
+        self.assertEqual(marker, "#PAUSED-20261107")
 
 
 if __name__ == "__main__":
@@ -226,10 +227,11 @@ class LivePathsOutsideThePause(unittest.TestCase):
             (d / name).write_text(text)
         return str(d)
 
-    def test_the_real_deploy_dir_no_longer_runs_the_section8_stand_in(self):
-        # Removed 2026-10-29 when the engine's own 05:40 build resumed.
+    def test_the_real_deploy_dir_runs_the_section8_stand_in_while_paused(self):
+        # Removed 2026-10-29 when the engine resumed; back 2026-11-07 with the
+        # re-pause, so the status headline must say growth code still ships.
         found = growth_daily.growth_live_paths()
-        self.assertNotIn(("cron-rentmap-scrape", "growth/section8_refresh.py"), found)
+        self.assertIn(("cron-rentmap-scrape", "growth/section8_refresh.py"), found)
 
     def test_a_commented_out_line_is_not_live(self):
         d = self._deploy({"cron-rentmap-x":

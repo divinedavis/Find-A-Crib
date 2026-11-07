@@ -28,20 +28,20 @@ CASES = [
 def test_every_card_reads_like_445_grand_avenue():
     for src, title, boro, z, want_title, want_addr in CASES:
         r = {"address": src, "title": title, "borough": boro, "zip": z}
-        ra.tidy([r], lookup_zip=lambda street, b, cache: ("11222", None))
+        ra.tidy([r], lookup_zip=lambda street, b, cache: ("11222", None), lookup_xy=lambda *a: None)
         assert (r["title"], r["address"]) == (want_title, want_addr), (src, r)
         assert r["address_src"] == src
 
 
 def test_the_citys_borough_beats_the_agents():
     r = {"address": "2710 Decatur Ave. Unit PH2", "title": "", "borough": "Brooklyn", "zip": None}
-    ra.tidy([r], lookup_zip=lambda street, b, cache: ("10458", "Bronx"))
+    ra.tidy([r], lookup_zip=lambda street, b, cache: ("10458", "Bronx"), lookup_xy=lambda *a: None)
     assert r["address"] == "2710 Decatur Ave, Bronx, NY 10458" and r["borough"] == "Bronx"
 
 
 def test_an_address_it_cannot_place_is_left_as_written():
     r = {"address": "55 South Essex Avenue", "title": "", "borough": None, "zip": None}
-    ra.tidy([r], lookup_zip=lambda street, b, cache: (None, None))
+    ra.tidy([r], lookup_zip=lambda street, b, cache: (None, None), lookup_xy=lambda *a: None)
     assert r["address"] == "55 South Essex Avenue"
 
 
@@ -55,3 +55,17 @@ if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
             fn(); print("ok", name)
+
+
+def test_a_placed_address_gets_coordinates_for_the_street_view():
+    # 2026-11-07: 58 of 125 re-rentals had no photo; the app shows the street there.
+    r = {"address": "1730 Harrison Ave, Bronx, NY 10453", "borough": "Bronx"}
+    ra.tidy([r], lookup_zip=lambda street, b, cache: ("10453", "Bronx"),
+            lookup_xy=lambda street, b, cache: (40.849718, -73.913916))
+    assert (r["lat"], r["lng"]) == (40.849718, -73.913916)
+
+
+def test_no_exact_hit_means_no_coordinates():
+    r = {"address": "1730 Harrison Ave, Bronx, NY 10453", "borough": "Bronx"}
+    ra.tidy([r], lookup_zip=lambda street, b, cache: ("10453", "Bronx"), lookup_xy=lambda *a: None)
+    assert "lat" not in r, "a guess would show another building's street"

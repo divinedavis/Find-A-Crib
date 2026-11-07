@@ -78,6 +78,29 @@ def lookup(street, borough, cache):
     return res
 
 
+def lookup_coords(street, borough, cache):
+    """(lat, lng) of this exact house number and street from GeoSearch, or
+    None. For a card with no photo of its own: the app shows Apple's street
+    view at these coordinates (owner, 2026-11-07: "there are some lotteries
+    without images"). Same exact-hit rule as lookup(): a fuzzy match would
+    show another building."""
+    q = f"coords|{street}, {borough or 'New York'}, NY"
+    if q in cache:
+        return tuple(cache[q]) if cache[q] else None
+    try:
+        url = "https://geosearch.planninglabs.nyc/v2/search?" + urllib.parse.urlencode({"text": q.split("|", 1)[1], "size": 5})
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "FindACrib/1.0"}), timeout=15) as r:
+            feats = json.load(r).get("features") or []
+        want = street_key(street)
+        hits = [f for f in feats if street_key(f["properties"].get("label") or "") == want]
+        f = next((h for h in hits if h["properties"].get("borough") == borough), hits[0] if hits else None)
+        res = [round(f["geometry"]["coordinates"][1], 6), round(f["geometry"]["coordinates"][0], 6)] if f else None
+    except Exception:
+        return None                               # not cached: try again next run
+    cache[q] = res
+    return tuple(res) if res else None
+
+
 def split(address):
     """(name, street, unit, zip) from an agent's address line."""
     s = re.sub(r"\s+", " ", address or "").strip()
@@ -113,7 +136,7 @@ def split(address):
     return name, s, unit, zipcode
 
 
-def tidy(records, lookup_zip=lookup):
+def tidy(records, lookup_zip=lookup, lookup_xy=lookup_coords):
     cache = _cache()
     for r in records:
         src = r.get("address_src") or r.get("address") or ""
@@ -139,6 +162,10 @@ def tidy(records, lookup_zip=lookup):
         r["borough"] = boro
         r["zip"] = zipcode
         r["address"] = ", ".join(x for x in (street, boro, ("NY " + zipcode) if zipcode else "NY") if x)
+        if r.get("lat") is None:
+            xy = lookup_xy(street, boro, cache)
+            if xy:
+                r["lat"], r["lng"] = xy
     try:
         os.makedirs(os.path.dirname(ZIP_CACHE), exist_ok=True)
         json.dump(cache, open(ZIP_CACHE, "w"))

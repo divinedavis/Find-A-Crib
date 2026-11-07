@@ -89,6 +89,25 @@ def beds(rec):
     return out
 
 
+_XY_CACHE = None
+
+
+def coords_for(address, borough):
+    """(lat, lng) for an exact address hit, via rerental_address's cached
+    GeoSearch lookup; None when it can't be placed."""
+    global _XY_CACHE
+    import rerental_address as ra
+    if _XY_CACHE is None:
+        _XY_CACHE = ra._cache()
+    street = ra.split(address)[1] or address
+    xy = ra.lookup_coords(street, borough or None, _XY_CACHE)
+    try:
+        json.dump(_XY_CACHE, open(ra.ZIP_CACHE, "w"))
+    except Exception:
+        pass
+    return xy
+
+
 def one(rec):
     lo, hi = parse_rents(rec.get("rents"))
     marks = rec.get("markers") or []
@@ -98,6 +117,13 @@ def one(rec):
         lat, lng = float(m.get("lat")), float(m.get("lng"))
     except (TypeError, ValueError):
         pass
+    # A lottery Housing Connect gives no pin for (6-05 129th St, 3743 White
+    # Plains Rd on 2026-11-07) gets one from its address, so its card shows
+    # the street instead of no photo at all.
+    if lat is None and m.get("address"):
+        xy = coords_for(m.get("address"), (rec.get("borough") or "").strip())
+        if xy:
+            lat, lng = xy
     return {
         "id": rec.get("lotteryId"),
         "name": (rec.get("lotteryName") or "").strip(),

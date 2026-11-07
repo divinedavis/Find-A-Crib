@@ -225,6 +225,7 @@ def gate():
        or request.path.startswith("/ai/") \
        or request.path == "/geo" \
        or request.path.startswith("/reports/") \
+       or request.path == "/email/unsubscribe" \
        or request.path.startswith("/embed/") \
        or request.path in DASHBOARD_READ_PATHS:   # own key gate, see _dashboard_auth
         return

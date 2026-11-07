@@ -71,6 +71,10 @@ class OneClickUnsubscribe(unittest.TestCase):
         self.assertNotIn("rpc(", get_branch, "a GET (mail scanners) must never unsubscribe")
         self.assertIn('rate_limited("email_unsub"', body)
         self.assertIn("TOKEN_RE.match(token)", body)
+        # The /v1 API-key gate must let it through, or every click is a 401
+        # (it was, on the first deploy, 2026-11-07).
+        gate = src[src.index("def gate():"):src.index("return", src.index("def gate():"))]
+        self.assertIn('request.path == "/email/unsubscribe"', gate)
         for kind, fn in (("alerts", "unsubscribe_alerts"), ("digest", "unsubscribe_digest"),
                          ("lifecycle", "unsubscribe_lifecycle"), ("casa", "unsubscribe_casa")):
             self.assertIn(f'"{kind}": "{fn}"', src)

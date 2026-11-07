@@ -168,7 +168,7 @@ class BillingNotices(unittest.TestCase):
     def test_cron_runs_it_without_root(self):
         cron = read("deploy", "cron-rentmap-billing")
         line = [l for l in cron.splitlines() if l and not l.startswith(("#", "SHELL", "PATH", "CRON_TZ"))][0]
-        self.assertRegex(line, r"^\*/10 \* \* \* \* scraper .*fac-run supabase,smtp -- .*billing_notices\.py")
+        self.assertRegex(line, r"^\*/10 \* \* \* \* scraper .*flock -n /run/lock/fac-billing.lock fac-run supabase,smtp -- .*billing_notices\.py")
         self.assertIn("/var/log/rentmap-billing.log", read("deploy", "install_jobs.sh"))
         self.assertIn("/var/log/rentmap-billing.log", read("deploy", "logrotate-rentmap"))
 

@@ -5,39 +5,57 @@ import VisionKit
 import MessageUI
 import QuickLook
 import UniformTypeIdentifiers
+import PhotosUI
 
-/// "My application packet" — see Services/Packet.swift. Open to everyone
-/// (it's a tool, not AI, and paying should never be what gets an
-/// application sent). Reached from Profile.
+/// Help me apply (owner, 2026-11-06) and Profile › My documents: one
+/// screen. Everything an agent asks for, scanned or picked from Photos or
+/// Files, kept ON THIS PHONE (Services/Packet.swift), then emailed to the
+/// renter themselves as one PDF to attach when they apply on the agent's
+/// site. Find A Crib never sends anything to an agent and never uploads a
+/// document (owner: "we might not be able to send these documents on behalf
+/// of the user but we can email these documents to the user").
+/// Opened for a listing from a Plus member's re-rental card; without one,
+/// from Profile.
 struct PacketView: View {
-    /// When opened for one listing: the agent's document list, address and email.
-    var needs: [String] = []
-    var listingAddress: String? = nil
-    var agentEmail: String? = nil
-    var emailSubject: String? = nil
-    var emailBody: String? = nil
+    /// The re-rental this was opened for (Help me apply), or nil (Profile).
+    var listing: FeaturedListing? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @Environment(AuthService.self) private var auth
     @State private var packet = Packet.shared
     @State private var editing = false
     @State private var scanFor: Packet.Kind?
     @State private var importFor: Packet.Kind?
+    @State private var uploadFor: Packet.Kind?
+    @State private var showPhotos = false
+    @State private var photoKind: Packet.Kind = .other
+    @State private var photoItems: [PhotosPickerItem] = []
     @State private var preview: URL?
     @State private var showForm = false
     @State private var mail: MailDraft?
+    @State private var share: URL?
     @State private var confirmErase = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    intro
-                    if !needs.isEmpty { needsCard }
-                    profileCard
+                VStack(alignment: .leading, spacing: 14) {
+                    if let listing { listingCard(listing) }
                     documentsCard
-                    formCard
+                    extrasCard
                     sendCard
-                    Button("Delete my packet", role: .destructive) { confirmErase = true }
+                    if listing == nil {
+                        profileCard
+                        formCard
+                    }
+                    Label(listing == nil ? String(localized: "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone.")
+                                         : String(localized: "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time."),
+                          systemImage: listing == nil ? "lock.fill" : "person.crop.circle")
+                        .font(.se(14)).foregroundStyle(SE.ink2)
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
+                    Button("Delete my documents", role: .destructive) { confirmErase = true }
                         .font(.se(15, .semibold)).padding(.top, 4)
                         .opacity(packet.isEmpty ? 0 : 1)
                 }
@@ -45,12 +63,29 @@ struct PacketView: View {
                 .padding(16)
             }
             .background(SE.canvas)
-            .navigationTitle("Application packet").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(listing == nil ? String(localized: "My documents") : String(localized: "Help me apply"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .sheet(isPresented: $editing) { PacketProfileForm() }
             .sheet(item: $scanFor) { k in
                 DocumentScanner { images in if !images.isEmpty { packet.add(kind: k, images: images) } }
                     .ignoresSafeArea()
+            }
+            .confirmationDialog(String(localized: "Add from"), isPresented: Binding(get: { uploadFor != nil }, set: { if !$0 { uploadFor = nil } }), titleVisibility: .visible) {
+                Button("Photos") { if let k = uploadFor { photoKind = k; showPhotos = true }; uploadFor = nil }
+                Button("Files") { importFor = uploadFor; uploadFor = nil }
+            }
+            .photosPicker(isPresented: $showPhotos, selection: $photoItems, maxSelectionCount: 8, matching: .images)
+            .onChange(of: photoItems) { _, items in
+                guard !items.isEmpty else { return }
+                let k = photoKind
+                Task {
+                    var imgs: [UIImage] = []
+                    for it in items { if let d = try? await it.loadTransferable(type: Data.self), let img = UIImage(data: d) { imgs.append(img) } }
+                    // Several photos of one kind become one document (pay stubs: one page each).
+                    if !imgs.isEmpty { packet.add(kind: k, images: imgs) }
+                    photoItems = []
+                }
             }
             .fileImporter(isPresented: Binding(get: { importFor != nil }, set: { if !$0 { importFor = nil } }),
                           allowedContentTypes: [.pdf, .image]) { result in
@@ -59,43 +94,148 @@ struct PacketView: View {
             }
             .sheet(isPresented: $showForm) { FormFillView() }
             .sheet(item: $mail) { m in MailComposer(draft: m).ignoresSafeArea() }
+            .sheet(item: Binding(get: { share.map { SharedFile(url: $0) } }, set: { if $0 == nil { share = nil } })) { f in
+                ActivitySheet(items: [f.url]).ignoresSafeArea()
+            }
             .quickLookPreview($preview)
-            .confirmationDialog(String(localized: "Delete your profile and every document in the packet from this phone?"), isPresented: $confirmErase, titleVisibility: .visible) {
+            .confirmationDialog(String(localized: "Delete your details and every document from this phone?"), isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Delete everything", role: .destructive) { packet.eraseAll() }
             }
-            .onAppear { Analytics.shared.track("packet_open", ["for_listing": listingAddress != nil, "docs": packet.docs.count]) }
+            .onAppear { Analytics.shared.track("packet_open", ["for_listing": listing != nil, "docs": packet.docs.count, "ready": packet.readyCount]) }
         }
     }
 
     // MARK: sections
 
-    private var intro: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Everything an agent asks for, in one place").font(.se(22, .bold))
-            Label("Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself.", systemImage: "lock.fill")
-                .font(.se(15)).foregroundStyle(SE.ink2)
+    private func listingCard(_ f: FeaturedListing) -> some View {
+        HStack(spacing: 12) {
+            if let u = f.imageURLs.first {
+                RemoteImage(url: u).frame(width: 64, height: 64).clipped()
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(f.title.map { "\(f.address), \($0)" } ?? f.address).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2)
+                if let m = f.moneyLine { Text(m.text).font(.se(14)).foregroundStyle(SE.ink2) }
+                Text("Listed by \(f.agent)").font(.se(14)).foregroundStyle(SE.ink2)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var documentsCard: some View {
+        card(String(localized: "Your documents")) {
+            Text("What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file.")
+                .font(.se(14)).foregroundStyle(SE.ink3)
+            let ready = packet.readyCount, total = Packet.Kind.core.count
+            HStack {
+                Text("\(ready) of \(total) ready").font(.se(14, .bold))
+                Spacer()
+                Text("\(Int((Double(ready) / Double(total) * 100).rounded()))%").font(.se(14, .semibold)).foregroundStyle(SE.ink3)
+            }
+            .accessibilityElement(children: .combine).accessibilityIdentifier("packet-progress")
+            ProgressView(value: Double(ready), total: Double(total)).tint(SE.good)
+            ForEach(Packet.Kind.core) { k in kindRow(k) }
         }
     }
 
-    private var needsCard: some View {
-        card(String(localized: "What this listing asks for")) {
-            if let a = listingAddress { Text(a).font(.se(15, .semibold)).foregroundStyle(SE.ink3) }
-            ForEach(packet.needs(needs)) { n in
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: n.have ? "checkmark.circle.fill" : (n.kind == nil ? "circle.dashed" : "circle"))
-                        .foregroundStyle(n.have ? SE.good : SE.ink3).font(.system(size: 18))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(n.item).font(.se(16)).foregroundStyle(SE.ink)
-                        if !n.have, let k = n.kind {
-                            Button("Add \(k.title.lowercased())") { add(k) }.font(.se(14, .semibold)).foregroundStyle(SE.royal)
-                        } else if n.kind == nil {
-                            Text("From the agent — not something the packet holds").font(.se(13)).foregroundStyle(SE.ink3)
-                        }
-                    }
+    private var extrasCard: some View {
+        card(String(localized: "If they apply to you")) {
+            ForEach(Packet.Kind.ifTheyApply) { k in kindRow(k) }
+        }
+    }
+
+    /// One kind: what to add, and either Scan / Upload or what's in.
+    @ViewBuilder private func kindRow(_ k: Packet.Kind) -> some View {
+        let mine = packet.docs.filter { $0.kind == k }
+        let pages = packet.pages(k)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: k.icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(SE.royal)
+                    .frame(width: 34, height: 34).background(SE.paleBlue).clipShape(RoundedRectangle(cornerRadius: 8))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(k.title).font(.se(16, .bold)).foregroundStyle(SE.ink)
+                    Text(k == .payStubs && pages > 0 ? String(localized: "\(k.hint) · \(pages) added") : k.hint)
+                        .font(.se(13)).foregroundStyle(SE.ink3)
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("packet-need")
+                Spacer(minLength: 6)
+                if k == .payStubs && pages > 0 && pages < Packet.payStubsWanted {
+                    Text("\(pages) of \(Packet.payStubsWanted)").font(.se(14, .bold)).foregroundStyle(SE.warn)
+                } else if packet.isReady(k) {
+                    Label("Added", systemImage: "checkmark").font(.se(14, .bold)).foregroundStyle(SE.good)
+                }
+                if !packet.isReady(k) || (k == .payStubs && pages < Packet.payStubsWanted) || k == .other {
+                    addButtons(k)
+                }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("packet-kind-\(k.rawValue)")
+            if k == .payStubs && packet.payStubsStale {
+                Label("Your newest pay stub is over 60 days old. Most agents want the latest ones.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.se(13, .semibold)).foregroundStyle(SE.warn).padding(.leading, 44)
+            }
+            ForEach(mine) { d in docRow(d) }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func addButtons(_ k: Packet.Kind) -> some View {
+        HStack(spacing: 6) {
+            if VNDocumentCameraViewController.isSupported {
+                smallButton(String(localized: "Scan"), id: "packet-scan-\(k.rawValue)") { scanFor = k }
+            }
+            smallButton(String(localized: "Upload"), id: "packet-add-\(k.rawValue)") { uploadFor = k }
+        }
+    }
+
+    private func smallButton(_ title: String, id: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.se(14, .bold)).foregroundStyle(SE.royal)
+                .padding(.horizontal, 10).frame(minHeight: 44)
+                .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line).padding(.vertical, 6))
+        }
+        .buttonStyle(.plain).accessibilityIdentifier(id)
+    }
+
+    private func docRow(_ d: Packet.Doc) -> some View {
+        HStack {
+            Button { preview = packet.url(d) } label: {
+                Label(String(localized: "\(d.title) · \(d.pages) pages"), systemImage: "doc.richtext")
+                    .font(.se(14)).foregroundStyle(SE.ink2)
+            }.buttonStyle(.plain)
+            Spacer()
+            Button(role: .destructive) { packet.remove(d) } label: { Image(systemName: "trash").foregroundStyle(SE.bad) }
+                .buttonStyle(.plain).frame(width: 44, height: 44).accessibilityLabel("Delete \(d.title)")
+        }
+        .padding(.leading, 44)
+    }
+
+    private var sendCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SEPrimaryButton(title: String(localized: "Email them to me"), icon: "envelope") { emailToMe() }
+                .disabled(packet.docs.isEmpty)
+                .accessibilityIdentifier("packet-email")
+            Text(packet.docs.isEmpty ? String(localized: "Add your documents above. Then we'll put them in one PDF and email it to you.")
+                 : listing.map { String(localized: "One PDF with every document, sent to your own email, so it's ready to attach when you apply on \($0.agent)'s site.") }
+                    ?? String(localized: "One PDF with every document, sent to your own email, so it's ready to attach to any application."))
+                .font(.se(13)).foregroundStyle(SE.ink3)
+            HStack(spacing: 12) {
+                SEOutlineButton(title: String(localized: "Save PDF"), icon: "square.and.arrow.down") {
+                    share = packet.combinedPDF()
+                    Analytics.shared.track("packet_save_pdf", ["docs": packet.docs.count])
+                }
+                .disabled(packet.docs.isEmpty)
+                .accessibilityIdentifier("packet-save-pdf")
+                if let out = listing?.outboundURL {
+                    SEPrimaryButton(title: String(localized: "Apply on their site"), icon: "arrow.up.right") {
+                        Analytics.shared.track("outbound", ["kind": "rerental", "agent": listing?.agent ?? "", "href": out.absoluteString, "src": "apply_help"])
+                        openURL(out)
+                    }
+                    .accessibilityIdentifier("packet-apply")
+                }
+            }
+            Text("Applying is free. Never pay anyone to apply — report fee requests to HPD's Inspector General, (212) 825-3502.")
+                .font(.se(13)).foregroundStyle(SE.ink3)
         }
     }
 
@@ -103,7 +243,7 @@ struct PacketView: View {
         card(String(localized: "About you")) {
             let p = packet.profile
             if p.fullName.isEmpty {
-                Text("Your name, contact, address, job and household — typed once, used in every email and form.")
+                Text("Your name, contact, address, job and household — typed once, used in every form.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             } else {
                 Text(p.fullName).font(.se(18, .bold))
@@ -116,43 +256,6 @@ struct PacketView: View {
         }
     }
 
-    private var documentsCard: some View {
-        card(String(localized: "Documents")) {
-            ForEach(Packet.Kind.allCases.filter { $0 != .other }) { k in
-                let mine = packet.docs.filter { $0.kind == k }
-                HStack(spacing: 12) {
-                    Image(systemName: k.icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(SE.royal)
-                        .frame(width: 34, height: 34).background(SE.paleBlue).clipShape(Circle())
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(k.title).font(.se(16, .semibold))
-                        if mine.isEmpty { Text("Not added").font(.se(13)).foregroundStyle(SE.ink3) }
-                    }
-                    Spacer()
-                    Button { add(k) } label: { Image(systemName: "plus.circle.fill").font(.system(size: 24)).foregroundStyle(SE.royal) }
-                        .buttonStyle(.plain).frame(width: 44, height: 44)
-                        .accessibilityLabel("Add \(k.title)").accessibilityIdentifier("packet-add-\(k.rawValue)")
-                }
-                ForEach(mine) { d in docRow(d) }
-            }
-            ForEach(packet.docs.filter { $0.kind == .other }) { d in docRow(d) }
-            Button { add(.other) } label: { Label("Add another document", systemImage: "plus") }
-                .font(.se(15, .semibold)).foregroundStyle(SE.royal)
-        }
-    }
-
-    private func docRow(_ d: Packet.Doc) -> some View {
-        HStack {
-            Button { preview = packet.url(d) } label: {
-                Label(String(localized: "\(d.title) · \(d.pages) pages"), systemImage: "doc.richtext")
-                    .font(.se(15)).foregroundStyle(SE.ink)
-            }.buttonStyle(.plain)
-            Spacer()
-            Button(role: .destructive) { packet.remove(d) } label: { Image(systemName: "trash").foregroundStyle(SE.bad) }
-                .buttonStyle(.plain).frame(width: 44, height: 44).accessibilityLabel("Delete \(d.title)")
-        }
-        .padding(.leading, 46)
-    }
-
     private var formCard: some View {
         card(String(localized: "Fill in an application form")) {
             Text("Got a PDF application from the agent? Open it here and your details go into the matching boxes. You check it, add anything left blank (like your Social Security number) and sign it yourself.")
@@ -162,24 +265,7 @@ struct PacketView: View {
         }
     }
 
-    private var sendCard: some View {
-        card(String(localized: "Send to the agent")) {
-            Text(packet.docs.isEmpty ? String(localized: "Add documents above, then email them in one go from your own Mail.") :
-                    String(localized: "Emails your \(packet.docs.count) documents from your own Mail. Only send what the agent asked for."))
-                .font(.se(15)).foregroundStyle(SE.ink2)
-            SEPrimaryButton(title: String(localized: "Email my packet"), icon: "paperplane") { compose() }
-                .disabled(packet.docs.isEmpty)
-                .accessibilityIdentifier("packet-email")
-            Text("Applying is free. Never pay anyone to apply — report fee requests to HPD's Inspector General, (212) 825-3502.")
-                .font(.se(13)).foregroundStyle(SE.ink3)
-        }
-    }
-
     // MARK: actions
-
-    private func add(_ k: Packet.Kind) {
-        if VNDocumentCameraViewController.isSupported { scanFor = k } else { importFor = k }
-    }
 
     private func importFile(_ url: URL, kind: Packet.Kind) {
         let ok = url.startAccessingSecurityScopedResource()
@@ -192,14 +278,25 @@ struct PacketView: View {
         }
     }
 
-    private func compose() {
-        let p = packet.profile
-        let subject = emailSubject ?? "Application" + (listingAddress.map { " — \($0)" } ?? "")
-        var body = emailBody ?? "Hello,\n\nI'd like to apply. My documents are attached.\n\nThank you,\n\(p.fullName)"
-        body += "\n\nAttached: " + packet.docs.map(\.title).joined(separator: ", ")
-        mail = MailDraft(to: agentEmail.map { [$0] } ?? [], subject: subject, body: body,
-                         files: packet.docs.map { (packet.url($0), $0.title) })
-        Analytics.shared.track("packet_email", ["docs": packet.docs.count, "for_listing": listingAddress != nil])
+    /// One PDF to the renter's own address: the account's email, else the
+    /// one in their details, else blank for them to fill in. Their Mail
+    /// sends it; nothing passes through Find A Crib.
+    private func emailToMe() {
+        guard let pdf = packet.combinedPDF() else { return }
+        let me = Self.myEmail(account: auth.email, details: packet.profile.email)
+        let subject = listing.map { String(localized: "My application documents — \($0.address)") } ?? String(localized: "My application documents")
+        var body = String(localized: "My documents for apartment applications, in one PDF:") + "\n"
+        body += packet.docs.map { "• \($0.title)" }.joined(separator: "\n")
+        if let l = listing { body += "\n\n" + String(localized: "Apply on \(l.agent)'s site: \(l.outboundURL?.absoluteString ?? l.href)") }
+        mail = MailDraft(to: me.map { [$0] } ?? [], subject: subject, body: body,
+                         files: [(pdf, String(localized: "My application documents"))])
+        Analytics.shared.track("packet_email_me", ["docs": packet.docs.count, "for_listing": listing != nil, "has_address": me != nil])
+    }
+
+    static func myEmail(account: String?, details: String) -> String? {
+        if let a = account?.trimmingCharacters(in: .whitespaces), a.contains("@") { return a }
+        let d = details.trimmingCharacters(in: .whitespaces)
+        return d.contains("@") ? d : nil
     }
 
     private func card<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
@@ -208,9 +305,17 @@ struct PacketView: View {
             content()
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(SE.lineSoft))
+        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
     }
+}
+
+/// A file handed to the share sheet (Save PDF).
+struct SharedFile: Identifiable { let url: URL; var id: String { url.path } }
+
+struct ActivitySheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: items, applicationActivities: nil) }
+    func updateUIViewController(_ c: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Profile form

@@ -53,23 +53,41 @@ final class Packet {
         }
     }
 
+    /// Order is the order Help me apply lists them (owner, 2026-11-06).
     enum Kind: String, Codable, CaseIterable, Identifiable {
-        case id, payStubs, taxReturn, employmentLetter, bankStatements, benefits, other
+        case id, w2, payStubs, taxReturn, bankStatements, employmentLetter, benefits, other
         var id: String { rawValue }
+        /// Last calendar year: the W-2 and tax return an agent asks for.
+        static var lastYear: Int { Calendar(identifier: .gregorian).component(.year, from: Date()) - 1 }
         var title: String {
             switch self {
             case .id: String(localized: "Photo ID")
-            case .payStubs: String(localized: "Recent pay stubs")
-            case .taxReturn: String(localized: "Last year's tax return")
+            case .w2: String(localized: "W-2 for \(String(Self.lastYear))")
+            case .payStubs: String(localized: "Pay stubs")
+            case .taxReturn: String(localized: "\(String(Self.lastYear)) tax return")
             case .employmentLetter: String(localized: "Employment letter")
             case .bankStatements: String(localized: "Bank statements")
             case .benefits: String(localized: "Benefits or child-support letters")
-            case .other: String(localized: "Other document")
+            case .other: String(localized: "Anything else they asked for")
+            }
+        }
+        /// The line under the title: what exactly to add.
+        var hint: String {
+            switch self {
+            case .id: String(localized: "Driver's license, passport or IDNYC")
+            case .w2: String(localized: "From every job you had last year")
+            case .payStubs: String(localized: "Your 2 to 4 most recent")
+            case .taxReturn: String(localized: "The full return, all pages")
+            case .employmentLetter: String(localized: "On letterhead, with your salary")
+            case .bankStatements: String(localized: "The last 2 months")
+            case .benefits: String(localized: "SNAP, SSI, unemployment, support orders")
+            case .other: String(localized: "Landlord reference, a letter")
             }
         }
         var icon: String {
             switch self {
             case .id: "person.text.rectangle"
+            case .w2: "doc.plaintext"
             case .payStubs: "banknote"
             case .taxReturn: "doc.text"
             case .employmentLetter: "briefcase"
@@ -82,14 +100,19 @@ final class Packet {
         var words: [String] {
             switch self {
             case .id: ["photo id", "identification", "id", "ids", "government-issued", "driver", "passport", "state id"]
+            case .w2: ["w-2", "w2", "w-2s", "w2s", "wage and tax statement"]
             case .payStubs: ["pay stub", "paystub", "pay stubs", "paycheck", "earnings statement"]
-            case .taxReturn: ["tax return", "1040", "w-2", "w2", "tax transcript", "1099"]
+            case .taxReturn: ["tax return", "1040", "tax transcript", "1099"]
             case .employmentLetter: ["employment letter", "employer letter", "letter from employer", "verification of employment", "employment verification"]
             case .bankStatements: ["bank statement", "bank statements", "assets", "checking", "savings"]
             case .benefits: ["benefit", "social security award", "ssi", "ssdi", "child support", "pension", "public assistance", "unemployment"]
             case .other: []
             }
         }
+        /// What nearly every income-restricted application wants. The rest
+        /// only if they apply to you.
+        static let core: [Kind] = [.id, .w2, .payStubs, .taxReturn, .bankStatements, .employmentLetter]
+        static let ifTheyApply: [Kind] = [.benefits, .other]
     }
 
     struct Doc: Codable, Hashable, Identifiable {
@@ -176,6 +199,46 @@ final class Packet {
     }
 
     var isEmpty: Bool { docs.isEmpty && profile == Profile() }
+
+    // MARK: Help me apply (owner, 2026-11-06)
+
+    /// Pay stubs: agents want the 2 to 4 most recent; 2 is enough to count.
+    static let payStubsWanted = 4
+    static let payStubsEnough = 2
+
+    /// Pages of this kind (a pay stub is usually one page each).
+    func pages(_ k: Kind) -> Int { docs.filter { $0.kind == k }.reduce(0) { $0 + $1.pages } }
+
+    func isReady(_ k: Kind) -> Bool { Self.isReady(k, pages: pages(k)) }
+    nonisolated static func isReady(_ k: Kind, pages: Int) -> Bool {
+        k == .payStubs ? pages >= payStubsEnough : pages > 0
+    }
+
+    /// How many of the core documents are in.
+    var readyCount: Int { Kind.core.filter(isReady).count }
+
+    /// Most agents want pay stubs from the last month or two.
+    var payStubsStale: Bool { Self.stale(docs.filter { $0.kind == .payStubs }.map(\.added), now: Date()) }
+    nonisolated static func stale(_ added: [Date], now: Date) -> Bool {
+        guard let newest = added.max() else { return false }
+        return now.timeIntervalSince(newest) > 60 * 86_400
+    }
+
+    /// Every document as one PDF, in Help me apply's order, kept in the
+    /// packet folder (complete protection, not backed up). Replaced each time.
+    func combinedPDF() -> URL? {
+        let out = PDFDocument()
+        for k in Kind.allCases {
+            for d in docs where d.kind == k {
+                guard let one = PDFDocument(url: url(d)) else { continue }
+                for i in 0..<one.pageCount { if let pg = one.page(at: i) { out.insert(pg, at: out.pageCount) } }
+            }
+        }
+        guard out.pageCount > 0, let data = out.dataRepresentation() else { return nil }
+        let dest = Self.folder.appendingPathComponent(String(localized: "My application documents") + ".pdf")
+        do { try data.write(to: dest, options: [.atomic, .completeFileProtection]) } catch { return nil }
+        return dest
+    }
 
     // MARK: matching a listing's document list
 

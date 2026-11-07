@@ -16,41 +16,36 @@ struct RerentalCard: View {
     @State private var sheet: CardAction?
     private var feed: LotteryFeed { LotteryFeed.shared }
 
-    /// The one button under Share / Apply.
+    /// The one button under Share / Apply (owner, 2026-11-06): Plus gets
+    /// Help me apply; free gets alerts, or real-time alerts once they have
+    /// alerts. Was Broker fee check / Lease review for Plus (10/29).
     enum CardAction: String, Identifiable {
-        case alerts, realtime, brokerFee = "broker_fee", leaseReview = "lease_review"
+        case alerts, realtime, applyHelp = "apply_help"
         var id: String { rawValue }
         var icon: String {
             switch self {
             case .alerts: "bell.badge.fill"
             case .realtime: "bolt.fill"
-            case .brokerFee: "dollarsign.circle"
-            case .leaseReview: "doc.text.magnifyingglass"
+            case .applyHelp: "doc.badge.plus"
             }
         }
         var title: String {
             switch self {
             case .alerts: String(localized: "Get alerts on new re-rentals")
-            case .realtime: String(localized: "Get these alerts the minute they post")
-            case .brokerFee: String(localized: "Check the fees they're asking")
-            case .leaseReview: String(localized: "Have AI review the lease")
+            case .realtime: String(localized: "Get real-time alerts")
+            case .applyHelp: String(localized: "Help me apply")
             }
         }
     }
 
-    /// Not getting re-rental alerts for this borough: the alerts button.
-    /// Getting them without Plus: real-time alerts. With Plus: the first of
-    /// Broker fee check and Lease review this phone hasn't run, else nothing.
-    private var cardAction: CardAction? {
+    private var cardAction: CardAction {
         // subscribed is false whenever signed out (LotteryFeed.refresh).
-        Self.action(covered: feed.alertsCover(rerentalIn: listing.boroughCode), plus: auth.hasPlus,
-                    used: { ToolUsage.used($0.rawValue) })
+        Self.action(covered: feed.alertsCover(rerentalIn: listing.boroughCode), plus: auth.hasPlus)
     }
 
-    static func action(covered: Bool, plus: Bool, used: (CardAction) -> Bool) -> CardAction? {
-        guard covered else { return .alerts }
-        guard plus else { return .realtime }
-        return [CardAction.brokerFee, .leaseReview].first { !used($0) }
+    static func action(covered: Bool, plus: Bool) -> CardAction {
+        if plus { return .applyHelp }
+        return covered ? .realtime : .alerts
     }
 
     var body: some View {
@@ -183,19 +178,16 @@ struct RerentalCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                // Where Help me apply was (owner, 2026-10-27): alerts for the
-                // next re-rental in this borough. Signed out, sign in first.
-                // Already getting them (owner, 2026-10-29: "i shouldnt see
-                // sign up for alerts if im already signed up"): a feature
-                // they have and haven't used, or nothing.
-                if let action = cardAction {
+                // Help me apply for Plus (owner, 2026-11-06); alerts for the
+                // next re-rental in this borough, signed in first; real-time
+                // alerts for someone who already gets them (10/29).
+                if case let action = cardAction {
                     Button {
                         Analytics.shared.track("rerental_card_action", ["action": action.id, "signed_in": auth.isSignedIn])
                         switch action {
                         case .alerts: if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                         case .realtime: sheet = .realtime
-                        case .brokerFee: sheet = .brokerFee
-                        case .leaseReview: sheet = .leaseReview
+                        case .applyHelp: sheet = .applyHelp
                         }
                     } label: {
                         HStack(spacing: 8) {
@@ -213,9 +205,7 @@ struct RerentalCard: View {
                     .sheet(item: $sheet) { which in
                         switch which {
                         case .realtime: PaywallView(source: "realtime")
-                        case .brokerFee: BrokerFeeView(rent: f.moneyKind == "rent" ? f.moneyLow : nil,
-                                                       listingText: [f.title, f.address, String(localized: "Listed by \(f.agent)"), f.href].compactMap { $0 }.joined(separator: "\n"))
-                        case .leaseReview: LeaseReviewView()
+                        case .applyHelp: PacketView(listing: f)
                         case .alerts: EmptyView()   // its own sheets above
                         }
                     }

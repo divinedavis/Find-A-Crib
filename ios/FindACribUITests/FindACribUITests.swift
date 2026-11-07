@@ -269,6 +269,10 @@ final class FindACribUITests: XCTestCase {
         pane.tap()
         let card = app.descendants(matching: .any)["rerental-card"].firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20))
+        // No Rerental / Income-restricted / Move-in deal labels on the photos
+        // here (owner, 2026-11-07); the Search feed keeps them.
+        XCTAssertFalse(app.descendants(matching: .any)["badge-rerental"].firstMatch.exists, "no Rerental label on the Lotteries tab")
+        XCTAssertFalse(app.descendants(matching: .any)["deal-ribbon"].firstMatch.exists, "no Move-in deal label on the Lotteries tab")
         // Help me apply for Plus (owner, 2026-11-06), where Check the fees was.
         let help = app.buttons["rerental-apply_help"].firstMatch
         bringClearOfTabBar(help)

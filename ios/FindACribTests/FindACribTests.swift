@@ -1773,6 +1773,16 @@ final class QualifyAndAITests: XCTestCase {
         XCTAssertEqual(Set(ToolUsage.ids), ["broker_fee", "lease_review"])
     }
 
+    /// A re-rental with no photo carries its coordinates, so the card can show
+    /// the street there (2026-11-07); a feed without them still decodes.
+    func testRerentalCoordinatesDecode() throws {
+        let with = try JSONDecoder().decode(FeaturedListing.self, from: Data(#"{"agent":"MNS","address":"1730 Harrison Ave","href":"x","lat":40.849718,"lng":-73.913916}"#.utf8))
+        XCTAssertEqual(with.lat, 40.849718); XCTAssertEqual(with.lng, -73.913916)
+        XCTAssertTrue(with.imageURLs.isEmpty)
+        let without = try JSONDecoder().decode(FeaturedListing.self, from: Data(#"{"agent":"MNS","address":"1730 Harrison Ave","href":"x"}"#.utf8))
+        XCTAssertNil(without.lat)
+    }
+
     /// Re-rental bedroom sizes (2026-10-04): the feed's own plus the unit
     /// table's rows; none stated = empty, which a Beds filter leaves out.
     func testRerentalBedroomsComeFromFeedAndUnitTable() {

@@ -8,6 +8,12 @@ struct RerentalCard: View {
     let listing: FeaturedListing
     /// Which re-rental slot of the feed this is (0 = the 3rd tile), for the funnel.
     var slot: Int = 0
+    /// The Rerental / Income-restricted / Move-in deal labels on the photo.
+    /// Off on the Lotteries tab, where every card is one (owner, 2026-11-07:
+    /// "remove the move in deal, rerental, and income restricted labels from
+    /// the previews on the lotteries"); on in the Search feed, where the
+    /// Rerental flag keeps a listing from passing for a register building.
+    var photoLabels = true
     @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var auth
     @State private var photo = 0
@@ -74,6 +80,11 @@ struct RerentalCard: View {
                                 }
                             } else if let url = urls.first {
                                 RemoteImage(url: url)
+                            } else if let lat = f.lat, let lng = f.lng {
+                                // No photo from the agent (58 of 125 on
+                                // 2026-11-07): the street at the address, as
+                                // the Housing Connect lottery cards show.
+                                BuildingImage(building: Building(bbl: "rr-" + f.address.filter { $0.isLetter || $0.isNumber }, b: "", a: "", z: nil, lat: lat, lng: lng))
                             }
                         }
                     }
@@ -86,13 +97,15 @@ struct RerentalCard: View {
                         photo = dir == .increment ? min(photo + 1, n - 1) : max(photo - 1, 0)
                     }
                     .accessibilityIdentifier("rerental-photos")
-                SEBadge(text: String(localized: "Rerental"), icon: "key.fill", fill: SE.navy, ink: .white)
-                    .padding(12)
-                    .accessibilityIdentifier("badge-rerental")
-                SEBadge(text: String(localized: "Income-restricted"), fill: .white, ink: SE.ink)
-                    .frame(maxWidth: .infinity, alignment: .topTrailing)
-                    .padding(12)
-                if f.deal != nil {
+                if photoLabels {
+                    SEBadge(text: String(localized: "Rerental"), icon: "key.fill", fill: SE.navy, ink: .white)
+                        .padding(12)
+                        .accessibilityIdentifier("badge-rerental")
+                    SEBadge(text: String(localized: "Income-restricted"), fill: .white, ink: SE.ink)
+                        .frame(maxWidth: .infinity, alignment: .topTrailing)
+                        .padding(12)
+                }
+                if photoLabels, f.deal != nil {
                     Label("Move-in deal", systemImage: "gift.fill")
                         .font(.se(14, .bold)).foregroundStyle(.white)
                         .padding(.horizontal, 11).padding(.vertical, 6).background(SE.good)

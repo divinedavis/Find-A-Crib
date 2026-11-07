@@ -283,7 +283,7 @@ struct LotteriesView: View {
         // slot -1 marks this tab in the re-rental funnel, apart from the
         // search feed's slots 0, 1, 2…
         LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-            ForEach(rerentals) { RerentalCard(listing: $0, slot: -1) }
+            ForEach(rerentals) { RerentalCard(listing: $0, slot: -1, photoLabels: false) }
         }
         .padding(.horizontal, 16)
         Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table.")

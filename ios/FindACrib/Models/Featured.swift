@@ -44,6 +44,11 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// deposit, fees cut), read by rerental_deals.py; nil when it names none
     /// (owner, 2026-10-27: no box without the agent's own words).
     var deal: Deal?
+    /// Where the building is, from its address (rerental_address.lookup_coords,
+    /// 2026-11-07). A listing with no photo of its own shows Apple's street
+    /// view here instead of an empty frame.
+    var lat: Double?
+    var lng: Double?
 
     struct Deal: Codable, Hashable, Sendable {
         struct Perk: Codable, Hashable, Sendable {
@@ -61,7 +66,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     var id: String { href + "|" + address }
 
     enum CodingKeys: String, CodingKey {
-        case agent, title, address, borough, zip, units, beds, href, image, images, deal
+        case agent, title, address, borough, zip, units, beds, href, image, images, deal, lat, lng
         case imageExterior = "image_exterior"
         case agentPage = "agent_page", moneyKind = "money_kind", moneyLow = "money_low", moneyHigh = "money_high"
         case income1pMax = "income_1p_max", hrefKind = "href_kind"
@@ -87,6 +92,8 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         image = try c.decodeIfPresent(String.self, forKey: .image)
         images = try? c.decodeIfPresent([String].self, forKey: .images)
         imageExterior = try c.decodeIfPresent(Bool.self, forKey: .imageExterior) ?? false
+        lat = try? c.decodeIfPresent(Double.self, forKey: .lat)
+        lng = try? c.decodeIfPresent(Double.self, forKey: .lng)
         // A deal the app can't read never costs the listing its tile.
         deal = (try? c.decodeIfPresent(Deal.self, forKey: .deal)).flatMap { $0?.perks.isEmpty == false ? $0 : nil }
     }

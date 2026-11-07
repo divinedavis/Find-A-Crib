@@ -712,6 +712,17 @@ def _postal_html():
     return f'<span style="color:{INK3};text-decoration:none">{esc(POSTAL)}</span>'
 
 
+def account_unsub_url(token, kind="alerts"):
+    """One-click unsubscribe for the account emails (api_server.py
+    /email/unsubscribe). `kind` is alerts (saved-building alerts), digest (the
+    Tuesday round-up) or lifecycle (the account series). The SAME url goes in
+    the footer link and the List-Unsubscribe header: a GET hands over to the
+    page's #unsub handler, a one-click POST unsubscribes on the server. The old
+    findacrib.com/#unsub= header never reached a server at all."""
+    from urllib.parse import quote
+    return f"{SITE}/api/email/unsubscribe?k={quote(kind)}&t={quote(str(token))}"
+
+
 def postal_text():
     """The postal line for a hand-built email (one that doesn't go through
     render() / render_alert()), so every sender prints the same address."""

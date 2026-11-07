@@ -270,7 +270,7 @@ def report_line(r):
 EMAIL_REPORTS = 8
 
 
-def crime_email(emailkit, bbl, address, counts, reports, after, through):
+def crime_email(emailkit, bbl, address, counts, reports, after, through, unsub=None):
     """The crime alert's (html, text): the count, then each report listed,
     newest first, and a link to the full list on Your Crib."""
     title, body = crime_text(address, counts, after, through)
@@ -288,7 +288,8 @@ def crime_email(emailkit, bbl, address, counts, reports, after, through):
         title=title, intro=body + ". From the NYPD's newest quarterly release. Locations are rounded to the block by the NYPD.",
         tag=("Your Casa", "warn"), blocks=blocks,
         cta=(f"See all {n} on Your Crib" if n > len(rows) else "See them on Your Crib", link),
-        footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
+        footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/",
+        unsub_url=unsub, unsub_label="Stop Your Crib alerts")
 
 
 def metres(a_lat, a_lng, b_lat, b_lng):
@@ -357,8 +358,27 @@ def email_parts(emailkit, watch, calls):
         tag=("Your Casa", "warn"), blocks=blocks,
         cta=("See every call on your building", link),
         link=("File your own 311 complaint", "https://portal.311.nyc.gov/"),
-        footer_note=f"You're watching {address} with Find A Crib Plus. Stop any time in Your Crib: {SITE}/casa/")
+        footer_note=f"You're watching {address} with Find A Crib Plus. Stop any time in Your Crib: {SITE}/casa/",
+        unsub_url=watch.get("unsub"), unsub_label="Stop Your Crib alerts")
     return f"New 311 call{'s' if n != 1 else ''} at {address}", html, text
+
+
+def attach_unsub(watches, key):
+    """w["unsub"] = the one-click unsubscribe url, from the account's
+    alert_prefs token. A watch without a token keeps the Your Crib link only."""
+    from growth import emailkit
+    ids = [w["user_id"] for w in watches if w.get("user_id")]
+    if not ids:
+        return
+    try:
+        rows = rest("alert_prefs?select=user_id,token&user_id=in.(" + ",".join(ids) + ")", key) or []
+    except Exception as e:
+        print(f"unsubscribe tokens unavailable ({type(e).__name__})")
+        return
+    tok = {r["user_id"]: r["token"] for r in rows if r.get("token")}
+    for w in watches:
+        if tok.get(w.get("user_id")):
+            w["unsub"] = emailkit.account_unsub_url(tok[w["user_id"]], "casa")
 
 
 def send(w, title, body, key, collapse, subject, html, text, dry, crime=False):
@@ -387,7 +407,9 @@ def send(w, title, body, key, collapse, subject, html, text, dry, crime=False):
             print(f"   token upkeep failed: {type(e).__name__}")
     from growth import emailkit
     try:
-        emailkit.send(w["email"], subject, html, text)
+        # One-click unsubscribe (CAN-SPAM, 2026-11-07): the List-Unsubscribe
+        # POST deletes the watch, same as Stop in Your Crib.
+        emailkit.send(w["email"], subject, html, text, unsub_url=w.get("unsub"))
         return pushed, 1
     except Exception as e:
         print(f"   email failed: {type(e).__name__}")
@@ -432,7 +454,8 @@ def run_crime(w, key, newest, dry):
             except Exception as e:   # the count still goes out without the list
                 print(f"   report list failed: {type(e).__name__}")
                 reports = []
-            html, text = crime_email(emailkit, w["bbl"], w.get("address"), counts, reports, seen, newest)
+            html, text = crime_email(emailkit, w["bbl"], w.get("address"), counts, reports, seen, newest,
+                                     unsub=w.get("unsub"))
             sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry, crime=True)
     if not dry:
         rest(f"casa_watches?user_id=eq.{w['user_id']}", key, "PATCH", {"crime_seen": newest}, prefer="return=minimal")
@@ -482,6 +505,7 @@ def main():
         return print("casa: quiet hours, nothing sent until 8 AM")
     watches = rest("casa_watches?select=user_id,email,bbl,address,last_seen,last_sent,created_at,lat,lng,crime_kinds,crime_seen", key) or []
     now = datetime.datetime.now(datetime.timezone.utc)
+    attach_unsub(watches, key)
     newest = ""
     if any(w.get("crime_kinds") for w in watches):
         try:

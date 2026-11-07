@@ -280,9 +280,10 @@ def _parse_ts(v):
 
 
 def _unsub(token):
-    # Reuses the site's existing #unsub handler, with k=lifecycle so it stops
-    # only this sequence and leaves saved-building alerts working.
-    return f"{SITE}/#unsub={token}&k=lifecycle"
+    # k=lifecycle stops only this sequence and leaves saved-building alerts
+    # working. The API url (not the old findacrib.com/#unsub= one) so the
+    # List-Unsubscribe one-click POST reaches a server (CAN-SPAM, 2026-11-07).
+    return emailkit.account_unsub_url(token, "lifecycle")
 
 
 # -------------------------------------------------------------------- copy

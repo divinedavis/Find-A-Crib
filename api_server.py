@@ -1181,6 +1181,60 @@ def alerts_unsubscribe():
     return jsonify(ok=bool(ok))
 
 
+# One-click unsubscribe for the ACCOUNT emails (CAN-SPAM, 2026-11-07):
+# saved-building alerts, the Tuesday round-up and the account lifecycle
+# series. Their List-Unsubscribe header used to be https://findacrib.com/#unsub=…
+# — a fragment never reaches a server, so Gmail's and Apple Mail's one-click
+# POST landed on the bare home page and unsubscribed nobody. The token is the
+# account's alert_prefs.token (a random uuid); `k` picks which mail stops.
+EMAIL_UNSUB_RPC = {"alerts": "unsubscribe_alerts", "digest": "unsubscribe_digest",
+                   "lifecycle": "unsubscribe_lifecycle", "casa": "unsubscribe_casa"}
+_UNSUB_PAGE = ("<!doctype html><meta charset=utf-8>"
+               "<meta name=viewport content='width=device-width,initial-scale=1'>"
+               "<meta name=robots content='noindex,nofollow'>"
+               "<title>{title} — Find A Crib</title>"
+               "<style>body{{font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"
+               "max-width:520px;margin:12vh auto;padding:0 22px;color:#111}}h1{{font-size:21px}}"
+               "p{{color:#5a5f6a}}a{{color:#1a56db}}button{{font:inherit;font-weight:700;color:#fff;"
+               "background:#1a63d6;border:0;border-radius:10px;padding:12px 20px;cursor:pointer}}</style>"
+               "<h1>{title}</h1>{body}"
+               "<p><a href='https://findacrib.com/'>Back to Find A Crib →</a></p>")
+
+
+@app.route("/email/unsubscribe", methods=["GET", "POST"])
+def email_unsubscribe():
+    token = str(request.args.get("t") or request.form.get("t") or "").strip().lower()
+    kind = str(request.args.get("k") or request.form.get("k") or "alerts").strip().lower()
+    if not TOKEN_RE.match(token) or kind not in EMAIL_UNSUB_RPC:
+        return jsonify(error="bad_token"), 400
+    if request.method == "GET":
+        # Mail scanners follow links, so a GET never unsubscribes. The map
+        # page's #unsub handler does it for the account kinds; Your Crib has
+        # no such handler, so it gets a one-button page that POSTs back here.
+        if kind == "casa":
+            body = ("<p>Stop the emails and iPhone alerts about the building you watch in Your Crib?</p>"
+                    "<form method=post action='/api/email/unsubscribe'>"
+                    f"<input type=hidden name=k value=casa><input type=hidden name=t value='{token}'>"
+                    "<button type=submit>Stop Your Crib alerts</button></form>")
+            return app.response_class(_UNSUB_PAGE.format(title="Stop Your Crib alerts", body=body),
+                                      mimetype="text/html")
+        tail = "" if kind == "alerts" else f"&k={kind}"
+        return redirect(f"https://findacrib.com/#unsub={token}{tail}", code=302)
+    if rate_limited("email_unsub", 60, 3600):
+        return _too_many()
+    try:
+        ok = rpc(EMAIL_UNSUB_RPC[kind], {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    # Same answer for a real and an unknown token: no oracle over tokens.
+    if request.form.get("k"):   # the casa page's form, a person not a mail client
+        return app.response_class(_UNSUB_PAGE.format(
+            title="You're unsubscribed",
+            body="<p>Your Crib alerts are off. Pick a building again in Your Crib any time.</p>"),
+            mimetype="text/html")
+    return jsonify(ok=True, unsubscribed=bool(ok) or None)
+
+
 # Alert-email click counter (2026-09-12). lottery_alerts.py:track_links routes
 # every link in an alert email through here: record who clicked, then 302 on.
 # The signature must match lottery_alerts.alert_link_sig byte for byte. A bad

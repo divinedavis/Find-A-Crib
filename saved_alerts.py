@@ -445,7 +445,7 @@ def render_changes(user, items, buildings, emailkit):
         title = f"{len(ordered)} buildings you saved changed." if len(ordered) > 1 else "A building you saved changed."
         cta = ("Open your saved buildings", f"{SITE}/?src=saved#list")
     subject = subject_for(items, buildings, home)
-    unsub = f"{SITE}/#unsub={user['token']}"
+    unsub = emailkit.account_unsub_url(user["token"])
     html, text = emailkit.render_alert(
         title=title, eyebrow="A building you saved", tag=tag,
         blocks=blocks, cta=cta,
@@ -577,7 +577,7 @@ def render_digest(user, pending, buildings, s8, feeds, seen, emailkit, now,
         intro = ("The week on the buildings you saved and in the boroughs you look at. "
                  "Alerts the morning something changes continue as usual.")
     tok = user["token"]
-    unsub = f"{SITE}/#unsub={tok}&k=digest"
+    unsub = emailkit.account_unsub_url(tok, "digest")
     blocks.append({"type": "note",
                    "text": "Stop just this round-up (alerts on your saved buildings keep working): "
                            f"{unsub}"})

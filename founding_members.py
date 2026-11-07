@@ -33,6 +33,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
+from growth import emailkit
+
 # Who has already been mailed, so a re-run or a crash mid-batch can't send the
 # same person a second free membership. Beside the script, not in the DB: this
 # is a record of what this tool did, not product state.
@@ -88,6 +90,11 @@ more to me than the $4.99.
 
 -- Divine, Find A Crib
 https://findacrib.com
+
+--
+You're getting this because you have a Find A Crib account.
+Unsubscribe: {unsub}
+{postal}
 """
 
 HTML = """<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
@@ -115,21 +122,38 @@ HTML = """<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Ro
      that&rsquo;s worth more to me than the $4.99.</p>
   <p style="margin-top:22px">&mdash; Divine, Find A Crib<br>
      <a href="https://findacrib.com" style="color:#2f57ff">findacrib.com</a></p>
+  <p style="margin-top:26px;padding-top:12px;border-top:1px solid #e3e8ef;color:#9aa3af;font-size:12px">
+     You&rsquo;re getting this because you have a Find A Crib account.
+     <a href="{unsub}" style="color:#9aa3af">Unsubscribe</a><br>{postal}</p>
 </div>"""
 
 
-def send_email(to_addr, pw, dry=False):
+def build(token):
+    """(text, html, unsub_url) for one recipient. CAN-SPAM (2026-11-07): this
+    is promotional mail, so it carries a working one-click unsubscribe (the
+    account's alert_prefs token, k=lifecycle — the same opt-out as the account
+    series) and the postal address. The first send (2026-09) had neither."""
+    unsub = emailkit.account_unsub_url(token, "lifecycle")
+    postal = emailkit.postal_text()
+    return (TEXT.format(unsub=unsub, postal=postal),
+            HTML.format(unsub=emailkit.esc(unsub), postal=emailkit.esc(postal)), unsub)
+
+
+def send_email(to_addr, pw, token, dry=False):
     if dry:
         print(f"  [dry-run] would email {to_addr}")
         return
+    text, html, unsub = build(token)
     msg = MIMEMultipart("alternative")
     msg["Subject"] = SUBJECT
     msg["From"] = f"{FROM_NAME} <{FROM_ADDR}>"
     msg["To"] = to_addr
     # A real Reply-To, because the mail asks for a reply and means it.
     msg["Reply-To"] = FROM_ADDR
-    msg.attach(MIMEText(TEXT, "plain"))
-    msg.attach(MIMEText(HTML, "html"))
+    msg["List-Unsubscribe"] = f"<{unsub}>"
+    msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+    msg.attach(MIMEText(text, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as s:
         s.ehlo(); s.starttls(); s.ehlo()
         s.login(FROM_ADDR, pw)
@@ -154,7 +178,9 @@ def main():
         sys.exit("no findacrib-smtp in keychain")
 
     if args.test_email:
-        send_email(args.test_email, pw)
+        # A well-formed token that matches no account: the link works, and
+        # unsubscribes nobody.
+        send_email(args.test_email, pw, "00000000-0000-0000-0000-000000000000")
         return 0
 
     token = keychain("supabase-pat-clockin")
@@ -166,9 +192,11 @@ def main():
     # "accounts without Plus" is empty and the send would reach nobody. The
     # cohort is therefore defined by the tag the grant wrote, not by its absence.
     rows = sb_query(token, """
-        select u.id::text as id, u.email
+        select u.id::text as id, u.email, p.token::text as token,
+               p.lifecycle_unsubscribed_at is not null as opted_out
         from auth.users u
         left join public.subscriptions s on s.user_id = u.id
+        left join public.alert_prefs p on p.user_id = u.id
         where u.email is not null and u.email <> ''
           and (s.user_id is null                      -- never had a row: still to grant
                or not public.has_plus(u.id)           -- lapsed
@@ -178,7 +206,10 @@ def main():
     already = set()
     if SENT_LOG.exists():
         already = set(json.loads(SENT_LOG.read_text()))
-    fresh = [r for r in rows if r["email"] not in already]
+    # Promotional: nobody who opted out, and nobody without a token to give
+    # them a working unsubscribe link.
+    fresh = [r for r in rows if r["email"] not in already
+             and r.get("token") and not r.get("opted_out")]
     print(f"{len(rows)} in the founding cohort · {len(already)} already mailed · "
           f"{len(fresh)} to mail now")
     for r in fresh:
@@ -216,7 +247,7 @@ def main():
     sent = failed = 0
     for r in rows_to_mail:
         try:
-            send_email(r["email"], pw)
+            send_email(r["email"], pw, r["token"])
             sent += 1
             already.add(r["email"])
             SENT_LOG.write_text(json.dumps(sorted(already), indent=1))

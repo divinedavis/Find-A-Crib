@@ -103,11 +103,9 @@ The header slides away as you scroll results and lotteries, and the tab bar shri
 
 REVIEW_NOTES = """VERSION 1.3.7 (build __BUILD__)
 New since 1.3.6:
-- Help me apply / My documents: the renter keeps application documents (ID, W-2, pay stubs, etc.) in the app by scanning (camera, with the usage string shown) or picking from Photos/Files. Documents are stored ONLY on the device (file protection complete, excluded from backup), never uploaded to our servers and never sent to a landlord or agent. "Email them to me" opens Apple's Mail composer addressed to the user's own email with one merged PDF; the user sends it themselves. Where: Profile > "My documents" (no subscription needed); Plus members also get "Help me apply" on re-rental cards.
-- Your Crib lists individual NYPD complaint reports (NYC Open Data) under the crime chart.
-- Pest records are public data and now open without signing in.
-- Re-rental cards show move-in deals quoted from the agent's own listing; scroll-away header and smaller tab bar.
-No new third-party SDKs; no data collected beyond 1.3.6.
+- My documents / Help me apply: the renter scans (camera) or picks (Photos/Files) application documents. Stored ONLY on the device (complete file protection, excluded from backup); never uploaded, never sent to a landlord or agent. "Email them to me" opens Apple's Mail composer to the user's own address with one PDF. Profile > "My documents" (no subscription); Plus adds "Help me apply" on re-rental cards.
+- Your Crib lists each NYPD report (NYC Open Data); pest records open signed out; re-rental move-in deals; scroll-away header.
+No new SDKs or data collected.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 
@@ -117,12 +115,12 @@ Where: Your Crib tab > set an address (e.g. 90 Atlantic Ave, Brooklyn) > "Buildi
 - Report: long-press any message > Report. The reporter's phone sends that one message's text to us; reports are emailed to the developer within 15 minutes and acted on within 24 hours (message removed, sender banned from every chat).
 - Block: long-press > Block hides that person's messages for you.
 - Leave: the menu in the chat.
-Members see only messages sent after they joined. No new third-party SDKs and no new data collected beyond the encrypted messages.
+Members see only messages sent after they joined.
 
-ALSO IN THE APP (unchanged since 1.2.9): renter tools under Profile > "Already have a place?", the "Lotteries closing soon" widget, Siri shortcuts, Add to Calendar (Apple's own editor, no calendar permission), Handoff, Broker fee check and Lease review (Plus; AI runs on-device with Apple Intelligence, otherwise on Anthropic's Claude via our server, never sending the renter's name). Deep links: findacrib://lotteries, findacrib://building/<id>, findacrib://tool/<name>.
+ALSO IN THE APP (unchanged since 1.2.9): renter tools under Profile > "Already have a place?", the "Lotteries closing soon" widget, Siri shortcuts, Add to Calendar (Apple's own editor, no calendar permission), Handoff, Broker fee check and Lease review (Plus; AI runs on-device with Apple Intelligence, otherwise on Anthropic's Claude via our server, never sending the renter's name).
 
 TO SEE THE FEATURES
-Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
+Demo account in App Review Information: Profile > "Continue with email". The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
 
 SIGN IN WITH APPLE
 If the device has no Apple Account signed in, Apple returns an error; the app says so in plain words and points to Google or email. The demo account avoids this.
@@ -153,7 +151,12 @@ AGE_RATING = {
     "violenceRealisticProlongedGraphicOrSadistic": "NONE",
     # Advertising: Google AdMob banners (App Review 2.3.6, 2026-10-03).
     "advertising": True, "ageAssurance": False, "gambling": False, "healthOrWellnessTopics": False,
-    "lootBox": False, "messagingAndChat": False, "parentalControls": False,
+    "lootBox": False, "parentalControls": False,
+    # Building chat (1.3.3) is user-to-user messaging, so messagingAndChat is
+    # Yes. Not social media: no profiles, following or feed, only per-building
+    # comments and chat (Apple made socialMedia required, 2026-11-08; the
+    # newer fields are booleans and must all go in one PATCH).
+    "messagingAndChat": True, "socialMedia": False, "socialMediaAgeRestricted": False,
     # Comments on a building are user-generated (1.2.3, build 65): reportable,
     # blockable, filtered, and removable by their author.
     "unrestrictedWebAccess": False, "userGeneratedContent": True,

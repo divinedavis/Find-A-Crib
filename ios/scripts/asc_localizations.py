@@ -183,11 +183,51 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Chat del edificio renovado: tus mensajes a la derecha; mantén presionado para reaccionar, responder o anular el envío; desliza para responder o ver la hora, y un botón para ir a lo más reciente.\n• Filtro Sin plagas: oculta edificios con plagas citadas por HPD en los últimos 12 meses.\n• \"Ayúdame a solicitar\" ahora adjunta tus documentos guardados al enviar el correo al agente.\n• Las quejas abiertas se cuentan en vivo y coinciden con la lista.\n• Los resultados dicen \"69 edificios\", no solo \"69\".\n• Otras mejoras.",
-    "zh-Hans": "• 楼内聊天全新设计：你的消息显示在右侧；长按可回应、回复或撤回；滑动可回复或查看时间；一键跳到最新消息。\n• “没有害虫”筛选：隐藏过去 12 个月内被 HPD 记录有虫害的楼宇。\n• “帮我申请”发送邮件给中介时，会附上你已保存的文件。\n• 未处理投诉数量实时更新，与列表一致。\n• 搜索结果显示“69 栋楼”，而不只是“69”。\n• 其他改进。",
-    "zh-Hant": "• 樓內聊天全新設計：你的訊息顯示在右側；長按可回應、回覆或收回；滑動可回覆或查看時間；一鍵跳到最新訊息。\n• 「沒有害蟲」篩選：隱藏過去 12 個月內被 HPD 記錄有蟲害的大樓。\n• 「幫我申請」寄信給仲介時，會附上你已儲存的文件。\n• 未處理投訴數量即時更新，與列表一致。\n• 搜尋結果顯示「69 棟大樓」，而不只是「69」。\n• 其他改進。",
-    "ru": "• Новый чат дома: ваши сообщения справа; удерживайте, чтобы отреагировать, ответить или отменить отправку; смахните, чтобы ответить или увидеть время; кнопка перехода к новым сообщениям.\n• Фильтр «Без вредителей»: скрывает дома, где HPD фиксировал вредителей за последние 12 месяцев.\n• «Помогите подать заявку» теперь прикладывает ваши сохранённые документы к письму агенту.\n• Число открытых жалоб обновляется в реальном времени и совпадает со списком.\n• В результатах поиска теперь «69 домов», а не просто «69».\n• Небольшие исправления.",
-    "ko": "• 새로워진 건물 채팅: 내 메시지는 오른쪽에, 길게 눌러 반응·답장·전송 취소, 밀어서 답장하거나 시간 보기, 최신 메시지로 이동하는 버튼.\n• 해충 없음 필터: 지난 12개월 동안 HPD에서 해충이 적발된 건물을 숨깁니다.\n• \"신청 도와줘요\"로 중개인에게 이메일을 보낼 때 저장한 서류가 첨부됩니다.\n• 미해결 민원 수가 실시간으로 표시되며 목록과 일치합니다.\n• 검색 결과에 \"69\" 대신 \"건물 69개\"로 표시됩니다.\n• 기타 개선.",
+    "es-MX": """"Ayúdame a solicitar", para miembros Plus: guarda tu identificación, W-2, talones de pago, declaración de impuestos, estados de cuenta y carta de empleo en un solo lugar, escanéalos o súbelos, y envíate el paquete completo por correo como un solo PDF. Tus documentos se quedan en tu teléfono. Cualquiera puede prepararlos en Perfil > Mis documentos.
+
+Tu Crib ahora muestra cada reporte del NYPD cerca de tu edificio, no solo la gráfica, y una alerta de delitos abre directamente esos reportes.
+
+Las tarjetas de re-alquileres muestran ofertas de mudanza cuando el anuncio del agente las menciona, como meses gratis o un depósito menor, y ofrecen alertas de re-alquileres en ese condado. Los re-alquileres sin foto muestran la vista de la calle.
+
+Los registros de plagas (chinches, ratas y violaciones por plagas) se abren sin cuenta.
+
+El encabezado se oculta al desplazarte por los resultados y las loterías, y la barra de pestañas se hace más pequeña. Además, otras mejoras.""",
+    "zh-Hans": """“帮我申请”（Plus 会员）：把身份证件、W-2、工资单、报税表、银行对账单和在职证明集中保存，可扫描或上传，并把整套材料合成一个 PDF 发到你自己的邮箱。你的文件只保存在你的手机上。所有人都可以在“个人资料 > 我的文件”中准备材料。
+
+“你的住处”现在会列出楼宇附近的每一条 NYPD 报告，而不只是图表；点开犯罪提醒会直接看到这些报告。
+
+再出租卡片会在中介房源注明优惠时显示入住优惠，例如免租月份或较低押金，并提供该区的再出租提醒。没有照片的再出租房源会显示街景。
+
+虫害记录（臭虫、老鼠和虫害违规）无需账号即可查看。
+
+浏览搜索结果和抽签时，页头会随滚动隐藏，标签栏也会缩小。另有其他改进。""",
+    "zh-Hant": """「幫我申請」（Plus 會員）：把身分證件、W-2、薪資單、報稅表、銀行對帳單和在職證明集中保存，可掃描或上傳，並把整套資料合成一個 PDF 寄到你自己的信箱。你的文件只保存在你的手機上。所有人都可以在「個人檔案 > 我的文件」中準備資料。
+
+「你的住處」現在會列出大樓附近的每一筆 NYPD 報告，而不只是圖表；點開犯罪提醒會直接看到這些報告。
+
+再出租卡片會在仲介刊登內容註明優惠時顯示入住優惠，例如免租月份或較低押金，並提供該區的再出租提醒。沒有照片的再出租物件會顯示街景。
+
+蟲害紀錄（臭蟲、老鼠和蟲害違規）不需帳號即可查看。
+
+瀏覽搜尋結果和抽籤時，頁首會隨捲動隱藏，標籤列也會縮小。另有其他改進。""",
+    "ru": """«Помогите подать заявку» для участников Plus: храните удостоверение личности, W-2, расчётные листки, налоговую декларацию, банковские выписки и справку с работы в одном месте, сканируйте или загружайте их и отправляйте весь пакет себе на почту одним PDF. Документы остаются на вашем телефоне. Подготовить их может каждый: Профиль > Мои документы.
+
+«Ваш дом» теперь показывает каждое сообщение NYPD рядом с вашим домом, а не только график, и уведомление о преступлении открывается прямо на этих сообщениях.
+
+Карточки повторной аренды показывают условия при въезде, если агент указал их в объявлении, например бесплатные месяцы или меньший залог, и предлагают уведомления о повторной аренде в этом районе. Если у объявления нет фото, показывается вид улицы.
+
+Записи о вредителях (клопы, крысы и нарушения по вредителям) открываются без аккаунта.
+
+Заголовок скрывается при прокрутке результатов и лотерей, а панель вкладок становится меньше. И другие улучшения.""",
+    "ko": """Plus 회원을 위한 "신청 도와줘요": 신분증, W-2, 급여 명세서, 세금 신고서, 은행 거래 내역서, 재직 증명서를 한곳에 보관하고, 스캔하거나 업로드한 뒤 전체 서류를 PDF 하나로 내 이메일에 보낼 수 있습니다. 서류는 내 휴대폰에만 저장됩니다. 누구나 프로필 > 내 서류에서 준비할 수 있습니다.
+
+내 집 탭에서 이제 차트뿐 아니라 건물 근처의 NYPD 신고를 하나하나 볼 수 있고, 범죄 알림을 누르면 바로 그 신고 목록이 열립니다.
+
+재임대 카드에 중개인 매물에 적힌 입주 혜택(무료 개월, 보증금 할인 등)이 표시되며, 해당 자치구의 재임대 알림을 받을 수 있습니다. 사진이 없는 재임대 매물은 거리 사진을 보여 줍니다.
+
+해충 기록(빈대, 쥐, 해충 위반)은 계정 없이도 볼 수 있습니다.
+
+검색 결과와 추첨 목록을 스크롤하면 헤더가 사라지고 탭 바가 작아집니다. 그 밖의 개선 사항도 있습니다.""",
 }
 
 

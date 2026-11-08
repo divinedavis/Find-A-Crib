@@ -497,6 +497,106 @@ def _stats_block(rows, live_label="rent-stabilized buildings with live listings"
         f"<div class='stat'><b>{v}</b><span>{_esc(l)}</span></div>" for v, l in cells) + "</div>"
 
 
+# ------------------------------------------------- which neighborhoods, per boro
+#
+# The answer to the question a reader asks straight after "how many?" on a
+# /section8/<boro>/ page, and the one kind of block those pages had none of.
+# The hub carries SECTION8_FAQ and _faq_jsonld; the borough pages carry
+# neither, and the Neighborhood column of a 161-row table is not an answer — a
+# reader scrolling it cannot see that 17 of the Bronx's voucher-listed
+# buildings are in Williamsbridge-Olinville and 16 in Belmont.
+#
+# COPYING THE HUB'S FAQ DOWN WAS THE OBVIOUS MOVE AND IS THE WRONG ONE. The
+# same five Q&A pairs on five sibling pages is boilerplate, and /section8/
+# already shares 27% of its 1,124 words with its siblings (t_page_uniqueness,
+# 2026-11-07) — third-worst of the sections an active technique owns. Every
+# number here is computed from THAT borough's own rows, so this is different
+# text on each of the five pages rather than the same text five times.
+#
+# AND IT IS THE ONLY INTERNAL LINK THIS LOOP CAN STILL DEPLOY. The growth
+# engine has been paused since 2026-11-07 (owner: "stop the growth engine"),
+# and growth/section8_refresh.py is the one live job that renders from this
+# file — so /section8/ is the only tier on the site whose links can change at
+# all until it is un-paused. The tier these links point INTO, T019's 198
+# neighborhood hubs, is the one the index census says Google accepted and
+# later dropped: 2 of its URLs were read as indexed at some point, none are
+# now, and the newest fetch of any dropped one is 2026-08-24. A fresh link
+# from a page rebuilt nightly is therefore the only lever left here. It is a
+# lever and not a prediction: /section8/'s own 6 URLs have never once been
+# fetched in 74 days of being linked, in sitemap-daily.xml and IndexNow-
+# submitted, so a link from it may well reach nobody.
+#
+# WHAT THE COUNTS ARE NOT, WHICH MATTERS MORE THAN WHAT THEY ARE. "Belmont
+# (16)" is sixteen buildings ON THIS PAGE — not sixteen rent-stabilized
+# buildings in Belmont, of which the neighborhood hub shows hundreds. A reader
+# who takes the first reading has been told something false about the housing
+# stock of a real neighborhood, which is the one kind of error this site
+# cannot afford, so the note under the list says which reading is the right
+# one and degrades to the feed's date with every other claim on the tier.
+def _nb_breakdown(ctx, brows, boro, now_phrase, stale):
+    """Neighborhood breakdown for one borough's voucher listings, or "".
+
+    Empty on fewer than two NAMED neighborhoods: with one there is nothing to
+    break down that the table's Neighborhood column does not already say, and
+    with none there is nothing to break down at all.
+    """
+    counts = {}
+    for r in brows:
+        nb = (r.get("nb") or "").strip()
+        if nb:
+            counts[nb] = counts.get(nb, 0) + 1
+    if len(counts) < 2:
+        return ""
+    # Busiest first, then alphabetical — so a tie does not reshuffle the list
+    # from one night to the next and read as the data having moved.
+    ordered = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    boro_slug = BORO_SLUG.get(boro, "nyc")
+
+    items = []
+    for nb, c in ordered:
+        label = f"{_esc(nb)} ({c:,})"
+        rel = f"neighborhood/{boro_slug}/{_slugify(nb)}/index.html"
+        # Gated for exactly the reason the hub's borough links are gated, and
+        # the slug is built the same way build_seo.py's nb_url() builds it
+        # (BORO_SLUG and slugify are identical in both files). 198 neighborhood
+        # hubs are published and NYC has more NTAs than that, so an ungated
+        # link would advertise a URL that 404s. Plain text is worse than a link
+        # and far better than a dead one.
+        if ctx.live_or_staged(rel):
+            items.append(f"<a href='/{rel[:-len('index.html')]}'>{label}</a>")
+        else:
+            # Inline rather than a CSS rule on purpose: CSS is embedded in
+            # every page _page() renders, so one new selector changes the bytes
+            # of all ~49k growth pages and restamps the whole corpus on the
+            # next un-paused build — a real cost, for styling that appears only
+            # on a neighborhood with no hub page, which may be none of them.
+            items.append(f"<span style='color:#5a5f6a;font-size:14px'>{label}</span>")
+
+    placed = sum(counts.values())
+    n = len(brows)
+    # Says "N of these M" whenever a row carries no neighborhood, rather than
+    # quietly counting those buildings out of a total it has just asserted.
+    subject = (f"These {n:,} buildings" if placed == n
+               else f"{placed:,} of these {n:,} buildings")
+    # Only named when the leader actually leads. With every neighborhood
+    # holding one building, "the most in X (1)" invents a concentration that
+    # the data does not show.
+    top = ""
+    if ordered[0][1] > 1:
+        top = ", the most in " + " and ".join(
+            f"{_esc(nb)} ({c:,})" for nb, c in ordered[:2] if c > 1)
+    have = "had" if stale else "have"
+    return (
+        "<h2>Which neighborhoods these are in</h2>"
+        f"<p class='sub'>{subject} sit in {len(counts):,} neighborhoods{top}.</p>"
+        f"<div class='cols'>{''.join(items)}</div>"
+        "<div class='note'>Each number is how many buildings <b>on this page</b> are in "
+        f"that neighborhood — how many {have} an apartment listed for voucher holders "
+        f"{_esc(now_phrase)} — and <b>not</b> how many rent-stabilized buildings the "
+        "neighborhood has. Open a neighborhood for every registered stabilized building "
+        "in it, listed or not.</div>")
+
+
 # The voucher feed is a nightly third-party scrape, and it can stop moving
 # without anything here noticing. Two ways, both observed:
 #
@@ -790,6 +890,7 @@ def t_fresh_section8(ctx):
             + caveat
             + lead
             + (_stats_block(brows, stats_label) if n else "")
+            + _nb_breakdown(ctx, brows, k, now_phrase, stale)
             + SOI_NOTE
             + _class_c_note(brows)
             + (_listing_table(brows, show_boro=False) if n else "")

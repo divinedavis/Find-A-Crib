@@ -261,6 +261,23 @@ SHADOW_WINDOW = datetime.timedelta(seconds=90)
 # boots as the visitor is leaving. Three or more quiet ones from one visitor
 # in a run still report: that would be a real loop at sign-in.
 SHADOW_LAST = ("adoptHome", "auth INITIAL_SESSION")
+# The same shadow, caught one step later: Safari's toolbar settling resizes the
+# viewport right after adoptHome, so the trace ends on that resize instead
+# (2026-11-08 digest: boot, auth, adoptHome, "vv-resize 796" at 0.4 s, no tick,
+# while the visitor's real page went on logging for 14 minutes). Only resize
+# steps may follow adoptHome; any other work after it still reports.
+_RESIZE_STEP = re.compile(r"(vv-resize|win-resize|map-resize) ")
+
+
+def _shadow_tail(labels):
+    """The trace ends on the signed-in shadow shape: SHADOW_LAST, or adoptHome
+    followed by nothing but viewport resizes."""
+    if labels and labels[-1] in SHADOW_LAST:
+        return True
+    if "adoptHome" not in labels:
+        return False
+    after = labels[len(labels) - labels[::-1].index("adoptHome"):]
+    return bool(after) and all(_RESIZE_STEP.match(x) for x in after)
 SHADOW_LOOP = 3
 SHADOW_LOOKUPS = 40       # REST calls per run, at most
 INTERACTION_EVENTS = ("building_view", "section_view", "outbound", "status_open",
@@ -397,7 +414,7 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_looku
             went_on = kept_going(key, r.get("visitor_id"), booted)
             if went_on:
                 continue
-            if went_on is False and last in SHADOW_LAST:
+            if went_on is False and _shadow_tail(labels):
                 quiet_shadows[r.get("visitor_id")].append((r, last))
                 continue
         count(r, last)

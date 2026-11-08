@@ -144,3 +144,23 @@ def test_no_screen_width_keeps_the_trace():
     t = trace("v1", TAB_GRID, booted="2026-09-28T14:59:00Z")
     out = er.crashes([t], key="k", kept_going=lambda *a: False)
     assert out["vv-resize 252 la3 ad12 img26 v0"]["n"] == 1
+
+
+def test_shadow_page_ending_on_a_viewport_resize_is_dropped():
+    # 2026-11-08 digest: the signed-in shadow, then Safari's toolbar resized
+    # the viewport at 0.4 s; the visitor's real page carried on.
+    steps = SHADOW + ["vv-resize 796 la0 ad0 img14 v0"]
+    assert not er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
+
+
+def test_work_after_adopt_home_still_reports():
+    steps = SHADOW + ["vv-resize 796 la0 ad0 img14 v0", "openDetail"]
+    out = er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
+    assert out["openDetail"]["n"] == 1
+
+
+def test_three_resize_shadows_from_one_visitor_report():
+    steps = SHADOW + ["vv-resize 796 la0 ad0 img14 v0"]
+    rows = [trace("v1", steps, booted=f"2026-09-28T13:4{i}:51.410Z") for i in range(3)]
+    out = er.crashes(rows, key="k", kept_going=lambda *a: False)
+    assert out["vv-resize 796 la0 ad0 img14 v0"]["n"] == 3

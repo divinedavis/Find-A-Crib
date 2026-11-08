@@ -90,15 +90,24 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Building chat, redesigned: your messages on the right, long-press to react, reply or unsend, swipe to reply or see times, and a button to jump to the newest.
-• No pests filter: hide buildings with pests cited by HPD in the last 12 months.
-• Open complaint counts are live and match the list.
-• Search results say "69 buildings", not just "69".
-• Smaller fixes.
+WHATS_NEW = """Help me apply, for Plus members: keep your ID, W-2, pay stubs, tax return, bank statements and employment letter in one place, scan or upload them, and email the whole packet to yourself as one PDF. Your documents stay on your phone. Everyone can set them up under Profile > My documents.
+
+Your Crib now lists each NYPD report near your building, not just the chart, and a crime alert opens straight onto those reports.
+
+Re-rental cards show move-in deals when the agent's listing names one, such as free months or a smaller deposit, and offer re-rental alerts for that borough. Re-rentals without a photo show the street view instead.
+
+Pest records (bedbugs, rats and pest violations) open without an account.
+
+The header slides away as you scroll results and lotteries, and the tab bar shrinks to stay out of the way. Plus smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.3.6 (build __BUILD__)
-New since 1.3.5: redesigned building chat (same moderation as before: filter, Report, Block, Leave); a "No pests" search filter (HPD public data); live open-complaint counts. No new permissions, SDKs or data.
+REVIEW_NOTES = """VERSION 1.3.7 (build __BUILD__)
+New since 1.3.6:
+- Help me apply / My documents: the renter keeps application documents (ID, W-2, pay stubs, etc.) in the app by scanning (camera, with the usage string shown) or picking from Photos/Files. Documents are stored ONLY on the device (file protection complete, excluded from backup), never uploaded to our servers and never sent to a landlord or agent. "Email them to me" opens Apple's Mail composer addressed to the user's own email with one merged PDF; the user sends it themselves. Where: Profile > "My documents" (no subscription needed); Plus members also get "Help me apply" on re-rental cards.
+- Your Crib lists individual NYPD complaint reports (NYC Open Data) under the crime chart.
+- Pest records are public data and now open without signing in.
+- Re-rental cards show move-in deals quoted from the agent's own listing; scroll-away header and smaller tab bar.
+No new third-party SDKs; no data collected beyond 1.3.6.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)
 
@@ -113,7 +122,7 @@ Members see only messages sent after they joined. No new third-party SDKs and no
 ALSO IN THE APP (unchanged since 1.2.9): renter tools under Profile > "Already have a place?", the "Lotteries closing soon" widget, Siri shortcuts, Add to Calendar (Apple's own editor, no calendar permission), Handoff, Broker fee check and Lease review (Plus; AI runs on-device with Apple Intelligence, otherwise on Anthropic's Claude via our server, never sending the renter's name). Deep links: findacrib://lotteries, findacrib://building/<id>, findacrib://tool/<name>.
 
 TO SEE THE FEATURES
-Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
+Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
 
 SIGN IN WITH APPLE
 If the device has no Apple Account signed in, Apple returns an error; the app says so in plain words and points to Google or email. The demo account avoids this.

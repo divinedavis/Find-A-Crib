@@ -117,6 +117,27 @@ class OneClickUnsubscribe(unittest.TestCase):
         self.assertIn('msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"', src)
         self.assertIn('not r.get("opted_out")', src)
 
+    def test_comp_campaign_is_opt_outable_and_keeps_emails_out_of_git(self):
+        import comp_campaign as cc
+        subject, text, html, unsub = cc.build("abc123", TOKEN)
+        self.assertEqual(unsub, emailkit.account_unsub_url(TOKEN, "lifecycle"))
+        for part in (text, html):
+            self.assertIn(ADDRESS, part)
+            self.assertIn("Unsubscribe", part)
+            self.assertNotIn("caprecruiting", part)
+            self.assertNotRegex(part.lower(), r"\bfree\b")  # FAC copy rule
+        self.assertNotRegex(subject.lower(), r"\bfree\b")
+        src = read("comp_campaign.py")
+        self.assertIn('msg["List-Unsubscribe"]', src)
+        self.assertIn('msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"', src)
+        self.assertIn('r.get("opted_out")', src)
+        # Recipients come from a gitignored file, never from the source.
+        code = src.split('"""', 2)[2]
+        self.assertNotRegex(code, r"[\w.+-]+@gmail\.com")
+        gi = read(".gitignore")
+        self.assertIn("comp_recipients*.txt", gi)
+        self.assertIn("comp_sent.json", gi)
+
     def test_hand_built_user_mail_is_gone_or_footed(self):
         # Any script that mails a user without emailkit.render must say how it
         # carries the address. Owner-only reports are listed as exempt.

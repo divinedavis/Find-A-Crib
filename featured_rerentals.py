@@ -773,6 +773,33 @@ def office_addresses():
     return out
 
 
+# Market-rate units that an agent posts on its affordable board. MNS listed
+# Loden, 54 Crown St unit 1221, at $5,292 for a 2-bed (2026-11-08), and
+# owner-subscribed alerts sent it out as a re-rental. The unit's own page reads
+# "Brand New Luxury ... 2 months free on a 14 month lease. Net rent
+# advertised". A regulated rent is a legal rent, never a net-effective one, and
+# the building's 2025 lottery topped out at 130% AMI ($4,738 for a 2-bed).
+NET_RENT = re.compile(r"\bnet\s+(?:effective\s+)?rent\b|\bnet[- ]effective\b", re.I)
+# HPD's 2025 chart at 165% AMI, the highest band any HPD/HDC program
+# rents at (nyc.gov/site/hpd/services-and-information/area-median-income.page).
+# A rent above it for the size is not an income-restricted apartment. With no
+# size given, the 3-bed figure is the ceiling.
+MAX_AFFORDABLE_RENT = {"studio": 4678, "1": 5011, "2": 6014, "3": 6950}
+
+
+def market_rate(rec):
+    """Why `rec` is a market-rate apartment, or None. Reads the listing page's
+    own text (deal_src) and the card."""
+    page = " \n".join([rec.get("deal_src") or ""] + (rec.get("_card") or []))
+    if NET_RENT.search(page):
+        return "net rent"
+    if rec.get("money_kind") == "rent" and rec.get("money_low"):
+        cap = MAX_AFFORDABLE_RENT.get(str(rec.get("beds") or "").lower(), MAX_AFFORDABLE_RENT["3"])
+        if rec["money_low"] > cap:
+            return f"rent ${rec['money_low']:,} over the 165% AMI ceiling"
+    return None
+
+
 def is_real_listing(rec, offices):
     """Filter the noise the DOM pass inevitably picks up."""
     a = rec["address"].lower()
@@ -1313,6 +1340,14 @@ def main():
     records = [r for r in records if is_real_listing(r, offices)]
     records, jev_changes = jev_review(records)
     gallery_sweep(records)
+    kept = []
+    for r in records:
+        why = market_rate(r)
+        if why:
+            print(f"  market-rate, dropped: {r['agent']} {r['address']} ({why})")
+        else:
+            kept.append(r)
+    records = kept
     # Move-in deals, only where the agent prints one (owner, 2026-10-27).
     n_deals = rerental_deals.attach(records)
     for r in records:

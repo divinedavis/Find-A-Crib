@@ -74,6 +74,7 @@ class Context:
         self._buildings = None
         self._by_bbl = None
         self._s8 = None
+        self._fmr = None
 
     # ---- what this pass is allowed to do
 
@@ -128,6 +129,32 @@ class Context:
         if self._s8 is None:
             self._s8 = self._load("s8.json")
         return self._s8
+
+    @property
+    def fmr(self):
+        """HUD Small-Area Fair Market Rents as {zip: [studio, 1BR, 2BR, 3BR]}, or {}.
+
+        NON-FATAL ON ABSENCE, unlike buildings.min.json and s8.json, which raise.
+        Nothing on the droplet has ever written this file: build_fmr.py runs on a
+        workstation because HUD's WAF answers a datacenter IP with an empty 202,
+        and scripts/refresh_fmr.sh scp's the result straight into the docroot
+        (never into git). So a box without it, or with an older copy than the
+        checkout's, is an ordinary box and not a fault — and the pages this feeds
+        must publish anyway. Raising here would take /section8/ down with it and
+        break the nightly-refresh promise ~373 build_seo.py hub pages make about
+        that section, which is a far worse outcome than one missing block.
+
+        Docroot first, like every other feed: the docroot copy is the one the
+        site serves and the one refresh_fmr.sh updates, so the checkout's
+        committed copy is the fallback and not the truth.
+        """
+        if self._fmr is None:
+            try:
+                loaded = self._load("fmr.json")
+            except (FileNotFoundError, ValueError, OSError):
+                loaded = {}
+            self._fmr = loaded if isinstance(loaded, dict) else {}
+        return self._fmr
 
     def live_or_staged(self, relpath):
         """Is this path in the docroot, or will it be once this run rsyncs?
@@ -597,6 +624,135 @@ def _nb_breakdown(ctx, brows, boro, now_phrase, stale):
         "in it, listed or not.</div>")
 
 
+# ------------------------------------------- asking rent against the ZIP's typical rent
+#
+# What a reader looking at a voucher-friendly listing wants to know next, after
+# "how many?" and "where?", is "is this priced normally?" — and the site already
+# holds the answer without knowing it. fmr.json carries HUD's Small-Area Fair
+# Market Rents for 178 NYC ZIPs as [studio, 1BR, 2BR, 3BR], every one of the 253
+# matched voucher rows has both a price and a ZIP in it, and nothing on the site
+# has ever put the two side by side. The split is real signal rather than noise:
+# 60 of 253 asking rents sit at or below the studio figure for their own ZIP and
+# 66 sit above even the three-bedroom figure, and it differs sharply by borough
+# (Brooklyn 32 of 73 above, Manhattan 0 of 11) so this is different text on each
+# page rather than the same sentence six times.
+#
+# THE BENCHMARK THIS DELIBERATELY IS NOT, which is the whole reason this block is
+# worded the way it is. The obvious version — "will my voucher cover this rent?"
+# — is the one a tenant most wants and the one this data cannot answer:
+#   * The cap on a Housing Choice Voucher is the PHA's PAYMENT STANDARD, which
+#     the authority sets itself and which is not the published FMR. Computing a
+#     coverage verdict from an FMR would be giving a wrong answer to the single
+#     highest-stakes question on the page.
+#   * The feed carries no bedroom count (s8.json avail rows are {n, p, url, b8}),
+#     so there is no like-for-like comparison available at all. Each rent is set
+#     against its ZIP's whole studio-to-three-bedroom span, and the note says so.
+#   * SAFMRs are a ZIP-level typical rent, "not building-specific" — terms.html's
+#     own words about this very file, reused rather than reinvented.
+# So this reports where a rent sits against a published reference and sends the
+# reader to their housing authority for the number that actually decides it.
+#
+# AND IT NAMES NO FISCAL YEAR, ON PURPOSE. DO NOT ADD ONE. fmr.json is a bare
+# {zip: [...]} map with no vintage field, so the year cannot be read from the
+# data this renders. Worse, the year hardcoded elsewhere on the site is no longer
+# a safe thing to copy: index.html and the four city shells, renter_tools.py and
+# the iOS metadata all say "HUD FY2026", while HUD's FY2027 FMRs took effect on
+# 2026-10-01 — and refresh_fmr.sh's own comment still assumes FY2027 was never
+# posted. Since the docroot copy is shipped from a workstation outside git, this
+# build cannot tell which year it is holding. An unlabelled true figure beats a
+# labelled one that may be a year wrong, so the link goes to HUD's current table
+# and the page claims no vintage of its own.
+#
+# Below this many placeable rents the sentence stops being informative and starts
+# being overprecise: "1 is at or below, 2 fall inside" over three listings is
+# arithmetic a reader can do from the table, which is directly above it.
+FMR_MIN_ROWS = 5
+
+
+def _rent_context(ctx, rows, now_phrase):
+    """Where these asking rents sit against HUD's typical rents for the same ZIP, or "".
+
+    Counts only rows this can place honestly: a price, and a ZIP whose entry is
+    four positive figures in ascending order. The ascending check is what lets
+    the prose say "a studio" and "a three-bedroom" rather than "the smallest and
+    largest figures published" — position 0 is only the studio if the row really
+    is ordered, and a row that is not ordered is skipped rather than described
+    with a label that might not fit it.
+    """
+    fmr = ctx.fmr
+    if not fmr:
+        return ""
+    priced = [r for r in rows if r.get("price")]
+    below = inside = above = 0
+    for r in priced:
+        a = fmr.get(str(r.get("zip") or "").strip())
+        if not (isinstance(a, list) and len(a) == 4
+                and all(isinstance(x, (int, float)) and not isinstance(x, bool) and x > 0
+                        for x in a)
+                and list(a) == sorted(a)):
+            continue
+        if r["price"] <= a[0]:
+            below += 1
+        elif r["price"] <= a[3]:
+            inside += 1
+        else:
+            above += 1
+    placed = below + inside + above
+    if placed < FMR_MIN_ROWS:
+        return ""
+
+    # Says "N of the M" whenever a rent could not be placed, rather than
+    # describing a subset under a total it has just asserted — the same rule as
+    # _nb_breakdown's unplaced-buildings clause.
+    subject = (f"all {placed:,} asking rents listed {_esc(now_phrase)}"
+               if placed == len(priced)
+               else f"{placed:,} of the {len(priced):,} asking rents listed "
+                    f"{_esc(now_phrase)}")
+    # Only non-zero buckets get a clause. The three partition the placed rows, so
+    # naming a zero would add a sentence that asserts nothing and reads as if it
+    # did; Manhattan's 11 rows are all in the middle bucket and its page should
+    # say that one thing plainly.
+    buckets = [(below, "below"), (inside, "inside"), (above, "above")]
+    filled = [(n, kind) for n, kind in buckets if n]
+
+    def clause(n, kind, sole):
+        # One bucket holding every placed row reads as a tautology if it repeats
+        # the count the subject just gave — "Of all 11 asking rents …, 11 fall
+        # between" — so the sole clause says "every one" instead. Manhattan's 11
+        # rows are all in the middle bucket, so this is the live case and not a
+        # hypothetical.
+        if sole:
+            subj, poss, plural = "every one", "its", False
+        else:
+            subj, poss, plural = f"{n:,}", ("its" if n == 1 else "their"), n != 1
+        if kind == "below":
+            return (f"{subj} {'are' if plural else 'is'} at or below what HUD publishes "
+                    f"as a typical rent for a studio in the same ZIP code")
+        if kind == "inside":
+            return (f"{subj} {'fall' if plural else 'falls'} between HUD’s studio and "
+                    f"three-bedroom figures for {poss} ZIP")
+        return (f"{subj} {'are' if plural else 'is'} above even the three-bedroom figure "
+                f"for {poss} ZIP")
+
+    parts = [clause(n, kind, len(filled) == 1) for n, kind in filled]
+    clauses = parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+
+    return (
+        "<h2>How these asking rents compare with HUD’s typical rents</h2>"
+        f"<p class='sub'>Of {subject}, {clauses}.</p>"
+        "<div class='note'><b>What this comparison is and is not.</b> The figures are HUD’s "
+        "Small-Area Fair Market Rents, a typical rent for the whole ZIP code — not for this "
+        "building and not for the apartment advertised. The listing feed does not say how many "
+        "bedrooms each apartment has, so each asking rent is set against its ZIP’s whole "
+        "studio-to-three-bedroom span rather than against its own size. <b>It is not a test of "
+        "whether a voucher will cover the rent:</b> the most a voucher programme pays is the "
+        "payment standard your housing authority sets, which is a different number from the "
+        "published Fair Market Rent, so ask them before ruling a listing in or out. "
+        "<a href='https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html' "
+        "rel='nofollow noopener' target='_blank'>HUD publishes the current figures by ZIP</a>."
+        "</div>")
+
+
 # The voucher feed is a nightly third-party scrape, and it can stop moving
 # without anything here noticing. Two ways, both observed:
 #
@@ -785,6 +941,7 @@ def t_fresh_section8(ctx):
           "which buildings came on and off this list each day. The series ran until "
           "16 August 2026 and is no longer updated.</p>"
         + SOI_NOTE
+        + _rent_context(ctx, rows, now_phrase)
         + "<h2>All live listings, cheapest first</h2>"
         + _class_c_note(rows)
         + _listing_table(rows)
@@ -891,6 +1048,7 @@ def t_fresh_section8(ctx):
             + lead
             + (_stats_block(brows, stats_label) if n else "")
             + _nb_breakdown(ctx, brows, k, now_phrase, stale)
+            + _rent_context(ctx, brows, now_phrase)
             + SOI_NOTE
             + _class_c_note(brows)
             + (_listing_table(brows, show_boro=False) if n else "")

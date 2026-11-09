@@ -151,7 +151,7 @@ JOURNEY_EVENTS = {
     'tools':                ['tool_open'],
     'renter_tools':         ['tool_open', 'tool_result'],
     'qualify':              ['qualify_open', 'qualify_set', 'qualify_clear'],
-    'rerentals_chip':       ['rerentals_open'],
+    'rerentals_chip':       ['rerentals_open', 'signin_wall'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -2262,9 +2262,37 @@ class Runner:
         self.ok(st['n'] == n_chip, f'the list shows as many re-rentals as the chip counts: {st["n"]} vs {label!r}', j)
         self.ok(st['links'] == st['n'], f'every card links to the agent: {st["links"]} of {st["n"]}', j)
         self.ok(st['left'] >= 0 and st['right'] <= st['W'] and not st['wide'], f'the list fits the screen: {st}', j)
+        # Borough / Beds / Household income need an account (owner, 2026-11-09):
+        # signed out each shows a lock and opens the rr_filters sign-up wall,
+        # on top of the list, saying what is free and one Plus line.
+        f = page.evaluate("""[...document.querySelectorAll('#rr-filters [data-rrf]')].map(b => ({k: b.dataset.rrf,
+            t: b.querySelector('.rrf-t').textContent, lock: !b.querySelector('.rrf-lk').hidden, h: b.getBoundingClientRect().height}))""")
+        self.ok([x['k'] for x in f] == ['boro', 'beds', 'income'], f'the list has Borough, Beds and Household income filters: {f}', j)
+        self.ok(all(x['lock'] for x in f), f'signed out, every filter shows a lock: {f}', j)
+        self.ok(all(x['h'] >= 40 for x in f), f'filter buttons are a 40px tap target: {f}', j)
+        page.evaluate("document.querySelector('#rr-filters [data-rrf=beds]').click()"); time.sleep(0.4)
+        w = page.evaluate("""(()=>{const m=document.getElementById('auth-modal'), c=m.querySelector('.auth-card').getBoundingClientRect();
+          const top=document.elementFromPoint(c.left + c.width/2, c.top + 20);
+          const box=document.getElementById('auth-promise');
+          return {open:!m.hidden, onTop: !!(top && top.closest('#auth-modal')), title: document.getElementById('auth-title').textContent,
+            head: (box.querySelector('.ap-head')||{}).textContent, rows: box.querySelectorAll('.ap-row:not(.ap-plus)').length,
+            plus: [...box.querySelectorAll('.ap-plus')].map(r => [r.textContent, r.querySelector('[data-plus-src]')?.dataset.plusSrc]),
+            confirm: !document.getElementById('auth-pass2').hidden, resume: sessionStorage.getItem('fac.rrResume'),
+            listOpen: !document.getElementById('rerentals-modal').hidden}})()""")
+        self.ok(w['open'] and w['onTop'], f'a filter opens the sign-up wall above the list: {w}', j)
+        self.ok(w['title'] == 'Sign up to filter re-rentals' and w['confirm'], f'the wall opens in sign-up mode with its title: {w}', j)
+        self.ok(w['head'] == 'Free with an account' and w['rows'] == 4, f'the wall lists the four account perks: {w}', j)
+        self.ok(len(w['plus']) == 1 and '$4.99' in w['plus'][0][0] and w['plus'][0][1] == 'realtime',
+                f'one Plus line, real-time alerts, linking to the Plus page: {w["plus"]}', j)
+        self.ok(w['resume'] == 'beds', f'signing in will come back to the Beds filter: {w}', j)
+        page.keyboard.press('Escape'); time.sleep(0.2)
+        self.ok(not page.evaluate("document.getElementById('rerentals-modal').hidden"), 'Escape on the wall leaves the list open', j)
+        page.evaluate("document.querySelector('#auth-modal [data-auth=close]').click()"); time.sleep(0.2)
+        self.ok(page.evaluate("document.getElementById('auth-modal').hidden && !sessionStorage.getItem('fac.rrResume')"),
+                'closing the wall forgets the pending filter', j)
         page.keyboard.press('Escape'); time.sleep(0.2)
         self.ok(page.evaluate("document.getElementById('rerentals-modal').hidden"), 'Escape closes the list', j)
-        j.notes.append(f'{st["n"]} re-rentals listed')
+        j.notes.append(f'{st["n"]} re-rentals listed · filters gated')
 
     def j_resume_search(self, page, j, device):
         """Remembered search (owner, 2026-10-03): with nothing saved there is

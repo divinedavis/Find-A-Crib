@@ -379,6 +379,20 @@
   .rr-grid { padding: 0; overflow: visible; }
   .rr-grid .feat-flag { display: none; }
   .rr-fine { font-size: 12px; color: var(--ink-2); margin: 14px 0 0; }
+  .rr-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 14px; }
+  .rr-filters button, .rrf-panel button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line);
+    background: var(--surface-2, var(--bg)); color: var(--ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 14px; font-weight: 600; cursor: pointer; min-height: 40px; }
+  .rr-filters button[aria-expanded="true"], .rr-filters button.on, .rrf-panel button[aria-pressed="true"] {
+    border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+  .rrf-lk { font-size: 12px; opacity: .75; }
+  .rrf-lk[hidden] { display: none; }
+  .rrf-panel { display: flex; gap: 8px; flex-wrap: wrap; margin: -4px 0 16px; }
+  .rrf-panel[hidden] { display: none; }
+  /* The sign-up wall opens over the Re-rentals list (it sits earlier in the page). */
+  #auth-modal { z-index: 1950; }
+  .auth-promise .ap-head { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px; }
+  .auth-promise .ap-head ~ .ap-plus { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(127,127,127,.25); }
   @media (min-width: 901px) { .rr-grid .card { flex-basis: calc(33.333% - 10px); } }
   @media (max-width: 720px) { .rr-grid .card { flex-basis: 100%; } }
   .auth-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
@@ -1987,6 +2001,14 @@
     <button class="auth-close" data-rr="close" aria-label="Close">✕</button>
     <h2 id="rr-title">Re-rentals</h2>
     <p class="auth-sub" id="rr-sub"></p>
+    <!-- Borough, beds and income filters (owner, 2026-11-09): an account
+         unlocks them; signed out, each one opens the rr_filters sign-up wall. -->
+    <div class="rr-filters" id="rr-filters">
+      <button type="button" data-rrf="boro">📍 <span class="rrf-t">Borough</span><span class="rrf-lk" aria-label="Needs an account">🔒</span></button>
+      <button type="button" data-rrf="beds">🛏️ <span class="rrf-t">Beds</span><span class="rrf-lk" aria-label="Needs an account">🔒</span></button>
+      <button type="button" data-rrf="income">💵 <span class="rrf-t">Household income</span><span class="rrf-lk" aria-label="Needs an account">🔒</span></button>
+    </div>
+    <div class="rrf-panel" id="rrf-panel" hidden></div>
     <div class="results-grid rr-grid" id="rr-grid"></div>
     <p class="rr-fine">Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing’s own unit table.</p>
   </div>
@@ -6943,31 +6965,120 @@ function favActive() {
       // and a separate span loses the space next to it.
       c.textContent = n == null ? '🔑 Re-rentals' : `🔑 Re-rentals (${n})`;
     });
+    if (n != null) rrMaybeResume();
+  }
+  // ---- Re-rentals list + its filters ----
+  // Borough and Beds drive the map's own controls (one source of truth, so the
+  // chip count, the map and this list always agree); Household income is the
+  // "What do I qualify for?" setting. All three need an account (owner,
+  // 2026-11-09); signed out, each opens the rr_filters sign-up wall and
+  // signing in comes back to the filter that was tapped.
+  const rrModal = document.getElementById('rerentals-modal');
+  const rrGrid = document.getElementById('rr-grid');
+  const rrPanel = document.getElementById('rrf-panel');
+  const RR_RESUME = 'fac.rrResume';
+  const RR_BEDS = { 0: 'Studio', 1: '1 bed', 2: '2 beds', 3: '3 beds', 4: '4+ beds' };
+  let rrOpenFilter = null;
+  function rrRender() {
+    const list = rrList(), boros = rrBoroughs();
+    const where = boros.length >= N_REGIONS ? 'New York City' : boros.join(', ').replace(/, ([^,]*)$/, ' and $1') || 'no borough';
+    document.getElementById('rr-sub').textContent = list.length
+      ? `${list.length} available in ${where}. They usually go first come, first served, so apply soon.`
+      : `No HPD marketing agent is advertising a re-rental in ${where}${document.querySelector('input[name="beds"]:checked') ? ' in the sizes you picked' : ''}${QUAL ? ' in your income range' : ''} today.`;
+    // slot -1 marks this list in the re-rental funnel, apart from the
+    // grid's slots 0, 1, 2… (the iPhone app's Re-rentals tab does the same).
+    rrGrid.innerHTML = list.map(f => featuredCardHtml(f, -1)).join('');
+    rrPaintFilters();
+    paintQualify();
+    return list;
+  }
+  function rrPaintFilters() {
+    const signedIn = !!authUser;
+    const boros = rrBoroughs();
+    const beds = [...document.querySelectorAll('input[name="beds"]:checked')].map(c => RR_BEDS[c.value]);
+    // Never the income itself on screen (owner, 2026-10-04).
+    const labels = {
+      boro: !signedIn || boros.length >= N_REGIONS || !boros.length ? 'Borough' : boros.length === 1 ? boros[0] : `${boros[0]} +${boros.length - 1}`,
+      beds: !signedIn || !beds.length ? 'Beds' : beds.length === 1 ? beds[0] : `${beds[0]} +${beds.length - 1}`,
+      income: signedIn && QUAL ? 'My income range' : 'Household income' };
+    const on = { boro: boros.length && boros.length < N_REGIONS, beds: beds.length > 0, income: !!QUAL };
+    document.querySelectorAll('#rr-filters [data-rrf]').forEach(b => {
+      const k = b.dataset.rrf;
+      b.querySelector('.rrf-t').textContent = labels[k];
+      b.querySelector('.rrf-lk').hidden = signedIn;
+      b.classList.toggle('on', signedIn && !!on[k]);
+      b.setAttribute('aria-expanded', String(signedIn && rrOpenFilter === k));
+    });
+    if (!signedIn) { rrOpenFilter = null; rrPanel.hidden = true; }
+  }
+  function rrShowFilter(k) {
+    if (k === 'income') {
+      rrOpenFilter = null; rrPanel.hidden = true;
+      document.getElementById('pill-qualify')?.click();
+      return;
+    }
+    rrOpenFilter = rrOpenFilter === k ? null : k;
+    if (!rrOpenFilter) { rrPanel.hidden = true; rrPaintFilters(); return; }
+    const opts = k === 'boro'
+      ? [...document.querySelectorAll('#borough-list input')].map(c => [c, BORO_NAME[c.dataset.b]]).filter(o => o[1])
+      : [...document.querySelectorAll('input[name="beds"]')].map(c => [c, RR_BEDS[c.value]]);
+    rrPanel.innerHTML = opts.map(([c, t], i) => `<button type="button" data-rrv="${i}" aria-pressed="${c.checked}">${esc(t)}</button>`).join('');
+    rrPanel.onclick = e => {
+      const b = e.target.closest('[data-rrv]'); if (!b) return;
+      const c = opts[+b.dataset.rrv][0];
+      c.checked = !c.checked;
+      c.dispatchEvent(new Event('change', { bubbles: true }));
+      b.setAttribute('aria-pressed', String(c.checked));
+      rrRender();
+      track('rr_filter', { f: k, n: rrList().length });
+    };
+    rrPanel.hidden = false;
+    rrPaintFilters();
+  }
+  function rrOpen(src) {
+    rrOpenFilter = null; rrPanel.hidden = true;
+    const list = rrRender();
+    rrModal.hidden = false;
+    track('rerentals_open', { src, n: list.length });
+  }
+  // After the wall: an email sign-in lands here at once; Google comes back
+  // through a page load, so the filter waits in sessionStorage until the
+  // re-rentals feed is in (paintRrChip calls this too).
+  function rrMaybeResume() {
+    if (!authUser || !FEATURED.length) return;
+    let k = null;
+    try { k = sessionStorage.getItem(RR_RESUME); sessionStorage.removeItem(RR_RESUME); } catch (e) {}
+    if (!k) return;
+    closeAuthModal();
+    if (rrModal.hidden) rrOpen('signin');
+    rrShowFilter(k);
   }
   {
-    const modal = document.getElementById('rerentals-modal');
-    const rrGrid = document.getElementById('rr-grid');
-    const open = src => {
-      const list = rrList(), boros = rrBoroughs();
-      const where = boros.length >= N_REGIONS ? 'New York City' : boros.join(', ').replace(/, ([^,]*)$/, ' and $1') || 'no borough';
-      document.getElementById('rr-sub').textContent = list.length
-        ? `${list.length} available in ${where}. They usually go first come, first served, so apply soon.`
-        : `No HPD marketing agent is advertising a re-rental in ${where}${document.querySelector('input[name="beds"]:checked') ? ' in the sizes you picked' : ''} today.`;
-      // slot -1 marks this list in the re-rental funnel, apart from the
-      // grid's slots 0, 1, 2… (the iPhone app's Re-rentals tab does the same).
-      rrGrid.innerHTML = list.map(f => featuredCardHtml(f, -1)).join('');
-      modal.hidden = false;
-      paintQualify();
-      track('rerentals_open', { src, n: list.length });
-    };
-    const close = () => { modal.hidden = true; rrGrid.innerHTML = ''; };
-    document.querySelectorAll('.rr-chip').forEach(c => c.addEventListener('click', () => open(c.dataset.rrSrc)));
-    modal.addEventListener('click', e => {
-      if (e.target === modal || e.target.closest('[data-rr="close"]')) { close(); return; }
+    const close = () => { rrModal.hidden = true; rrGrid.innerHTML = ''; rrOpenFilter = null; rrPanel.hidden = true; };
+    document.querySelectorAll('.rr-chip').forEach(c => c.addEventListener('click', () => rrOpen(c.dataset.rrSrc)));
+    document.getElementById('rr-filters').addEventListener('click', e => {
+      const b = e.target.closest('[data-rrf]'); if (!b) return;
+      const k = b.dataset.rrf;
+      if (!authUser) {
+        try { sessionStorage.setItem(RR_RESUME, k); } catch (err) {}
+        openAuthModal(null, 'rr_filters');
+        return;
+      }
+      rrShowFilter(k);
+    });
+    // Income is set in the qualify modal; repaint the list behind it.
+    ['q-save', 'q-clear'].forEach(id => document.getElementById(id).addEventListener('click', () => { if (!rrModal.hidden) rrRender(); }));
+    rrModal.addEventListener('click', e => {
+      if (e.target === rrModal || e.target.closest('[data-rr="close"]')) { close(); return; }
       const a = e.target.closest('a[data-action="featured"]'), card = e.target.closest('.feat-card');
       if (a && card) track('featured_click', Object.assign(featProps(card), { href: a.getAttribute('href') || '', src: 'rerentals_list' }));
     });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
+    // The sign-up wall sits on top: Escape closes that first.
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !rrModal.hidden && authModal.hidden) close(); });
+    // Closing the wall without signing in forgets the pending filter.
+    document.getElementById('auth-modal').addEventListener('click', e => {
+      if (e.target.id === 'auth-modal' || e.target.closest('[data-auth="close"]')) { try { sessionStorage.removeItem(RR_RESUME); } catch (err) {} }
+    });
   }
   function featBedrooms(f) {
     const out = new Set();
@@ -8872,7 +8983,15 @@ function favActive() {
               live: alertsOpenNow, apple: true, lazyConfirm: true },
     phone: { rows: [['👤', 'The managing agent HPD has on file, and their office'],
                     ['🏛️', 'Who owns the building, and its head officer']],
-             plus: ['📞', 'Plus: the agent\u2019s phone number \u2014 call who actually runs it', 'phone'] },  };
+             plus: ['📞', 'Plus: the agent\u2019s phone number \u2014 call who actually runs it', 'phone'] },
+    // Re-rentals list filters (owner, 2026-11-09): what the account gets,
+    // then one Plus line.
+    rr_filters: { head: 'Free with an account', signup: true, title: 'Sign up to filter re-rentals',
+                  rows: [['🔎', 'Filter re-rentals by borough, beds and household income'],
+                         ['✅', 'See which apartments your income qualifies for'],
+                         ['🔔', 'A daily 8 AM email when a re-rental opens in your boroughs'],
+                         ['🏠', 'Save apartments and see them on any device']],
+                  plus: ['⚡', 'Plus: real-time alerts the minute a re-rental opens \u00b7 $4.99/mo', 'realtime'] },  };
   // "Sign in to see who owns and manages this building" is the wall a signed-
   // out visitor actually meets (the Show number button needs an account to
   // render); it previews the same thing, like the app's sheet (2026-10-13).
@@ -8899,7 +9018,7 @@ function favActive() {
     const p = AUTH_PROMISES[wall];
     if (!p) { box.hidden = true; box.innerHTML = ''; return; }
     const live = p.live ? p.live() : null;
-    box.innerHTML = p.rows.map(([i, t]) => `<div class="ap-row"><span class="ap-ico" aria-hidden="true">${i}</span><span>${esc(t)}</span></div>`).join('')
+    box.innerHTML = (p.head ? `<div class="ap-head">${esc(p.head)}</div>` : '') + p.rows.map(([i, t]) => `<div class="ap-row"><span class="ap-ico" aria-hidden="true">${i}</span><span>${esc(t)}</span></div>`).join('')
       // live() builds its own markup from counts only (numbers + fixed words).
       + (live ? `<div class="ap-row" data-ap-live><span class="ap-ico" aria-hidden="true" style="background:#1e7d43">🔔</span><span>${live}</span></div>` : '')
       + (p.plus ? `<div class="ap-row ap-plus"><span class="ap-ico" aria-hidden="true" style="background:#5B21B6">${p.plus[0]}</span><span class="t">${esc(p.plus[1])}</span>`
@@ -8919,7 +9038,8 @@ function favActive() {
     authLazyConfirm = !!promise.lazyConfirm;
     document.getElementById('auth-apple').hidden = !(promise.apple && APPLE_WEB_CLIENT_ID);
     renderAuthPromise(wall);
-    setAuthMode('signin');
+    setAuthMode(promise.signup ? 'signup' : 'signin');
+    if (promise.title) authTitle.textContent = promise.title;
     const sub = document.getElementById('auth-sub');
     // The promise box already says what the account gets; the sentence
     // repeated it and pushed the form down (2026-10-14).
@@ -9900,6 +10020,7 @@ function favActive() {
       refreshPlus();
       subRowKnown = false;   // a different account may have signed in
       if (authUser && manageAfterSignIn) { manageAfterSignIn = false; closeAuthModal(); openProfile(); }
+      rrMaybeResume();   // signed in from the Re-rentals filter wall: back to that filter
       // signing in (or out) with the detail sheet open swaps the composer in/out
       // and re-marks which comments carry your Delete button
       if (detailRec) loadComments(detailRec.bbl);

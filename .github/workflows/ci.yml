@@ -27,5 +27,5 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
-      - run: pip install -q requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic playwright==1.62.0
+      - run: pip install -q requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic cryptography playwright==1.62.0
       - run: python tests/run_unit.py

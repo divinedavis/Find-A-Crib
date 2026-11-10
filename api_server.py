@@ -30,6 +30,7 @@ import broker_fee            # broker fee checker: FARE Act + RPL 238-a rules, n
 import lease_review          # lease review: Claude Haiku 5.5, quotes checked against the lease
 import renter_tools          # repairs, rent increases, rights, renewal coach (2026-10-13)
 import webpush               # browser notifications (Web Push, db/0075)
+import passkeys              # sign in with a passkey (WebAuthn, db/0076)
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -222,6 +223,7 @@ def gate():
        or request.path.startswith("/developers/") \
        or request.path.startswith("/alerts/") \
        or request.path.startswith("/push/") \
+       or request.path.startswith("/passkeys/") or request.path == "/passkeys" \
        or request.path.startswith("/casa/") \
        or request.path.startswith("/ai/") \
        or request.path == "/geo" \
@@ -1341,6 +1343,129 @@ def push_web_subscribe():
         webpush.send({"endpoint": endpoint, "p256dh": keys["p256dh"], "auth": keys["auth"]},
                      webpush.note("Notifications are on", "Lottery, re-rental and Your Casa alerts you follow will show up here.", "/", "welcome"), cfg)
     return jsonify(ok=True, new=bool(new))
+
+
+# ---- Passkeys (owner, 2026-11-10) -------------------------------------------
+# passkeys.py checks every ceremony. Adding, listing and removing take the
+# account from the verified session. A sign-in that checks out gets a
+# one-time Supabase token for that account (admin generate_link, which sends
+# nothing; used once by supabase.auth.verifyOtp on the page). The challenge
+# and the token are each good for one use.
+PASSKEY_STORE = passkeys.SupabaseStore(rpc)
+
+
+def _passkey_json():
+    if not request.is_json:
+        return None
+    body = request.get_json(silent=True)
+    return body if isinstance(body, dict) else None
+
+
+def _sign_in_token(user_id):
+    """A one-time sign-in token for this Supabase account, or None."""
+    def admin(method, path, body=None):
+        req = urllib.request.Request(f"{SUPABASE_URL}/auth/v1/admin/{path}", method=method,
+                                     data=json.dumps(body).encode() if body is not None else None,
+                                     headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read() or b"null")
+    user = admin("GET", f"users/{urllib.parse.quote(user_id)}") or {}
+    email = user.get("email")
+    if not email or user.get("banned_until"):
+        return None
+    link = admin("POST", "generate_link", {"type": "magiclink", "email": email}) or {}
+    return link.get("hashed_token") or (link.get("properties") or {}).get("hashed_token")
+
+
+@app.route("/passkeys/login/options", methods=["POST"])
+def passkey_login_options():
+    if rate_limited("passkey_login", 30, 600):
+        return _too_many()
+    try:
+        return jsonify(passkeys.login_options(PASSKEY_STORE))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/passkeys/login", methods=["POST"])
+def passkey_login():
+    if rate_limited("passkey_login", 30, 600):
+        return _too_many()
+    body = _passkey_json()
+    if body is None:
+        return jsonify(error="json_required"), 415
+    try:
+        user_id = passkeys.verify_assertion(PASSKEY_STORE, body)
+        token = _sign_in_token(user_id) if user_id else None
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not token:
+        return jsonify(error="unknown_passkey"), 401
+    resp = jsonify(token_hash=token)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/passkeys", methods=["GET"])
+def passkey_list():
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    try:
+        rows = PASSKEY_STORE.list(u["id"])
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(passkeys=[{"id": r["id"], "name": r.get("name"), "created": r.get("created_at"), "lastUsed": r.get("last_used_at")} for r in rows])
+
+
+@app.route("/passkeys/register/options", methods=["POST"])
+def passkey_register_options():
+    if rate_limited("passkey_register", 20, 3600):
+        return _too_many()
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    try:
+        return jsonify(passkeys.registration_options(PASSKEY_STORE, u, SERVICE_KEY))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/passkeys/register", methods=["POST"])
+def passkey_register():
+    if rate_limited("passkey_register", 20, 3600):
+        return _too_many()
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    body = _passkey_json()
+    if body is None:
+        return jsonify(error="json_required"), 415
+    try:
+        result = passkeys.verify_registration(PASSKEY_STORE, body, u, name=passkeys.device_name(request.headers.get("User-Agent", "")))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if result.get("error") == "exists":
+        return jsonify(error="exists", message="That passkey is already on your account."), 409
+    if result.get("error") == "limit":
+        return jsonify(error="limit", message=f"An account can have {passkeys.MAX_PER_USER} passkeys. Remove one first."), 409
+    if result.get("error"):
+        return jsonify(error="rejected", message="That passkey couldn't be added. Please try again."), 400
+    return jsonify(ok=True, id=result["id"])
+
+
+@app.route("/passkeys/<cred_id>", methods=["DELETE"])
+def passkey_remove(cred_id):
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    if len(cred_id) > 1400 or not passkeys.B64U.match(cred_id):
+        return jsonify(error="bad_id"), 400
+    try:
+        removed = PASSKEY_STORE.remove(cred_id, u["id"])
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True, removed=removed)
 
 
 # ---- /geo: coarse network location for the map's first view -----------------

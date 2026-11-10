@@ -447,6 +447,10 @@
   .auth-legal a { color: var(--ink-2); text-decoration: underline; }
   .auth-or { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; color: var(--ink-2); font-size: 12px; }
   .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .profile-passkey-list { list-style: none; margin: 6px 0 0; padding: 0; font-size: 12px; color: var(--ink-2); }
+  .profile-passkey-list li { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 3px 0; }
+  .profile-passkey-remove { background: none; border: 0; color: #b3261e; font: inherit; cursor: pointer; padding: 2px 0; }
+  .auth-passkey { margin-top: 8px; }
   .auth-google { width: 100%; padding: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
     border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -2003,6 +2007,8 @@
       </svg>
       Continue with Google
     </button>
+    <!-- Passkeys (2026-11-10, passkeys.py): shown where the browser can. -->
+    <button id="auth-passkey" type="button" class="auth-google auth-passkey" hidden>🔑 Sign in with a passkey</button>
     <div class="auth-or"><span>or use email</span></div>
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
@@ -2361,6 +2367,14 @@
         <div class="profile-feat-sub" id="profile-push-sub"></div>
       </div>
       <button type="button" class="folder-new" id="profile-push-btn" style="white-space:nowrap" hidden></button>
+    </div>
+    <div id="profile-passkeys" class="profile-row profile-toggle-row" hidden>
+      <div>
+        <div class="profile-feat">🔑 Passkeys</div>
+        <div class="profile-feat-sub" id="profile-passkeys-sub"></div>
+        <ul class="profile-passkey-list" id="profile-passkey-list"></ul>
+      </div>
+      <button type="button" class="folder-new" id="profile-passkey-add" style="white-space:nowrap">Add a passkey</button>
     </div>
     <div id="profile-searches" hidden>
       <div class="profile-row" style="border-bottom:none;padding-bottom:4px"><span class="label">Saved searches</span></div>
@@ -9666,6 +9680,66 @@ function favActive() {
     }
   });
 
+  // ---- Passkeys (2026-11-10, passkeys.py) ---------------------------------
+  // Add one in the account panel; sign in with it from the sign-in dialog.
+  // The server checks the passkey, then hands a one-time Supabase token the
+  // page exchanges for a normal session.
+  const pkB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const pkBytes = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const passkeysSupported = () => !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  async function passkeyCall(path, method, body, signedIn) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (signedIn) headers.Authorization = 'Bearer ' + (await supaClient.auth.getSession()).data.session.access_token;
+    return fetch('/api/passkeys' + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  }
+  async function syncPasskeysUI() {
+    const row = document.getElementById('profile-passkeys');
+    if (!passkeysSupported()) { row.hidden = true; return; }
+    const r = await passkeyCall('', 'GET', undefined, true).catch(() => null);
+    const list = r && r.ok ? (await r.json()).passkeys : null;
+    row.hidden = !list;
+    if (!list) return;
+    const when = t => t ? new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    document.getElementById('profile-passkeys-sub').textContent = list.length
+      ? 'Sign in with your face, fingerprint or device PIN.'
+      : 'Sign in with your face, fingerprint or device PIN instead of a password.';
+    document.getElementById('profile-passkey-list').innerHTML = list.map(k => `<li data-id="${escT(k.id)}"><span>${escT(k.name || 'Passkey')} · added ${escT(when(k.created))}${k.lastUsed ? ' · last used ' + escT(when(k.lastUsed)) : ''}</span>
+      <button type="button" class="profile-passkey-remove" aria-label="Remove passkey ${escT(k.name || '')}">Remove</button></li>`).join('');
+    document.getElementById('profile-passkey-add').textContent = list.length ? 'Add another' : 'Add a passkey';
+  }
+  document.getElementById('profile-passkey-add').addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    btn.disabled = true; profileErr.hidden = true;
+    try {
+      const o = await (await passkeyCall('/register/options', 'POST', {}, true)).json();
+      let cred;
+      try {
+        cred = await navigator.credentials.create({ publicKey: { ...o, challenge: pkBytes(o.challenge), user: { ...o.user, id: pkBytes(o.user.id) },
+          excludeCredentials: o.excludeCredentials.map(c => ({ ...c, id: pkBytes(c.id) })) } });
+      } catch (err) {
+        if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) return;
+        throw new Error(err && err.name === 'InvalidStateError' ? 'This device already has a passkey for your account.' : 'This device couldn’t make a passkey.');
+      }
+      const res = cred.response, pub = res.getPublicKey && res.getPublicKey();
+      if (!pub) throw new Error('This browser can’t add passkeys yet. Try the latest Safari, Chrome, Edge or Firefox.');
+      const r = await passkeyCall('/register', 'POST', { id: cred.id, clientDataJSON: pkB64(res.clientDataJSON), authenticatorData: pkB64(res.getAuthenticatorData()),
+        publicKey: pkB64(pub), publicKeyAlgorithm: res.getPublicKeyAlgorithm(), transports: res.getTransports ? res.getTransports() : [] }, true);
+      if (!r.ok) throw new Error(((await r.json().catch(() => null)) || {}).message || 'That passkey couldn’t be added.');
+      await syncPasskeysUI();
+    } catch (err) {
+      profileErr.textContent = err.message || 'That passkey couldn’t be added.';
+      profileErr.hidden = false;
+    } finally { btn.disabled = false; }
+  });
+  document.getElementById('profile-passkey-list').addEventListener('click', async e => {
+    const btn = e.target.closest('.profile-passkey-remove');
+    if (!btn) return;
+    btn.disabled = true;
+    const r = await passkeyCall('/' + encodeURIComponent(btn.closest('li').dataset.id), 'DELETE', undefined, true).catch(() => null);
+    if (!r || !r.ok) { profileErr.textContent = 'Couldn’t remove that passkey. Please try again.'; profileErr.hidden = false; btn.disabled = false; return; }
+    await syncPasskeysUI();
+  });
+
   async function openProfile() {
     if (!authUser) return;
     document.getElementById('profile-email').textContent = authUser.email || '';
@@ -9680,6 +9754,7 @@ function favActive() {
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
     syncPushUI();
+    syncPasskeysUI();
     profileAlerts.checked = false;
     try {   // free for every account since 2026-09-05 (saving is subscribing)
       const { data } = await supaClient.rpc('get_alerts_enabled');
@@ -10178,6 +10253,32 @@ function favActive() {
         });
         if (error) { showAuthError(error.message); btn.disabled = false; }
       } catch (err) { showAuthError(err.message || 'Google sign-in failed.'); btn.disabled = false; }
+    });
+    // Sign in with a passkey (passkeys.py): the device signs our challenge,
+    // the server checks it and answers a one-time token for that account.
+    const passkeyBtn = document.getElementById('auth-passkey');
+    passkeyBtn.hidden = !passkeysSupported();
+    passkeyBtn.addEventListener('click', async () => {
+      passkeyBtn.disabled = true; showAuthError('');
+      try {
+        const o = await (await passkeyCall('/login/options', 'POST', {})).json();
+        let cred;
+        try {
+          cred = await navigator.credentials.get({ publicKey: { ...o, challenge: pkBytes(o.challenge) } });
+        } catch (err) {
+          if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) return;
+          throw new Error('This device couldn’t use a passkey.');
+        }
+        const res = cred.response;
+        const r = await passkeyCall('/login', 'POST', { id: cred.id, clientDataJSON: pkB64(res.clientDataJSON),
+          authenticatorData: pkB64(res.authenticatorData), signature: pkB64(res.signature) });
+        if (!r.ok) throw new Error('That passkey isn’t on a Find A Crib account. Sign in another way, then add it in your account.');
+        const { error } = await supaClient.auth.verifyOtp({ token_hash: (await r.json()).token_hash, type: 'magiclink' });
+        if (error) throw error;
+        // onAuthStateChange handles the rest, as for every other sign-in.
+      } catch (err) {
+        showAuthError(err.message || 'Passkey sign-in failed.');
+      } finally { passkeyBtn.disabled = false; }
     });
     // Apple JS in a popup returns an id_token that Supabase verifies against
     // its Apple client IDs (the app's bundle ID and the web Services ID); a

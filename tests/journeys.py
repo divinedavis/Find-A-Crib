@@ -1354,6 +1354,77 @@ class Runner:
             ctx.close()
             supabase_admin('DELETE', f'users/{uid}')
 
+    def j_passkeys(self, page, j, device):
+        """Passkeys (2026-11-10, passkeys.py + db/0076), with Chrome's virtual
+        authenticator standing in for Face ID: the page makes a real key pair
+        and signs real challenges, and the API checks them. A throwaway
+        account adds a passkey in the account panel, signs out, signs back in
+        with it (same account, no password), and removes it; afterwards the
+        passkey no longer signs in. Chromium only."""
+        if page.context.browser.browser_type.name != 'chromium' or os.environ.get('FAC_RESOLVE_IP'):
+            return
+        st = page.request.post(LIVE + '/api/passkeys/register/options', data='{}', headers={'Content-Type': 'application/json'}).status
+        self.ok(st == 401, f'adding a passkey without a session must be 401, got {st}', j)
+        email = f'journey-passkey-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j)
+            return
+        uid = u['id']
+        ctx = page.context.browser.new_context(viewport={'width': 1300, 'height': 900}, service_workers='block')
+        try:
+            p2 = self.page(ctx, j)
+            cdp = ctx.new_cdp_session(p2)
+            cdp.send('WebAuthn.enable')
+            auth_id = cdp.send('WebAuthn.addVirtualAuthenticator', {'options': {
+                'protocol': 'ctap2', 'transport': 'internal', 'hasResidentKey': True, 'hasUserVerification': True,
+                'isUserVerified': True, 'automaticPresenceSimulation': True}})['authenticatorId']
+            self.boot(p2)
+            self.click(p2, '#auth-btn'); time.sleep(0.6)
+            self.ok(p2.evaluate("!document.getElementById('auth-passkey').hidden"), 'the sign-in dialog should offer a passkey', j)
+            p2.fill('#auth-email', email); p2.fill('#auth-pass', password)
+            self.click(p2, '#auth-submit')
+            if not self.wait_until(p2, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(1)
+            self.click(p2, '#auth-btn')
+            self.wait_until(p2, "!document.getElementById('profile-modal').hidden", 15000)
+            if not self.wait_until(p2, "!document.getElementById('profile-passkeys').hidden", 15000):
+                self.ok(False, 'the account panel should offer passkeys', j); return
+            self.click(p2, '#profile-passkey-add')
+            added = self.wait_until(p2, "document.querySelectorAll('#profile-passkey-list li').length === 1", 20000)
+            self.ok(added, 'Add a passkey should list one passkey', j)
+            held = cdp.send('WebAuthn.getCredentials', {'authenticatorId': auth_id})['credentials']
+            self.ok(len(held) == 1 and held[0]['rpId'] == 'findacrib.com' and held[0]['isResidentCredential'], f'the device should hold one passkey for findacrib.com: {held}', j)
+            # Sign out, then back in with the passkey alone.
+            p2.evaluate(SIGN_OUT_JS)
+            self.boot(p2)
+            self.click(p2, '#auth-btn'); time.sleep(0.6)
+            self.click(p2, '#auth-passkey')
+            back = self.wait_until(p2, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000)
+            self.ok(back, 'Sign in with a passkey should sign the account back in', j)
+            who = p2.evaluate("""(() => { const k = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+                try { return JSON.parse(localStorage.getItem(k)).user.id; } catch (e) { return null; } })()""")
+            self.ok(who == uid, f'the passkey should open the same account: {who} vs {uid}', j)
+            # Remove it; the device still has it, and it must not sign in any more.
+            self.click(p2, '#auth-btn')
+            self.wait_until(p2, "document.querySelectorAll('#profile-passkey-list li').length === 1", 15000)
+            self.ok('last used' in p2.evaluate("document.getElementById('profile-passkey-list').textContent"), 'the passkey should show when it was last used', j)
+            self.click(p2, '.profile-passkey-remove')
+            self.wait_until(p2, "document.querySelectorAll('#profile-passkey-list li').length === 0", 15000)
+            p2.evaluate(SIGN_OUT_JS)
+            self.boot(p2)
+            self.click(p2, '#auth-btn'); time.sleep(0.6)
+            self.click(p2, '#auth-passkey')
+            said = self.wait_until(p2, "/isn.t on a Find A Crib account/.test(document.getElementById('auth-error').textContent)", 15000)
+            self.ok(said and not p2.evaluate("document.getElementById('auth-btn').classList.contains('signed-in')"),
+                    'a removed passkey must not sign in, and should say so', j)
+            j.notes.append('add, sign out, sign in with it, remove; removed one refused')
+        finally:
+            ctx.close()
+            supabase_admin('DELETE', f'users/{uid}')
+
     def j_legal_pages(self, page, j, device):
         """Privacy and Terms, which the App Store listing and the app both
         link to. Rewritten 2026-09-20; App Review 1.2 needs the comment rules
@@ -1363,7 +1434,7 @@ class Runner:
         page.goto(LIVE + '/privacy/', wait_until='domcontentloaded', timeout=90000)
         priv = page.evaluate("document.body.innerText")
         for need in ('What we collect', 'Delete your account', 'household income',
-                     'AdMob', 'Global Privacy Control', 'Your rights', 'enhanced conversions', 'MapKit JS', 'Website speed'):
+                     'AdMob', 'Global Privacy Control', 'Your rights', 'enhanced conversions', 'MapKit JS', 'Website speed', 'Passkeys'):
             self.ok(need.lower() in priv.lower(), f'privacy policy no longer mentions {need!r}', j)
         self.ok('api@findacrib.com' in priv, 'privacy policy should carry a contact address', j)
         self.ok('@gmail' not in priv, 'a personal address must not be published', j)
@@ -2763,7 +2834,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'platform', 'web_push', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
+                'retired_pages', 'platform', 'web_push', 'passkeys', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

@@ -54,3 +54,29 @@ class Wiring(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PasskeyWiring(unittest.TestCase):
+    """Passkeys (2026-11-10): the API ships passkeys.py, lets the routes past
+    the API-key gate, takes the account from the session, and only hands a
+    sign-in token after verify_assertion; the tables are service-role only."""
+
+    def test_routes(self):
+        self.assertRegex(read("scripts", "deploy_api.sh"), r"FILES=\([^)]*\bpasskeys\.py\b")
+        api = read("api_server.py")
+        self.assertIn('request.path.startswith("/passkeys/") or request.path == "/passkeys"', api)
+        block = api[api.index("# ---- Passkeys (owner, 2026-11-10)"):]
+        block = block[:block.index("\n# ---- ", 10)]
+        login = block[block.index("def passkey_login():"):block.index("@app.route(\"/passkeys\", methods=[\"GET\"])")]
+        self.assertLess(login.index("passkeys.verify_assertion("), login.index("_sign_in_token("))
+        self.assertIn("if user_id else None", login)
+        for fn in ("def passkey_list", "def passkey_register_options", "def passkey_register(", "def passkey_remove"):
+            part = block[block.index(fn):]
+            self.assertIn("u = _session_user()", part.split("\n\n\n")[0], fn)
+        self.assertIn('"email_otp"' not in block and "hashed_token" in block, [True])
+
+    def test_tables(self):
+        sql = read("db", "0076_passkeys.sql")
+        self.assertIn("revoke all on public.passkeys, public.passkey_challenges from public, anon, authenticated;", sql)
+        self.assertEqual(sql.count("enable row level security"), 2)
+        self.assertIn("grant execute on function public.%s to service_role", sql)

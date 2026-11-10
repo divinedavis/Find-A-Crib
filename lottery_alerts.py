@@ -64,6 +64,7 @@ import urllib.request
 from zoneinfo import ZoneInfo
 from growth.emailkit import mask_email   # addresses never reach the cron log in full
 import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
+import webpush  # the browser side (Web Push, 2026-11-10); no-op until webpush.env names the key
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -1171,6 +1172,16 @@ def main():
             print(f"device lookup failed: {e}")
     if devices:
         print(f"{sum(len(v) for v in devices.values())} phone(s) across {len(devices)} subscriber(s)")
+    # Browsers with notifications on (webpush.py): the same alert, at the same moment.
+    browsers = {}
+    if webpush.config() and subs:
+        try:
+            for b in rpc("web_push_for_emails", {"p_emails": [s["email"] for s in subs]}, key) or []:
+                browsers.setdefault((b.get("email") or "").lower(), []).append(b)
+        except Exception as e:
+            print(f"browser lookup failed ({type(e).__name__})")
+    if browsers:
+        print(f"{sum(len(v) for v in browsers.values())} browser(s) across {len(browsers)} subscriber(s)")
 
     sent_ids, welcomed_ids = [], []
     sent = pushed = 0
@@ -1198,6 +1209,7 @@ def main():
             hold("daily digest at 8 AM (no Plus)")
             continue
         phones = devices.get(sub["email"].lower(), [])
+        screens = browsers.get(sub["email"].lower(), [])
 
         if sent >= MAX_SENDS_PER_RUN or len(st["sends"]) >= HOURLY_CAP:
             hold("send budget exhausted — next run")
@@ -1221,7 +1233,7 @@ def main():
         # new for anyone (owner got 570 Nostrand Ave. three times).
         to_push = [i for i in mine if not i.get("pushed")]
         if not ok:
-            if is_plus and phones and to_push:
+            if is_plus and (phones or screens) and to_push:
                 email_it = False
                 # tomorrow's first email carries them; copies, because `new`
                 # items are shared by every subscriber in this run
@@ -1272,6 +1284,15 @@ def main():
                     rpc("device_token_remove", {"p_token": dev["token"]}, key)
             except Exception as e:
                 print(f"     token upkeep failed: {e}")
+        for b in screens:
+            r = webpush.send(b, webpush.note(title, text_body, to_push[0].get("url"), f"alert-{sid}"))
+            print(f"     browser push {r['status'] or 'failed'}")
+            pushed += r["ok"]
+            if r["remove"]:
+                try:
+                    rpc("web_push_remove", {"p_endpoint": b["endpoint"]}, key)
+                except Exception as e:
+                    print(f"     browser upkeep failed ({type(e).__name__})")
 
     if not args.dry_run:
         save_state(st)

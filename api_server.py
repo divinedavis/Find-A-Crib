@@ -29,6 +29,7 @@ import listing_page          # a re-rental's own page as text, for Help me apply
 import broker_fee            # broker fee checker: FARE Act + RPL 238-a rules, no model
 import lease_review          # lease review: Claude Haiku 5.5, quotes checked against the lease
 import renter_tools          # repairs, rent increases, rights, renewal coach (2026-10-13)
+import webpush               # browser notifications (Web Push, db/0075)
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -1283,6 +1284,63 @@ def alerts_go():
     resp.headers["Cache-Control"] = "no-store"
     resp.headers["Referrer-Policy"] = "no-referrer"
     return resp
+
+
+# ---- Browser notifications (owner, 2026-11-10: Web Push) -------------------------
+# The account panel turns notifications on for a browser; webpush.py sends the
+# lottery, re-rental and Your Casa alerts there too (db/0075). The account
+# comes from the verified session; the browser's address must be a browser
+# push service's (webpush.push_endpoint) and its keys must be ones a message
+# can be sealed for. Without keys in the environment the feature is off.
+
+
+@app.route("/push/web/key")
+def push_web_key():
+    cfg = webpush.config()
+    if not cfg:
+        return jsonify(error="unavailable"), 404
+    resp = jsonify(key=cfg["public"])
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/push/web/subscribe", methods=["GET", "POST", "DELETE"])
+def push_web_subscribe():
+    if rate_limited("push_web", 30, 3600):
+        return _too_many()
+    cfg = webpush.config()
+    if not cfg:
+        return jsonify(error="unavailable"), 404
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    if request.method == "GET":
+        try:
+            return jsonify(browsers=rpc("web_push_count", {"p_user_id": u["id"]}) or 0)
+        except Exception:
+            return jsonify(error="temporarily_unavailable"), 503
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    body = request.get_json(silent=True) or {}
+    endpoint = webpush.push_endpoint(body.get("endpoint"))
+    if not endpoint:
+        return jsonify(error="bad_subscription"), 400
+    try:
+        if request.method == "DELETE":
+            rpc("web_push_remove_own", {"p_endpoint": endpoint, "p_user_id": u["id"]})
+            return jsonify(ok=True)
+        keys = body.get("keys") or {}
+        if not webpush.valid_keys(keys.get("p256dh"), keys.get("auth")):
+            return jsonify(error="bad_subscription"), 400
+        new = rpc("web_push_upsert", {"p_user_id": u["id"], "p_endpoint": endpoint,
+                                      "p_p256dh": keys["p256dh"], "p_auth": keys["auth"], "p_max": 20})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if new:
+        # The first time, say so where the alerts will arrive: proof it works.
+        webpush.send({"endpoint": endpoint, "p256dh": keys["p256dh"], "auth": keys["auth"]},
+                     webpush.note("Notifications are on", "Lottery, re-rental and Your Casa alerts you follow will show up here.", "/", "welcome"), cfg)
+    return jsonify(ok=True, new=bool(new))
 
 
 # ---- /geo: coarse network location for the map's first view -----------------

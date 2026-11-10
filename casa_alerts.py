@@ -43,6 +43,7 @@ from zoneinfo import ZoneInfo
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import apns                                      # noqa: E402
+import webpush                                   # noqa: E402  browsers (2026-11-10)
 import lottery_alerts as la                      # noqa: E402  rpc, SUPABASE_URL, SITE
 
 SITE = la.SITE
@@ -405,6 +406,9 @@ def send(w, title, body, key, collapse, subject, html, text, dry, crime=False):
                 la.rpc("device_token_remove", {"p_token": dev["token"]}, key)
         except Exception as e:
             print(f"   token upkeep failed: {type(e).__name__}")
+    # Browsers with notifications on (webpush.py): the same alert.
+    url = f"{SITE}/casa/?bbl={w['bbl']}" + ("&src=casa_crime#crime-list" if crime else "")
+    pushed += webpush.push_to_emails(la.rpc, key, [w["email"]], lambda _e: webpush.note(title, body, url, collapse))
     from growth import emailkit
     try:
         # One-click unsubscribe (CAN-SPAM, 2026-11-07): the List-Unsubscribe

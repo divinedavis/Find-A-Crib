@@ -100,6 +100,9 @@ mkenv() {
 mkenv supabase  scraper SUPABASE_URL SUPABASE_SERVICE_KEY SUPABASE_SERVICE_ROLE_KEY
 mkenv smtp      scraper SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD
 mkenv apns      scraper APNS_KEY_PATH APNS_KEY_ID APNS_TEAM_ID APNS_TOPIC
+# Browser notifications (webpush.py, 2026-11-10): the VAPID pair. The API
+# reads the same pair from its own .env.
+mkenv webpush   scraper WEB_PUSH_PUBLIC_KEY WEB_PUSH_PRIVATE_KEY WEB_PUSH_SUBJECT
 mkenv gsc       scraper SC_KEY_FILE
 mkenv typesafe  scraper TYPESAFE_API_KEY
 mkenv nyc       scraper NYC_API_KEY

@@ -117,7 +117,9 @@ self.addEventListener("push", (event) => {
     icon: "/icon-192.png",
     badge: "/icon-192.png",
     tag: note.tag ? String(note.tag).slice(0, 80) : undefined,
-    data: { url: typeof note.url === "string" && note.url.startsWith("/") && !note.url.startsWith("//") ? note.url : "/" },
+    // This site's page, or the https page the alert is about (a lottery's
+    // official listing, as the email links it): webpush.note() decides.
+    data: { url: typeof note.url === "string" && ((note.url.startsWith("/") && !note.url.startsWith("//")) || note.url.startsWith("https://")) ? note.url : "/" },
   }));
 });
 
@@ -125,6 +127,8 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
   event.waitUntil((async () => {
+    // Another site's page opens in a new window; ours reuses an open tab.
+    if (new URL(url).origin !== self.location.origin) return self.clients.openWindow(url);
     for (const client of await self.clients.matchAll({ type: "window", includeUncontrolled: true })) {
       if ("focus" in client) {
         await client.focus();

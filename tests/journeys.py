@@ -103,6 +103,19 @@ def supabase_rest(method, path, body=None):
         return e.code
 
 
+def supabase_rows(path):
+    """PostgREST GET with the service-role key: the rows, or None."""
+    key = subprocess.check_output(['security', 'find-generic-password', '-s',
+                                   'rent-map-supabase-service-role', '-w'],
+                                  stderr=subprocess.DEVNULL).decode().strip()
+    req = urllib.request.Request(SUPABASE_URL + '/rest/v1/' + path, headers={'apikey': key, 'Authorization': 'Bearer ' + key})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read() or b'null')
+    except urllib.error.HTTPError:
+        return None
+
+
 # Which analytics event each journey exercises. tests/journey_coverage.py reads
 # this, asks the events table what real visitors actually did, and names the
 # events no journey covers — so the suite grows from real behaviour instead of
@@ -1276,6 +1289,70 @@ class Runner:
             j.notes.append('manifest, fades, pre-load rules, speed report, opens offline')
         finally:
             ctx.close()
+
+    def j_web_push(self, page, j, device):
+        """Notifications on this browser (2026-11-10, webpush.py + db/0075).
+        A throwaway account turns them on in the account panel and the API
+        files the browser against it (a row only the service role can read);
+        turning them off removes it. Headless Chrome has no push service, so
+        the browser's subscription is a stand-in with real keys; everything
+        between the page and the database is real. Without a session the
+        API answers 401. Chromium only, like the offline check."""
+        if page.context.browser.browser_type.name != 'chromium' or os.environ.get('FAC_RESOLVE_IP'):
+            return
+        st = page.request.post(LIVE + '/api/push/web/subscribe', data=json.dumps({'endpoint': 'https://fcm.googleapis.com/fcm/send/x'}),
+                               headers={'Content-Type': 'application/json'}).status
+        self.ok(st == 401, f'subscribing without a session must be 401, got {st}', j)
+        if page.request.get(LIVE + '/api/push/web/key').status != 200:
+            self.ok(False, 'the API has no Web Push key', j)
+            return
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+        import base64
+        b64 = lambda b: base64.urlsafe_b64encode(b).rstrip(b'=').decode()
+        p256dh = b64(ec.generate_private_key(ec.SECP256R1()).public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint))
+        endpoint = f'https://fcm.googleapis.com/fcm/send/journey-{secrets.token_hex(8)}'
+        email = f'journey-push-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j)
+            return
+        uid = u['id']
+        ctx = page.context.browser.new_context(viewport={'width': 1300, 'height': 900}, service_workers='allow', permissions=['notifications'])
+        try:
+            if self.html is not None:
+                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(ROOT / 'sw.js').read_text()))
+            p2 = self.page(ctx, j)
+            p2.add_init_script("""(() => { let live = null;
+                const make = () => ({ endpoint: %s, toJSON: () => ({ endpoint: %s, keys: { p256dh: %s, auth: 'AwMDAwMDAwMDAwMDAwMDAw' } }),
+                                      unsubscribe: async () => { live = null; return true; } });
+                PushManager.prototype.subscribe = async function () { return (live = make()); };
+                PushManager.prototype.getSubscription = async function () { return live; }; })()""" % (json.dumps(endpoint), json.dumps(endpoint), json.dumps(p256dh)))
+            self.boot(p2)
+            self.click(p2, '#auth-btn'); time.sleep(0.6)
+            p2.fill('#auth-email', email); p2.fill('#auth-pass', password)
+            self.click(p2, '#auth-submit')
+            if not self.wait_until(p2, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(1)
+            self.click(p2, '#auth-btn')
+            self.wait_until(p2, "!document.getElementById('profile-modal').hidden", 15000)
+            off = self.wait_until(p2, "document.getElementById('profile-push').dataset.state === 'off'", 15000)
+            self.ok(off, 'the account panel should offer notifications for this browser', j)
+            self.click(p2, '#profile-push-btn')
+            on = self.wait_until(p2, "document.getElementById('profile-push').dataset.state === 'on'", 15000)
+            self.ok(on, 'Turn on should leave notifications on', j)
+            rows = supabase_rows(f'web_push_subs?select=endpoint,user_id&user_id=eq.{uid}') or []
+            self.ok([r['endpoint'] for r in rows] == [endpoint], f'the browser should be filed against the account: {rows}', j)
+            self.click(p2, '#profile-push-btn')
+            self.wait_until(p2, "document.getElementById('profile-push').dataset.state === 'off'", 15000)
+            rows = supabase_rows(f'web_push_subs?select=endpoint&user_id=eq.{uid}')
+            self.ok(rows == [], f'Turn off should forget the browser: {rows}', j)
+            j.notes.append('on files the browser, off forgets it')
+        finally:
+            ctx.close()
+            supabase_admin('DELETE', f'users/{uid}')
 
     def j_legal_pages(self, page, j, device):
         """Privacy and Terms, which the App Store listing and the app both
@@ -2686,7 +2763,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'platform', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
+                'retired_pages', 'platform', 'web_push', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

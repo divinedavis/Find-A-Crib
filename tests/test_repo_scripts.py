@@ -76,6 +76,28 @@ class CleanBuilds(unittest.TestCase):
         self.assertRegex(r.stdout, r"busy .*dhcr-map/ios/build\.nosync")
         self.assertIn("1 tree(s)", r.stdout)
 
+    def test_guard_ignores_a_loop_that_only_mentions_xcodebuild(self):
+        # A sibling session's `while pgrep -f xcodebuild ...; do sleep; done`
+        # waiter is not a build. The guard used to treat it as one and held
+        # the cleanup off for three hours on 2026-11-10.
+        waiter = subprocess.Popen(["/bin/sh", "-c", "while :; do sleep 1; done # xcodebuild ship.sh"],
+                                  env=CLEAN_ENV)
+        self.addCleanup(waiter.kill)
+        r = self.run_clean("--yes")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse((self.tree("dhcr-map") / "archive.log").exists())
+
+    def test_guard_stops_for_a_running_ship_script(self):
+        ship = self.tmp / "ship.sh"
+        ship.write_text("sleep 30\n")
+        proc = subprocess.Popen(["/bin/bash", str(ship)], env=CLEAN_ENV)
+        self.addCleanup(proc.kill)
+        time.sleep(0.3)
+        r = self.run_clean("--yes")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("a build or ship is running", r.stderr)
+        self.assertTrue((self.tree("dhcr-map") / "archive.log").exists())
+
     def test_unknown_argument_is_refused(self):
         self.assertEqual(self.run_clean("--yse").returncode, 2)
 
@@ -198,3 +220,29 @@ class HookEnvironment(unittest.TestCase):
         self.assertNotIn("GIT_INDEX_FILE", env)
         # The module's own copy was taken the same way.
         self.assertFalse([k for k in CLEAN_ENV if k.startswith("GIT_")])
+
+    @unittest.skipUnless(HAVE_TOOLS, "needs bash, git, curl and gzip")
+    def test_a_push_from_a_linked_worktree_leaves_the_repo_non_bare(self):
+        # The other half of the 2026-11-10 incident: with GIT_DIR pointing at a
+        # LINKED worktree's git dir, `git init` re-initialises the shared repo
+        # and sets core.bare = true, and the main checkout stops working.
+        real = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, real, ignore_errors=True)
+        env = {**CLEAN_ENV, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
+               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
+        git = lambda *a: subprocess.run(["git", *a], env=env, check=True,
+                                        capture_output=True, text=True).stdout.strip()
+        git("init", "-q", str(real / "repo"))
+        git("-C", str(real / "repo"), "commit", "-q", "--allow-empty", "-m", "x")
+        git("-C", str(real / "repo"), "worktree", "add", "-q", str(real / "wt"))
+        wt_gitdir = git("-C", str(real / "wt"), "rev-parse", "--absolute-git-dir")
+        saved = dict(os.environ)
+        os.environ["GIT_DIR"] = wt_gitdir
+        try:
+            case = NewWorktree("test_existing_path_is_refused")
+            case.setUp()
+            case.doCleanups()
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+        self.assertEqual(git("-C", str(real / "repo"), "config", "core.bare"), "false")

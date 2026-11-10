@@ -89,7 +89,17 @@ if [ "$APPLY" -ne 1 ]; then
 fi
 # A ship spends minutes between xcodebuild calls (uploads, simulator boots), so
 # looking for xcodebuild alone would let this run in the middle of one.
-if [ "$FORCE" -ne 1 ] && pgrep -f 'xcodebuild|ios/scripts/ship\.sh|daily_ship\.sh|test_affected\.sh' >/dev/null 2>&1; then
+# Match the process itself, not any command line that mentions it: `pgrep -f
+# xcodebuild` also hits a shell loop that is only waiting for builds to finish
+# (`while pgrep -f xcodebuild ...`), and on 2026-11-10 one such loop held this
+# script off for three hours with no build running.
+build_running() {
+  pgrep -x xcodebuild >/dev/null 2>&1 && return 0
+  # A script run as `bash ship.sh`, `./ship.sh` or `/bin/bash /path/ship.sh`:
+  # argv[0] is the shell or the script, never something that merely quotes it.
+  pgrep -f '^(/bin/|/usr/bin/env )?(ba|z)?sh [^ ]*(ship|daily_ship|test_affected)\.sh( |$)|^[^ ]*/(ship|daily_ship|test_affected)\.sh( |$)' >/dev/null 2>&1
+}
+if [ "$FORCE" -ne 1 ] && build_running; then
   echo "error: a build or ship is running; wait for it or pass --force" >&2
   exit 1
 fi

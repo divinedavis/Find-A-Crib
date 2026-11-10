@@ -45,6 +45,7 @@ re-rental opens up.
 | iOS app (SwiftUI) | `ios/` (see [ios/README.md](ios/README.md)) |
 | Growth engine (SEO pages, outreach) | `growth/`, `growth_daily.py` |
 | Deploy + cron jobs | `deploy/`, `scripts/deploy_*.sh` |
+| Production layout and nginx snapshot | `deploy/README.md`, `deploy/nginx/` |
 | Tests | `tests/` |
 
 More detail:
@@ -77,6 +78,25 @@ Large data files (`buildings.slim.json` and friends) are generated and
 gitignored. The journey suite fetches them from findacrib.com, so you don't
 need to build them.
 
+### Working in a worktree
+
+The owner's checkout uses sibling worktrees (`../dhcr-map-<task>`) so several
+branches can be open at once. A fresh worktree has only tracked files; the
+ignored data the app, the builders and the iOS tests need stays in the main
+checkout. Create one with:
+
+```sh
+scripts/new_worktree.sh <task>          # branch + ../dhcr-map-<task> + data
+```
+
+It first re-downloads any public data file (the slim and detail building files,
+`featured.json`, the iOS seed) that is over a week old in the main checkout
+from findacrib.com, then clones the data with `cp -c`: on APFS the copy is
+instant and costs no extra disk until one side is modified. Build output lives
+in each worktree's `ios/build.nosync`; `scripts/clean_builds.sh` reports what
+it would reclaim (dry run by default, `--yes` to empty the idle trees,
+`--keep daily` to leave one alone; it never removes `ship-history.jsonl`).
+
 ## Contributing
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)**. In short, fork the repo, open a pull
@@ -107,4 +127,3 @@ Found a security problem? Please don't open an issue. See [SECURITY.md](SECURITY
 - DC DHCD RentRegistry public data exports; DC neighborhood label points (DCGIS)
   and Census 2020 ZCTAs for DC neighborhood/ZIP assignment
 - HUD Fair Market Rents and project-based Section 8 contracts
-

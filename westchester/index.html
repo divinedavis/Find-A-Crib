@@ -2353,6 +2353,15 @@
       </div>
       <label class="switch"><input id="profile-dark" type="checkbox"><span class="slider"></span></label>
     </div>
+    <!-- Notifications in this browser (2026-11-10, webpush.py): shown only
+         where the browser can and the server has its keys. -->
+    <div id="profile-push" class="profile-row profile-toggle-row" hidden>
+      <div>
+        <div class="profile-feat">🔔 Notifications on this browser</div>
+        <div class="profile-feat-sub" id="profile-push-sub"></div>
+      </div>
+      <button type="button" class="folder-new" id="profile-push-btn" style="white-space:nowrap" hidden></button>
+    </div>
     <div id="profile-searches" hidden>
       <div class="profile-row" style="border-bottom:none;padding-bottom:4px"><span class="label">Saved searches</span></div>
       <div id="search-list"></div>
@@ -9594,6 +9603,69 @@ function favActive() {
   const profileModal = document.getElementById('profile-modal');
   const profileAlerts = document.getElementById('profile-alerts');
   const profileErr = document.getElementById('profile-error');
+  // ---- Notifications on this browser (Web Push, 2026-11-10) -------------
+  // The lottery, re-rental and Your Casa alerts the account follows, shown by
+  // this browser as well as emailed (webpush.py). Nothing asks permission
+  // until the button is pressed.
+  const PUSH_COPY = {
+    on: 'Lottery, re-rental and Your Casa alerts you follow show up here as well as by email.',
+    off: 'Get lottery, re-rental and Your Casa alerts you follow in this browser, as well as by email.',
+    blocked: 'This browser blocks notifications from Find A Crib. Allow them in its site settings, then come back.',
+    install: 'On iPhone and iPad, add Find A Crib to your Home Screen (Share, then Add to Home Screen) and open it from there to turn notifications on.',
+  };
+  let pushState = null;
+  async function pushCall(method, body) {
+    const tok = (await supaClient.auth.getSession()).data.session.access_token;
+    return fetch('/api/push/web/subscribe', { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify(body) });
+  }
+  async function readPushState() {
+    const key = await fetch('/api/push/web/key').then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!key || !key.key) return { state: 'none' };
+    const can = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    if (!can) {
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      return { state: ios && !navigator.standalone ? 'install' : 'none' };
+    }
+    if (Notification.permission === 'denied') return { state: 'blocked', key: key.key };
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    return { state: sub && Notification.permission === 'granted' ? 'on' : 'off', key: key.key, sub };
+  }
+  async function syncPushUI() {
+    const row = document.getElementById('profile-push'), btn = document.getElementById('profile-push-btn');
+    pushState = await readPushState().catch(() => ({ state: 'none' }));
+    row.hidden = pushState.state === 'none';
+    row.dataset.state = pushState.state;
+    document.getElementById('profile-push-sub').textContent = PUSH_COPY[pushState.state] || '';
+    btn.hidden = !(pushState.state === 'on' || pushState.state === 'off');
+    btn.textContent = pushState.state === 'on' ? 'Turn off' : 'Turn on';
+    // The server may have forgotten this browser (another account since): tell it again.
+    if (pushState.state === 'on') pushCall('POST', pushState.sub.toJSON()).catch(() => {});
+  }
+  document.getElementById('profile-push-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('profile-push-btn');
+    btn.disabled = true;
+    profileErr.hidden = true;
+    try {
+      if (pushState.state === 'on') {
+        const body = pushState.sub.toJSON();
+        await pushState.sub.unsubscribe();
+        await pushCall('DELETE', body).catch(() => {});
+      } else if ((await Notification.requestPermission()) === 'granted') {
+        const key = Uint8Array.from(atob(pushState.key.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        const sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        const r = await pushCall('POST', sub.toJSON());
+        if (!r.ok) { await sub.unsubscribe().catch(() => {}); throw new Error('subscribe ' + r.status); }
+      }
+    } catch (e) {
+      profileErr.textContent = 'Couldn’t change notifications. Please try again.';
+      profileErr.hidden = false;
+    } finally {
+      btn.disabled = false;
+      await syncPushUI();
+    }
+  });
+
   async function openProfile() {
     if (!authUser) return;
     document.getElementById('profile-email').textContent = authUser.email || '';
@@ -9607,6 +9679,7 @@ function favActive() {
     await syncBillingUI();
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
+    syncPushUI();
     profileAlerts.checked = false;
     try {   // free for every account since 2026-09-05 (saving is subscribing)
       const { data } = await supaClient.rpc('get_alerts_enabled');

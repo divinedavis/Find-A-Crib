@@ -159,6 +159,24 @@
 <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
 <link rel="icon" type="image/png" href="/favicon-32.png?v=2" sizes="32x32" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+<link rel="manifest" href="/manifest.json" />
+<!-- Browser features (owner, 2026-11-10): pages fade into each other, a link
+     the pointer rests on starts loading, off-screen list cards are skipped,
+     the speed of each visit is reported (static/platform/vitals.js), and the
+     service worker (sw.js) keeps the site and its data for the next visit and
+     offline. Redirect counters (/c, /t/, /rent, /tt…) and anything with a
+     query are never pre-loaded: a pre-load would count as a scan or a visit. -->
+<script type="speculationrules">
+{"prefetch":[{"source":"document","eagerness":"moderate","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/auth/*"}},{"not":{"href_matches":"/dashboard*"}},{"not":{"href_matches":"/report/*"}},{"not":{"href_matches":"/alerts*"}},{"not":{"href_matches":"/reset*"}},{"not":{"href_matches":"/go/*"}},{"not":{"href_matches":"/c"}},{"not":{"href_matches":"/c/*"}},{"not":{"href_matches":"/t/*"}},{"not":{"href_matches":"/rent"}},{"not":{"href_matches":"/tt"}},{"not":{"href_matches":"/ig"}},{"not":{"href_matches":"/yt"}},{"not":{"href_matches":"/rd"}},{"not":{"href_matches":"/*.pdf"}},{"not":{"href_matches":"/*.json"}},{"not":{"selector_matches":"a[href*='?'], a[href*='#'], [rel~=nofollow], [download], [target=_blank]"}}]}}]}
+</script>
+<style>
+  @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .16s; }
+</style>
+<script src="/static/platform/vitals.js?v=1" defer></script>
+<script>
+  if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); }, { once: true });
+</script>
 <!-- Open Graph: rich link preview in iMessage, Slack, Facebook, etc. -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Find A Crib" />
@@ -913,6 +931,9 @@
     flex: 0 1 calc(50% - 7px);
   }
   .card:hover { box-shadow: var(--card-shadow-hover); border-color: var(--line-strong); transform: translateY(-1px); }
+  /* Only cards near the screen are laid out and painted (2026-11-10); the rest
+     keep the height they last had, so the scrollbar doesn't jump. */
+  .results-grid .card { content-visibility: auto; contain-intrinsic-size: auto 300px; }
   .card .photo {
     flex: 0 0 150px; height: 150px; background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%);
     color: #fff; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;

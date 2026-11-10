@@ -261,7 +261,7 @@ class Runner:
     def context(self, p, device):
         if device == 'phone':
             b = p.webkit.launch(headless=not self.headed)
-            ctx = b.new_context(**p.devices['iPhone 14 Pro'])
+            ctx = b.new_context(**p.devices['iPhone 14 Pro'], service_workers='block')
         elif device == 'ipad':
             # An iPad in landscape, the way iPadOS Safari really presents
             # itself: a MAC user agent with touch (2026-09-22 — two iPhone-
@@ -272,7 +272,7 @@ class Runner:
             d = dict(p.devices['iPad Pro 11 landscape'])
             d['user_agent'] = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 '
                                '(KHTML, like Gecko) Version/26.0 Safari/605.1.15')
-            ctx = b.new_context(**d)
+            ctx = b.new_context(**d, service_workers='block')
         else:
             # FAC_RESOLVE_IP=<ip> pins findacrib.com to one droplet before DNS
             # points there (a migration's dark run). Chromium only: WebKit has
@@ -280,7 +280,10 @@ class Runner:
             pin = os.environ.get('FAC_RESOLVE_IP', '').strip()
             args = [f'--host-resolver-rules=MAP findacrib.com {pin}'] if pin else []
             b = p.chromium.launch(headless=not self.headed, args=args)
-            ctx = b.new_context(viewport={'width': 1300, 'height': 900})
+            ctx = b.new_context(viewport={'width': 1300, 'height': 900}, service_workers='block')
+        # Service workers are blocked in the shared contexts: one would answer
+        # requests before page.route sees them, and every stub below would
+        # stop working. j_platform opens its own context that allows one.
         return b, ctx
 
     def page(self, ctx, j):
@@ -384,6 +387,14 @@ class Runner:
                               else 'application/javascript', body=asset.read_text())
                 elif u.startswith(LIVE + '/static/supercluster/'):
                     r.fulfill(status=200, content_type='application/javascript', body=self.sc)
+                elif u.split('?')[0] == LIVE + '/privacy/':
+                    # Shipped by deploy_app.sh since 2026-11-10.
+                    r.fulfill(status=200, content_type='text/html; charset=utf-8', body=(ROOT / 'privacy' / 'index.html').read_text())
+                elif u.startswith(LIVE + '/static/platform/') or u.split('?')[0] in (LIVE + '/manifest.json', LIVE + '/icon-maskable-512.png'):
+                    # Browser features (2026-11-10), shipped by deploy_app.sh.
+                    asset = ROOT / u.split('?')[0][len(LIVE) + 1:]
+                    kind = {'.js': 'application/javascript', '.json': 'application/manifest+json', '.png': 'image/png'}[asset.suffix]
+                    r.fulfill(status=200, content_type=kind, body=asset.read_bytes())
                 elif u.startswith(LIVE + '/static/chat/'):
                     # Building chat on the web (2026-10-19), shipped by deploy_app.sh.
                     asset = ROOT / 'static' / 'chat' / u.split('?')[0].rsplit('/', 1)[-1]
@@ -1188,6 +1199,84 @@ class Runner:
             self.ok(r.status in (301, 302, 404, 410), f'{path} should be gone, got {r.status}', j)
         j.notes.append('rent report, /available/ and listings files gone')
 
+    def j_platform(self, page, j, device):
+        """What the browser offers that the site uses (owner, 2026-11-10):
+        installable (manifest + icons), the service worker that opens the
+        site offline, pages fading into each other, links pre-loading on
+        hover, off-screen list cards skipped, and one speed report per visit
+        in the shape nginx logs (deploy/nginx, fac_vitals)."""
+        local = self.html is not None
+        if local:
+            manifest = json.loads((ROOT / 'manifest.json').read_text())
+            exists = lambda path: (ROOT / path.lstrip('/').split('?')[0]).is_file()
+        else:
+            manifest = page.request.get(LIVE + '/manifest.json').json()
+            exists = lambda path: page.request.get(LIVE + path).status == 200
+        self.ok(manifest.get('name') == 'Find A Crib' and manifest.get('display') == 'standalone', f'manifest: {manifest.get("name")!r}', j)
+        self.ok(any(i.get('purpose') == 'maskable' for i in manifest.get('icons', [])), 'manifest should carry a maskable icon', j)
+        for icon in manifest.get('icons', []):
+            self.ok(exists(icon['src']), f'manifest icon {icon["src"]} is missing', j)
+        sent = []
+        # The beacon only: /static/platform/vitals.js?v=1 must still load.
+        is_beacon = lambda url: url.split('?')[0] == LIVE + '/vitals'
+        page.route(is_beacon, lambda r: (sent.append(r.request.url), r.fulfill(status=204)))
+        self.boot(page, wait_pins=False)
+        head = page.evaluate("""(() => ({
+            manifest: !!document.querySelector('link[rel=manifest][href="/manifest.json"]'),
+            rules: (document.querySelector('script[type=speculationrules]') || {}).textContent || '',
+            fade: [...document.styleSheets].some(sh => { try { return [...sh.cssRules].some(r => /view-transition/.test(r.cssText)); } catch (e) { return false; } }),
+        }))()""")
+        self.ok(head['manifest'], 'the page should link the manifest', j)
+        self.ok(head['fade'], 'the page should opt in to page fades (@view-transition)', j)
+        try:
+            rules = json.loads(head['rules'])
+            excluded = json.dumps(rules)
+            self.ok(all(f'"/{p}' in excluded for p in ('api/*', 'c/*', 't/*', 'rent"')), 'pre-load rules must skip /api and the redirect counters', j)
+        except ValueError:
+            self.ok(False, 'the speculation rules are not valid JSON', j)
+        if device == 'desktop':
+            # Off-screen list cards are skipped (content-visibility).
+            cv = page.evaluate("(() => { const c = document.querySelector('.results-grid .card'); return c ? getComputedStyle(c).contentVisibility : 'no card'; })()")
+            self.ok(cv in ('auto', 'no card'), f'list cards should be content-visibility: auto, got {cv}', j)
+        # Leaving the page sends one report: ranges only, in nginx's allowed shape.
+        page.evaluate("""(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+            document.dispatchEvent(new Event('visibilitychange')); document.dispatchEvent(new Event('visibilitychange')); })()""")
+        page.wait_for_timeout(800)
+        self.ok(len(sent) == 1, f'one speed report per visit, got {len(sent)}', j)
+        if sent:
+            query = sent[0].split('?', 1)[1] if '?' in sent[0] else ''
+            self.ok(re.fullmatch(r'[a-z0-9=&._+-]{1,200}', query) is not None, f'the report must match nginx\'s allowed shape: {query}', j)
+            self.ok(query.startswith('p=nyc') and 'fcp=' in query, f'the report should name the map and carry first paint: {query}', j)
+            self.ok(not re.search(r'(id|vid|email|ua)=', query), f'the report must not identify anyone: {query}', j)
+        page.unroute(is_beacon)
+        # Offline (Chromium: WebKit's test browser can't run service workers here).
+        if page.context.browser.browser_type.name != 'chromium' or os.environ.get('FAC_RESOLVE_IP'):
+            j.notes.append('manifest, fades, pre-load rules, speed report')
+            return
+        b = page.context.browser
+        ctx = b.new_context(viewport={'width': 1300, 'height': 900}, service_workers='allow')
+        try:
+            if local:
+                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(ROOT / 'sw.js').read_text()))
+                ctx.route(LIVE + '/', lambda r: r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.html))
+            p2 = ctx.new_page()
+            p2.goto(LIVE + '/', wait_until='load', timeout=90000)
+            controlled = p2.evaluate("""(async () => { await navigator.serviceWorker.ready;
+                if (!navigator.serviceWorker.controller) await new Promise(r => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
+                return !!navigator.serviceWorker.controller; })()""")
+            self.ok(controlled, 'the service worker should take control of the page', j)
+            p2.reload(wait_until='load', timeout=90000)
+            p2.wait_for_timeout(1500)
+            kept = p2.evaluate("(async () => (await (await caches.open('fac-pages-v1')).keys()).map(r => new URL(r.url).pathname))()")
+            self.ok('/' in kept, f'the map page should be kept for offline: {kept}', j)
+            ctx.set_offline(True)
+            p2.reload(wait_until='domcontentloaded', timeout=30000)
+            title = p2.title()
+            self.ok('Find A Crib' in title, f'offline, the site should still open (title {title!r})', j)
+            j.notes.append('manifest, fades, pre-load rules, speed report, opens offline')
+        finally:
+            ctx.close()
+
     def j_legal_pages(self, page, j, device):
         """Privacy and Terms, which the App Store listing and the app both
         link to. Rewritten 2026-09-20; App Review 1.2 needs the comment rules
@@ -1197,7 +1286,7 @@ class Runner:
         page.goto(LIVE + '/privacy/', wait_until='domcontentloaded', timeout=90000)
         priv = page.evaluate("document.body.innerText")
         for need in ('What we collect', 'Delete your account', 'household income',
-                     'AdMob', 'Global Privacy Control', 'Your rights', 'enhanced conversions', 'MapKit JS'):
+                     'AdMob', 'Global Privacy Control', 'Your rights', 'enhanced conversions', 'MapKit JS', 'Website speed'):
             self.ok(need.lower() in priv.lower(), f'privacy policy no longer mentions {need!r}', j)
         self.ok('api@findacrib.com' in priv, 'privacy policy should carry a contact address', j)
         self.ok('@gmail' not in priv, 'a personal address must not be published', j)
@@ -2597,7 +2686,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'search_intents', 'ads_later_on_phones', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip', 'crash_trace_throttled', 'rerental_deal',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
+                'retired_pages', 'platform', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_billing', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'rerentals_chip', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

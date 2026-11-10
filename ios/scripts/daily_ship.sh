@@ -19,10 +19,17 @@ set -euo pipefail
 # A build runs 40+ minutes; on battery this Mac idle-sleeps after 1 minute
 # (pmset sleep 1), so hold the Mac awake for the whole run. Closing the lid
 # still sleeps it.
-[[ -n "${DAILY_SHIP_AWAKE:-}" ]] || exec env DAILY_SHIP_AWAKE=1 /usr/bin/caffeinate -i "$0" "$@"
+# On battery the scheduled 2:58 AM wake is only a "dark wake": Marracat's job
+# dozed and dark-woke 26 times on 2026-11-03 and a 10-minute test pass ended
+# at 08:38 (pmset -g log). Declaring user activity turns a dark wake into a
+# full one (lid open); the assertion below then holds it.
+if [[ -z "${DAILY_SHIP_AWAKE:-}" ]]; then
+    /usr/bin/caffeinate -u -t 30 &
+    exec env DAILY_SHIP_AWAKE=1 /usr/bin/caffeinate -i "$0" "$@"
+fi
 cd "$(dirname "$0")/.."
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-APP_PATHS=(FindACrib FindACribTests FindACribUITests FindACribWidgets Shared project.yml)
+APP_PATHS=(FindACrib FindACribTests FindACribUITests FindACribWidgets Shared project.yml ExportOptions.plist)
 DRY=0; [[ "${1:-}" == "--dry-run" ]] && DRY=1
 mkdir -p build.nosync
 
@@ -51,6 +58,9 @@ past_cutoff() { (( 10#$(date +%H) >= 9 )); }
 source scripts/build_lock.sh
 
 say "=== daily build"
+if [[ "$(pmset -g batt 2>/dev/null)" == *"'Battery Power'"* ]]; then
+    notify "the Mac is on battery: tonight's build may stall or sleep. Leave it plugged in with the lid open"
+fi
 if past_cutoff && [[ "${DAILY_SHIP_NOW:-0}" != "1" ]]; then
     notify "the Mac was asleep at 03:05; today's changes ship tonight"; exit 0
 fi
@@ -93,7 +103,12 @@ why() {
 }
 run_ship() {
     touch build.nosync/ship-run.log.start
-    ./scripts/ship.sh 2>&1 | tee build.nosync/ship-run.log
+    local rc=0
+    ./scripts/ship.sh 2>&1 | tee build.nosync/ship-run.log || rc=$?
+    # ship_log.sh's watcher prints the SHIP SUMMARY line a moment after
+    # ship.sh exits; give it that moment before this job can end.
+    sleep 2
+    return "$rc"
 }
 if ! run_ship; then
     # One automatic retry before the 09:00 cutoff (2026-10-24) when nothing was

@@ -28,6 +28,26 @@ KEEP = 5             # passing ships remembered per metric
 MIN_KB_REGRESSION = 5000
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE = os.path.join(HERE, "perf_baseline.json")
+# A rolling baseline alone lets a slow creep through: every ship a little
+# slower than the last still passes and the bar follows it up (Marracat's
+# launch went 1,908 -> 2,017 ms over five passing ships, 2026-11-09). Metrics
+# named in perf_ceilings.json also have a FIXED ceiling no ship may pass,
+# whatever the recent ones did. Raising one is a deliberate edit to that file.
+CEILINGS = os.path.join(HERE, "perf_ceilings.json")
+
+
+def load_ceilings(path=CEILINGS):
+    """{metric key: max} from perf_ceilings.json; a missing file means none."""
+    try:
+        raw = json.load(open(path))
+    except FileNotFoundError:
+        return {}
+    return {k: float(v["max"]) for k, v in raw.items() if isinstance(v, dict) and "max" in v}
+
+
+def over_ceiling(m, ceiling):
+    """True when a prefers-smaller metric's median is above its fixed ceiling."""
+    return ceiling is not None and m["smaller"] and m["median"] > ceiling
 
 
 def read_metrics(xcresult):
@@ -59,6 +79,7 @@ def main():
     except FileNotFoundError:
         base = {}
 
+    ceilings = load_ceilings()
     failed = []
     print(f"{'metric':<92} {'now':>9} {'baseline':>9}  verdict")
     for key, m in sorted(got.items()):
@@ -73,6 +94,12 @@ def main():
             verdict = f"FAIL (>{int(TOLERANCE * 100)}% worse)" if over else "ok"
             if over:
                 failed.append(key)
+        if over_ceiling(m, ceilings.get(key)):
+            verdict = f"FAIL (over the fixed ceiling of {ceilings[key]:g})"
+            if key not in failed:
+                failed.append(key)
+        elif key in ceilings and verdict == "ok":
+            verdict = f"ok (ceiling {ceilings[key]:g})"
         print(f"{key:<92} {m['median']:>9.3f} {ref if ref is not None else float('nan'):>9.3f}  {verdict}  {m['unit']}")
     gone = sorted(set(base) - set(got))
     for key in gone:

@@ -16,6 +16,12 @@ ROOT = Path(__file__).resolve().parent.parent
 CLEAN = ROOT / "scripts" / "clean_builds.sh"
 NEW_WT = ROOT / "scripts" / "new_worktree.sh"
 HAVE_TOOLS = all(shutil.which(t) for t in ("bash", "git", "curl", "gzip"))
+# The environment without git's own variables. Inside a hook (pre-push runs
+# these tests) git sets GIT_DIR, GIT_INDEX_FILE and friends, and every git
+# command below would act on the repo being pushed instead of its temporary
+# one: on 2026-11-10 setUp's `git commit -m init` landed in a real branch,
+# with an index.html of one line.
+CLEAN_ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
 
 
 def _age(path: Path, hours: float) -> None:
@@ -41,7 +47,7 @@ class CleanBuilds(unittest.TestCase):
 
     def run_clean(self, *args):
         return subprocess.run(["bash", str(CLEAN), "--root", str(self.tmp), *args],
-                              capture_output=True, text=True)
+                              env=CLEAN_ENV, capture_output=True, text=True)
 
     def tree(self, name):
         return self.tmp / name / "ios" / "build.nosync"
@@ -83,7 +89,7 @@ class NewWorktree(unittest.TestCase):
         self.site = self.tmp / "site"
         self.main.mkdir()
         self.site.mkdir()
-        self.env = {**os.environ, "FAC_SITE": self.site.as_uri(),
+        self.env = {**CLEAN_ENV, "FAC_SITE": self.site.as_uri(),
                     "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
                     "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
         (self.main / "index.html").write_text("app\n")
@@ -141,7 +147,7 @@ class NewWorktree(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         wt = self.tmp / "dhcr-map-task"
         self.assertFalse((wt / "vacancies.json").exists())
-        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=wt, capture_output=True, text=True)
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=wt, env=CLEAN_ENV, capture_output=True, text=True)
         self.assertEqual(dirty.stdout, "")
 
     def test_error_page_never_replaces_data(self):
@@ -170,3 +176,25 @@ class NewWorktree(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HookEnvironment(unittest.TestCase):
+    """Run as a hook runs: with GIT_DIR pointing at another repo. The tests'
+    git commands must still act on their own temporary repo."""
+
+    @unittest.skipUnless(HAVE_TOOLS, "needs bash, git, curl and gzip")
+    def test_a_hooks_git_dir_does_not_reach_the_temporary_repo(self):
+        decoy = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, decoy, ignore_errors=True)
+        subprocess.run(["git", "init", "-q", str(decoy)], env=CLEAN_ENV, check=True)
+        saved = dict(os.environ)
+        os.environ.update(GIT_DIR=str(decoy / ".git"), GIT_INDEX_FILE=str(decoy / ".git" / "index"))
+        try:
+            env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+        self.assertNotIn("GIT_DIR", env)
+        self.assertNotIn("GIT_INDEX_FILE", env)
+        # The module's own copy was taken the same way.
+        self.assertFalse([k for k in CLEAN_ENV if k.startswith("GIT_")])

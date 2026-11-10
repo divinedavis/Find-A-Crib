@@ -87,8 +87,9 @@ class NewWorktree(unittest.TestCase):
                     "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.com",
                     "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.com"}
         (self.main / "index.html").write_text("app\n")
+        (self.main / ".gitignore").write_text("buildings*.json\nbuildings.slim.json.gz\n")
         (self.main / "featured.json").write_text('{"tracked": true}\n')
-        for cmd in (["init", "-q", "-b", "main"], ["add", "index.html", "featured.json"],
+        for cmd in (["init", "-q", "-b", "main"], ["add", "index.html", "featured.json", ".gitignore"],
                     ["commit", "-q", "-m", "init"]):
             subprocess.run(["git", *cmd], cwd=self.main, env=self.env, check=True)
         # Ignored data as the main checkout holds it: months old.
@@ -113,6 +114,35 @@ class NewWorktree(unittest.TestCase):
         self.assertIn("buildings_geo.json", r.stdout)
         # A tracked file is never overwritten by a data copy.
         self.assertEqual((wt / "featured.json").read_text(), '{"tracked": true}\n')
+
+    def test_ios_seed_gzip_is_refreshed(self):
+        import gzip
+        seed = self.main / "ios" / "FindACrib" / "Resources" / "Data"
+        seed.mkdir(parents=True)
+        (seed / "buildings.slim.json.gz").write_bytes(gzip.compress(b'[{"old": 1}]'))
+        _age(seed / "buildings.slim.json.gz", 24 * 60)
+        (self.site / "buildings.slim.json.gz").write_bytes(gzip.compress(b'[{"live": 1}]'))
+        r = self.run_new("task")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for root in (self.main, self.tmp / "dhcr-map-task"):
+            got = gzip.decompress((root / "ios/FindACrib/Resources/Data/buildings.slim.json.gz").read_bytes())
+            self.assertEqual(got, b'[{"live": 1}]')
+        # ...and a truncated download is thrown away.
+        _age(seed / "buildings.slim.json.gz", 24 * 60)
+        (self.site / "buildings.slim.json.gz").write_bytes(b"not gzip")
+        r = self.run_new("task2")
+        self.assertIn("could not refresh ios/FindACrib/Resources/Data/buildings.slim.json.gz", r.stderr)
+        self.assertEqual(gzip.decompress((seed / "buildings.slim.json.gz").read_bytes()), b'[{"live": 1}]')
+
+    def test_only_gitignored_files_are_cloned(self):
+        # vacancies.json sits untracked and un-ignored in the owner's checkout.
+        (self.main / "vacancies.json").write_text("[]")
+        r = self.run_new("task")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        wt = self.tmp / "dhcr-map-task"
+        self.assertFalse((wt / "vacancies.json").exists())
+        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=wt, capture_output=True, text=True)
+        self.assertEqual(dirty.stdout, "")
 
     def test_error_page_never_replaces_data(self):
         (self.site / "buildings.slim.json").write_text("<html>502 Bad Gateway</html>")

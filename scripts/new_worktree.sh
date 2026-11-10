@@ -99,9 +99,10 @@ PUBLIC=(
 # A download replaces the main checkout's copy only if it looks like what it
 # claims to be; an error page saved as buildings.slim.json would boot the app
 # into an empty map.
-looks_right() {
-  case "$1" in
-    *.gz) gzip -t "$1" 2>/dev/null ;;
+looks_right() {  # <downloaded file> <name it will be saved under>
+  case "$2" in
+    # From stdin: gzip -t refuses a file whose name does not end in .gz.
+    *.gz) gzip -t <"$1" 2>/dev/null ;;
     *) case "$(head -c 1 "$1")" in "{"|"[") return 0 ;; *) return 1 ;; esac ;;
   esac
 }
@@ -118,7 +119,7 @@ if [ "$NO_REFRESH" -eq 0 ]; then
     # No -R: the file's date then means "checked against live on this day",
     # which is what the age test above needs. The city files change rarely, and
     # keeping the server's date would re-download them on every run.
-    if curl -fsS --max-time 180 -o "$tmp" "$SITE/${pair##*|}" && looks_right "$tmp"; then
+    if curl -fsS --max-time 180 -o "$tmp" "$SITE/${pair##*|}" && looks_right "$tmp" "$rel"; then
       mv "$tmp" "$dst"
       refreshed=$((refreshed + 1))
     else
@@ -177,6 +178,9 @@ for rel in "${DATA[@]}"; do
   if git -C "$WT" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
     continue
   fi
+  # Only gitignored files. Anything else would show up as untracked in a
+  # worktree that should start clean, one `git add -A` away from a commit.
+  git -C "$WT" check-ignore -q "$rel" || continue
   mkdir -p "$(dirname "$dst")"
   if ! cp -c "$src" "$dst" 2>/dev/null; then
     cp -p "$src" "$dst"

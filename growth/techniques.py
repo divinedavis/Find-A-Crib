@@ -75,6 +75,7 @@ class Context:
         self._by_bbl = None
         self._s8 = None
         self._fmr = None
+        self._fmr_meta = None
 
     # ---- what this pass is allowed to do
 
@@ -137,8 +138,15 @@ class Context:
         NON-FATAL ON ABSENCE, unlike buildings.min.json and s8.json, which raise.
         Nothing on the droplet has ever written this file: build_fmr.py runs on a
         workstation because HUD's WAF answers a datacenter IP with an empty 202,
-        and scripts/refresh_fmr.sh scp's the result straight into the docroot
-        (never into git). So a box without it, or with an older copy than the
+        and scripts/refresh_fmr.sh scp's the result straight into the docroot.
+
+        CORRECTION, 2026-11-10: this docstring and the 2026-11-09 journal entry
+        both said that copy goes "never into git". That is false — fmr.json was
+        added to the repository on 2026-11-05 in commit bdb99f5, so the checkout
+        now carries a real tracked copy rather than nothing. Which matters for
+        the line below: the fallback is no longer "absent", it is a second copy
+        of unknown vintage, and docroot-first is now a choice between two files
+        rather than a file and nothing. So a box without it, or with an older copy than the
         checkout's, is an ordinary box and not a fault — and the pages this feeds
         must publish anyway. Raising here would take /section8/ down with it and
         break the nightly-refresh promise ~373 build_seo.py hub pages make about
@@ -155,6 +163,28 @@ class Context:
                 loaded = {}
             self._fmr = loaded if isinstance(loaded, dict) else {}
         return self._fmr
+
+    @property
+    def fmr_meta(self):
+        """Which fiscal year fmr.json holds, as build_fmr.py recorded it, or {}.
+
+        fmr.json is a bare {zip: [...]} map with no vintage in it, which is why
+        five places on the site hardcode "HUD FY2026" as a guess that nothing
+        downstream can check. build_fmr.py derives the fiscal year anyway to
+        build HUD's URL, and since 2026-11-10 writes it to this sibling file.
+
+        Same contract as .fmr and for the same reason: non-fatal, docroot first,
+        {} on anything unusable. A docroot that has fmr.json but not this file is
+        the ordinary case until refresh_fmr.sh next runs from the workstation,
+        and the pages this feeds must publish anyway.
+        """
+        if self._fmr_meta is None:
+            try:
+                loaded = self._load("fmr.meta.json")
+            except (FileNotFoundError, ValueError, OSError):
+                loaded = {}
+            self._fmr_meta = loaded if isinstance(loaded, dict) else {}
+        return self._fmr_meta
 
     def live_or_staged(self, relpath):
         """Is this path in the docroot, or will it be once this run rsyncs?
@@ -652,21 +682,87 @@ def _nb_breakdown(ctx, brows, boro, now_phrase, stale):
 # So this reports where a rent sits against a published reference and sends the
 # reader to their housing authority for the number that actually decides it.
 #
-# AND IT NAMES NO FISCAL YEAR, ON PURPOSE. DO NOT ADD ONE. fmr.json is a bare
-# {zip: [...]} map with no vintage field, so the year cannot be read from the
-# data this renders. Worse, the year hardcoded elsewhere on the site is no longer
-# a safe thing to copy: index.html and the four city shells, renter_tools.py and
-# the iOS metadata all say "HUD FY2026", while HUD's FY2027 FMRs took effect on
-# 2026-10-01 — and refresh_fmr.sh's own comment still assumes FY2027 was never
-# posted. Since the docroot copy is shipped from a workstation outside git, this
-# build cannot tell which year it is holding. An unlabelled true figure beats a
-# labelled one that may be a year wrong, so the link goes to HUD's current table
-# and the page claims no vintage of its own.
+# IT NAMES A FISCAL YEAR ONLY WHEN fmr.meta.json STATES ONE. DO NOT HARDCODE ONE.
+# The rule here was written on 2026-11-09 as a flat "names no fiscal year, DO NOT
+# ADD ONE", for a good reason: fmr.json is a bare {zip: [...]} map with no vintage
+# field, the year hardcoded in five places elsewhere on the site (index.html, the
+# four city shells, renter_tools.py, ios/scripts/asc_metadata.py, Building.swift)
+# all say "HUD FY2026" while HUD's FY2027 FMRs took effect 2026-10-01, and this
+# build could not tell which year it was holding. An unlabelled true figure beats
+# a labelled one that may be a year wrong.
+#
+# 2026-11-10 removes the cause rather than living with the symptom. build_fmr.py
+# derived the fiscal year anyway — to build HUD's download URL — and then threw it
+# away; it now writes it to fmr.meta.json beside fmr.json, and refresh_fmr.sh ships
+# the pair. So the reasoning is unchanged and only the premise moved: name the year
+# when a file written by the thing that fetched the data says what it is, and name
+# nothing when no such file is there. _fmr_vintage() is deliberately the only path
+# to a year on this page, it refuses a meta that contradicts itself, and it refuses
+# a meta claiming a year not yet in effect. With no meta the wording is byte-for-byte
+# what 2026-11-09 shipped.
+#
+# NOTE FOR A FUTURE REVIEW: as of 2026-11-10 nobody has established which year the
+# live figures actually are. huduser.gov is not reachable from the review container
+# (the agent proxy answers CONNECT with 403), and secondary sources putting FY2027's
+# 2BR SAFMR for ZIP 10001 at $4,460 against the committed file's $4,370 only SUGGEST
+# the file is FY2026. Do not write that suspicion down as a reading. One run of
+# scripts/refresh_fmr.sh from the workstation settles it.
 #
 # Below this many placeable rents the sentence stops being informative and starts
 # being overprecise: "1 is at or below, 2 fall inside" over three listings is
 # arithmetic a reader can do from the table, which is directly above it.
 FMR_MIN_ROWS = 5
+
+# Federal fiscal years run 1 October to 30 September, so FY2027 began 2026-10-01.
+# Deliberately re-stated here rather than imported from build_fmr.fiscal_year():
+# build_fmr imports openpyxl at module scope, which the droplet's system python
+# does not have, and this module is imported by the nightly /section8/ refresh.
+def _federal_fiscal_year(today):
+    return today.year + 1 if today.month >= 10 else today.year
+
+
+def _fmr_vintage(meta, today=None):
+    """One sentence dating the FMR figures, or "" if they cannot be dated.
+
+    Returns "" — which is the 2026-11-09 wording, unchanged — unless the meta
+    file is internally consistent AND describes figures already in effect:
+
+      * fiscal_year must be a plain int in a sane range. A bool is not an int
+        here and a string year is not trusted, because a sloppy writer is
+        exactly the case where the label would be wrong.
+      * effective must be the first day of that fiscal year. A meta whose two
+        fields disagree is not a file to take a year off: it means something
+        other than build_fmr.py wrote it, or wrote it wrong.
+      * a fiscal year AHEAD of today's is refused rather than announced. HUD
+        posts a file before its year starts; figures not yet in effect must not
+        be presented as the typical rents that apply now.
+
+    When the figures are a prior year's the sentence SAYS SO instead of quietly
+    naming an old year, because that is the case a reader needs to know about:
+    the link beside it goes to HUD's current table, and a reader comparing the
+    two deserves to be told which one this page is showing.
+    """
+    if not isinstance(meta, dict):
+        return ""
+    fy = meta.get("fiscal_year")
+    if isinstance(fy, bool) or not isinstance(fy, int) or not (2000 <= fy <= 2100):
+        return ""
+    if meta.get("effective") != f"{fy - 1}-10-01":
+        return ""
+    today = today or datetime.date.today()
+    current = _federal_fiscal_year(today)
+    if fy > current:
+        return ""
+    # "1 October 2026", built from the parts: %-d is a glibc extension and this
+    # module is also imported on a workstation.
+    started = f"1 October {fy - 1}"
+    if fy == current:
+        return (f" These are HUD’s FY{fy} figures, the table in effect since "
+                f"{started}.")
+    newer = f"1 October {current - 1}"
+    return (f" These are HUD’s FY{fy} figures. HUD’s FY{current} table took effect on "
+            f"{newer}, so a newer set of figures exists and these are the ones this "
+            f"page is showing.")
 
 
 def _rent_context(ctx, rows, now_phrase):
@@ -747,8 +843,9 @@ def _rent_context(ctx, rows, now_phrase):
         "studio-to-three-bedroom span rather than against its own size. <b>It is not a test of "
         "whether a voucher will cover the rent:</b> the most a voucher programme pays is the "
         "payment standard your housing authority sets, which is a different number from the "
-        "published Fair Market Rent, so ask them before ruling a listing in or out. "
-        "<a href='https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html' "
+        "published Fair Market Rent, so ask them before ruling a listing in or out."
+        + _fmr_vintage(ctx.fmr_meta) +
+        " <a href='https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html' "
         "rel='nofollow noopener' target='_blank'>HUD publishes the current figures by ZIP</a>."
         "</div>")
 

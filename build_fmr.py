@@ -10,6 +10,16 @@ sat at the 2026-07-15 copy while a monthly cron ran happily beside it. A run
 before HUD posts the new year's file falls back to the year already published and
 says which one it used, so the fallback is visible in a log rather than silent.
 
+Alongside fmr.json it writes fmr.meta.json recording WHICH fiscal year was
+fetched. fmr.json itself is a bare {zip: [...]} map, so until this existed the
+vintage was unrecoverable downstream: five places on the site hardcode "HUD
+FY2026" as a guess, nothing could check them, and the 2026-11-09 growth review
+could not establish which year's figures the live /section8/ pages were
+publishing. The year is derived here anyway to build the URL — throwing it away
+was the whole defect. fmr.json's shape is deliberately unchanged, so every
+existing reader (Building.swift, the city shells' EST table, renter_tools.py,
+growth.techniques.Context.fmr) keeps working and the meta is purely additive.
+
   python3 build_fmr.py                          # write fmr.json next to this script
   python3 build_fmr.py --out /var/www/rent-map  # write it where the site reads it
 """
@@ -89,7 +99,29 @@ def main():
 
     dest = Path(args.out) / "fmr.json"
     dest.write_text(json.dumps(out, separators=(",", ":")))
+
+    # The vintage, written as its own file rather than a key inside fmr.json so
+    # that no existing reader of that map has to change. "effective" is the
+    # first day of the federal fiscal year named, which is when HUD's figures
+    # for it take effect; "fell_back" records that HUD had not posted the year
+    # this run asked for, which is the one case where the file is knowingly a
+    # year behind the calendar.
+    meta = {
+        "fiscal_year": fy,
+        "effective": f"{fy - 1}-10-01",
+        "requested_fiscal_year": want,
+        "fell_back": fy != want,
+        "zips": len(out),
+        "missing_zips": len(zips_needed - set(out)),
+        "source": URL.format(fy=fy),
+        "built": datetime.datetime.now(datetime.timezone.utc)
+                         .strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    meta_dest = Path(args.out) / "fmr.meta.json"
+    meta_dest.write_text(json.dumps(meta, indent=1, sort_keys=True) + "\n")
     print(f"wrote {dest}: FY{fy}, {len(out)} zips, {len(zips_needed - set(out))} missing")
+    print(f"wrote {meta_dest}: FY{fy} effective {meta['effective']}"
+          + (f" (HUD had not posted FY{want}; fell back)" if meta["fell_back"] else ""))
 
 
 if __name__ == "__main__":

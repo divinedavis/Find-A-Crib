@@ -14,12 +14,14 @@ rather than merely ugly:
     wrong answer to the highest-stakes question on the page. The note's
     disclaimers are pinned here, not left to review.
 
-  * IT MUST NAME NO FISCAL YEAR. fmr.json carries no vintage field, and the year
-    hardcoded elsewhere on the site ("HUD FY2026" in index.html, the four city
-    shells, renter_tools.py and the iOS metadata) is no longer safe to copy:
-    HUD's FY2027 figures took effect 2026-10-01 and the docroot copy is shipped
-    from a workstation outside git, so this build cannot tell which year it
-    holds. NoVintage() fails the day someone "helpfully" adds one.
+  * IT MUST NAME NO FISCAL YEAR IT CANNOT SUBSTANTIATE. The year hardcoded
+    elsewhere on the site ("HUD FY2026" in index.html, the four city shells,
+    renter_tools.py and the iOS metadata) is not safe to copy: HUD's FY2027
+    figures took effect 2026-10-01. 2026-11-10 gave build_fmr.py a sibling
+    fmr.meta.json recording the year it actually fetched, so the rule is now
+    "name the year only when that file states it" rather than "never". NoVintage
+    holds the no-meta case — byte-for-byte the 2026-11-09 wording — and Vintage
+    holds every way a meta can fail to earn a label.
 
   * "A STUDIO" AND "A THREE-BEDROOM" MUST FIT THE ROW THEY DESCRIBE. The prose
     labels positions 0 and 3, which is only true of an ascending row, so a row
@@ -62,12 +64,27 @@ def _row(i, price, zipcode="11111", boro="SI"):
             "url": "https://example.com/l", "zip": zipcode}
 
 
-def _ctx(fmr=None):
-    """A Context whose only loaded feed is the FMR map under test."""
+def _ctx(fmr=None, meta=None):
+    """A Context whose only loaded feed is the FMR map under test.
+
+    meta=None leaves .fmr_meta to load for real, which finds no fmr.meta.json in
+    the repo and yields {} — the no-meta case the live droplet is in today.
+    """
     c = T.Context(REPO, tempfile.mkdtemp())
     c.out = tempfile.mkdtemp()
     c._fmr = dict(ZIPS) if fmr is None else fmr
+    if meta is not None:
+        c._fmr_meta = meta
     return c
+
+
+# A well-formed meta for the fiscal year that began 1 October 2026.
+def _meta(fy=2027, **over):
+    m = {"fiscal_year": fy, "effective": f"{fy - 1}-10-01", "zips": 178,
+         "built": "2026-11-10T07:00:00Z", "fell_back": False,
+         "source": "https://www.huduser.gov/x.xlsx"}
+    m.update(over)
+    return m
 
 
 def _lead(html):
@@ -303,7 +320,12 @@ class Note(unittest.TestCase):
 
 
 class NoVintage(unittest.TestCase):
-    """fmr.json carries no year, so the page claims none. Do not add one."""
+    """With no fmr.meta.json beside it, fmr.json carries no year — claim none.
+
+    This is the state of the live droplet as of 2026-11-10 and must stay
+    byte-for-byte what 2026-11-09 shipped: refresh_fmr.sh has not run since
+    build_fmr.py started writing the meta, so nothing can date these figures.
+    """
 
     def _html(self):
         return T._rent_context(_ctx(), [_row(i, 1500 + i * 400) for i in range(6)],
@@ -323,6 +345,167 @@ class NoVintage(unittest.TestCase):
         lead = _lead(T._rent_context(_ctx(), [_row(i, 2500) for i in range(6)],
                                      "as of July 11, 2026"))
         self.assertIn("July 11, 2026", lead)
+
+
+class Vintage(unittest.TestCase):
+    """The year is named only when fmr.meta.json earns it.
+
+    Every refusal below is a way the label could be WRONG rather than merely
+    absent, and a wrong year on a rent figure is the kind of error this site
+    cannot afford: a reader who clicks through to HUD's current table and finds
+    different numbers has no way to tell which of the two to trust.
+    """
+
+    # The current fiscal year is PINNED to FY2027 rather than taken from the
+    # clock. Without this every assertion below flips on 2027-10-01 and a suite
+    # that goes red on a date tells a future reader nothing about the code.
+    def _html(self, meta, current=2027):
+        rows = [_row(i, 1500 + i * 400) for i in range(6)]
+        with mock.patch.object(T, "_federal_fiscal_year", lambda _d: current):
+            return T._rent_context(_ctx(meta=meta), rows, "right now")
+
+    # ---- the year is in effect: name it
+
+    def test_current_year_is_named_with_its_effective_date(self):
+        note = BLOCK_RE.search(self._html(_meta(2027))).group("note")
+        self.assertIn("These are HUD\u2019s FY2027 figures, the table in effect since "
+                      "1 October 2026.", note)
+
+    def test_naming_the_year_does_not_disturb_the_disclaimers(self):
+        """The vintage is additive — the voucher-coverage refusal must survive."""
+        note = BLOCK_RE.search(self._html(_meta(2027))).group("note")
+        self.assertIn("It is not a test of", note)
+        self.assertIn("payment standard your housing authority sets", note)
+        self.assertIn("does not say how many", note)
+        self.assertIn("HUD publishes the current figures by ZIP", note)
+
+    # ---- the year has been superseded: say so rather than name it quietly
+
+    def test_a_superseded_year_says_a_newer_table_exists(self):
+        note = BLOCK_RE.search(self._html(_meta(2026))).group("note")
+        self.assertIn("These are HUD\u2019s FY2026 figures.", note)
+        self.assertIn("FY2027 table took effect on 1 October 2026", note)
+        self.assertIn("a newer set of figures exists", note)
+
+    def test_a_superseded_year_is_not_presented_as_current(self):
+        note = BLOCK_RE.search(self._html(_meta(2026))).group("note")
+        self.assertNotIn("in effect since", note)
+
+    # ---- refusals: a meta that has not earned a label
+
+    def test_a_year_not_yet_in_effect_is_refused(self):
+        """HUD posts a file before its year starts. Not-yet-current is not now."""
+        import datetime as dt
+        self.assertEqual(T._fmr_vintage(_meta(2030), dt.date(2026, 11, 10)), "")
+        self.assertEqual(T._fmr_vintage(_meta(2028), dt.date(2026, 11, 10)), "")
+
+    def test_a_meta_whose_two_fields_disagree_is_refused(self):
+        """effective must be 1 October of fiscal_year - 1, or something else wrote it."""
+        self.assertEqual(T._fmr_vintage(_meta(2027, effective="2026-01-01")), "")
+        self.assertEqual(T._fmr_vintage(_meta(2027, effective=None)), "")
+
+    def test_a_string_year_is_refused(self):
+        """Also closes the injection path: only an int ever reaches the markup."""
+        self.assertEqual(T._fmr_vintage(_meta(2027, fiscal_year="2027")), "")
+        self.assertEqual(
+            T._fmr_vintage({"fiscal_year": "2027<script>", "effective": "2026-10-01"}), "")
+
+    def test_a_bool_year_is_refused(self):
+        """True == 1 in Python, so isinstance(True, int) is not enough.
+
+        HONEST ABOUT WHAT THIS PINS, because a mutation run on 2026-11-10 said
+        so: deleting the explicit bool guard in _fmr_vintage does NOT make this
+        test fail. Any bool is 0 or 1, so the 2000..2100 range check refuses it
+        either way, and the bool guard is belt-and-braces that only becomes
+        load-bearing if that range is ever widened. The guard is kept for that
+        reason and because it states the intent at the point of the check; this
+        test pins the BEHAVIOUR (a bool never reaches the markup) rather than
+        the particular line that delivers it.
+        """
+        self.assertEqual(T._fmr_vintage(_meta(2027, fiscal_year=True)), "")
+        self.assertEqual(T._fmr_vintage(_meta(2027, fiscal_year=False)), "")
+
+    def test_an_absurd_year_is_refused(self):
+        self.assertEqual(T._fmr_vintage({"fiscal_year": 12, "effective": "11-10-01"}), "")
+
+    def test_a_missing_or_non_dict_meta_is_refused(self):
+        for bad in ({}, None, [], "FY2027", 2027):
+            self.assertEqual(T._fmr_vintage(bad), "", repr(bad))
+
+    def test_a_refused_meta_leaves_the_2026_11_09_wording_exactly(self):
+        """A bad meta must not merely drop the year — it must change nothing."""
+        plain = self._html({})
+        for bad in (_meta(2027, effective="nope"), _meta(2031),
+                    _meta(2027, fiscal_year="2027"), {"zips": 178}):
+            self.assertEqual(self._html(bad), plain)
+        self.assertIsNone(re.search(r"\b(19|20)\d\d\b", plain))
+
+    # ---- the boundary of the fiscal year itself
+
+    def test_the_fiscal_year_boundary_is_1_october(self):
+        self.assertEqual(T._federal_fiscal_year(__import__("datetime").date(2026, 9, 30)), 2026)
+        self.assertEqual(T._federal_fiscal_year(__import__("datetime").date(2026, 10, 1)), 2027)
+        self.assertEqual(T._federal_fiscal_year(__import__("datetime").date(2026, 12, 31)), 2027)
+        self.assertEqual(T._federal_fiscal_year(__import__("datetime").date(2027, 1, 1)), 2027)
+
+    def test_the_same_file_reads_current_before_1_october_and_stale_after(self):
+        """One file, two verdicts, decided only by the date it is read on."""
+        import datetime as dt
+        m = _meta(2026)
+        self.assertIn("in effect since", T._fmr_vintage(m, dt.date(2026, 9, 30)))
+        self.assertIn("a newer set of figures exists", T._fmr_vintage(m, dt.date(2026, 10, 1)))
+
+
+class MetaLoader(unittest.TestCase):
+    """fmr.meta.json loads like every other feed: non-fatal, docroot first."""
+
+    # Context(build_dir, docroot) — that order, which is easy to get backwards:
+    # the first write of this test had them swapped and asserted the docroot lost.
+    def _ctx_with(self, docroot_meta=None, build_meta=None):
+        import json
+        build, doc = tempfile.mkdtemp(), tempfile.mkdtemp()
+        for base, m in ((doc, docroot_meta), (build, build_meta)):
+            if m is not None:
+                with open(os.path.join(base, "fmr.meta.json"), "w") as f:
+                    json.dump(m, f)
+        return T.Context(build, doc)
+
+    def test_a_missing_meta_is_empty_and_does_not_raise(self):
+        """Nothing on the droplet writes this file; absence must stay ordinary."""
+        self.assertEqual(self._ctx_with().fmr_meta, {})
+
+    def test_the_docroot_copy_wins_over_the_checkout(self):
+        """refresh_fmr.sh ships the docroot pair; the committed copy is the fallback."""
+        c = self._ctx_with(docroot_meta=_meta(2027), build_meta=_meta(2019))
+        self.assertEqual(c.fmr_meta["fiscal_year"], 2027)
+
+    def test_the_checkout_is_the_fallback(self):
+        c = self._ctx_with(build_meta=_meta(2026))
+        self.assertEqual(c.fmr_meta["fiscal_year"], 2026)
+
+    def test_malformed_json_is_empty_and_does_not_raise(self):
+        """A half-written scp must not take /section8/ down."""
+        doc = tempfile.mkdtemp()
+        with open(os.path.join(doc, "fmr.meta.json"), "w") as f:
+            f.write("{not json")
+        self.assertEqual(T.Context(tempfile.mkdtemp(), doc).fmr_meta, {})
+
+    def test_a_non_dict_meta_is_empty(self):
+        self.assertEqual(self._ctx_with(docroot_meta=[1, 2, 3]).fmr_meta, {})
+
+    def test_it_is_read_once_and_cached(self):
+        c = self._ctx_with(docroot_meta=_meta(2027))
+        self.assertIs(c.fmr_meta, c.fmr_meta)
+
+    def test_the_repo_has_no_meta_yet_so_the_live_pages_name_no_year(self):
+        """The state this ships in: fmr.json is tracked, fmr.meta.json is not.
+
+        build_fmr.py only started writing it on 2026-11-10 and it is produced on
+        a workstation, so until refresh_fmr.sh next runs there is no vintage to
+        read and the block must stay silent. When this test starts failing, a
+        meta has arrived in the checkout and the block will name its year.
+        """
+        self.assertEqual(T.Context(REPO, tempfile.mkdtemp()).fmr_meta, {})
 
 
 class Render(unittest.TestCase):

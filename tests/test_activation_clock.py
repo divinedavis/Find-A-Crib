@@ -19,6 +19,11 @@ which stamps `activated` and `revisit_on` together. That fix stamped
 revisit_on and left activated null, so T016 came up for revisit on a clock it
 still could not be judged against.
 
+2026-11-10: one of these tests had itself gone stale — see
+test_a_stamped_clock_does_not_reach_the_flag, which hardcoded an activation date
+that aged out of the grace window on exactly that morning and would have stayed
+red forever. Dates in a suite that reads the real clock have to be computed.
+
 These tests pin the flag closed, and pin the three ways it could be made
 useless again: firing below the grace check (where it can never be reached),
 firing on audits (which are judged on night one and do not use the clock), and
@@ -103,9 +108,34 @@ class MissingClockIsFlagged(unittest.TestCase):
         self.assertIn("set_status", why)
 
     def test_a_stamped_clock_does_not_reach_the_flag(self):
-        r = R.evaluate(tech(activated="2026-10-20"))
+        """A date INSIDE the grace window, computed rather than written down.
+
+        This read activated="2026-10-20" until 2026-11-10, when it went red for
+        the first time and stayed red: GRACE_DAYS is 21, 2026-11-10 is day 21,
+        so the grace branch stopped firing and evaluate() fell through to "only
+        9 days of organic_visitors since activation". Nothing about the code had
+        changed — the fixture simply aged out, and because _days_active only
+        grows it could never have come back on its own.
+
+        Derived from today's date and GRACE_DAYS so it tests the branch it names
+        on every future morning. Half the window, so neither edge is near.
+        """
+        import datetime as dt
+        inside = (dt.date.today()
+                  - dt.timedelta(days=R.GRACE_DAYS // 2)).isoformat()
+        r = R.evaluate(tech(activated=inside))
         self.assertEqual(r["action"], "keep")
         self.assertIn("grace period", r["why"])
+
+    def test_the_grace_boundary_is_GRACE_DAYS_itself(self):
+        """Pins which side of the boundary is inside, so the test above cannot
+        be "fixed" in future by quietly widening the window it aims at."""
+        import datetime as dt
+        today = dt.date.today()
+        last_in = (today - dt.timedelta(days=R.GRACE_DAYS - 1)).isoformat()
+        first_out = (today - dt.timedelta(days=R.GRACE_DAYS)).isoformat()
+        self.assertIn("grace period", R.evaluate(tech(activated=last_in))["why"])
+        self.assertNotIn("grace period", R.evaluate(tech(activated=first_out))["why"])
 
     def test_a_non_active_technique_short_circuits_first(self):
         # status is checked above the clock, so a candidate with no clock is

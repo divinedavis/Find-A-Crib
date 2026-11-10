@@ -1328,7 +1328,10 @@ class Runner:
                 const make = () => ({ endpoint: %s, toJSON: () => ({ endpoint: %s, keys: { p256dh: %s, auth: 'AwMDAwMDAwMDAwMDAwMDAw' } }),
                                       unsubscribe: async () => { live = null; return true; } });
                 PushManager.prototype.subscribe = async function () { return (live = make()); };
-                PushManager.prototype.getSubscription = async function () { return live; }; })()""" % (json.dumps(endpoint), json.dumps(endpoint), json.dumps(p256dh)))
+                PushManager.prototype.getSubscription = async function () { return live; };
+                // Headless Chromium has no notifications: it says "denied" whatever is granted.
+                Object.defineProperty(Notification, 'permission', { get: () => 'granted', configurable: true });
+                Notification.requestPermission = async () => 'granted'; })()""" % (json.dumps(endpoint), json.dumps(endpoint), json.dumps(p256dh)))
             self.boot(p2)
             self.click(p2, '#auth-btn'); time.sleep(0.6)
             p2.fill('#auth-email', email); p2.fill('#auth-pass', password)
@@ -1339,7 +1342,10 @@ class Runner:
             self.click(p2, '#auth-btn')
             self.wait_until(p2, "!document.getElementById('profile-modal').hidden", 15000)
             off = self.wait_until(p2, "document.getElementById('profile-push').dataset.state === 'off'", 15000)
-            self.ok(off, 'the account panel should offer notifications for this browser', j)
+            seen = p2.evaluate("""(() => { const r = document.getElementById('profile-push');
+                return { hidden: r.hidden, state: r.dataset.state, sub: document.getElementById('profile-push-sub').textContent,
+                         err: document.getElementById('profile-error').textContent, modal: !document.getElementById('profile-modal').hidden }; })()""")
+            self.ok(off, f'the account panel should offer notifications for this browser: {seen}', j)
             self.click(p2, '#profile-push-btn')
             on = self.wait_until(p2, "document.getElementById('profile-push').dataset.state === 'on'", 15000)
             self.ok(on, 'Turn on should leave notifications on', j)

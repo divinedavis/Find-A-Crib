@@ -267,17 +267,23 @@ SHADOW_LAST = ("adoptHome", "auth INITIAL_SESSION")
 # while the visitor's real page went on logging for 14 minutes). Only resize
 # steps may follow adoptHome; any other work after it still reports.
 _RESIZE_STEP = re.compile(r"(vv-resize|win-resize|map-resize) ")
+# ...or one step further still: the boot feeds (housing_connect + featured)
+# landing ~0.3 s in and redrawing the list once (2026-11-11 digest: visible
+# boot, adoptHome, toolbar resizes, grid:feeds, grid:build 200, grid:done at
+# 0.55 s, no tick, the visitor back 45 min later). That redraw is part of
+# every boot, not something the visitor did; anything else still reports.
+_BOOT_FEED_STEP = re.compile(r"grid:feeds$|grid \d+$|grid:build \d+$|grid:done$|grid:same$")
 
 
 def _shadow_tail(labels):
     """The trace ends on the signed-in shadow shape: SHADOW_LAST, or adoptHome
-    followed by nothing but viewport resizes."""
+    followed by nothing but viewport resizes and the boot feeds' list redraw."""
     if labels and labels[-1] in SHADOW_LAST:
         return True
     if "adoptHome" not in labels:
         return False
     after = labels[len(labels) - labels[::-1].index("adoptHome"):]
-    return bool(after) and all(_RESIZE_STEP.match(x) for x in after)
+    return bool(after) and all(_RESIZE_STEP.match(x) or _BOOT_FEED_STEP.match(x) for x in after)
 SHADOW_LOOP = 3
 SHADOW_LOOKUPS = 40       # REST calls per run, at most
 INTERACTION_EVENTS = ("building_view", "section_view", "outbound", "status_open",

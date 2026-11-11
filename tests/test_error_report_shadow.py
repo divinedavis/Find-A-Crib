@@ -164,3 +164,30 @@ def test_three_resize_shadows_from_one_visitor_report():
     rows = [trace("v1", steps, booted=f"2026-09-28T13:4{i}:51.410Z") for i in range(3)]
     out = er.crashes(rows, key="k", kept_going=lambda *a: False)
     assert out["vv-resize 796 la0 ad0 img14 v0"]["n"] == 3
+
+
+FEED_SHADOW = SHADOW + ["win-resize 430x699", "vv-resize 739 la0 ad0 img14 v0",
+                        "grid:feeds", "grid 12", "grid:build 200", "grid:done"]
+
+
+def test_shadow_page_ending_on_the_boot_feeds_redraw_is_dropped():
+    # 2026-11-11 digest: the shadow lived 0.55 s, long enough for the boot
+    # feeds to redraw the list once; no tick, the visitor back 45 min later.
+    assert not er.crashes([trace("v1", FEED_SHADOW)], key="k", kept_going=lambda *a: False)
+
+
+def test_work_after_the_boot_feeds_redraw_still_reports():
+    out = er.crashes([trace("v1", FEED_SHADOW + ["la:mount 1/1"])], key="k", kept_going=lambda *a: False)
+    assert out["la:mount 1/1"]["n"] == 1
+
+
+def test_three_feed_shadows_from_one_visitor_report():
+    rows = [trace("v1", FEED_SHADOW, booted=f"2026-09-28T13:4{i}:51.410Z") for i in range(3)]
+    out = er.crashes(rows, key="k", kept_going=lambda *a: False)
+    assert out["grid:done"]["n"] == 3
+
+
+def test_feeds_redraw_without_adopt_home_still_reports():
+    steps = ["boot", "grid:done", "grid:feeds", "grid 12", "grid:build 200", "grid:done"]
+    out = er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
+    assert out["grid:done"]["n"] == 1

@@ -207,7 +207,16 @@ class ReportSaysItToo(unittest.TestCase):
         if "DUE FOR REVISIT" not in t.upper():
             self.skipTest("nothing due in the live ledger")
         self.assertEqual("OVERDUE" in h, "OVERDUE" in t)
-        self.assertIn("nights measured since the verdict", t)
+        # Each due item says what evidence stands behind it: nights since its
+        # verdict, or that it never had one (2026-11-11: T015 and T016 came due
+        # with no verdict and the line said nothing about it).
+        due = ledger.revisit_due()
+        if any((x.get("verdict") or {}).get("decided") for x in due):
+            self.assertIn("nights measured since the verdict", t)
+        if any(not (x.get("verdict") or {}).get("decided") for x in due):
+            self.assertIn("NO VERDICT EVER RECORDED", t)
+            self.assertEqual("NO VERDICT EVER RECORDED" in h, True)
+        self.assertNotIn("since None", t)
 
 
 class T010IsJudgedAsTheInstrumentItIs(unittest.TestCase):

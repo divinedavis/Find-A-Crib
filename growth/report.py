@@ -1233,7 +1233,8 @@ def build_blocks(run_log=None, review_out=None):
             # column — four columns do not fit a phone — but it is the number
             # that says whether a zero-visitor technique is early or dead.
             vis = searchconsole.recent_visibility(t["slug"], since=t.get("activated"))
-            sub = f"owns {', '.join(t['prefixes'])} · since {t.get('activated')}"
+            sub = (f"owns {', '.join(t['prefixes'])} · "
+                   + (f"since {t.get('activated')}" if t.get("activated") else "not activated yet"))
             if vis["measured"]:
                 sub += (f" · {vis['pages']} pages serving, {vis['impressions']} impressions"
                         + (f", best position {vis['best_position']}"
@@ -1284,10 +1285,20 @@ def build_blocks(run_log=None, review_out=None):
             if decided and nights is not None:
                 meta += (f" · {nights} night{'s' if nights != 1 else ''} measured since "
                          f"the verdict of {decided}")
+            elif decided:
+                meta += f" · verdict of {decided}, new evidence since it unreadable"
+            else:
+                # The T016 shape, worded as growth_daily's status block words
+                # it: a due revisit with no verdict has nothing to re-examine.
+                meta += " · NO VERDICT EVER RECORDED — nothing to re-examine"
             if t.get("prefixes"):
-                pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
-                meta += (f" · {sum(v for _, v in pairs):,} owned visitors "
-                         f"since {t.get('activated')}")
+                if t.get("activated"):
+                    pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
+                    meta += (f" · {sum(v for _, v in pairs):,} owned visitors "
+                             f"since {t.get('activated')}")
+                else:
+                    # It printed "0 owned visitors since None" (2026-11-11).
+                    meta += " · never activated, so no owned visitors to count"
             # A revisit the automatic review pre-empted is a different job from
             # an ordinary one: the question is not "keep, change or replace"
             # but "was that verdict sound, and do the pages come back?".

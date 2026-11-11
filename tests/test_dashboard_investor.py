@@ -34,5 +34,24 @@ class DashboardInvestor(unittest.TestCase):
         self.assertIn("case when p_days is null then 36500", sql)
 
 
+    def test_trends_ride_along_and_are_service_role_only(self):
+        # Day-by-day lines per tile (owner, 2026-11-11, design D). Same
+        # allowlisted window, same key; a failed trends query must not take
+        # the numbers down with it.
+        src = read("api_server.py")
+        self.assertIn('rpc("dashboard_investor_trends"', src)
+        fn = src[src.index("def _fac_investor_trends_rpc("):]
+        fn = fn[:fn.index("\n\n\n")]
+        self.assertIn("return None", fn)
+        route = src[src.index("def dashboard_investor():"):]
+        route = route[:route.index("\n\n\n")]
+        self.assertIn('data["trends"] = trends.result()', route)
+        sql = read("db", "0077_dashboard_investor_trends.sql")
+        self.assertIn("revoke all on function public.dashboard_investor_trends(int, text[]) from public, anon, authenticated;", sql)
+        self.assertIn("grant execute on function public.dashboard_investor_trends(int, text[]) to service_role;", sql)
+        # Bounded however it's called: no runaway generate_series.
+        self.assertIn("least(greatest(p_days, 1), 366)", sql)
+        self.assertIn("3660)", sql)
+
 if __name__ == "__main__":
     unittest.main()

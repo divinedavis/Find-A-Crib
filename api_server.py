@@ -2215,6 +2215,17 @@ def _fac_investor_rpc(days, builds):
                                       "p_ios_builds": list(builds) if builds else None})
 
 
+def _fac_investor_trends_rpc(days, builds):
+    """Day-by-day lines for each investor tile over the same window and the
+    one before it (db/0077), or None on failure: the tiles still paint, just
+    without their charts."""
+    try:
+        return rpc("dashboard_investor_trends", {"p_days": days,
+                                                 "p_ios_builds": list(builds) if builds else None})
+    except Exception:
+        return None
+
+
 @app.route("/dashboard-investor")
 def dashboard_investor():
     if rate_limited("dashboard", 120, 3600):
@@ -2225,10 +2236,19 @@ def dashboard_investor():
     # Allowlisted like /dashboard-metrics' range: this reaches a SECURITY
     # DEFINER function. Anything else is the card's default, 30 days.
     days = DASHBOARD_INVESTOR_DAYS.get((request.args.get("days") or "30").lower(), 30)
-    try:
-        return jsonify(_fac_investor_rpc(days, _fac_released_builds()))
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
+    builds = _fac_released_builds()
+    # One request, both queries side by side (numbers ~0.5 s, trends 1-4 s
+    # at 14-90 days): a second route would double the owner dashboard's
+    # draw on the shared 'dashboard' rate limit.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        nums = pool.submit(_fac_investor_rpc, days, builds)
+        trends = pool.submit(_fac_investor_trends_rpc, days, builds)
+        try:
+            data = nums.result()
+        except Exception:
+            return jsonify(error="temporarily_unavailable"), 503
+        data["trends"] = trends.result()
+    return jsonify(data)
 
 @_memo(300)
 def _fac_signups_series():

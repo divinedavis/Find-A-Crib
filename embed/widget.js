@@ -5,8 +5,29 @@
  * reporters and anyone else who repeatedly has to answer "is this building
  * rent-stabilized". Free, no key, no tracking.
  *
- *   <div id="findacrib-check"></div>
+ *   <div id="findacrib-check">
+ *     <p>Rent-stabilization lookup by
+ *        <a href="https://findacrib.com/" rel="nofollow">Find A Crib</a>
+ *        — NY State DHCR registrations and NYC HPD open data.</p>
+ *   </div>
  *   <script src="https://findacrib.com/embed/widget.js" async></script>
+ *
+ * The credit line inside the mount element is part of the snippet, not
+ * decoration. It puts the attribution in the HOST PAGE'S OWN HTML, so it is
+ * there before this script runs and still there if the script is blocked or
+ * never loads; attaching a shadow root below stops it from rendering, so a
+ * reader sees the widget and not both.
+ *
+ * Every link this widget puts on a third-party page is rel="nofollow", and
+ * that is deliberate rather than modest (2026-11-11). Google's spam policies
+ * name "keyword-rich, hidden, or low-quality links embedded in widgets that
+ * are distributed across various sites" as link spam and exempt links
+ * qualified with rel="nofollow" or rel="sponsored"; its 2016 Search Central
+ * reminder asks for nofollow on widget links, and in 2017 it said it
+ * recognises a widget across sites and nofollows those links automatically.
+ * So a followed credit here would buy nothing and could cost an embedder a
+ * manual action on their own site. The anchor text is the brand name alone
+ * for the same reason — the descriptive words sit outside the link.
  *
  * Design constraints, and why:
  *   - No dependencies and no build step. Sites that need this most are
@@ -60,7 +81,15 @@
     "and it is free to request.";
 
   function mount(host) {
-    var root = host.attachShadow ? host.attachShadow({ mode: "open" }) : host;
+    var shadow = !!host.attachShadow;
+    var root = shadow ? host.attachShadow({ mode: "open" }) : host;
+    // The snippet ships a static credit line inside the mount element. With a
+    // shadow root that light-DOM child simply stops being rendered, which is
+    // exactly what we want: it stays in the host's markup for readers without
+    // JavaScript and for anything reading the HTML, and the widget takes its
+    // place on screen. Without attachShadow there is no such switch, so clear
+    // it by hand rather than show the credit above the widget as well.
+    if (!shadow) { while (host.firstChild) host.removeChild(host.firstChild); }
     var style = el("style"); style.textContent = CSS; root.appendChild(style);
 
     var w = el("div", { class: "w" });
@@ -77,7 +106,9 @@
     var out = el("div", { class: "o", "aria-live": "polite" }); w.appendChild(out);
     var by = el("div", { class: "by" });
     by.appendChild(document.createTextNode("Data from "));
-    var a = el("a", { href: SITE + "/", target: "_blank", rel: "noopener" }, "Find A Crib");
+    var a = el("a", {
+      href: SITE + "/", target: "_blank", rel: "nofollow noopener"
+    }, "Find A Crib");
     by.appendChild(a);
     by.appendChild(document.createTextNode(" · NY State DHCR + NYC HPD open data"));
     w.appendChild(by);
@@ -112,7 +143,8 @@
         }
         var link = el("p", { class: "meta" });
         var la = el("a", {
-          href: SITE + "/#d=" + encodeURIComponent(b.bbl), target: "_blank", rel: "noopener"
+          href: SITE + "/#d=" + encodeURIComponent(b.bbl), target: "_blank",
+          rel: "nofollow noopener"
         }, "See it on the map →");
         link.appendChild(la); h.appendChild(link);
         frag.appendChild(h);

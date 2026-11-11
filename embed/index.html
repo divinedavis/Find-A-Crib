@@ -49,13 +49,25 @@ a{color:var(--blue)}
   your own page. It’s free, there’s no API key, and it doesn’t track anyone.</p>
 
   <div class="demo">
-    <div id="findacrib-check"></div>
+    <div id="findacrib-check">
+      <p>Rent-stabilization lookup by <a href="https://findacrib.com/" rel="nofollow">Find A Crib</a> &mdash; NY State DHCR registrations and NYC HPD open data.</p>
+    </div>
   </div>
 
   <h2>Add it in one line</h2>
   <p>Paste this wherever you want the checker to appear:</p>
-<pre><code>&lt;div id="findacrib-check"&gt;&lt;/div&gt;
+<pre><code>&lt;div id="findacrib-check"&gt;
+  &lt;p&gt;Rent-stabilization lookup by
+     &lt;a href="https://findacrib.com/" rel="nofollow"&gt;Find A Crib&lt;/a&gt;
+     &amp;mdash; NY State DHCR registrations and NYC HPD open data.&lt;/p&gt;
+&lt;/div&gt;
 &lt;script src="https://findacrib.com/embed/widget.js" async&gt;&lt;/script&gt;</code></pre>
+  <p>The credit line inside the <code>div</code> is the only part you might be tempted to
+  delete, and it is the one part doing a job when things go wrong. Once the widget loads it
+  disappears — the checker renders in a shadow root, which stops that line from being
+  drawn — so your readers never see both. If the script is blocked, slow, or we have an
+  outage, that line is what your page shows instead of an empty box, and it tells a reader
+  where the data would have come from. It is also the whole of what we ask for in return.</p>
   <p>Need more than one on a page, or a different container? Put
   <code>data-findacrib-check</code> on any element instead of using the id.</p>
 
@@ -82,8 +94,16 @@ a{color:var(--blue)}
       readers are.</li>
     <li><strong>No dependencies.</strong> Plain JavaScript, ~6 KB, renders in a Shadow DOM so
       your CSS can’t break it and its CSS can’t leak into your page.</li>
-    <li><strong>Attribution.</strong> The widget links back to Find A Crib. That link is the
-      only thing we ask for.</li>
+    <li><strong>Attribution, and it is deliberately nofollowed.</strong> The snippet carries a
+      one-line credit, and the widget repeats it in its own footer. Every link either one puts
+      on your page has <code>rel="nofollow"</code>, and the anchor text is our name rather
+      than a keyword phrase. That is on purpose: Google&rsquo;s spam policies treat
+      keyword-rich links embedded in widgets distributed across many sites as link spam and
+      exempt links marked <code>nofollow</code> or <code>sponsored</code>, it asked for
+      widget links to be nofollowed back in 2016, and it has said it may recognise a widget
+      and discount those links automatically anyway. So a credit that passed ranking credit
+      would be a risk to your site and worth nothing to ours. We want readers who click it,
+      not a link that votes.</li>
     <li><strong>Bulk data.</strong> If you need the whole dataset rather than per-address
       lookups, that’s the <a href="/developers/">Developer API</a>.</li>
   </ul>

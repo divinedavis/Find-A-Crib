@@ -5,6 +5,11 @@ serves findacrib.com. Until 2026-11-10 the vhost existed only on the droplet,
 so a rebuild or a migration had no tracked copy to restore from.
 
 Taken from `root@142.93.183.172` (hostname `findacrib`) on **2026-11-10**.
+HTTP/3 added **2026-11-11**: the droplet runs nginx 1.30 from nginx.org's apt
+repository (`/etc/apt/sources.list.d/nginx.list`, pinned in
+`/etc/apt/preferences.d/99nginx`; Ubuntu's 1.24 has no `http_v3`), and ufw
+allows 443/udp. The pre-change config is in
+`/root/nginx-etc-before-h3-20261111-064219.tgz` on the droplet.
 
 | Snapshot | Live path |
 |---|---|

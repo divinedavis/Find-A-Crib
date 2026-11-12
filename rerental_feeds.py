@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Re-rental sources that publish JSON instead of a page to render.
+Re-rental sources that publish JSON (or plain server-rendered HTML) instead of
+a page that needs a browser to render.
 
 rerental_daily.py and featured_rerentals.py both walk rerental_pages.json and
 render every board in a headless browser, because that is the only thing the
@@ -240,8 +241,144 @@ def hdc_records(rows, agent, page_url=HDC_PAGE):
     return out
 
 
+# ------------------------------------------------------------ Progressive
+# Progressive Management of NY's "Vacant Apartments" page (HPD-listed marketing
+# agent). Every building on it is income-restricted (LIHTC, 55% AMI, a 62+
+# senior building), so it is a re-rental source, not a market-rate one — it sat
+# in owner_vacancy_pages.json for seven weeks and produced nothing there,
+# because the index is five building names with "Learn more" and the details
+# live in Squarespace lightboxes that innerText never sees (checked 2026-11-11).
+#
+# Each lightbox is the building's own page, served as plain HTML, so no browser
+# is needed: read the index for the lightbox slugs, then fetch each building.
+# robots.txt allows both (it disallows only ?format=json and friends, which
+# are not used here). A building is a record only when its page says a unit is
+# open — "2-bedroom unit (1 available)" or "Applications are being accepted";
+# Grant Forbell's page describes the building and claims no vacancy, so it is
+# left out rather than shown as available.
+PROG_HOST = "https://www.progressivemgmt.net"
+PROG_PAGE = PROG_HOST + "/vacant-apartments"
+PROG_MAX = 20                # 5 today; a bound, not a guess at the count
+PROG_SLUG = re.compile(r'href="/?#lightbox_([a-z0-9][a-z0-9-]{0,79})"')
+PROG_AVAIL = re.compile(r'\((\d{1,3})\s+available\)', re.I)
+PROG_OPEN = re.compile(r'applications\s+are\s+(?:now\s+)?being\s+accepted', re.I)
+PROG_BEDS = re.compile(r'\b(studio|\d)\s*-?\s*(?:bed(?:room)?s?|br)\b', re.I)
+STREET = (r"(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Place|Pl|Parkway|Pkwy"
+          r"|Drive|Dr|Lane|Ln|Terrace|Court|Ct)\b\.?")
+# An address on a short line of its own, wherever it starts on the line:
+# "3035 White Plains Road, Bronx, NY 10467", "Address: 533-539 Bay St 533-539
+# Bay St, ..." (the site repeats it; the first copy is taken), "ARCHER MERRICK
+# 92-61 165TH Street, Jamaica, NY 11433" (the name runs into it). The tail is
+# kept only when it follows a comma, so a repeated street is never swallowed.
+PROG_ADDR_LINE = re.compile(r'(?<![\w-])(\d[\d-]*\s+[A-Za-z0-9 .\'-]+?' + STREET
+                            + r')(,[A-Za-z0-9 .,]{0,60})?', re.I)
+PROG_LINE_MAX = 100
+# "...consisting of 83 units located at 886 Westchester Avenue between..."
+PROG_ADDR_PROSE = re.compile(r'\b(?:located\s+)?at\s+(\d[\d-]*\s+[A-Z][A-Za-z0-9 .\'-]*?'
+                             + STREET + r')')
+
+
+def fetch_html(url, timeout=TIMEOUT):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            body = r.read(MAX_BYTES + 1)
+    except urllib.error.HTTPError as e:
+        raise FeedError(f"HTTP {e.code} from {url}") from None
+    except Exception as e:  # noqa: BLE001
+        raise FeedError(f"{type(e).__name__} fetching {url}: {str(e)[:60]}") from None
+    if len(body) > MAX_BYTES:
+        raise FeedError(f"response from {url} is over {MAX_BYTES:,} bytes")
+    return body.decode("utf-8", "replace")
+
+
+def html_lines(markup):
+    """The text of an HTML fragment, one line per block element."""
+    import html as htmlmod
+    s = re.sub(r'(?is)<(script|style|noscript|template)\b.*?</\1>', ' ', markup)
+    s = re.sub(r'(?i)<br\s*/?>|</(?:p|h[1-6]|li|div|section|tr)>', '\n', s)
+    s = htmlmod.unescape(re.sub(r'<[^>]*>', ' ', s)).replace("​", "")
+    return [l for l in (re.sub(r'\s+', ' ', x).strip() for x in s.split("\n")) if l]
+
+
+def progressive_fetch(fetch=fetch_html, max_pages=PROG_MAX):
+    """[(slug, page HTML)] for every building the index links a lightbox to."""
+    index = fetch(PROG_PAGE)
+    slugs = list(dict.fromkeys(PROG_SLUG.findall(index)))
+    if not slugs:
+        raise FeedError("Progressive: no buildings on the vacant-apartments page")
+    return [(s, fetch(f"{PROG_HOST}/{s}")) for s in slugs[:max_pages]]
+
+
+def progressive_records(rows, agent, page_url=PROG_PAGE):
+    """Building pages -> featured_rerentals records, only where a unit is open."""
+    import featured_rerentals as fr
+    out = []
+    for slug, markup in rows:
+        m = re.search(r'(?is)<main\b.*?</main>', markup)
+        lines = html_lines(m.group(0) if m else markup)
+        # The building's name is the page's first heading (an <h4> today, so
+        # any level), and the first line of the page when there is none.
+        h = re.search(r'(?is)<h([1-6])[^>]*>(.*?)</h\1>', m.group(0) if m else markup)
+        heading = html_lines(h.group(2)) if h else []
+        title = tidy_case(text((heading or lines or [""])[0], 80))
+        if not lines or not title:
+            continue
+        status = next((l for l in lines if PROG_AVAIL.search(l) or PROG_OPEN.search(l)), None)
+        if not status:
+            continue                              # describes the building, claims no vacancy
+        blob = " ".join(lines)
+        address = None
+        for line in lines:
+            a = len(line) <= PROG_LINE_MAX and PROG_ADDR_LINE.search(line)
+            if a:
+                address = a.group(1) + (a.group(2) or "")
+                break
+        if not address:
+            a = PROG_ADDR_PROSE.search(blob)
+            address = a.group(1) if a else None
+        if not address:
+            continue
+        address = text(address, 120)
+        zm = fr.ZIP.search(address)
+        boro = fr.borough_of(address, blob, zm.group(1) if zm else None)
+        avail = PROG_AVAIL.findall(blob)
+        bm = PROG_BEDS.search(status) or PROG_BEDS.search(blob)
+        beds = None if not bm else ("studio" if bm.group(1).lower() == "studio" else bm.group(1))
+        # "Applications are now being accepted for" breaks the sentence over
+        # two blocks on Archer Merrick; a short status line takes the next one.
+        i = lines.index(status)
+        if len(status) < 60 and i + 1 < len(lines):
+            status = f"{status} {lines[i + 1]}"
+        status_copy = text(status, 160)
+        out.append({
+            "agent": agent,
+            "agent_page": page_url,
+            "title": title,
+            "address": address,
+            "borough": boro,
+            "zip": zm.group(1) if zm else None,
+            # Rents are not published; Bay Street's "$50,062" is a minimum
+            # income, and printing it as an income limit would be wrong.
+            "money_kind": None,
+            "money_low": None,
+            "money_high": None,
+            "income_1p_max": None,
+            "units": sum(int(n) for n in avail) if avail else None,
+            "beds": beds,
+            "href": f"{PROG_HOST}/{slug}",
+            "href_kind": "listing",
+            "image_src": None,
+            "_card": [x for x in (title, address, status_copy) if x],
+            "_amounts": [],
+            "_key": f"progressive {slug}",
+        })
+    return out
+
+
 FEEDS = {
     "hdc": {"fetch": hdc_fetch, "records": hdc_records},
+    "progressive": {"fetch": progressive_fetch, "records": progressive_records},
 }
 
 

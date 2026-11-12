@@ -31,7 +31,8 @@
   "Progressive Management of NY": {
    "url": "https://www.progressivemgmt.net/vacant-apartments",
    "units": 1000,
-   "note": "5 properties by name, prices behind 'Learn more'"
+   "note": "5 properties by name, prices behind 'Learn more'",
+   "skip": "moved to rerental_pages.json (feed: progressive) 2026-11-11 — every building is income-restricted; produced 0 vacancies here"
   },
   "Goldfarb Properties (Pelican Management)": {
    "url": "https://www.goldfarbproperties.com/rentals",

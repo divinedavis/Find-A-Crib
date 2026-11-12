@@ -246,6 +246,84 @@ class DailyChanges(unittest.TestCase):
         self.assertEqual(len(feed), 5)          # 8779 was already on the board
 
 
+PROG_DIR = ROOT / "tests" / "fixtures" / "progressive"
+PROG = "Progressive Management of NY"
+
+
+def prog_fetch(url):
+    """Serve the trimmed real pages (2026-11-11) by URL; anything else is a bug."""
+    if url == F.PROG_PAGE:
+        return (PROG_DIR / "vacant-apartments.html").read_text()
+    slug = url[len(F.PROG_HOST) + 1:]
+    return (PROG_DIR / f"{slug}.html").read_text()
+
+
+class ProgressiveFeed(unittest.TestCase):
+    def setUp(self):
+        self.rows = F.progressive_fetch(fetch=prog_fetch)
+        self.recs = F.progressive_records(self.rows, PROG)
+        self.by_key = {r["_key"]: r for r in self.recs}
+
+    def test_follows_every_lightbox_on_the_index(self):
+        self.assertEqual([s for s, _ in self.rows],
+                         ["hewitt-westchester-lp", "bay-street-senior-housing", "adee-lester",
+                          "archer-merrick", "grant-forbell-llc"])
+
+    def test_a_building_that_claims_no_vacancy_is_not_a_listing(self):
+        # Grant Forbell's page describes the building and says nothing is open
+        self.assertNotIn("progressive grant-forbell-llc", self.by_key)
+        self.assertEqual(len(self.recs), 4)
+
+    def test_addresses_from_a_line_a_name_run_on_and_prose(self):
+        got = {k.split(" ", 1)[1]: r["address"] for k, r in self.by_key.items()}
+        self.assertEqual(got["adee-lester"], "3035 White Plains Road, Bronx, NY 10467")
+        self.assertEqual(got["archer-merrick"], "92-61 165TH Street, Jamaica, NY 11433")
+        self.assertEqual(got["bay-street-senior-housing"], "533-539 Bay St")   # first copy only
+        self.assertEqual(got["hewitt-westchester-lp"], "886 Westchester Avenue")  # from the prose
+
+    def test_borough_units_beds_and_link(self):
+        h = self.by_key["progressive hewitt-westchester-lp"]
+        self.assertEqual((h["borough"], h["units"], h["beds"]), ("Bronx", 1, "2"))
+        self.assertEqual(h["href"], F.PROG_HOST + "/hewitt-westchester-lp")
+        self.assertEqual(h["href_kind"], "listing")
+        a = self.by_key["progressive archer-merrick"]
+        self.assertEqual((a["borough"], a["units"], a["beds"]), ("Queens", None, "2"))
+        self.assertIn("2-bedroom apartments to fill vacant units", a["_card"][-1])  # joined lines
+        b = self.by_key["progressive bay-street-senior-housing"]
+        self.assertEqual((b["borough"], b["beds"]), ("Staten Island", "1"))
+
+    def test_title_is_unescaped(self):
+        self.assertEqual(self.by_key["progressive adee-lester"]["title"], "Adee & Lester")
+
+    def test_minimum_income_is_never_printed_as_money(self):
+        # Bay Street's "$50,062" is a minimum income, not a rent or an income limit
+        self.assertTrue(all(r["money_kind"] is None for r in self.recs))
+
+    def test_daily_items_carry_borough_and_link(self):
+        items = {i["key"]: i for i in F.daily_items(self.recs)}
+        self.assertEqual(items["progressive adee-lester"]["boro"], "Bronx")
+        self.assertEqual(items["progressive adee-lester"]["geo"], "3035 White Plains Road")
+        self.assertIsNone(items["progressive adee-lester"]["rent_low"])
+
+    def test_empty_index_is_a_feed_error(self):
+        with self.assertRaises(F.FeedError):
+            F.progressive_fetch(fetch=lambda u: "<main>Nothing here</main>")
+
+    def test_building_count_is_bounded(self):
+        calls = []
+        index = "".join(f'<a href="#lightbox_b{i}">x</a>' for i in range(50))
+        F.progressive_fetch(fetch=lambda u: (calls.append(u), index)[1], max_pages=3)
+        self.assertEqual(len(calls), 4)                 # the index + 3 buildings
+
+    def test_registered_as_a_feed(self):
+        pages = json.loads((ROOT / "rerental_pages.json").read_text())["pages"]
+        self.assertEqual(pages[PROG]["feed"], "progressive")
+        self.assertIn("progressive", F.FEEDS)
+        # and not in the market-rate list too, where it would be counted twice
+        owner = json.loads((ROOT / "owner_vacancy_pages.json").read_text())["pages"]
+        self.assertTrue(owner[PROG].get("skip"))
+
+
 class FeaturedChanges(unittest.TestCase):
     def test_a_zip_on_the_line_above_unit_is_not_a_unit_count(self):
         self.assertIsNone(fr.UNITS.search("Bronx, NY 10452 \nUnit Photos - Apt 6D"))

@@ -47,7 +47,7 @@
   "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
   "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)",
   "CGMR Compliance": "HPD links cgmrcompliance.com/housing-opportunities; 404 on 2026-10-28",
-  "Ibis Advisors": "HPD links ibis.powerappsportals.com; Azure says 'This web app is stopped' (2026-10-28)",
+  "Ibis Advisors": "HPD links ibis.powerappsportals.com. LIVE again 2026-11-11 with 4 Bronx 130% AMI units (1254 Fteley #4E, 1492 Bryant #3C/#4B, 2809 Sedgwick; rents $1,463-$2,552 in images), but robots.txt is 'User-agent: * / Disallow: /' (the PowerApps portal default). Same rule as CGP&H's Salesforce site: ask support@ibisadvisorsny.com for permission before any automated check.",
   "Riverton Square": "HPD links its StreetEasy building page; StreetEasy terms bar scraping"
  },
  "checked": "2026-11-11",
@@ -455,6 +455,14 @@
    "found": "2026-10-28",
    "source": "HPD re-rentals page (owner, 2026-10-28)",
    "unit_count": 2,
+   "last_ok": "2026-11-11"
+  },
+  "Progressive Management of NY": {
+   "url": "https://www.progressivemgmt.net/vacant-apartments",
+   "title": "Vacant Apartments",
+   "feed": "progressive",
+   "units_seen": true,
+   "note": "Income-restricted buildings (LIHTC, 55% AMI, 62+ senior); each building's own page says '(1 available)' or 'applications being accepted'. No rents published. Moved from owner_vacancy_pages.json 2026-11-11.",
    "last_ok": "2026-11-11"
   }
  }

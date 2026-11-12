@@ -203,6 +203,20 @@ BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
              "Bx": "bronx", "SI": "staten-island"}
 
 
+def sentence_start(name):
+    """A borough name that OPENS a sentence.
+
+    BORO_NAME["Bx"] is "the Bronx", which is correct in running prose ("every
+    stabilized building in the Bronx") and lowercase at the head of a sentence.
+    The borough answer block opens one with it, so /borough/bronx/ read "the
+    Bronx has 5,000 buildings registered as rent stabilized..." — the first
+    sentence of the direct answer on that page. Only the article is recased;
+    "Bronx" keeps its capital, and the four article-less boroughs pass through
+    untouched.
+    """
+    return name[:1].upper() + name[1:] if name else name
+
+
 # ---- the non-NYC browse tier (SF / LA / DC) --------------------------------
 # Why this exists, from growth/gsc_pages.json on 2026-07-30: of the 82 pages on
 # this site earning any Search Console impression, 75 are single-building pages
@@ -4355,8 +4369,9 @@ def main():
         body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(boroname)}</h1>"
                 + answer_block([
-                    f"{boroname} has {total:,} buildings registered as rent stabilized with "
-                    f"New York State DHCR, spread across {len(nbs)} neighborhoods.",
+                    f"{sentence_start(boroname)} has {total:,} buildings registered as rent "
+                    f"stabilized with New York State DHCR, spread across "
+                    f"{len(nbs)} neighborhoods.",
                     STABILIZED_DEF,
                     "Registration is per building, so an individual apartment can still be "
                     "deregulated — find the address here and ask the landlord for its "

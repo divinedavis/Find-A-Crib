@@ -40,6 +40,20 @@ BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
              "Bx": "bronx", "SI": "staten-island"}
 
+
+def _boro_adj(name):
+    """A borough name used as an ADJECTIVE rather than as a noun phrase.
+
+    Four of the five boroughs are bare proper nouns and read correctly in
+    either position. "the Bronx" does not: it is right in running prose
+    ("Section 8 apartments in the Bronx") and wrong in front of a noun
+    ("161 rent-stabilized the Bronx buildings"). Both positions exist on the
+    same page, so the name needs two spellings and not one. Derived from
+    BORO_NAME rather than kept in a second dict, so the two cannot drift.
+    """
+    return name[4:] if name.startswith("the ") else name
+
+
 # Fewest matched listings that earns a borough its own /section8/<boro>/ page.
 # It gates CREATING one, never whether a page already live keeps telling the
 # truth — see the note over the borough loop in t_fresh_section8.
@@ -1116,12 +1130,26 @@ def t_fresh_section8(ctx):
         thin = n < BORO_MIN_LISTINGS
         name = BORO_NAME[k]
         slug = BORO_SLUG[k]
-        disp = name if name.startswith("the ") else name
+        # Two grammatical positions on one page, so two spellings. `disp` is
+        # the borough as a NOUN PHRASE — the breadcrumb, the <h1> ("apartments
+        # in the Bronx"), the place name in the Dataset node. `adj` is the same
+        # borough as an ADJECTIVE, in front of a noun. Until today both read
+        # `name`: the line here tested for the leading article and then returned
+        # `name` on both branches, so the intent was recorded and never
+        # implemented. The Bronx therefore led with "161 rent-stabilized the
+        # Bronx buildings" and handed answer engines a Dataset titled
+        # "Rent-stabilized the Bronx buildings". It was the worst of the five to
+        # get wrong: the Bronx carried 161 of the 253 matched buildings on the
+        # feed in this checkout, and /section8/bronx/ was the most-visited page
+        # on the site after the homepage in the 2026-11-07 measurement. The
+        # other four boroughs are unaffected in either position.
+        disp = name
+        adj = _boro_adj(name)
         crumbs = (f"<div class='crumbs'><a href='/'>Home</a> › "
                   f"<a href='/section8/'>Voucher listings</a> › {_esc(disp)}</div>")
         if n:
             verb = "had" if stale else ("has" if n == 1 else "have")
-            lead = (f"<p class='sub'>{n} rent-stabilized {_esc(disp)} building"
+            lead = (f"<p class='sub'>{n} rent-stabilized {_esc(adj)} building"
                     f"{'' if n == 1 else 's'} {verb} an apartment listed for voucher holders "
                     f"{_esc(now_phrase)}.</p>")
         else:
@@ -1132,7 +1160,7 @@ def t_fresh_section8(ctx):
             # feed exactly like every other claim on this tier, and the second
             # sentence is here so a reader does not read an empty night as the
             # buildings having lost their stabilization.
-            lead = (f"<p class='sub'>No rent-stabilized {_esc(disp)} buildings "
+            lead = (f"<p class='sub'>No rent-stabilized {_esc(adj)} buildings "
                     f"{'had' if stale else 'have'} an apartment listed for voucher holders "
                     f"{_esc(now_phrase)}. Listings for voucher holders turn over quickly and "
                     f"this page is rebuilt from the feed every night, so check back — the "
@@ -1164,8 +1192,8 @@ def t_fresh_section8(ctx):
         # one night's listings.
         if n:
             bjsonld.append(_dataset_jsonld(
-                f"Rent-stabilized {disp} buildings with live Section 8 / voucher listings",
-                f"{n} {disp} building{'' if n == 1 else 's'} registered rent-stabilized with "
+                f"Rent-stabilized {adj} buildings with live Section 8 / voucher listings",
+                f"{n} {adj} building{'' if n == 1 else 's'} registered rent-stabilized with "
                 f"DHCR that {'had' if stale else 'currently have'} an apartment listed on "
                 f"AffordableHousing.com, {refreshed}.",
                 f"{SITE}/section8/{slug}/", date_modified, disp, n))
@@ -1177,7 +1205,7 @@ def t_fresh_section8(ctx):
                      else f"none listed {'as of ' + when if stale else 'right now'}"),
                   (f"Rent-stabilized buildings in {disp} with apartments listed for Section 8 and "
                    f"other voucher holders {now_phrase}.{cadence}" if n
-                   else f"No rent-stabilized {disp} buildings {'had' if stale else 'have'} an "
+                   else f"No rent-stabilized {adj} buildings {'had' if stale else 'have'} an "
                         f"apartment listed for Section 8 or other voucher holders "
                         f"{now_phrase}.{cadence}"),
                   f"{SITE}/section8/{slug}/", bbody, bjsonld),

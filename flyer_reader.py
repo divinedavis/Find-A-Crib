@@ -200,7 +200,7 @@ def read_one(listing):
         verified = False
     else:
         return None, None
-    resp = cf.client().messages.create(model=cf.HAIKU, max_tokens=4000, system=SYSTEM,
+    resp = cf.client().messages.create(model=cf.HAIKU, max_tokens=12000, system=SYSTEM,
                                        messages=[{"role": "user", "content": content}],
                                        output_config={"format": {"type": "json_schema", "schema": SCHEMA}})
     out_text = next((b.text for b in resp.content if b.type == "text"), "")
@@ -220,6 +220,7 @@ def read_one(listing):
             out["deadline"] = None
     out["verified"] = verified
     out["read_at"] = datetime.date.today().isoformat()
+    out["model"] = cf.HAIKU
     return out, usage
 
 
@@ -232,22 +233,28 @@ def main():
     listings = json.load(open(os.path.join(a.docroot, "featured.json"))).get("listings", [])
     gw = Gateway(rpc, SUPABASE_URL, SERVICE_KEY)
     since = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=30)).isoformat() + "Z"
-    table, read, spent, skipped = {}, 0, 0, 0
+    table, read, spent, skipped, capped = {}, 0, 0, 0, False
     for l in listings:
         href = l.get("href")
         if not href or (l.get("href_kind") == "agent_page" and not on_board(l)):
             continue
         key = hashlib.sha1(href.encode()).hexdigest()
         rows = rest(f"ai_cache?feature=eq.flyer&key=eq.{key}&created_at=gte.{since}&select=payload")
-        if rows:
-            table[href] = rows[0]["payload"]
+        # A reading by an older model is stale: Haiku 4.5's merged household
+        # rows (2026-11-12) are re-read instead of served for 30 days, and
+        # stay up until their re-read comes round (the nightly limit).
+        cached = rows[0]["payload"] if rows else None
+        if cached and cached.get("model") == cf.HAIKU:
+            table[href] = cached
             continue
-        if read >= a.limit:
+        if not capped and read < a.limit and (rpc("ai_spend_month", {}) or 0) >= CAP_MICROS * STOP_AT:
+            print("flyer_reader: stopping — month's AI spend is at 90% of the cap")
+            capped = True
+        if capped or read >= a.limit:
+            if cached:
+                table[href] = cached
             skipped += 1
             continue
-        if (rpc("ai_spend_month", {}) or 0) >= CAP_MICROS * STOP_AT:
-            print("flyer_reader: stopping — month's AI spend is at 90% of the cap")
-            break
         if a.dry_run:
             print("would read", href); read += 1
             continue

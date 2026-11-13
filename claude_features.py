@@ -15,7 +15,13 @@ import json
 
 import anthropic
 
-HAIKU = "claude-haiku-4-5"
+# Haiku 5.5 since 2026-11-12 (research/2026-11-12-model-tests/report.md): on 14
+# live flyers Haiku 4.5 matched the unit rows 18% of the time — it merged a
+# flyer's per-household-size rows into one row carrying the largest
+# household's income limit (139 of 295 live rows) — against 88% for Haiku 5.5
+# (93% on scans), and Help me apply graded 8.6/10 vs 5.4, at ~1/5 the cost.
+# Haiku 5.5 thinks by default, so calls leave room for it in max_tokens.
+HAIKU = "claude-haiku-5-5"
 SONNET = "claude-sonnet-5-5"
 
 _client = None
@@ -217,7 +223,7 @@ def apply_help(listing, page_text):
     src = {"listing": listing, "page": page_text or ""}
     resp = client().messages.create(
         model=HAIKU,
-        max_tokens=2000,
+        max_tokens=8000,
         system=APPLY_SYSTEM,
         messages=[{"role": "user", "content":
                    f"<listing>\n{json.dumps(listing, sort_keys=True)}\n</listing>\n<page>\n{page_text or '(the page could not be read)'}\n</page>"}],

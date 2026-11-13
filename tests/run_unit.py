@@ -20,6 +20,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+# Scripts live in pipeline/ and the API in api/ since 2026-11-13; tests import them by name.
+for _d in ("pipeline", "api"):
+    sys.path.insert(1, str(HERE.parent / _d))
 
 
 def main() -> int:

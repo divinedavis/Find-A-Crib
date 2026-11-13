@@ -16,7 +16,7 @@ def read(*p):
 
 class DashboardInvestor(unittest.TestCase):
     def test_route_is_keyed_and_allowlisted(self):
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         self.assertIn('"/dashboard-investor"', src[src.index("DASHBOARD_READ_PATHS ="):src.index("EMAIL_RE =")])
         self.assertIn('DASHBOARD_INVESTOR_DAYS = {"14": 14, "30": 30, "60": 60, "90": 90, "all": None}', src)
         fn = src[src.index("def dashboard_investor():"):]
@@ -38,7 +38,7 @@ class DashboardInvestor(unittest.TestCase):
         # Day-by-day lines per tile (owner, 2026-11-11, design D). Same
         # allowlisted window, same key; a failed trends query must not take
         # the numbers down with it.
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         self.assertIn('rpc("dashboard_investor_trends"', src)
         fn = src[src.index("def _fac_investor_trends_rpc("):]
         fn = fn[:fn.index("\n\n\n")]

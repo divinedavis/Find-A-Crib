@@ -55,7 +55,7 @@ shasum -a 256 index.html
 
 # API: is the running copy the one in this checkout?
 ssh root@142.93.183.172 'sha256sum /root/findacrib-api/api_server.py'
-shasum -a 256 api_server.py
+shasum -a 256 api/api_server.py
 ```
 
 The live shell is allowed to be ahead of a checkout that has not fetched or

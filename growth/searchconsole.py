@@ -385,6 +385,7 @@ def saved_serving_census_check():
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pipeline"))   # pipeline/ holds seo_search_console and the other scripts since 2026-11-13
 
 
 def _api():

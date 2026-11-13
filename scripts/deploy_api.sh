@@ -24,9 +24,10 @@ set -euo pipefail
 HOST="${FAC_HOST:-root@142.93.183.172}"
 REPO=/root/Find-A-Crib   # the cron checkout; never read from here as root
 LIVE=/root/findacrib-api
-# Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
-# a website with a hundred scripts in its root, and the API directory should
-# hold the six files it runs.
+# Exactly the modules gunicorn imports, by file name. Listed rather than
+# globbed so the API directory holds only what it runs. In the repo they live
+# in api/ (the server and its auth bits) and pipeline/ (shared modules, since
+# 2026-11-13); the live directory stays flat, so names are copied as basenames.
 BACKUPS=/var/backups/findacrib-api
 FILES=(api_server.py webpush.py passkeys.py error_report.py ai_gateway.py broker_fee.py lease_review.py renter_tools.py nl_search.py building_records.py claude_features.py listing_page.py flyer_reader.py build_log.py building_report.py issue_api_key.py)
 # Modules that moved to the owner dashboard (repo divinedavis/owner-dashboard)
@@ -50,7 +51,12 @@ ssh "$HOST" "set -e; mkdir -p $BACKUPS/$SNAP
 # unit's User= line — on the next deploy.
 STAGE=/root/findacrib-api-stage
 ssh "$HOST" "rm -rf $STAGE && install -d -m 0700 $STAGE"
-scp -q "${FILES[@]}" deploy/findacrib-api.override.conf "$HOST:$STAGE/"
+SRC=()
+for f in "${FILES[@]}"; do
+  if [ -f "api/$f" ]; then SRC+=("api/$f"); elif [ -f "pipeline/$f" ]; then SRC+=("pipeline/$f")
+  else echo "!! $f is in neither api/ nor pipeline/" >&2; exit 1; fi
+done
+scp -q "${SRC[@]}" deploy/findacrib-api.override.conf "$HOST:$STAGE/"
 ssh "$HOST" "set -e
   for f in ${FILES[*]}; do
     cmp -s $STAGE/\$f $LIVE/\$f || echo \"    updating \$f\"

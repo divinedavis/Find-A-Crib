@@ -40,6 +40,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pipeline"))   # pipeline/ holds seo_search_console and the other scripts since 2026-11-13
 
 from growth import scout  # noqa: E402
 

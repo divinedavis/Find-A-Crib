@@ -24,7 +24,7 @@ def trace(visitor, steps, at="2026-10-25T04:10:38+00:00", booted="2026-10-25T04:
 
 class DashboardCrashes(unittest.TestCase):
     def test_route_is_keyed_and_allowlisted(self):
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         self.assertIn('"/dashboard-crashes"', src[src.index("DASHBOARD_READ_PATHS ="):src.index("EMAIL_RE =")])
         fn = src[src.index("def dashboard_crashes():"):]
         fn = fn[:fn.index("\n\n\n")]

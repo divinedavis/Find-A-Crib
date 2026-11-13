@@ -32,7 +32,7 @@ main() {
   # after that date left the site serving a prior year's figures. Whether it
   # actually is doing so is exactly what fmr.meta.json now records — a run of
   # this script is what answers it.
-  "${PY:-$HOME/.venvs/dhcr-map/bin/python}" build_fmr.py
+  "${PY:-$HOME/.venvs/dhcr-map/bin/python}" pipeline/build_fmr.py
 
   # Ship only on a real change. HUD publishes once a year, so eleven of twelve
   # runs should print "unchanged" — and a diff in a month that is not October is

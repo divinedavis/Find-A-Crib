@@ -25,7 +25,7 @@ def fn(src, name):
 
 class AlertsPrefsLimits(unittest.TestCase):
     def setUp(self):
-        self.api = read("api_server.py")
+        self.api = read("api/api_server.py")
 
     def test_prefs_limit_is_per_account_after_sign_in(self):
         body = fn(self.api, "alerts_prefs")

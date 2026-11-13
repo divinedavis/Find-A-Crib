@@ -239,6 +239,8 @@ def collect(docroot):
         return out
 
     try:
+        import os as _os, sys as _sys   # seo_search_console lives in pipeline/ since 2026-11-13
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "pipeline"))
         import seo_search_console as sc
         token = sc.access_token(sc.load_key())
     except SystemExit as e:                      # load_key() exits when unset

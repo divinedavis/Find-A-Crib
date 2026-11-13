@@ -411,10 +411,10 @@ or send mail — an unattended loop with commit rights eventually ships somethin
 broken at 6am on a Sunday.
 
 ```sh
-python3 growth_daily.py build --dry-run       # what would be published
-python3 growth_daily.py status                # the ledger + keyword coverage
-python3 growth_daily.py measure --days 30     # backfill measurements
-python3 growth_daily.py report                # print the daily report
+python3 pipeline/growth_daily.py build --dry-run       # what would be published
+python3 pipeline/growth_daily.py status                # the ledger + keyword coverage
+python3 pipeline/growth_daily.py measure --days 30     # backfill measurements
+python3 pipeline/growth_daily.py report                # print the daily report
 ```
 
 State (`techniques.json`, `keywords.json`, `results.jsonl`, `state.json`) lives

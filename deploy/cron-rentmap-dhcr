@@ -4,4 +4,4 @@
 # Runs as `scraper` with only SMTP + the owner address (2026-10-07; was root).
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-20 9 12 * * scraper cd /root/Find-A-Crib && fac-run smtp,owner -- python3 check_dhcr_list.py >> /var/log/rentmap-dhcr.log 2>&1
+20 9 12 * * scraper cd /root/Find-A-Crib && fac-run smtp,owner -- python3 pipeline/check_dhcr_list.py >> /var/log/rentmap-dhcr.log 2>&1

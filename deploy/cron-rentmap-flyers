@@ -7,4 +7,4 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 SHELL=/bin/bash
 CRON_TZ=America/New_York
-40 7 * * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase -- /opt/findacrib/venv/bin/python flyer_reader.py --docroot /var/www/rent-map --limit 40 >> /var/log/rentmap-flyers.log 2>&1
+40 7 * * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase -- /opt/findacrib/venv/bin/python pipeline/flyer_reader.py --docroot /var/www/rent-map --limit 40 >> /var/log/rentmap-flyers.log 2>&1

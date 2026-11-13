@@ -1,0 +1,67 @@
+#!/bin/bash
+# Daily re-rental sweep: one browser pass that updates the public page AND
+# mails the digest. Replaces the weekly check_rerentals.sh cron — that script
+# is still useful by hand, but running both would sweep the same 14 sites twice.
+#
+# Deliberately NOT set -e: one unreachable agent site must not stop the run.
+# rerental_daily.py keeps the previous state for anything it couldn't load.
+set -uo pipefail
+cd /root/Find-A-Crib || exit 1
+export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
+
+git pull --rebase --autostash -q origin main \
+  || echo "rerental_daily: git pull failed, running on the local copy"
+
+# Playwright lives in the shared job venv (/opt/findacrib/venv since
+# 2026-10-07; it used to sit in the web docroot), not the system python.
+PY=${FAC_PY:-/opt/findacrib/venv/bin/python}
+[ -x "$PY" ] || PY=python3
+"$PY" -c 'import playwright' 2>/dev/null || {
+  echo "rerental_daily: no playwright in $PY"; exit 1; }
+
+# The digest recipient lives in growth.env (GROWTH_REPORT_EMAIL), not in the
+# cron line: /etc/cron.d/rentmap-rerentals is mirrored into this PUBLIC repo
+# under deploy/. Only appended when the caller passed no --email of its own.
+if [ -n "${GROWTH_REPORT_EMAIL:-}" ]; then
+  case " $* " in
+    *" --email "*|*" --email="*) ;;
+    *) set -- "$@" --email "$GROWTH_REPORT_EMAIL" ;;
+  esac
+fi
+
+"$PY" pipeline/rerental_daily.py --update-site --out "$GROWTH_DOCROOT" "$@"
+rc=$?
+
+# Intraday sweeps (RERENTAL_FEATURED=0) stop here: the digest pass above is
+# one render per board and is all the borough alerts need. The featured pass
+# below clicks into up to ten listings per board for photos and rents — fine
+# once a day, not eight times.
+if [ "${RERENTAL_FEATURED:-1}" = 0 ]; then
+  exit $rc
+fi
+
+# Same 14 sites, second pass: pull a full record per apartment (rent, units,
+# photo, apply link) for the featured tiles in the map grid. It is a separate
+# pass because the digest above only needs a key per listing and this needs the
+# whole card — but it rides this cron so the sites are only visited once a day
+# in total, and a failure here must not fail the digest.
+"$PY" pipeline/featured_rerentals.py --apply --out "$GROWTH_DOCROOT" \
+  || echo "rerental_daily: featured tiles FAILED (digest above is unaffected)"
+
+# featured.json is deliberately NOT committed — it is regenerated every run and
+# served from the docroot, so tracking it would put this cron in conflict with
+# itself. See .gitignore.
+git add -A rerental_pages.json marketing_agents.json 2>/dev/null
+# Rebase first: a push to main during the ~20 min sweep refused this one
+# (2026-10-22), leaving the day's state commit stranded on the droplet.
+if ! git diff --cached --quiet; then
+  git commit -q -m "re-rentals: daily sweep $(date -u +%Y-%m-%d)" \
+    && { git pull -q --rebase origin main || { git rebase --abort 2>/dev/null; false; }; } \
+    && git push -q origin main \
+    && echo "rerental_daily: state pushed" \
+    || echo "rerental_daily: push FAILED"
+fi
+exit $rc

@@ -36,14 +36,14 @@ re-rental opens up.
 | Area | Where |
 |------|-------|
 | Web app (one file, Leaflet, no build step) | `index.html`, `static/` |
-| City pages generated from the root page | `build_city_pages.py` → `sf/`, `la/`, `dc/` |
-| Data builders (one script per source) | `parse_pdfs.py`, `fetch_hpd.py`, `scrape_hcr.py`, `build_*.py` |
-| API (Flask) | `api_server.py`, `ai_gateway.py`, `deploy/api/` |
-| Alerts | `lottery_alerts.py`, `saved_alerts.py`, `apns.py` |
-| AI features | `flyer_reader.py`, `nl_search.py`, `claude_features.py`, `ai_gateway.py` |
+| City pages generated from the root page | `pipeline/build_city_pages.py` → `sf/`, `la/`, `dc/` |
+| Data builders, scrapers, alerts, reports (one script per job) | `pipeline/` |
+| API (Flask) | `api/` (server + auth); shared modules in `pipeline/`; `deploy/api/` |
+| Alerts | `pipeline/lottery_alerts.py`, `pipeline/saved_alerts.py`, `pipeline/apns.py` |
+| AI features | `pipeline/flyer_reader.py`, `pipeline/nl_search.py`, `pipeline/claude_features.py`, `pipeline/ai_gateway.py` |
 | Database (Supabase / Postgres) | `db/` migrations, `supabase/functions/` |
 | iOS app (SwiftUI) | `ios/` (see [ios/README.md](ios/README.md)) |
-| Growth engine (SEO pages, outreach) | `growth/`, `growth_daily.py` |
+| Growth engine (SEO pages, outreach) | `growth/`, `pipeline/growth_daily.py` |
 | Deploy + cron jobs | `deploy/`, `scripts/deploy_*.sh` |
 | Production layout and nginx snapshot | `deploy/README.md`, `deploy/nginx/` |
 | Tests | `tests/` |

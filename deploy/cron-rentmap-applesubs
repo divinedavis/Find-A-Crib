@@ -8,4 +8,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-50 7 * * * facsubs cd /root/Find-A-Crib && fac-run subs -- sh -c '"$FAC_PY" apple_subs_check.py' >> /var/log/rentmap-applesubs.log 2>&1
+50 7 * * * facsubs cd /root/Find-A-Crib && fac-run subs -- sh -c '"$FAC_PY" pipeline/apple_subs_check.py' >> /var/log/rentmap-applesubs.log 2>&1

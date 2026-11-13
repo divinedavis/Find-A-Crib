@@ -128,7 +128,7 @@ def test_fac_run_rejects_bad_names_missing_sets_and_bad_usage():
 
 
 def test_job_scripts_skip_growth_env_under_fac_run():
-    for s in ("lottery_alerts.sh", "saved_alerts.sh", "rerental_daily.sh", "check_rerentals.sh", "growth_run.sh"):
+    for s in ("pipeline/lottery_alerts.sh", "pipeline/saved_alerts.sh", "pipeline/rerental_daily.sh", "pipeline/check_rerentals.sh", "pipeline/growth_run.sh"):
         text = (ROOT / s).read_text()
         for line in text.splitlines():
             if ". ./growth.env" in line and not line.lstrip().startswith("#"):
@@ -136,7 +136,7 @@ def test_job_scripts_skip_growth_env_under_fac_run():
 
 
 def test_no_script_points_at_the_docroot_venv():
-    for p in list(ROOT.glob("*.sh")) + list(ROOT.glob("*.py")) + list((ROOT / "scripts").glob("*.sh")):
+    for p in list(ROOT.glob("pipeline/*.sh")) + list(ROOT.glob("pipeline/*.py")) + list(ROOT.glob("api/*.py")) + list((ROOT / "scripts").glob("*.sh")):
         assert "/var/www/rent-map/venv" not in p.read_text(), p.name
 
 

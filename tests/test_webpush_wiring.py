@@ -23,17 +23,17 @@ class Wiring(unittest.TestCase):
                 self.assertRegex(line, r"fac-run [a-z,]*\bwebpush\b", line)
 
     def test_the_jobs_that_push_to_phones_push_to_browsers(self):
-        lottery = read("lottery_alerts.py")
+        lottery = read("pipeline/lottery_alerts.py")
         self.assertIn('rpc("web_push_for_emails"', lottery)
         self.assertIn("webpush.send(b, webpush.note(title, text_body", lottery)
         self.assertIn('rpc("web_push_remove"', lottery)
         self.assertIn("if is_plus and (phones or screens) and to_push:", lottery,
                       "a Plus member with only a browser still gets the real-time alert when the email waits")
-        self.assertIn("webpush.push_to_emails(la.rpc, key, [w[\"email\"]]", read("casa_alerts.py"))
+        self.assertIn("webpush.push_to_emails(la.rpc, key, [w[\"email\"]]", read("pipeline/casa_alerts.py"))
 
     def test_the_api_ships_webpush_and_trusts_only_the_session(self):
         self.assertRegex(read("scripts", "deploy_api.sh"), r"FILES=\([^)]*\bwebpush\.py\b")
-        api = read("api_server.py")
+        api = read("api/api_server.py")
         fn = api[api.index("def push_web_subscribe():"):]
         fn = fn[:fn.index("\n# ---- ")]
         self.assertIn("u = _session_user()", fn)
@@ -63,7 +63,7 @@ class PasskeyWiring(unittest.TestCase):
 
     def test_routes(self):
         self.assertRegex(read("scripts", "deploy_api.sh"), r"FILES=\([^)]*\bpasskeys\.py\b")
-        api = read("api_server.py")
+        api = read("api/api_server.py")
         self.assertIn('request.path.startswith("/passkeys/") or request.path == "/passkeys"', api)
         block = api[api.index("# ---- Passkeys (owner, 2026-11-10)"):]
         block = block[:block.index("\n# ---- ", 10)]

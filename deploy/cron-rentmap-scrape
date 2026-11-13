@@ -6,10 +6,10 @@
 # + HUD project-based Section 8 contracts) -> the "bldg" half of s8.json.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-40 4 1 * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 fetch_section8.py >> /var/log/rentmap-s8.log 2>&1
+40 4 1 * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 pipeline/fetch_section8.py >> /var/log/rentmap-s8.log 2>&1
 # NIGHTLY (04:15 UTC): live voucher listings from AffordableHousing.com
 # -> the "avail" half of s8.json. Plain JSON POSTs, ~85 requests, 1s apart.
-15 4 * * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1
+15 4 * * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 pipeline/scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1
 # NIGHTLY (05:40 UTC): rebuild the 6 /section8/ pages from that feed while the
 # growth engine is paused (2026-10-12..10-29, and again from 2026-11-07). Hub pages
 # promise /section8/ is rebuilt nightly; this keeps that true with no LLM, IndexNow

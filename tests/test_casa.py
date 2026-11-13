@@ -23,7 +23,7 @@ def read(*p):
 
 class CasaWatchRoute(unittest.TestCase):
     def setUp(self):
-        api = read("api_server.py")
+        api = read("api/api_server.py")
         start = api.index("def casa_watch():")
         self.body = api[start:api.index("\ndef ", start + 10)]
         self.api = api
@@ -159,7 +159,7 @@ class CasaAlertText(unittest.TestCase):
 
     def test_alerts_wait_for_8_am(self):
         self.assertEqual(self.c.SEND_HOURS, range(8, 21))
-        src = read("casa_alerts.py")
+        src = read("pipeline/casa_alerts.py")
         self.assertLess(src.index("SEND_HOURS and not args.dry_run"), src.index("watches = rest("), "quiet hours stop the run before any send")
 
     def test_distance(self):

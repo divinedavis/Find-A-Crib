@@ -28,7 +28,7 @@ class PushSignOut(unittest.TestCase):
         self.assertIn('"https://findacrib.com/api/push/unregister"', src)
 
     def test_api_removes_only_the_callers_row(self):
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         fn = src[src.index("def push_unregister():"):src.index("def _session_email")]
         self.assertIn('rpc("device_token_remove_own"', fn)
         self.assertIn('"p_user_id": u["id"]', fn)
@@ -63,7 +63,7 @@ class PushSignedOutAnyRoad(unittest.TestCase):
         self.assertIn("completionHandler(signedIn ? [.banner, .list, .sound] : [])", will[:600])
 
     def test_forget_needs_no_session_and_only_takes_a_token(self):
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         fn = src[src.index("def push_forget():"):src.index("# ---- Your Crib")]
         self.assertNotIn("_session_user()", fn)
         self.assertIn("PUSH_TOKEN_RE.match(token)", fn)

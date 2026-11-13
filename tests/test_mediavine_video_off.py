@@ -23,7 +23,7 @@ def test_map_page_turns_video_player_off():
 
 
 def test_city_pages_carry_it():
-    subprocess.run([sys.executable, "build_city_pages.py"], cwd=ROOT, check=True,
+    subprocess.run([sys.executable, "pipeline/build_city_pages.py"], cwd=ROOT, check=True,
                    capture_output=True)
     for c in ("la", "sf", "dc", "westchester"):
         check((ROOT / c / "index.html").read_text(), f"{c}/index.html")

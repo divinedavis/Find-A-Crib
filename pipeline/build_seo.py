@@ -1,0 +1,4769 @@
+#!/usr/bin/env python3
+"""Generate static, crawlable SEO pages from the building dataset.
+
+For every rent-stabilized building and every neighborhood we emit a real HTML
+page so search engines can index "is <address> rent stabilized" and
+"rent-stabilized buildings in <neighborhood>" queries — the map alone is a
+single JS page Google can't read.
+
+Output goes to ./seo/ (gitignored) mirroring the docroot layout, so deploy is a
+plain `rsync seo/ /var/www/rent-map/`. Pages are <dir>/index.html so the
+existing nginx `try_files $uri $uri/` serves clean extensionless URLs with no
+config change.
+
+    python3 pipeline/build_seo.py
+"""
+import bisect
+import json
+import os
+import re
+import html
+import math
+import hashlib
+import datetime
+import time
+from collections import defaultdict
+from seo_guides import GUIDES, _related
+
+# The repo root (data, seo/ output) is one level above pipeline/; the flat
+# SEO build in /root/dhcr-build keeps everything beside the script.
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+if os.path.basename(_ROOT) == "pipeline":
+    _ROOT = os.path.dirname(_ROOT)
+
+SITE = "https://findacrib.com"
+OUT = os.path.join(_ROOT, "seo")
+BUILD_DATE = datetime.date.today().isoformat()  # sitemap <lastmod>
+
+# --- honest lastmod: only bump a page's <lastmod> when its HTML actually changes.
+# State (url -> {h: content-hash, m: lastmod}) persists between runs next to this
+# script so a nightly rebuild doesn't lie to crawlers about unchanged pages.
+LM_STATE_PATH = os.path.join(_ROOT, "seo_lastmod.json")
+try:
+    LM_STATE = json.load(open(LM_STATE_PATH))
+except Exception:
+    LM_STATE = {}
+LM_NEW = {}        # url -> {h, m} written back at the end
+LASTMOD = {}       # url -> lastmod string, used when emitting sitemaps
+LM_CHANGED = []     # urls whose content changed this run (for IndexNow)
+
+
+def breadcrumb(items):
+    """schema.org BreadcrumbList from [(name, absolute_url), ...] for rich results."""
+    return {"@context": "https://schema.org", "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": i + 1, "name": name, "item": url}
+                for i, (name, url) in enumerate(items)]}
+
+
+def faq_jsonld(pairs):
+    return {"@context": "https://schema.org", "@type": "FAQPage",
+            "mainEntity": [{"@type": "Question", "name": q,
+                            "acceptedAnswer": {"@type": "Answer", "text": a}}
+                           for q, a in pairs]}
+
+
+def faq_html(pairs):
+    """Render FAQ pairs as visible HTML matching the FAQPage JSON-LD — structured
+    data with no visible counterpart describes content that isn't there, and AI
+    answer engines extract from rendered text, not hidden JSON-LD."""
+    items = "".join(f"<div class='faq-item'><h3>{esc(q)}</h3><p>{esc(a)}</p></div>"
+                     for q, a in pairs)
+    return f"<h2>Frequently asked questions</h2><div class='faq'>{items}</div>"
+
+
+# Roughly 50-70 words is the window that survives extraction: long enough to
+# carry the number, the definition and the source, short enough to be quoted
+# whole. These bounds are asserted at build time rather than trusted.
+ANSWER_MIN_WORDS, ANSWER_MAX_WORDS = 45, 80
+
+
+def answer_block(sentences):
+    """The direct answer to the question the page's title asks.
+
+    Hub pages already open with a lead line, but a lead assumes you have the
+    page in front of you — "There are 1,204 buildings" means nothing lifted out
+    of context. This block is written to be lifted: it names the place, gives
+    the number, says what rent stabilization actually means for a tenant, and
+    attributes the data, in one self-contained paragraph.
+
+    That is the pattern behind the AI-answer-engine results other sites report,
+    and unlike an FAQ it also serves the human who landed here from a search
+    and wants the answer before the list of 1,204 addresses.
+
+    Every sentence must come from real data. Callers pass finished sentences;
+    this only assembles and checks the length, because a block that drifts long
+    stops being extractable and one that drifts short stops being an answer.
+    """
+    text = " ".join(s.strip() for s in sentences if s and s.strip())
+    n = len(text.split())
+    if n < ANSWER_MIN_WORDS or n > ANSWER_MAX_WORDS:
+        raise ValueError(f"answer block is {n} words, outside {ANSWER_MIN_WORDS}-{ANSWER_MAX_WORDS}: {text[:120]}…")
+    return f"<div class='answer'><p>{esc(text)}</p></div>"
+
+
+# The one-sentence definition every hub page carries. Deliberately identical
+# everywhere: it is the load-bearing fact, and rewording it per page to look
+# "unique" would be writing for a crawler rather than a reader.
+STABILIZED_DEF = ("Rent stabilization caps how much the rent can rise each year — the "
+                  "Rent Guidelines Board sets the limit — and gives the tenant the right "
+                  "to renew the lease.")
+
+# The crawl path from this corpus into the two sections the growth build
+# publishes. Why it lives here and not in index.html: on 2026-08-06 /section8/
+# and /brief/ had been rebuilt nightly for eleven days, sat in sitemap-daily.xml
+# with an honest lastmod and were submitted to IndexNow every night, and had
+# still never earned a single Search Console impression. The reason was that
+# nothing a crawler reaches linked to either one. The 2026-08-05 review put the
+# links in the repo's index.html, but neither droplet cron deploys that file —
+# growth_daily.py rsyncs only growth_out/ and refresh_seo.sh only seo/ — so the
+# fix could not reach production and the 2026-08-06 audit still reported both
+# sections orphaned. This corpus is the part of the site Google actually crawls,
+# and refresh_seo.sh does deploy it, so the link belongs here.
+#
+# It also repairs a one-way reference: /section8/<borough>/ already links out to
+# /borough/<slug>/ and nothing linked back. A hub whose spokes never reinforce it
+# is the shape that gets dropped from the index.
+#
+# Deliberately quotes no counts. The voucher pages are rebuilt by the growth
+# build (growth/techniques.py t_fresh_section8) from a feed this pipeline never
+# reads, hours after this one runs, so any number here would be a claim this
+# build cannot substantiate. The destination carries the live figures; this
+# block only has to be true and get a crawler there.
+#
+# THE /brief/ CLAUSE WAS REMOVED ON 2026-09-21, AND THE REASON IS ACCURACY, NOT
+# SEO. Until today this block ended "or read the daily brief on which buildings
+# came on and off the market" — present tense, on every page below. T002
+# daily_brief retired on 2026-08-16 and nothing in growth/techniques.py ORDER
+# has rebuilt /brief/ since: last_run.json's build.techniques block has carried
+# no daily_brief entry for 36 days, and t_sitemap_daily prices its 17 pages
+# "never" precisely because they cannot change again. So 369 NYC hub pages
+# (198 neighborhood, 165 ZIP, 5 borough, /buildings/) have been telling readers
+# this site publishes a daily brief for five weeks after it stopped. That is a
+# claim the build cannot substantiate, which is the same standard the paragraph
+# above applies to counts, and it does not get a pass for being a link.
+#
+# The /section8/ half STAYS and is untouched: T001 fresh_section8 is active and
+# rebuilt it this morning (310 buildings across 5 boroughs), so every word of it
+# is still true, and it is the crawl path the 2026-08-06 audit was written to
+# fix. Only the dead half goes.
+#
+# /brief/ IS NOT ORPHANED BY THIS. Its 17 URLs keep their sitemap-daily.xml
+# entries (t_sitemap_daily entry(): a retired section stays listed, declared
+# "never"), and /section8/ keeps exactly one honest, past-tense link to the
+# archive — see growth/techniques.py t_fresh_section8. One link from the
+# section's own topical parent is what a frozen archive earns; 369 links from
+# the only tier Google still crawls is not.
+VOUCHER_XLINK = (
+    "<h2>Renting with a housing voucher?</h2>"
+    "<p>Find A Crib rebuilds a list every night of the DHCR-registered "
+    "rent-stabilized buildings that have an apartment listed for Section 8 and "
+    "other housing vouchers, from the overnight AffordableHousing.com feed — "
+    "<a href='/section8/'>see the current voucher listings</a>.</p>")
+
+# The same crawl path, for the three city browse hubs — and the reason it is a
+# second string rather than a reuse of VOUCHER_XLINK.
+#
+# Why it exists at all: as of 2026-08-07 this is the ONLY inbound link into
+# /section8/ and /brief/ that can actually reach production. VOUCHER_XLINK above
+# lives in the NYC hub tier, which main() writes into seo/ and which reaches the
+# docroot only when scripts/refresh_seo.sh runs — and that pipeline has not
+# written since 2026-08-01. city_hub_docs() is different: the daily growth build
+# imports it from a fresh git checkout every night and rsyncs the result into the
+# docroot itself (growth/techniques.py: _publish_stranded_city_hubs), so a change
+# here deploys on the next 05:40 UTC run whether or not the SEO pipeline ever
+# recovers. Two consecutive reviews shipped this fix into files no cron deploys;
+# this is the same fix routed through the path that demonstrably works.
+#
+# Why the wording differs. The voucher feed is New York City only — it is built
+# from DHCR registrations and the AffordableHousing.com feed, and there is no
+# equivalent for San Francisco, Los Angeles or Washington DC. Dropping the NYC
+# block verbatim onto a San Francisco page would imply SF voucher coverage that
+# does not exist, so the city and the gap are both named outright. A reader who
+# is not in New York should be able to tell in one sentence that this is not for
+# them; that is worth more than the click.
+#
+# On the three browse hubs only, not the 252 place pages under them. The browse
+# hub already carries an "Other cities" section, so a cross-city block belongs
+# there and nowhere else; repeating a New York block on every San Francisco
+# neighborhood page would be boilerplate on the thinner tier, which is the
+# duplication that plausibly drives the serving-set churn. One good link from a
+# priority-0.9 page two clicks from /sf/ (which serves) beats 252 weak ones.
+#
+# The /brief/ clause went on 2026-09-21 for the reason given above VOUCHER_XLINK:
+# the section has not been rebuilt since 2026-08-16 and "read the daily brief"
+# was false on all three browse hubs. The voucher sentence and the "no equivalent
+# feed for {city} yet" caveat are untouched — both are still exactly true.
+CITY_VOUCHER_XLINK = (
+    "<h2>New York City: apartments listed for housing vouchers</h2>"
+    "<p>Find A Crib's voucher feed covers New York City only — every night it "
+    "rebuilds the list of DHCR-registered rent-stabilized buildings with an "
+    "apartment listed for Section 8 and other housing vouchers, from the "
+    "overnight AffordableHousing.com feed. "
+    "<a href='/section8/'>See the current New York City voucher listings</a>. "
+    "There is no equivalent feed for {city} yet.</p>")
+
+BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
+             "Bx": "the Bronx", "SI": "Staten Island"}
+BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
+             "Bx": "bronx", "SI": "staten-island"}
+
+
+def sentence_start(name):
+    """A borough name that OPENS a sentence.
+
+    BORO_NAME["Bx"] is "the Bronx", which is correct in running prose ("every
+    stabilized building in the Bronx") and lowercase at the head of a sentence.
+    The borough answer block opens one with it, so /borough/bronx/ read "the
+    Bronx has 5,000 buildings registered as rent stabilized..." — the first
+    sentence of the direct answer on that page. Only the article is recased;
+    "Bronx" keeps its capital, and the four article-less boroughs pass through
+    untouched.
+    """
+    return name[:1].upper() + name[1:] if name else name
+
+
+# ---- the non-NYC browse tier (SF / LA / DC) --------------------------------
+# Why this exists, from growth/gsc_pages.json on 2026-07-30: of the 82 pages on
+# this site earning any Search Console impression, 75 are single-building pages
+# whose only query is the literal street address, and 58 of the 82 sit at
+# position 10 or better. Ranking ability is not the constraint — addressable
+# search volume is, and one address has almost none. The tier that aggregates
+# (ZIP and neighborhood hubs) ranks at positions 2-4 where it serves, and three
+# of the four cities on this site had none of it: /sf/, /la/ and /dc/ were a
+# single JavaScript map shell each, which is also why 11 city queries were
+# scored as "covered" by a page that cannot answer them.
+#
+# Each city is grouped on the dimension its data actually carries — SF and DC
+# record a neighborhood, LA records only a ZIP — and every page states only
+# stats that city holds: LA has no reported rents, DC has no build years.
+MIN_CITY_HUB = 5      # below this a place gets no page rather than a thin one
+ZIP_HUB_MIN = 5       # same floor for the NYC ZIP tier — see zip_hubs below
+CITY_LIST_CAP = 300   # addresses listed per page; overflow is stated, not hidden
+
+CITY_HUBS = {
+    "sf": dict(
+        name="San Francisco", group="nb", path="neighborhood",
+        thing="location", things="locations",
+        h1="Rent-controlled apartments in {place}, San Francisco",
+        browse_h1="Rent-controlled buildings in San Francisco by neighborhood",
+        browse_link_text="rent-controlled San Francisco by neighborhood",
+        guide="is-my-apartment-rent-controlled-san-francisco",
+        list_h2="Block-sides reported in {place}",
+        list_note="These are block-sides as the Rent Board publishes them, not individual addresses.",
+    ),
+    "la": dict(
+        name="Los Angeles", group="z", path="zip",
+        thing="building", things="buildings",
+        h1="Rent-stabilized (RSO) buildings in ZIP {place}, Los Angeles",
+        browse_h1="Rent-stabilized (RSO) buildings in Los Angeles by ZIP code",
+        browse_link_text="likely-RSO Los Angeles by ZIP code",
+        guide="is-my-apartment-rent-controlled-los-angeles",
+        list_h2="Addresses meeting the RSO criteria in ZIP {place}",
+        list_note="Derived from assessor records and labelled likely RSO — confirm any address "
+                  "with LAHD or on ZIMAS before you rely on it.",
+    ),
+    "dc": dict(
+        name="Washington, DC", group="nb", path="neighborhood",
+        thing="property", things="properties",
+        h1="Rent-controlled buildings in {place}, Washington DC",
+        browse_h1="Rent-controlled buildings in Washington DC by neighborhood",
+        browse_link_text="rent-controlled Washington DC by neighborhood",
+        guide="is-my-apartment-rent-controlled-washington-dc",
+        list_h2="Registered properties in {place}",
+        list_note="A property is listed because its housing provider filed it as rent controlled.",
+    ),
+}
+
+
+def _med(xs):
+    xs = sorted(xs)
+    return xs[len(xs) // 2] if xs else None
+
+
+def _city_stats(items):
+    """Only what the records actually hold — missing fields stay missing."""
+    return {"n": len(items),
+            "units": sum(x["u"] for x in items if x.get("u")),
+            "yr": sorted(x["yr"] for x in items if x.get("yr")),
+            "mr": sorted(x["mr"] for x in items if x.get("mr"))}
+
+
+def _city_centroid(items):
+    """Mid-point of a place's mapped records, or None if none carry a position.
+
+    Median rather than mean on purpose: one mis-geocoded record dragging a
+    neighborhood's centre across the city would silently corrupt every distance
+    computed from it, and the median simply ignores it. This is the centre of
+    what THIS dataset maps in a place, not the official centroid of the place's
+    boundary — nothing here reads a boundary file — which is why the pages that
+    use it say "mapped" and give the figure in whole tenths of a mile.
+    """
+    lats = [x["lat"] for x in items if isinstance(x.get("lat"), (int, float))]
+    lngs = [x["lng"] for x in items if isinstance(x.get("lng"), (int, float))]
+    if not lats or not lngs:
+        return None
+    return (_med(lats), _med(lngs))
+
+
+def _miles(a, b):
+    """Great-circle miles between two (lat, lng) pairs."""
+    r = 3958.8
+    p1, p2 = math.radians(a[0]), math.radians(b[0])
+    dp, dl = p2 - p1, math.radians(b[1] - a[1])
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(h)))
+
+
+def _city_neighbors(place, centroids, counts, limit=12):
+    """The `limit` places closest to `place`, nearest first, as (place, n, mi).
+
+    Until 2026-09-03 this tier's sibling block was the same twelve
+    highest-count places on every page in the city, under the heading "Nearby
+    in <city>". Two things were wrong with that. It was not true — Bellevue is
+    not near Mount Vernon Square, it is merely large — and this site's
+    credibility is the product, so a false claim repeated on 252 pages is a
+    defect whatever it does for traffic. And because the twelve never varied,
+    every other place in the tier received no inbound link from a sibling at
+    all: 91 of DC's 103 neighborhood hubs, 100 of LA's 112 ZIP hubs and 25 of
+    SF's 37 were linked only from the browse hub.
+
+    Ordering by distance fixes both at once. Returns [] when fewer than two
+    places carry a position, so a dataset without coordinates falls back to the
+    count ordering rather than shipping an empty block.
+    """
+    here = centroids.get(place)
+    if not here or len(centroids) < 2:
+        return []
+    near = sorted(((_miles(here, c), p) for p, c in centroids.items() if p != place),
+                  key=lambda t: (t[0], t[1]))
+    return [(p, counts[p], mi) for mi, p in near[:limit]]
+
+
+def _city_answer(key, place, st):
+    """The extractable answer for a city hub. Wording differs per city because
+    the underlying legal test and the data's authority differ per city, and
+    flattening that into one template would mean saying something untrue about
+    two of the three."""
+    n, units = st["n"], st["units"]
+    if key == "sf":
+        return [f"{place}, San Francisco has {n:,} block-side locations with rent-controlled units "
+                f"reported to the San Francisco Rent Board"
+                + (f", covering about {units:,} apartments." if units else "."),
+                "San Francisco rent control generally covers buildings occupied before 13 June 1979, "
+                "capping the annual increase and requiring just cause to end a tenancy.",
+                "This inventory is published anonymized to the block, not the individual address."]
+    if key == "la":
+        # "build year before 1979", not "before 1 October 1978": the assessor
+        # records carry a year, not a date, so the tighter phrasing would assert
+        # a precision the data does not have. The ordinance's real test is the
+        # certificate-of-occupancy date, which is why the third sentence sends
+        # the reader to LAHD rather than settling it here.
+        return [f"ZIP code {place} in Los Angeles has {n:,} buildings that meet the Rent "
+                f"Stabilization Ordinance criteria — two or more units and a build year before 1979"
+                + (f" — about {units:,} apartments in total." if units else "."),
+                "The RSO caps how much the rent can rise each year and requires just cause to evict.",
+                "This list is derived from county assessor records, not the City's official RSO "
+                "inventory, so confirm an address with LAHD or on ZIMAS."]
+    return [f"{place} in Washington DC has {n:,} properties registered as rent controlled with the "
+            f"District's Rental Accommodations Division"
+            + (f", covering about {units:,} units." if units else "."),
+            "DC rent control generally covers buildings built before 1976, and caps how much the "
+            "rent can rise each year.",
+            "Registration is the operative record: a unit its housing provider never registered is "
+            "generally treated as covered rather than exempt."]
+
+
+SIZE_BANDS = [(1, 1, "1 unit"), (2, 4, "2–4 units"), (5, 9, "5–9 units"),
+              (10, 19, "10–19 units"), (20, None, "20+ units")]
+
+
+def _band_table(items, label):
+    """Distribution by reported unit count — a real per-page statistic, not a
+    reworded version of the count above it."""
+    rows = []
+    for lo, hi, name in SIZE_BANDS:
+        c = sum(1 for x in items
+                if x.get("u") and x["u"] >= lo and (hi is None or x["u"] <= hi))
+        if c:
+            rows.append(f"<tr><td class='k'>{esc(name)}</td><td>{c:,} {esc(label)}</td></tr>")
+    return (f"<h2>By building size</h2><table class='facts'>{''.join(rows)}</table>"
+            if rows else "")
+
+
+def _decade_table(items):
+    counts = defaultdict(int)
+    for x in items:
+        if x.get("yr"):
+            counts[(x["yr"] // 10) * 10] += 1
+    rows = "".join(f"<tr><td class='k'>{d}s</td><td>{c:,} buildings</td></tr>"
+                   for d, c in sorted(counts.items()))
+    return f"<h2>By decade built</h2><table class='facts'>{rows}</table>" if rows else ""
+
+
+DC_QUADRANTS = {"Nw": "NW", "Ne": "NE", "Sw": "SW", "Se": "SE"}
+
+
+def _city_labels(key, items):
+    """Deduplicated address labels for a city hub's list.
+
+    Each city needs different handling, and none of them can use
+    titlecase_addr's NYC assumptions unmodified — that helper is shared with
+    47,000 NYC pages, so it is left alone rather than adjusted here (changing it
+    would rewrite every NYC page and mass-bump their lastmod).
+
+      * SF records a block-side ("1000 Block of REVERE AVE") once per reported
+        building, so the raw list repeats the same block many times, and
+        titlecase gives "Block Of".
+      * DC records a full mailing address, sometimes down to a unit ("…, Ste
+        501, Washington, DC, 20036"). The registry's claim is about the
+        property, so the label stops at the street address — that also stops
+        the page publishing a specific unit number.
+
+    Sorted by street, then house number: a plain string sort files every
+    "0 Block of …" first, which is not how anyone looks for their own street.
+    """
+    seen, out = set(), []
+    for x in items:
+        a = (x.get("a") or "").strip()
+        if key == "dc":
+            a = a.split(",")[0].strip()
+        if not a:
+            continue
+        label = re.sub(r"\bOf\b", "of", titlecase_addr(a))
+        if key == "dc":
+            label = " ".join(DC_QUADRANTS.get(w, w) for w in label.split())
+        if not re.search(r"[A-Za-z]", label):
+            continue          # a bare "0" is not an address
+        if re.match(r"^\d+\s+Block\s+of$", label):
+            continue          # "0 Block of" with no street names nothing
+        if label in seen:
+            continue
+        seen.add(label)
+        m = re.match(r"^(\d+)\s+(.*)$", label)
+        out.append(((m.group(2), int(m.group(1))) if m else (label, 0), label))
+    out.sort(key=lambda t: t[0])
+    return [label for _, label in out]
+
+
+def _city_stat_table(key, st):
+    cfg = CITY_HUBS[key]
+    rows = [f"<tr><td class='k'>{esc(cfg['things'].capitalize())}</td><td>{st['n']:,}</td></tr>"]
+    if st["units"]:
+        rows.append(f"<tr><td class='k'>Units reported</td><td>{st['units']:,}</td></tr>")
+    if st["yr"]:
+        rows.append(f"<tr><td class='k'>Median year built</td>"
+                    f"<td>{_med(st['yr'])} <span style='color:#4a4a68'>"
+                    f"({len(st['yr']):,} with a recorded year)</span></td></tr>")
+    if len(st["mr"]) >= MIN_CITY_HUB:
+        rows.append(f"<tr><td class='k'>Median reported rent</td>"
+                    f"<td>${_med(st['mr']):,} <span style='color:#4a4a68'>"
+                    f"({len(st['mr']):,} reported one)</span></td></tr>")
+    return f"<h2>The numbers here</h2><table class='facts'>{''.join(rows)}</table>"
+
+
+def _city_faq(key, place, st):
+    cfg = CITY_HUBS[key]
+    n = st["n"]
+    if key == "sf":
+        faq = [(f"How many rent-controlled locations are in {place}, San Francisco?",
+                f"The San Francisco Rent Board's housing inventory reports {n:,} rent-controlled "
+                f"block-side locations in {place}. The inventory is anonymized to the block, so a "
+                f"location is a block-side rather than a single address.")]
+        if st["yr"]:
+            pre = sum(1 for y in st["yr"] if y < 1979)
+            faq.append((f"Were most rent-controlled buildings in {place} built before 1979?",
+                        f"{pre:,} of the {len(st['yr']):,} locations in {place} with a recorded "
+                        f"build year were built before 1979. The legal test is the date the "
+                        f"certificate of occupancy was issued — before 13 June 1979 — not the "
+                        f"assessor's build year, so treat this as an indication, not a ruling."))
+        return faq
+    if key == "la":
+        faq = [(f"How many RSO buildings are in ZIP code {place}?",
+                f"{n:,} buildings in ZIP code {place} meet the Los Angeles Rent Stabilization "
+                f"Ordinance criteria — two or more units and a build year before 1979 — according "
+                f"to county assessor records. The ordinance's own test is a certificate of "
+                f"occupancy issued on or before 1 October 1978, so this is a close proxy rather "
+                f"than a determination. LAHD holds the City's official RSO inventory.")]
+        if st["yr"]:
+            faq.append((f"How old are the RSO buildings in {place}?",
+                        f"The median build year of the {len(st['yr']):,} buildings with a recorded "
+                        f"year in ZIP {place} is {_med(st['yr'])}. Every building on this list has "
+                        f"a build year before 1979, which is what puts it inside the criteria used "
+                        f"here."))
+        return faq
+    faq = [(f"How many rent-controlled properties are in {place}, Washington DC?",
+            f"{n:,} properties in {place} are registered as rent controlled with the District's "
+            f"Rental Accommodations Division.")]
+    if len(st["mr"]) >= MIN_CITY_HUB:
+        faq.append((f"What rent is reported for rent-controlled units in {place}?",
+                    f"The median rent reported to the Rental Accommodations Division across the "
+                    f"{len(st['mr']):,} {place} properties that reported one is "
+                    f"${_med(st['mr']):,}. That is what housing providers filed, not the market "
+                    f"rent and not what a specific unit will cost."))
+    return faq
+
+
+# The three sentences a city-level answer is assembled from. Split out per city
+# rather than templated because the authority behind each dataset is different
+# and one wording would be untrue of two of the three: SF is an owner-reported
+# inventory anonymized to the block, LA is a derived proxy for a list the City
+# holds, DC is a registration record. `source` is a noun phrase that reads after
+# "from"; `rule` states the legal test; `caveat` is the limit of the data and is
+# never optional.
+CITY_BROWSE_COPY = {
+    "sf": dict(
+        unit="apartments",
+        source="the San Francisco Rent Board's housing inventory",
+        rule="San Francisco rent control generally covers buildings occupied before 13 June 1979, "
+             "capping the annual increase and requiring just cause to end a tenancy.",
+        caveat="The inventory is published anonymized to the block, not the individual address.",
+    ),
+    "la": dict(
+        unit="apartments",
+        source="Los Angeles County Assessor parcel records filtered to the Rent Stabilization "
+               "Ordinance criteria",
+        rule="The RSO caps how much the rent can rise each year and requires just cause to evict.",
+        caveat="This is a derived list labelled likely RSO, not the City's official inventory, "
+               "which LAHD holds.",
+    ),
+    "dc": dict(
+        unit="units",
+        source="registration filings held by the District's Rental Accommodations Division",
+        rule="DC rent control generally covers buildings built before 1976 and caps how much the "
+             "rent can rise each year.",
+        caveat="A property is listed because its housing provider filed it as covered, so "
+               "registration is the operative record.",
+    ),
+}
+
+
+def _place_word(cfg, plural=False):
+    """'ZIP code' / 'neighborhood', matching how the city is grouped."""
+    if cfg["path"] == "zip":
+        return "ZIP codes" if plural else "ZIP code"
+    return "neighborhoods" if plural else "neighborhood"
+
+
+def _city_browse_answer(key, cfg, n, places, agg):
+    """The extractable answer for a city's browse hub.
+
+    Scoped to the index, not to the city: `n` is the sum over places that clear
+    MIN_CITY_HUB, so "San Francisco has n" would overstate it. "This index
+    covers n" is the claim the data actually supports, and it is the claim an
+    answer engine would be quoting.
+    """
+    units = agg["units"]
+    return [f"This index covers {n:,} {cfg['things']} across {places} "
+            f"{_place_word(cfg, plural=True)} in {cfg['name']}, from {CITY_BROWSE_COPY[key]['source']}"
+            + (f", about {units:,} {CITY_BROWSE_COPY[key]['unit']} in total." if units else "."),
+            CITY_BROWSE_COPY[key]["rule"],
+            CITY_BROWSE_COPY[key]["caveat"]]
+
+
+def _city_browse_faq(key, cfg, n, places, small, counts, agg):
+    """City-level Q&A for a browse hub — facts no single place page can state.
+
+    Deliberately not a rewrite of the place-page FAQ: the two questions here are
+    "how big is this index and what is left out of it" and "where is the data
+    concentrated", both of which are answerable only across the whole tier.
+    """
+    copy = CITY_BROWSE_COPY[key]
+    left_off = (f" A further {small:,} {_place_word(cfg, plural=small != 1)} had fewer than "
+                f"{MIN_CITY_HUB} {cfg['things']} and are not broken out here, rather than "
+                f"published as near-empty pages." if small else "")
+    faq = [(f"How many {cfg['things']} in {cfg['name']} does this index list?",
+            f"{n:,} {cfg['things']} across {places} {_place_word(cfg, plural=True)}, from "
+            f"{copy['source']}.{left_off} {copy['caveat']}")]
+
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])
+    if len(ranked) >= 2:
+        (top, top_n), (nxt, nxt_n) = ranked[0], ranked[1]
+        lead = f"{'ZIP code ' if cfg['path'] == 'zip' else ''}{top}"
+        faq.append((f"Which {_place_word(cfg)} in {cfg['name']} has the most {cfg['things']}?",
+                    f"{lead}, with {top_n:,} of the {n:,} {cfg['things']} listed here "
+                    f"({top_n * 100.0 / n:.1f}%). "
+                    f"{'ZIP code ' if cfg['path'] == 'zip' else ''}{nxt} follows with {nxt_n:,}. "
+                    f"That is where this dataset records them, which is not the same as where "
+                    f"every regulated unit in {cfg['name']} is."))
+
+    # The third question is whichever city-wide statistic that city's data
+    # actually carries. Not one template: build year is the near-test in SF and
+    # LA and is the wrong frame in DC, where coverage turns on registration and
+    # a pre-1976 build, and where the filings carry a reported rent instead.
+    if key in ("sf", "la") and agg["yr"]:
+        faq.append((f"How old are the {cfg['things']} in this index?",
+                    f"The median build year across the {len(agg['yr']):,} with a recorded year is "
+                    f"{_med(agg['yr'])}. Build year is what the assessor recorded; the ordinance "
+                    f"turns on when the certificate of occupancy was issued, so treat it as an "
+                    f"indication rather than a ruling."))
+    elif key == "dc" and len(agg["mr"]) >= MIN_CITY_HUB:
+        faq.append(("What rent is reported for rent-controlled units in Washington DC?",
+                    f"The median rent reported to the Rental Accommodations Division across the "
+                    f"{len(agg['mr']):,} properties in this index that reported one is "
+                    f"${_med(agg['mr']):,}. That is what housing providers filed, not the market "
+                    f"rent and not what a specific unit will cost."))
+    return faq
+
+
+def city_hub_docs(key, guide_ok=True):
+    """Render one city's aggregate hub tier. Returns a list of page dicts.
+
+    Each dict is {kind, relpath, canonical, html, priority}: kind "place" for
+    the per-neighborhood / per-ZIP pages and "browse" for the single hub that
+    links them all. Returns [] when the city's data is unreadable or no place
+    clears MIN_CITY_HUB — a city with nothing to say publishes nothing.
+
+    These are deliberately not building-level pages. SF is anonymized to the
+    block and LA is a derived "likely RSO" list, so the honest unit of
+    publication for those two is the aggregate, and a per-address page would
+    assert more than the data supports.
+
+    Lifted out of city_hub_pages() for the same reason guide_page() was lifted
+    out of main(): the daily growth build (growth/techniques.py:
+    t_city_seo_expansion) publishes this tier through its own rsync when this
+    pipeline has not deployed it, and two independent renderers would overwrite
+    each other's bytes every night, churning lastmod on pages that never
+    changed. Import this; do not copy it.
+
+    guide_ok=False drops the "is my apartment rent controlled in <city>?" link.
+    The growth build passes False when that guide is not live: these pages are
+    the contextual path into the guides, and a hub tier does not ship pointing
+    at a 404.
+    """
+    cfg = CITY_HUBS[key]
+    try:
+        recs = json.load(open(os.path.join(_ROOT,
+                                           key, "buildings.min.json")))
+    except Exception as e:
+        print(f"city hubs: skipping {key} ({e})")
+        return []
+
+    groups = defaultdict(list)
+    for r in recs:
+        g = r.get(cfg["group"])
+        if g not in (None, ""):
+            groups[str(g)].append(r)
+    big = {k: sorted(v, key=lambda x: x.get("a") or "")
+           for k, v in groups.items() if len(v) >= MIN_CITY_HUB}
+    if not big:
+        return []
+
+    # ---- places this tier has already published that no longer qualify.
+    #
+    # THE BUG THIS CLOSES, and it is the /available/ bug of 2026-09-22 in a
+    # second tier. scripts/refresh_seo.sh deploys with "rsync -a" and no
+    # --delete, deliberately and documented. So a place that drops below
+    # MIN_CITY_HUB does not become unpublished — it becomes FROZEN: still live,
+    # dropped from every sitemap, and stuck at whatever counts it carried the
+    # last night it qualified. On 2026-10-01 t_frozen_pages read sf/neighborhood/
+    # as "1 of 37" with the oldest page 19 days behind the tier, against the 36
+    # this renderer writes; the extra page is one of Lincoln Park, Treasure
+    # Island, McLaren Park, Presidio or Golden Gate Park, all now under the line.
+    # A frozen hub asserts a building count for a neighborhood that is no longer
+    # the count, which on this site is an accuracy defect first and an SEO one
+    # second.
+    #
+    # The published set is therefore (qualifying UNION already-published), the
+    # same rule the /available/ tier adopted. The slug map is built over every
+    # place in the dataset rather than over `big`, because a stranded page is BY
+    # DEFINITION one whose place has dropped out of `big`; looking it up there
+    # would find nothing. A slug that resolves to no place at all is left frozen
+    # and counted, not guessed at: it is a rename or a hand-placed file, and this
+    # build will not invent a title for a URL it cannot explain.
+    stranded, unresolved = {}, 0
+    by_slug = {(k if cfg["path"] == "zip" else slugify(k)): k for k in groups}
+    tier_root = os.path.join(DOCROOT, key, cfg["path"])
+    try:
+        live_slugs = sorted(os.listdir(tier_root))
+    except OSError:
+        # No docroot — a bare checkout, which is where the daily growth review
+        # runs. Falling back to exactly the qualifying set is the correct
+        # behaviour there, and is what an empty listing gives.
+        live_slugs = []
+    for slug in live_slugs:
+        if not os.path.isfile(os.path.join(tier_root, slug, "index.html")):
+            continue
+        place = by_slug.get(slug)
+        if place is None:
+            unresolved += 1
+        elif place not in big:
+            stranded[place] = sorted(groups[place], key=lambda x: x.get("a") or "")
+    if stranded or unresolved:
+        print(f"city hubs: {key} {len(big)} {cfg['path']} pages qualify, "
+              f"{len(stranded)} already-published rebuilt below the {MIN_CITY_HUB}-record "
+              f"line, {unresolved} live slug(s) resolve to no place in the data")
+
+    # Places genuinely left off: under the line AND never published. The browse
+    # hub says this number out loud, so it has to stop counting the ones this
+    # run publishes or the page contradicts its own link list — the exact
+    # self-contradiction the /available/ hub carried until 2026-09-22.
+    small = len(groups) - len(big) - len(stranded)
+    city, footer = cfg["name"], CITY_FOOTER[key]
+    browse_url = f"/{key}/buildings/"
+    # counts and centroids stay scoped to `big` on purpose: a stranded place is
+    # not in the city index, so it must not appear as a sibling or a "nearest
+    # place" on the 36 pages that are. Its own page gets its centroid added to a
+    # private copy below, which is how it measures distance without joining.
+    counts = {k: len(v) for k, v in big.items()}
+    centroids = {k: c for k, c in ((k, _city_centroid(v)) for k, v in big.items()) if c}
+    others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
+    guide_link = (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
+                  f"in {esc(city)}? →</a></p>") if guide_ok else ""
+    # Dataset markup for this tier — see CITY_DATASET. Computed once over the
+    # records that actually got a page, so the box describes what is published
+    # rather than what was read and dropped under MIN_CITY_HUB.
+    published = [x for v in big.values() for x in v]
+    city_box = _city_bbox(published)
+    copy = CITY_BROWSE_COPY[key]
+
+    def place_dataset(place, items, canonical):
+        """The Dataset node for one place page.
+
+        The city's caveat travels inside `description` on purpose: Dataset
+        Search shows that string verbatim, and a record that says "67,502
+        rent-stabilized LA buildings" without "derived, not the City's official
+        inventory" is the one sentence this site cannot afford to lose.
+
+        `canonical` is passed in rather than re-derived from `place`. A Dataset
+        whose `url` disagreed with the page's own canonical would point a
+        consumer at a URL this page does not claim, and re-deriving the slug
+        here is exactly how the two would drift apart.
+        """
+        n = len(items)
+        where = (f"ZIP code {place}" if cfg["path"] == "zip" else place)
+        return city_dataset_jsonld(
+            key,
+            name=cfg["h1"].format(place=place),
+            description=(f"The {n:,} {cfg['things']} in {where}, {city} listed from "
+                         f"{copy['source']}. {copy['caveat']} A slice of the Find A Crib "
+                         f"{city} dataset."),
+            url=canonical,
+            spatial=_city_place(key, place),
+            size=n)
+
+    docs = []
+    for place, items in sorted({**big, **stranded}.items()):
+        is_stranded = place in stranded
+        slug = place if cfg["path"] == "zip" else slugify(place)
+        url = f"/{key}/{cfg['path']}/{slug}/"
+        canonical = SITE + url
+        st = _city_stats(items)
+        h1 = cfg["h1"].format(place=place)
+
+        labels = _city_labels(key, items)
+        listing = ""
+        if labels:
+            shown = labels[:CITY_LIST_CAP]
+            # State the cap rather than truncating quietly: a list that
+            # silently stops at 300 reads as "this is all of them".
+            count = (f"{len(labels):,} distinct, showing the first {len(shown):,}."
+                     if len(labels) > len(shown) else
+                     f"{len(labels):,} distinct.")
+            listing = (f"<h2>{esc(cfg['list_h2'].format(place=place))}</h2>"
+                       f"<p class='disclaimer'>{esc(count)} {esc(cfg['list_note'])}</p>"
+                       f"<div class='cols'>"
+                       + "".join(f"<span>{esc(a)}</span>" for a in shown)
+                       + "</div>")
+
+        extra = _decade_table(items) if key == "la" else _band_table(items, cfg["things"])
+        # Ordered by distance from this place, not by size — see
+        # _city_neighbors(). Falls back to the old count ordering only when the
+        # dataset carries no usable coordinates, and the heading follows the
+        # ordering so the page never claims a proximity it did not compute.
+        # A stranded place is absent from `centroids`, so without this it would
+        # fall through to the count-ordered "Elsewhere in <city>" block. Added to
+        # a PRIVATE copy for this page only: putting it in `centroids` itself
+        # would make a sub-threshold place a "nearest place" on all 36 pages of
+        # the index it is no longer part of.
+        here = centroids
+        if is_stranded:
+            c = _city_centroid(items)
+            if c:
+                here = {**centroids, place: c}
+        near = _city_neighbors(place, here, counts)
+        if near:
+            sib_h2 = f"Nearest {_place_word(cfg, plural=True)} in {esc(city)}"
+            sib_note = (f"Ordered by distance from the mid-point of the mapped "
+                        f"{cfg['things']} in each, which is not an official boundary.")
+            sibs = "".join(
+                f"<a href=\"/{key}/{cfg['path']}/"
+                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">"
+                f"{esc(p)} — {mi:.1f} mi ({c:,})</a>"
+                for p, c, mi in near)
+        else:
+            sib_h2, sib_note = f"Elsewhere in {esc(city)}", ""
+            sibs = "".join(
+                f"<a href=\"/{key}/{cfg['path']}/"
+                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+                for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/{key}/'>{esc(city)}</a> › "
+                f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
+                f"<h1>{esc(h1)}</h1>"
+                + answer_block(_city_answer(key, place, st))
+                + (f"<p class='disclaimer'>This page is kept up to date but is no "
+                   f"longer listed in the {esc(city)} index: "
+                   f"{esc(_place_word(cfg, plural=True))} are indexed from "
+                   f"{MIN_CITY_HUB} {esc(cfg['things'])} upward, and "
+                   f"{esc(str(place))} currently has {st['n']:,}. It stays published "
+                   f"because it was published before, and it will be listed again if "
+                   f"the count rises.</p>" if is_stranded else "")
+                + f"<a class='cta' href='/{key}/'>Open the {esc(city)} map →</a>"
+                + _city_stat_table(key, st) + extra
+                + guide_link
+                + listing
+                + (f"<h2>{sib_h2}</h2>"
+                   + (f"<p class='disclaimer'>{esc(sib_note)}</p>" if sib_note else "")
+                   + f"<div class='cols'>{sibs}</div>"
+                   f"<p><a href='{browse_url}'>All {esc(cfg['things'])} in {esc(city)} →</a></p>"
+                   if sibs else ""))
+        faq = _city_faq(key, place, st)
+        body += faq_html(faq)
+        crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
+                            (h1, canonical)])
+        docs.append({
+            "kind": "place", "relpath": url.strip("/") + "/index.html",
+            # A sitemap entry is a bid for crawl budget on a domain that got 8
+            # Googlebot fetches in the 28 days to 2026-10-01. A page below the
+            # publishing threshold does not get to make that bid — the same
+            # split the /available/ tier settled on: rebuild it for accuracy,
+            # do not submit it. city_hub_pages() reads this flag.
+            "stranded": is_stranded,
+            "canonical": canonical, "priority": "0.3" if is_stranded else "0.7",
+            "html": page(f"{h1} ({st['n']}) | Find A Crib",
+                         f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
+                         f"what rent regulation there actually means. Check any address on the map.",
+                         canonical, body,
+                         # This page IS a collection — every record this site
+                         # holds for one place — so it carries a Dataset node
+                         # for that slice, exactly as the NYC neighborhood
+                         # pages have since 2026-08.
+                         [crumb, faq_jsonld(faq), place_dataset(place, items, canonical)],
+                         footer=footer)})
+
+    # ---- the city's browse hub: the page that makes the rest non-orphans
+    total_places = len(big)
+    total_recs = sum(counts.values())
+    links = "".join(
+        f"<a href=\"/{key}/{cfg['path']}/"
+        f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+        for p, c in sorted(counts.items()))
+    # Reworded when the count sentence moved into the answer block above: "N
+    # more" had an antecedent while this opened with the total and has none now.
+    skipped = (f"{small} {_place_word(cfg, plural=small != 1)} with fewer than {MIN_CITY_HUB} "
+               f"{cfg['things']} were left off rather than published as near-empty pages. "
+               if small else "")
+    # The stranded pages get ONE link from here and no sitemap entry. Kept out of
+    # the index list above and labelled, rather than blended into it: the lead
+    # sentence beside it counts the index, and a sub-threshold place sitting
+    # unannounced among the qualifying ones would make the hub misdescribe its own
+    # list. Nothing is rendered when nothing is stranded, which is the normal case.
+    below = ""
+    if stranded:
+        below_note = (
+            f"These {_place_word(cfg, plural=len(stranded) != 1)} have fewer than "
+            f"{MIN_CITY_HUB} {cfg['things']} and are not part of the index above. "
+            f"Their pages stay published, and up to date, because they were "
+            f"published before.")
+        below = ("<h2>Below the index threshold</h2>"
+                 f"<p class='disclaimer'>{esc(below_note)}</p>"
+                 "<div class='cols'>"
+                 + "".join(f"<a href=\"/{key}/{cfg['path']}/"
+                           f"{p if cfg['path'] == 'zip' else slugify(p)}/\">"
+                           f"{esc(p)} ({len(v):,})</a>"
+                           for p, v in sorted(stranded.items()))
+                 + "</div>")
+    # The browse hub is the highest-priority page in this tier (0.9) and the one
+    # the guides, the other cities and the voucher cross-link all point at, but
+    # until 2026-08-09 it was the only page here with no extractable answer and
+    # no FAQ — the pattern that holds the site's best measured position. The
+    # count sentence moved out of the lead and into the answer block rather than
+    # being repeated in both: two adjacent paragraphs saying the same number is
+    # the boilerplate this tier does not need.
+    agg = _city_stats(published)
+    browse_faq = _city_browse_faq(key, cfg, total_recs, total_places, small, counts, agg)
+    body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
+            f"<h1>{esc(cfg['browse_h1'])}</h1>"
+            + answer_block(_city_browse_answer(key, cfg, total_recs, total_places, agg))
+            + f"<p class='lead'>{esc(skipped)}Start with your "
+            f"{'ZIP code' if cfg['path'] == 'zip' else 'neighborhood'}, or "
+            f"<a href='/{key}/'>open the map</a>.</p>"
+            + guide_link
+            + f"<div class='cols'>{links}</div>"
+            + below
+            + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
+            + "<a href='/buildings/'>New York City by neighborhood</a>"
+            + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
+                      for o, oc in others)
+            + "</div>"
+            + CITY_VOUCHER_XLINK.format(city=esc(city))
+            + faq_html(browse_faq))
+    crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
+                        (cfg["browse_h1"], SITE + browse_url)])
+    # The city's dataset landing page. /developers/ carries the equivalent node
+    # for NYC; this tier had none, which is why the catalog described one city
+    # out of four. Scoped to the index, not to the city, for the same reason
+    # _city_browse_answer is: total_recs counts only places that cleared
+    # MIN_CITY_HUB, so "San Francisco has n" would overstate it.
+    city_ds = city_dataset_jsonld(
+        key,
+        name=CITY_DATASET[key]["name"],
+        description=(f"{total_recs:,} {cfg['things']} across {total_places} "
+                     f"{_place_word(cfg, plural=True)} in {city}, indexed from "
+                     f"{copy['source']}. {copy['rule']} {copy['caveat']}"),
+        url=SITE + browse_url,
+        spatial={"@type": "Place", "name": f"{city}, United States",
+                 **({"geo": city_box} if city_box else {})},
+        size=total_recs)
+    docs.append({
+        "kind": "browse", "relpath": browse_url.strip("/") + "/index.html",
+        "stranded": False,
+        "canonical": SITE + browse_url, "priority": "0.9",
+        "html": page(f"{cfg['browse_h1']} | Find A Crib",
+                     f"Browse {total_recs:,} {cfg['things']} across {total_places} "
+                     f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
+                     SITE + browse_url, body,
+                     [crumb, faq_jsonld(browse_faq), city_ds], footer=footer)})
+    return docs
+
+
+COUNCIL_PATH = os.path.join(_ROOT,
+                            "council_districts.json")
+COUNCIL_SOURCE = ("Council district boundaries: NYC Open Data 872g-cjhh. Sitting members: "
+                  "NYC Open Data uvw5-9znb. Violations and complaints: HPD via NYC Open Data, "
+                  "counted from HPD's own Open/Close flag.")
+
+
+def council_url(d):
+    return f"/council-district/{d}/"
+
+
+def council_district_pages(urls):
+    """A hub per NYC City Council district. Returns the district records used.
+
+    Every other hub axis on this site — borough, neighborhood, ZIP — restates a
+    geography somebody with more authority already publishes. A council district
+    is the one unit of NYC geography where this data answers a question nobody
+    else answers and a named officeholder has a standing reason to cite the
+    answer. That is the difference between a page worth publishing and a page
+    worth linking to.
+
+    Returns [] when council_districts.json is missing (build_council.py owns it),
+    so a checkout without the join still builds the rest of the site.
+    """
+    try:
+        with open(COUNCIL_PATH) as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"council districts: skipping ({e})")
+        return []
+    districts = data.get("districts") or {}
+    if not districts:
+        return []
+
+    recs = sorted(districts.values(), key=lambda d: d["district"])
+    ranked = sorted(recs, key=lambda d: -d["open_violations"])
+    rank_of = {d["district"]: i + 1 for i, d in enumerate(ranked)}
+    n_d = len(recs)
+
+    for d in recs:
+        num = d["district"]
+        url = council_url(num)
+        canonical = SITE + url
+        member = d.get("member")
+        who = (f"District {num} is represented by {member}."
+               if member else
+               f"District {num} has no sitting member on the Council's own roster.")
+        boros = ", ".join(BORO_NAME.get(b, b) for b in d.get("boroughs") or [])
+        clean = d["buildings_no_open_violations"]
+        rank = rank_of[num]
+
+        facts = [
+            ("Rent-stabilized buildings", f"{d['buildings']:,}"),
+            ("Apartments in them", f"{d['units']:,}" if d["units"] else "—"),
+            ("Median year built", str(d["median_year"]) if d["median_year"] else "—"),
+            ("Open HPD violations", f"{d['open_violations']:,}"),
+            ("Of those, immediately hazardous (class C)", f"{d['open_class_c']:,}"),
+            ("Buildings with no open violation", f"{clean:,} of {d['buildings']:,}"),
+            ("Open HPD complaints", f"{d['open_complaints']:,}"),
+        ]
+        table = "".join(f"<tr><td class='k'>{esc(k)}</td><td>{esc(v)}</td></tr>" for k, v in facts)
+
+        owners = d.get("top_owners") or []
+        if owners:
+            rows = "".join(
+                f"<tr><td>{esc(o['name'])}</td><td>{o['buildings']:,}</td>"
+                f"<td>{o['units']:,}</td><td>{o['open_violations']:,}</td></tr>"
+                for o in owners)
+            owner_html = (
+                f"<h2>The largest violation records in District {num}</h2>"
+                f"<table class='facts'><tr><th>Owner or managing agent (HPD registration)</th>"
+                f"<th>Buildings</th><th>Units</th><th>Open violations</th></tr>{rows}</table>"
+                f"<p class='note'>Ranked by open HPD violations across the stabilized buildings "
+                f"they have registered in this district, counting only owners with three or more. "
+                f"HPD registration names the party responsible for the registration, which is not "
+                f"always the beneficial owner.</p>")
+        else:
+            owner_html = ""
+
+        nbs = (d.get("neighborhoods") or [])[:24]
+        nb_html = ("<h2>Neighborhoods in this district</h2><div class='cols'>"
+                   + "".join(f"<span>{esc(n)}</span>" for n in nbs) + "</div>") if nbs else ""
+
+        per_bld = (d["open_violations"] / d["buildings"]) if d["buildings"] else 0
+        body = (
+            f"<div class='crumbs'><a href='/'>Home</a> › "
+            f"<a href='/council-district/'>Council districts</a></div>"
+            f"<h1>Rent-stabilized housing in NYC Council District {num}</h1>"
+            + answer_block([
+                f"NYC Council District {num} contains {d['buildings']:,} rent-stabilized "
+                f"buildings registered with New York State DHCR"
+                + (f", covering {d['units']:,} apartments" if d["units"] else "") + ".",
+                f"HPD has {d['open_violations']:,} open violations against them, "
+                f"{per_bld:.1f} per building, {d['open_class_c']:,} of them class C — the "
+                f"immediately hazardous grade a landlord has 24 hours to fix.",
+                (f"That is the largest open count of the {n_d} districts; " if rank == 1 else
+                 f"That is the smallest open count of the {n_d} districts; " if rank == n_d else
+                 f"That is the {ordinal(rank)}-largest open count of the {n_d} districts; ")
+                + f"{clean:,} buildings here have none.",
+                who,
+            ])
+            + f"<a class='cta' href='/'>Open the map →</a>"
+            + f"<h2>The numbers</h2><table class='facts'>{table}</table>"
+            + owner_html
+            + nb_html
+            + f"<p><a href='/council-district/'>Compare all {n_d} council districts →</a></p>"
+        )
+        faq = [
+            (f"How many rent-stabilized buildings are in NYC Council District {num}?",
+             f"{d['buildings']:,} buildings in Council District {num} are registered as rent "
+             f"stabilized with New York State DHCR"
+             + (f", covering {d['units']:,} apartments" if d["units"] else "") + "."),
+            (f"How many open HPD violations are there in Council District {num}?",
+             f"HPD has {d['open_violations']:,} open violations against the rent-stabilized "
+             f"buildings in District {num}, {d['open_class_c']:,} of them class C — the "
+             f"immediately hazardous grade. {clean:,} of the {d['buildings']:,} buildings "
+             f"have no open violation at all."),
+        ]
+        if member:
+            faq.append((f"Who represents NYC Council District {num}?",
+                        f"{member}, according to the City Council's own roster of members."))
+        body += faq_html(faq)
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            ("Council districts", SITE + "/council-district/"),
+                            (f"District {num}", canonical)])
+        title = (f"Rent-stabilized buildings in NYC Council District {num}"
+                 + (f" ({member})" if member else "") + " | Find A Crib")
+        desc = (f"{d['buildings']:,} rent-stabilized buildings and {d['open_violations']:,} open "
+                f"HPD violations in NYC Council District {num}"
+                + (f", represented by {member}" if member else "") + ".")
+        write(url.strip("/") + "/index.html",
+              page(title, desc, canonical, body, [crumb, faq_jsonld(faq)],
+                   footer=NYC_FOOTER + " " + COUNCIL_SOURCE))
+        urls.append((canonical, "0.8", "council"))
+
+    # ---- the index: all 51, ranked. This is the page meant to be cited. ----
+    rows = "".join(
+        f"<tr><td>{i + 1}</td><td><a href='{council_url(d['district'])}'>District "
+        f"{d['district']}</a></td><td>{esc(d.get('member') or 'Vacant')}</td>"
+        f"<td>{d['buildings']:,}</td><td>{d['units']:,}</td>"
+        f"<td>{d['open_violations']:,}</td><td>{d['open_class_c']:,}</td></tr>"
+        for i, d in enumerate(ranked))
+    tot_b = sum(d["buildings"] for d in recs)
+    tot_v = sum(d["open_violations"] for d in recs)
+    tot_c = sum(d["open_class_c"] for d in recs)
+    worst, best = ranked[0], ranked[-1]
+    hub_body = (
+        f"<div class='crumbs'><a href='/'>Home</a></div>"
+        f"<h1>Rent-stabilized housing by NYC Council District</h1>"
+        + answer_block([
+            f"The {n_d} New York City Council districts contain {tot_b:,} DHCR-registered "
+            f"rent-stabilized buildings, carrying {tot_v:,} open HPD violations, {tot_c:,} of "
+            f"them class C — the immediately hazardous grade.",
+            f"District {worst['district']} has the most open violations "
+            f"({worst['open_violations']:,} across {worst['buildings']:,} buildings); "
+            f"District {best['district']} the fewest ({best['open_violations']:,}).",
+            "Council district is not a geography the housing portals publish, so these counts "
+            "are not available elsewhere. Every figure is recomputed from the city's own open "
+            "data on each build.",
+        ])
+        + f"<table class='facts'><tr><th>#</th><th>District</th><th>Council member</th>"
+        f"<th>Buildings</th><th>Apartments</th><th>Open violations</th>"
+        f"<th>Class C</th></tr>{rows}</table>"
+        + f"<p class='note'>Ranked by open HPD violations. {COUNCIL_SOURCE} "
+        f"Rebuilt {esc(data.get('generated', ''))}.</p>")
+    hub_faq = [
+        ("Which NYC Council district has the most open HPD violations in its rent-stabilized "
+         "buildings?",
+         f"District {worst['district']}"
+         + (f", represented by {worst['member']}," if worst.get("member") else "")
+         + f" has {worst['open_violations']:,} open HPD violations across its "
+           f"{worst['buildings']:,} rent-stabilized buildings — the most of the {n_d} districts."),
+        ("How many rent-stabilized buildings are there in New York City?",
+         f"{tot_b:,} buildings across the {n_d} council districts are registered as rent "
+         f"stabilized with New York State DHCR."),
+    ]
+    hub_body += faq_html(hub_faq)
+    write("council-district/index.html",
+          page(f"Rent-stabilized buildings and HPD violations by NYC Council District "
+               f"| Find A Crib",
+               f"All {n_d} NYC Council districts ranked by open HPD violations in their "
+               f"rent-stabilized buildings — {tot_b:,} buildings, {tot_v:,} open violations.",
+               SITE + "/council-district/", hub_body,
+               [breadcrumb([("Home", SITE + "/"),
+                            ("Council districts", SITE + "/council-district/")]),
+                faq_jsonld(hub_faq)],
+               footer=NYC_FOOTER + " " + COUNCIL_SOURCE))
+    urls.append((SITE + "/council-district/", "0.9", "council"))
+    return recs
+
+
+# ---------------------------------------------------------------- index triage
+# Measured 2026-08-27 by URL Inspection over a 450-URL sample of the 47,982
+# published pages: 2 indexed, 80 crawled-and-declined, 44 discovered-never-
+# crawled, 324 never discovered at all. Of the 37 URLs Google last fetched more
+# than 21 days ago, ZERO are indexed. Nothing is blocked, noindexed, duplicated
+# or mis-canonicalised — the markup is fine and always was.
+#
+# The finding that decides this function is the per-family split. Of 250 sampled
+# building pages Google had fetched 55; of the guides, council districts,
+# /section8/ and /brief/ it had fetched NOT ONE. The whole crawl allowance was
+# going to a tier that is 53-71% identical page to page and converts at 1.8%,
+# and the pages actually worth ranking had never been looked at.
+#
+# So the building tier stops being submitted wholesale. A page is promoted only
+# if it can say something no template can generate:
+#   * 300+ apartments                           — among the largest in the city
+# Everything else stays live, stays linked and stays useful to a person who
+# lands on it, but carries noindex,follow and is left out of the sitemap.
+# ~844 of 47,165 promoted. This is the "ship 50-100 high-conviction pages,
+# validate, then scale" shape, and the ledger to widen it is accept_pct_mature
+# in growth/index_status.json — not a hunch.
+# The violations rule was REMOVED 2026-08-29. It was retained on 2026-08-27 when
+# the wider "data richness" class of criteria was refuted, on the reasoning that
+# a severe hazard is citable in a way a template is not. Measuring it on its own
+# terms says otherwise, and not marginally:
+#
+#   174 buildings in the corpus carry 100+ open class-C violations.
+#   Of those 174, the number that have EVER earned a Search Console
+#   impression is ZERO. Lift 0.00x — not weak, absent.
+#
+# It was putting 160 URLs into the sitemap (every one of the 174 that isn't
+# already promoted by another rule) on a domain where Google has fetched 82 of
+# 455 sampled URLs and indexed 1. Those 160 were spending the scarcest thing the
+# site has — crawl allowance — on pages with a measured zero record of earning
+# anything. Unit count survives because it is the opposite case: 300+ units is a
+# 4.86x lift, the strongest signal measured (200+ is 3.49x, 100+ is 2.23x), which
+# is also why the threshold is NOT being lowered. Lowering it to 100 would triple
+# the building tier to 2,516 URLs and dilute a 4.86x rule into a 2.23x one, which
+# is the widening this whole triage exists to prevent.
+PROMOTE_UNITS = 300
+
+# ...and the fourth rule, added 2026-08-28 the morning this triage first
+# deployed, because measuring it against the site's own serving history said the
+# three rules above would un-publish the entire working tier.
+#
+# growth/gsc_pages.json["history"] is the per-URL record of every page that has
+# ever earned a Search Console impression — 273 URLs, of which 260 are building
+# pages. Scored against the rules above: 11 of those 260 survive, and of the 14
+# building pages serving in the 2026-08-19..26 window, ZERO do. The rules are
+# not worthless — 4.2% of ever-served pages clear them against 1.2% of the
+# corpus, a real 3.5x enrichment — but they are chosen from what we know about a
+# building, and 2026-08-27 measured that class of criterion (data richness, open
+# violations) to have no power to predict which pages Google shows. Unit count
+# does have some, which is why the 300-unit rule stays.
+#
+# An impression is not a proxy for that judgement, it IS that judgement: Google
+# looked at the page, matched it to a real query and put it in front of a person.
+# Deleting those pages from the sitemap to concentrate crawl budget spends the
+# only demonstrated wins to buy attention for pages that have demonstrated
+# nothing. So a page that has ever served keeps its place.
+#
+# This is not the widening the comment above warns against. It does not relax a
+# threshold or add a new guess; it adds ~249 URLs that are already proven, to a
+# ~844-URL sitemap, and the set only grows when Google itself serves a new page.
+# HISTORY_CAP in growth/searchconsole.py bounds it at 4,000, which is also a
+# sane ceiling for a sitemap on a domain being rationed this hard.
+GSC_HISTORY_PATH = os.path.join(_ROOT,
+                                "growth", "gsc_pages.json")
+
+# ---- WHO THE noindex IS ADDRESSED TO, and it was everybody until 2026-10-05.
+#
+# The triage above is a decision about GOOGLE, taken on Google evidence and
+# nothing else: 455 URLs inspected, 82 fetched, 1 kept, and accept_pct_mature
+# flat at 0.0% across 88 mature crawls for 33 nights. Every number in the four
+# rules comes from Search Console. It was implemented by writing
+# `<meta name="robots" content="noindex,follow">` onto the 46,221 building
+# pages it declines to promote — and `robots` is the generic name, so that
+# directive is addressed to EVERY crawler that reads the page, not to the one
+# the evidence is about.
+#
+# What that costs is specific and measured, on the other side of the ledger.
+# T003 llms_txt is the ONLY technique in growth/techniques.json carrying a
+# WORKS verdict: ai_visitors went from a 0.0/day median to 1.0/day after it
+# shipped (25 in the trailing 14d against 6 in the 14d before). The AI answer
+# engines are the one channel on this domain with a positive reading, and they
+# are the one distribution surface that does not route through Google's index
+# verdict. OpenAI's own publisher documentation states the mechanism plainly:
+# a robots.txt allow is what lets OAI-SearchBot crawl, and a `noindex` META
+# TAG — not a robots.txt disallow — is what keeps a page out of ChatGPT's
+# search results altogether. So since 2026-08-28 this site has been telling
+# ChatGPT, Perplexity, Claude, Applebot and Bing to drop 98% of its address
+# corpus, in the name of a crawl-budget argument about Googlebot.
+#
+# THE FIX IS TO SAY WHO WE ARE TALKING TO. `<meta name="googlebot">` is a
+# documented user-agent-scoped form of the same directive and Google obeys the
+# most specific one it is given, so Googlebot reads exactly the same
+# noindex,follow it has read since August and the rationing is untouched. Every
+# other crawler falls back to the generic `robots` name, which is now absent —
+# which is the posture the whole corpus had before the triage shipped, and the
+# posture the hubs, guides and city pages have never left.
+#
+# WHAT IS NOT CLAIMED, because this is a mechanism argument and not a
+# measurement: nothing here predicts that any AI engine will cite these pages.
+# The claim is only that it is incoherent to spend the one working channel to
+# buy nothing on a channel measured shut, and the instruments are already
+# running — ai_visitors (growth/results.jsonl, __site__) for the upside, and
+# index_fetched / accept_pct_mature (growth/index_status.json) for the
+# downside, which must NOT move: if Google's fetch or acceptance behaviour
+# changes after this, the scoping was wrong and the generic name comes back.
+#
+# ONE EXPECTED NUMBER, pre-registered so the next reader does not misread it.
+# The robots meta sits inside the region _lastmod_body() hashes, so narrowing
+# the name rewrites the content hash of all 46,221 non-promoted building pages
+# and the next build logs "~46,000 pages changed". That is a one-night
+# step, not a corpus rewrite, and nothing is announced for it: the IndexNow
+# payload is `set(LM_CHANGED) & submitted` and not one of these URLs is in a
+# sitemap, so the ping stays in its usual few-hundred band. Their <lastmod>
+# appears in no sitemap either, so no crawler is told anything changed.
+TRIAGE_ROBOTS_UA = "googlebot"
+
+# ---- the "ever advertised" promotion rule was REMOVED 2026-10-06.
+# It read listings.json, a Zumper/StreetEasy-derived feed the owner dropped on
+# 2026-10-06 (Zumper's Terms forbid scraping). Measured on 2026-10-05 at 1.11x,
+# the null, so the sitemap loses nothing it had earned; pages that have ever
+# earned an impression stay promoted through the ever-served rule.
+
+
+def _ever_served_bbls():
+    """BBLs of building pages that have ever earned a Search Console impression.
+
+    Never fatal: if the file is missing or malformed the triage falls back to
+    the three measured rules, which is the behaviour that shipped 2026-08-27.
+    A build must not fail because a measurement file is absent.
+    """
+    try:
+        hist = json.load(open(GSC_HISTORY_PATH)).get("history") or {}
+    except Exception as e:
+        print(f"index triage: no serving history ({e}) — "
+              f"promoting on the three measured rules only")
+        return set()
+    out = set()
+    for url in hist:
+        # …/building/<boro>/<slug>-<bbl>/ — the BBL is the last hyphen-separated
+        # token of the final path segment, and is all digits.
+        if "/building/" not in url:
+            continue
+        tail = url.rstrip("/").rsplit("/", 1)[-1].rsplit("-", 1)[-1]
+        if tail.isdigit():
+            out.add(tail)
+    return out
+
+
+EVER_SERVED_BBLS = _ever_served_bbls()
+
+
+def promoted_building(b):
+    """True if this building page earns a place in the sitemap.
+
+    Promotion is a decision about crawl-worthiness, and a URL must never be
+    un-announced by a flag that flips on a feed refresh, so both rules read
+    facts that do not expire: the page has earned a search impression, or the
+    building is among the largest in the city.
+    """
+    if str(b.get("bbl")) in EVER_SERVED_BBLS:
+        return True
+    return (b.get("u") or 0) >= PROMOTE_UNITS
+
+
+# ---- the voucher feed, on the pages Google actually crawls -----------------
+# WHY THIS BUILD NOW READS s8.json, and why the note above VOUCHER_XLINK that
+# says it never should is superseded rather than ignored.
+#
+# That note's reasoning was: "The voucher pages are rebuilt by the growth build
+# from a feed this pipeline never reads, hours after this one runs, so any
+# number here would be a claim this build cannot substantiate." Two of its three
+# premises have since stopped being true.
+#
+#   1. THE ORDER REVERSED. When that was written the SEO pipeline ran on its own
+#      schedule. Since the seo_watchdog landed, refresh_seo.sh is invoked BY the
+#      05:40 growth build, after it finishes: growth/cron_heartbeat.jsonl reads
+#      "build --deploy finish 05:40:44" then "seo_watchdog_start 05:40:44",
+#      "seo_watchdog_finish 05:42:12" every night. scrape_affordablehousing.py
+#      writes s8.json beside this file at 04:15 UTC. So this build reads the
+#      same snapshot t_fresh_section8 read ninety seconds earlier, not an older
+#      one and not a newer one.
+#   2. "CANNOT SUBSTANTIATE" IS NOW TESTABLE RATHER THAN ASSUMED. Every claim
+#      below is conditioned on the feed's own avail_updated timestamp, on the
+#      same 48-hour rule the owner's error_report.py already applies to this
+#      exact file and growth/techniques.py:_feed_freshness already applies to
+#      /section8/. An undated or stale feed yields no claim at all — not a
+#      hedged one, not a dated past-tense one, none — because a building page is
+#      read by one tenant about one address and has no room to explain a
+#      snapshot the way the /section8/ hub does.
+#
+# WHY IT IS WORTH DOING AT ALL, which is the part the note could not have known.
+# The 2026-09-23 URL Inspection census (growth/index_status.json) says Google
+# has fetched /building/ 67 times, /neighborhood/ 15, /borough/ 5 and / once —
+# and /section8/ ZERO times, ever, across all 6 of its URLs. The voucher feed is
+# the only dataset on this site that genuinely changes every night, and it was
+# being published exclusively onto the six pages Google has never once visited,
+# while the ~47,000 pages it does visit changed only when a monthly rebuild
+# moved them. This puts the daily fact on the daily-crawled surface. It mints no
+# new URL, which the 2026-08-25 T002 decision established this domain cannot
+# afford, and it is the answer to T001's own revisit question — the idea was
+# right, the placement was wrong.
+#
+# THE ACCURACY HAZARD, and it is specific. Source-of-income discrimination is
+# illegal in New York City: a landlord may not refuse a voucher. So no wording
+# here may imply that a building WITHOUT a listing refuses vouchers. Every
+# sentence below is therefore a claim about a listing on AffordableHousing.com,
+# never about a landlord's policy, and the hub block says so outright.
+# 48 is also hard-coded as growth.techniques.FEED_STALE_HOURS, which t_voucher_reach
+# uses to decide whether this build suppressed its voucher claims. The two are
+# separate literals and MUST be edited together: a mismatch makes that audit green
+# on exactly the nights this file has gone quiet.
+VOUCHER_STALE_HOURS = 48
+# Beside THIS file, which is $BUILD on the droplet and not the docroot the scrape
+# writes to. refresh_seo.sh's STEP=data hands the docroot's fresher copy over
+# before the build; before 2026-09-27 nothing did, and every voucher claim on the
+# building tier was silently suppressed. See that block for the whole story.
+VOUCHER_PATH = os.path.join(_ROOT, "s8.json")
+
+
+def load_voucher_listings(path=None, now=None):
+    """({bbl: {"n","p","url"}}, "June 3, 2026") for tonight's voucher listings.
+
+    ({}, None) whenever the feed cannot support a present-tense claim: missing,
+    unreadable, the wrong shape, undated, or older than VOUCHER_STALE_HOURS. An
+    unknown age is not evidence of freshness — the failure that leaves the
+    timestamp missing is the same one that leaves the data old.
+
+    Only entries flagged b8 are returned. s8.json's `avail` also carries
+    listings that never mention vouchers (15 of 253 in the committed snapshot),
+    and this build makes no voucher claim about those.
+    """
+    try:
+        with open(path or VOUCHER_PATH) as f:
+            d = json.load(f)
+        avail = d.get("avail")
+        ts = float(d["avail_updated"])
+        if not isinstance(avail, dict):
+            raise ValueError("no avail map")
+    except Exception as e:
+        print(f"s8.json: no usable voucher feed ({e}) — no voucher claims will be made")
+        return {}, None
+    now = time.time() if now is None else now
+    hours = (now - ts) / 3600.0
+    if hours > VOUCHER_STALE_HOURS or hours < -1:
+        print(f"s8.json: voucher feed is {hours / 24:.1f} days old "
+              f"(limit {VOUCHER_STALE_HOURS}h) — no voucher claims will be made")
+        return {}, None
+    out = {}
+    for bbl, v in avail.items():
+        if not isinstance(v, dict) or not v.get("b8") or not v.get("url"):
+            continue
+        out[str(bbl)] = {"n": v.get("n") or 1, "p": v.get("p"), "url": v["url"]}
+    label = time.strftime("%B %-d, %Y", time.gmtime(ts))
+    print(f"voucher feed: {len(out):,} buildings with a live voucher listing as of {label}")
+    return out, label
+
+
+# Two sentences, both about listings rather than about landlords, and the second
+# is not optional: see the SOI note above. Kept short because it rides on hub
+# pages whose duplicate-share t_page_uniqueness measures — the count, the date
+# and the addresses are per-page, this framing is the only shared part.
+def voucher_hub_block(bbls, avail, asof, place, addr_links=None):
+    """VOUCHER_XLINK, plus tonight's count where this page has one to quote.
+
+    `place` is what this page covers ("Bushwick, Brooklyn", "ZIP 11221", "New
+    York City") and not "this page": the borough and citywide hubs list
+    neighborhoods rather than buildings, so "the buildings on this page" would
+    be false on two of the four tiers that call this.
+    """
+    live = [b for b in bbls if b in avail] if avail else []
+    if not live:
+        return VOUCHER_XLINK
+    n = len(live)
+    units = sum(avail[b]["n"] for b in live)
+    names = ""
+    if addr_links:
+        shown = [addr_links[b] for b in live if b in addr_links][:12]
+        if shown:
+            names = (" " + ("It is " if len(shown) == 1 else "They are ")
+                     + ", ".join(shown)
+                     + ("." if len(shown) == n else f", and {n - len(shown):,} more."))
+    return (VOUCHER_XLINK
+            + f"<p><b>{n:,} rent-stabilized building{'' if n == 1 else 's'} in "
+            # Present tense, with the date still stated: this block renders only
+            # when the feed is inside VOUCHER_STALE_HOURS, which is the same
+            # threshold on which /section8/ says "listed right now" and on which
+            # the owner's error_report.py stops calling s8.json stale. Past
+            # tense would be the wording for a snapshot the reader cannot act
+            # on, and this one they can.
+            + f"{esc(place)}</b> {'has' if n == 1 else 'have'} "
+            + ("an apartment" if units == 1 else f"{units:,} apartments")
+            + " listed to housing-voucher holders on AffordableHousing.com as of "
+            + f"{esc(asof)}.{names} "
+            + "<a href='/section8/'>See the full voucher list →</a></p>"
+            + "<p class='disclaimer'>A building missing from that list has "
+              "refused nobody — it simply has no listing on that site today. "
+              "Refusing a tenant because they pay with a Section 8 voucher or any "
+              "other subsidy is illegal in New York City.</p>")
+
+
+LANDLORD_PATH = os.path.join(_ROOT, "landlords.json")
+# How many landlord pages go into the sitemap on the first run. The census that
+# prompted the index triage is just as binding here: dropping 1,400 new URLs on
+# a domain Google is already rationing would undo the concentration the triage
+# just bought. The rest are built, linked and perfectly indexable — they are
+# simply not queue-jumping. Widen when accept_pct_mature moves off 0.0%.
+LANDLORD_SUBMIT = 300
+LANDLORD_SOURCE = ("Owner and managing-agent names come from HPD property registrations, "
+                   "which every NYC building with three or more units must file and keep "
+                   "current. Violation counts are HPD's own, joined to DHCR's "
+                   "rent-stabilization registrations.")
+
+
+def landlord_url(slug):
+    return f"/landlord/{slug}/"
+
+
+def _landlord_slugs():
+    """UPPERCASE landlord name -> slug, so building pages can link the portfolio."""
+    try:
+        with open(LANDLORD_PATH) as f:
+            recs = json.load(f).get("landlords") or []
+    except Exception:
+        return {}
+    return {e["name"].upper(): e["slug"] for e in recs}
+
+
+LANDLORD_SLUGS = _landlord_slugs()
+
+
+def landlord_pages(urls):
+    """A page per landlord: every rent-stabilized building one operator holds.
+
+    The building tier fails because a template over one building runs out of
+    things to say by the third paragraph, and 47,000 of them say the same three.
+    A portfolio is the opposite: no two landlords hold the same buildings, so
+    every page here differs from every other by construction. It also answers a
+    question people actually type — "who owns my building", a landlord's name,
+    "worst landlords in NYC" — that the borough and neighbourhood tiers cannot.
+
+    Returns the records used. Empty when landlords.json is missing, so a
+    checkout without it still builds the rest of the site.
+    """
+    try:
+        with open(LANDLORD_PATH) as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"landlords: skipping ({e})")
+        return []
+    recs = data.get("landlords") or []
+    if not recs:
+        return []
+    n_all = len(recs)
+    ranked = sorted(recs, key=lambda e: -e["buildings"])
+    rank_of = {e["slug"]: i + 1 for i, e in enumerate(ranked)}
+    submit = {e["slug"] for e in ranked[:LANDLORD_SUBMIT]}
+    # A building with both a registered owner and a managing agent in this set
+    # appears in two portfolios, so summing e["buildings"] would count it twice
+    # and overstate the corpus on the one page most likely to be quoted.
+    tot_b = len({it["bbl"] for e in recs for it in e["items"]})
+    tot_v = sum(e["open_violations"] for e in recs)
+
+    for e in recs:
+        url = landlord_url(e["slug"])
+        canonical = SITE + url
+        rank = rank_of[e["slug"]]
+        n, viol, cc = e["buildings"], e["open_violations"], e["open_class_c"]
+        per = viol / n if n else 0
+        clean = sum(1 for it in e["items"] if not it["ov"])
+        boros = ", ".join(f"{BORO_NAME.get(b, b)} ({c})"
+                          for b, c in sorted(e["boroughs"].items(), key=lambda x: -x[1]))
+        role = ("owner and managing agent" if len(e["roles"]) > 1
+                else "managing agent" if e["roles"] == ["manager"] else "owner")
+        rows = "".join(
+            f"<tr><td><a href=\"/building/{BORO_SLUG.get(it['b'],'nyc')}/"
+            f"{slugify(it['a'])}-{it['bbl']}/\">{esc(titlecase_addr(it['a']))}</a></td>"
+            f"<td>{esc(BORO_NAME.get(it['b'], it['b']))}</td>"
+            f"<td>{it['u'] or '—'}</td><td>{it['ov']:,}</td><td>{it['oc']:,}</td></tr>"
+            for it in e["items"][:250])
+        more = (f"<p class='note'>Showing the 250 buildings with the most open violations "
+                f"of {n:,}.</p>" if n > 250 else "")
+        body = (
+            f"<div class='crumbs'><a href='/'>Home</a> › "
+            f"<a href='/landlord/'>Landlords</a></div>"
+            f"<h1>{esc(e['name'])} — rent-stabilized buildings and HPD violations</h1>"
+            + answer_block([
+                f"{e['name']} is the registered {role} of {n:,} rent-stabilized buildings in "
+                f"New York City" + (f", covering {e['units']:,} apartments" if e["units"] else "")
+                + ".",
+                f"HPD has {viol:,} open violations against them, {per:.1f} per building, "
+                f"{cc:,} of them class C — the immediately hazardous grade a landlord has "
+                f"24 hours to fix. {clean:,} of the buildings have none open.",
+                ("That is the largest rent-stabilized portfolio of the " if rank == 1 else
+                 "That is the smallest rent-stabilized portfolio of the " if rank == n_all else
+                 f"That is the {ordinal(rank)}-largest rent-stabilized portfolio of the ")
+                + f"{n_all:,} landlords tracked here. Boroughs: {boros}.",
+            ])
+            + f"<a class='cta' href='/'>Look any of these up on the map →</a>"
+            + f"<h2>The buildings</h2><table class='facts'>"
+            f"<tr><th>Address</th><th>Borough</th><th>Apartments</th>"
+            f"<th>Open violations</th><th>Class C</th></tr>{rows}</table>{more}"
+            f"<p><a href='/landlord/'>Compare all {n_all:,} landlords →</a></p>")
+        faq = [
+            (f"How many rent-stabilized buildings does {e['name']} own in NYC?",
+             f"{e['name']} is the HPD-registered {role} of {n:,} rent-stabilized buildings in "
+             f"New York City"
+             + (f", covering about {e['units']:,} apartments" if e["units"] else "") + "."),
+            (f"How many open HPD violations does {e['name']} have?",
+             f"HPD has {viol:,} open violations against the {n:,} rent-stabilized buildings "
+             f"registered to {e['name']}, {cc:,} of them class C — the immediately hazardous "
+             f"grade. {clean:,} of the buildings have no open violation at all."),
+        ]
+        body += faq_html(faq)
+        crumb = breadcrumb([("Home", SITE + "/"), ("Landlords", SITE + "/landlord/"),
+                            (e["name"], canonical)])
+        title = f"{e['name']} — {n:,} rent-stabilized NYC buildings, {viol:,} open violations"
+        desc = (f"{e['name']} is the HPD-registered {role} of {n:,} rent-stabilized buildings in "
+                f"NYC with {viol:,} open violations, {cc:,} of them class C. Every address, "
+                f"borough by borough.")
+        write(url.strip("/") + "/index.html",
+              page(title, desc, canonical, body, [crumb, faq_jsonld(faq)],
+                   footer=NYC_FOOTER + " " + LANDLORD_SOURCE))
+        if e["slug"] in submit:
+            urls.append((canonical, "0.8", "landlord"))
+
+    # ---- the index: ranked, and the page meant to be linked to ----
+    idx_rows = "".join(
+        f"<tr><td>{i + 1}</td><td><a href='{landlord_url(e['slug'])}'>{esc(e['name'])}</a></td>"
+        f"<td>{e['buildings']:,}</td><td>{e['units']:,}</td>"
+        f"<td>{e['open_violations']:,}</td><td>{e['open_class_c']:,}</td></tr>"
+        for i, e in enumerate(ranked))
+    worst = max(recs, key=lambda e: e["open_violations"])
+    biggest = ranked[0]
+    hub_body = (
+        f"<div class='crumbs'><a href='/'>Home</a></div>"
+        f"<h1>Who owns NYC's rent-stabilized buildings</h1>"
+        + answer_block([
+            f"{n_all:,} landlords and managing agents hold the {tot_b:,} rent-stabilized "
+            f"buildings tracked here, carrying {tot_v:,} open HPD violations between them.",
+            f"{biggest['name']} holds the most buildings ({biggest['buildings']:,}); "
+            f"{worst['name']} carries the most open violations ({worst['open_violations']:,} "
+            f"across {worst['buildings']:,} buildings).",
+            "Ownership is filed with HPD, not with DHCR, so this is the registered owner or "
+            "managing agent rather than a title search. Every figure is recomputed from the "
+            "city's own data on each build.",
+        ])
+        + f"<a class='cta' href='/'>Look up any address on the map →</a>"
+        + f"<table class='facts'><tr><th>#</th><th>Landlord or managing agent</th>"
+        f"<th>Buildings</th><th>Apartments</th><th>Open violations</th>"
+        f"<th>Class C</th></tr>{idx_rows}</table>"
+        + f"<p class='note'>Ranked by portfolio size. {LANDLORD_SOURCE}</p>")
+    hub_faq = [
+        ("Who owns the most rent-stabilized buildings in New York City?",
+         f"{biggest['name']} is the HPD-registered owner or managing agent of "
+         f"{biggest['buildings']:,} rent-stabilized buildings, the largest portfolio of the "
+         f"{n_all:,} landlords tracked here."),
+        ("How do I find out who owns my building in NYC?",
+         "Every NYC building with three or more units must file an HPD property registration "
+         "naming its owner and managing agent. Search your address on Find A Crib and the "
+         "building page lists both, or find the landlord on this page to see everything "
+         "else they hold."),
+    ]
+    hub_body += faq_html(hub_faq)
+    hub_canonical = SITE + "/landlord/"
+    write("landlord/index.html",
+          page("Who owns NYC's rent-stabilized buildings — landlords ranked | Find A Crib",
+               f"The {n_all:,} landlords and managing agents behind {tot_b:,} rent-stabilized "
+               f"NYC buildings, ranked by portfolio size with their open HPD violations.",
+               hub_canonical, hub_body,
+               [breadcrumb([("Home", SITE + "/"), ("Landlords", hub_canonical)]),
+                faq_jsonld(hub_faq)],
+               footer=NYC_FOOTER + " " + LANDLORD_SOURCE))
+    urls.append((hub_canonical, "0.9", "landlord"))
+    print(f"landlords: {n_all:,} pages, {len(submit):,} submitted")
+    return recs
+
+
+def ordinal(n):
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') }"
+
+
+def city_hub_pages(urls):
+    """Write every city's hub tier into this build. Returns {city: place count}.
+
+    A doc marked `stranded` is written but NOT appended to `urls`: it is a page
+    this tier already published and has since dropped below MIN_CITY_HUB, kept
+    accurate rather than left frozen, and not submitted for crawl. See the
+    stranded block in city_hub_docs() for why.
+
+    The returned count stays the number of QUALIFYING place pages, so the series
+    t_city_seo_expansion reports (dc 103, la 112, sf 36 on 2026-10-01) does not
+    silently change meaning on the night this starts rebuilding stranded pages.
+    """
+    built = {}
+    for key in CITY_HUBS:
+        docs = city_hub_docs(key)
+        for d in docs:
+            write(d["relpath"], d["html"])
+            if not d.get("stranded"):
+                urls.append((d["canonical"], d["priority"], key))
+        built[key] = sum(1 for d in docs
+                         if d["kind"] == "place" and not d.get("stranded"))
+    return built
+
+
+def slugify(s):
+    s = (s or "").lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    return re.sub(r"-+", "-", s).strip("-") or "x"
+
+
+def esc(s):
+    return html.escape(str(s if s is not None else ""))
+
+
+# HPD and DHCR write addresses the way a clerk types them — "200 W 72ND ST" —
+# and Search Console shows people typing the long form: "200 west 72", "228 e 3rd
+# st ny", '"481 4th ave" "brooklyn ny"'. Those are the only non-brand queries this
+# site has ever surfaced for, so the expanded forms belong on the page as visible
+# text rather than left for a search engine to infer from an abbreviation.
+ADDR_EXPAND = {
+    "N": "North", "S": "South", "E": "East", "W": "West",
+    "NE": "Northeast", "NW": "Northwest", "SE": "Southeast", "SW": "Southwest",
+    "ST": "Street", "AVE": "Avenue", "AV": "Avenue", "RD": "Road", "DR": "Drive",
+    "BLVD": "Boulevard", "PL": "Place", "PKWY": "Parkway", "CT": "Court",
+    "LN": "Lane", "TER": "Terrace", "PLZ": "Plaza", "SQ": "Square",
+    "HTS": "Heights", "EXPY": "Expressway", "CIR": "Circle", "BRDG": "Bridge",
+}
+
+
+def address_variants(raw, boro, zipc=None):
+    """Other ways the same address gets typed. Empty when nothing expands.
+
+    Returns at most three, deduped against the address as printed, because the
+    point is to cover the abbreviation a searcher spelled out — not to stack
+    every permutation into a keyword list.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return []
+    words = raw.split()
+    expanded = [ADDR_EXPAND.get(w.upper(), w) for w in words]
+    out = []
+    long_form = titlecase_addr(" ".join(expanded))
+    printed = titlecase_addr(raw)
+    if long_form != printed:
+        out.append(long_form)
+    # the form people actually type into Google: address + borough, + ZIP when
+    # we have one. Only one located variant — the same address twice with and
+    # without a ZIP reads as padding, which is what it would be.
+    located = f"{printed}, {boro}, NY" + (f" {zipc}" if zipc else "")
+    out.append(located)
+    seen, uniq = set(), []
+    for v in out:
+        if v and v not in seen and v != printed:
+            seen.add(v)
+            uniq.append(v)
+    return uniq[:2]
+
+
+def titlecase_addr(a):
+    """'246 10TH AVE' -> '246 10th Ave' (keep ordinals lowercase-suffixed)."""
+    out = []
+    for w in (a or "").split():
+        m = re.match(r"^(\d+)(ST|ND|RD|TH)$", w)
+        if m:
+            out.append(m.group(1) + m.group(2).lower())
+        elif w.isdigit():
+            out.append(w)
+        else:
+            out.append(w.capitalize())
+    return " ".join(out)
+
+
+# ---- shared chrome ---------------------------------------------------------
+CSS = """
+:root{--blue:#2a6f7e;--ink:#0a0a23;--ink2:#4a4a68;--line:#e2e6ea;--bg:#f7f8fa}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+header.site{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px}
+@font-face{font-family:'Oxanium';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/oxanium-800.woff2') format('woff2')}
+header.site a.brand{font-weight:800;color:var(--ink);font-size:18px;font-family:'Oxanium',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header.site .cities{display:block;margin-top:5px;font-size:13px;color:var(--ink2)}
+main{max-width:880px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:28px;line-height:1.2;margin:.2em 0 .4em}
+h2{font-size:20px;margin:1.6em 0 .5em}
+.lead{font-size:18px;color:var(--ink2)}
+.aka{font-size:14px;color:var(--ink2);margin:-.4em 0 1em}
+.cta{display:inline-block;background:var(--blue);color:#fff;padding:11px 18px;border-radius:10px;font-weight:600;margin:14px 0}
+.cta:hover{text-decoration:none;opacity:.92}
+table.facts{border-collapse:collapse;width:100%;margin:8px 0 4px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table.facts td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+table.facts tr:first-child td{border-top:0}
+table.facts td.k{color:var(--ink2);width:42%;font-weight:600}
+.badge{display:inline-block;background:#e8f7ec;color:#137333;border:1px solid #b7e0c2;padding:3px 9px;border-radius:999px;font-size:13px;font-weight:600}
+.badge.warn{background:#fff4e5;color:#a15c00;border-color:#f3d9a8}
+.cols{columns:2;column-gap:28px}@media(max-width:640px){.cols{columns:1}}
+.cols a{display:block;padding:3px 0}
+.crumbs{font-size:14px;color:var(--ink2);margin-bottom:6px}
+footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;color:var(--ink2);font-size:13px;max-width:880px;margin-left:auto;margin-right:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+.guide-body p,.guide-body li{font-size:16px;line-height:1.6}
+.guide-body ul{padding-left:20px}
+.disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+.hook{background:#f0f5ff;border:1px solid #cfe0ff;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;line-height:1.5}
+.answer{background:#fff;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;padding:14px 16px;margin:14px 0}
+.answer p{margin:0;font-size:16px;line-height:1.6}
+.compare{background:#fff;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;padding:14px 16px;margin:14px 0}
+.compare p{margin:0;font-size:16px;line-height:1.6}
+.faq-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+.faq-item h3{font-size:15px;margin:0 0 4px}
+.faq-item p{color:var(--ink2);font-size:14px;margin:0}
+"""
+
+
+# Same first-party pageview ping as index.html (public.visits), minus the
+# supabase-js dependency: plain fetch with the anon key from /config.js.
+# Cookie-first visitor id (nginx sets fac_vid; server-set cookies survive
+# Safari's 7-day script-storage cap), localStorage fallback, bot guard, and
+# the Supabase session token attached when one exists so user_id passes the
+# "user_id = auth.uid()" RLS check (that mapping powers the owner-exclusion
+# in traffic_report.py). Plain string on purpose: page() is an f-string and
+# this JS is full of braces.
+# Journey by Mediavine (approved 2026-09-28): the same tag index.html loads,
+# on every generated page, so building/landlord/guide pages carry ads too.
+MEDIAVINE_TAG = "<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>"
+
+
+TRACK_SNIPPET = """<script src="/config.js"></script>
+<script>
+(function(){try{
+  if(navigator.webdriver||/bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal|mediapartners|google-inspectiontool|googleother|feedfetcher|apis-google/i.test(navigator.userAgent))return;
+  if(!window.SUPABASE_URL||!window.SUPABASE_ANON_KEY)return;
+  var m=document.cookie.match(/(?:^|;\\s*)fac_vid=([\\w-]+)/),vid=m?m[1]:null;
+  if(!vid){try{vid=localStorage.getItem('fac_vid')}catch(e){}}
+  if(!vid)vid=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'v'+Date.now().toString(36)+Math.random().toString(36).slice(2);
+  try{localStorage.setItem('fac_vid',vid)}catch(e){}
+  var tok=null,uid=null;
+  try{
+    var ref=window.SUPABASE_URL.split('//')[1].split('.')[0];
+    var s=JSON.parse(localStorage.getItem('sb-'+ref+'-auth-token'));
+    if(s&&s.access_token&&(s.expires_at||0)*1000>Date.now()+60000){tok=s.access_token;uid=(s.user&&s.user.id)||null}
+  }catch(e){}
+  fetch(window.SUPABASE_URL+'/rest/v1/visits',{method:'POST',keepalive:true,
+    headers:{apikey:window.SUPABASE_ANON_KEY,'Authorization':'Bearer '+(tok||window.SUPABASE_ANON_KEY),
+             'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({visitor_id:vid,user_id:uid,path:location.pathname+location.search,referrer:document.referrer||null})});
+}catch(e){}})();
+</script>"""
+
+
+# The data-provenance footer. Every page states where its numbers came from,
+# and a page outside New York must not claim New York sources: the NYC footer
+# names DHCR, PLUTO and HPD, none of which have anything to do with a San
+# Francisco block or a Los Angeles parcel. Pages pass their own footer; the
+# NYC one stays the default because it is the overwhelming majority.
+# ---- schema.org/Dataset -------------------------------------------------
+# Google Dataset Search, and the LLM crawlers that increasingly follow it, index
+# schema.org/Dataset. The corpus genuinely is one — every NYC building DHCR has
+# on the rent-stabilization rolls — but only the pages that present a
+# *collection* are allowed to say so. A single address is not a dataset; see the
+# note where the building pages pick ApartmentComplex instead.
+#
+# Every field below has to be true or the markup is worse than none: Dataset
+# Search shows description, coverage and distribution verbatim to people
+# deciding whether to trust the data. Two deliberate omissions:
+#   - no `license`. The underlying records are public NY State and NYC data, but
+#     stamping a licence on the derived corpus is a legal claim, and /terms.html
+#     is a terms-of-use page, not a licence. `conditionsOfAccess` says what is
+#     actually true instead.
+#   - no `datePublished` on the slices. The DHCR file is annual; a per-page
+#     publish date would imply a freshness the rolls do not have.
+DATA_CATALOG = {
+    "@type": "DataCatalog",
+    "@id": SITE + "/developers/#catalog",
+    "name": "Find A Crib rent-regulation data",
+    "url": SITE + "/developers/",
+}
+# The variables actually present in buildings.min.json + the HPD join.
+DATA_VARIABLES = ["Street address", "Borough", "Neighborhood (NTA)", "ZIP code",
+                  "Borough-Block-Lot (BBL)", "Latitude", "Longitude", "Year built",
+                  "Apartment count", "DHCR stabilization code", "Registered owner",
+                  "HPD-registered managing agent", "Open HPD violations",
+                  "Open HPD complaints"]
+
+
+def _dataset_node(name, description, url, size=None, unit_text="buildings",
+                  part_of_catalog=True, **middle):
+    """The fields every Dataset node on this site shares, in a fixed order.
+
+    `middle` carries the per-corpus fields — sourceOrganization,
+    temporalCoverage, spatialCoverage, variableMeasured, conditionsOfAccess,
+    distribution — and is spliced in between `creator` and `size` in the order
+    the caller passes them. Any of them may be omitted entirely; a field passed
+    as None is dropped rather than published empty.
+
+    THE ORDER MATTERS AND IS NOT COSMETIC. write() hashes the rendered bytes to
+    decide whether a URL is new, changed or identical, and only a changed URL
+    gets its <lastmod> bumped and its address handed to IndexNow. Re-ordering
+    these keys would rewrite 198 NYC neighborhood pages that had not actually
+    changed and announce all of them as fresh — the exact dishonest-lastmod
+    failure t_sitemap_daily's own comments keep having to correct. So
+    dataset_jsonld() below passes its six fields in the order it always emitted
+    them, and its output is byte-identical to the pre-2026-09-17 version.
+    """
+    d = {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": name,
+        "description": description,
+        "url": url,
+        "isAccessibleForFree": True,
+        "creator": {"@type": "Organization", "name": "Find A Crib", "url": SITE + "/"},
+    }
+    d.update({k: v for k, v in middle.items() if v is not None})
+    if size:
+        d["size"] = {"@type": "QuantitativeValue", "value": size,
+                     "unitText": unit_text}
+    if part_of_catalog:
+        d["includedInDataCatalog"] = DATA_CATALOG
+    return d
+
+
+def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=True):
+    """A Dataset node for an NYC page that presents a collection of buildings.
+
+    `size` is the building count, published as a QuantitativeValue so a consumer
+    can see the slice's scale without downloading 16 MB to find out.
+    """
+    return _dataset_node(
+        name, description, url, size=size, part_of_catalog=part_of_catalog,
+        # Provenance, not decoration: these are the agencies whose records this
+        # is derived from, and the reason the data can be trusted at all.
+        sourceOrganization=[
+            {"@type": "GovernmentOrganization",
+             "name": "New York State Division of Housing and Community Renewal"},
+            {"@type": "GovernmentOrganization", "name": "NYC Department of City Planning"},
+            {"@type": "GovernmentOrganization",
+             "name": "NYC Department of Housing Preservation and Development"},
+        ],
+        temporalCoverage="2024",
+        spatialCoverage=spatial,
+        variableMeasured=DATA_VARIABLES,
+        conditionsOfAccess=(
+            "Open to read on the site. Bulk JSON is public; the REST API requires a key."),
+        distribution=[
+            {"@type": "DataDownload",
+             "name": "Bulk JSON — every registered building",
+             "encodingFormat": "application/json",
+             "contentUrl": SITE + "/buildings.min.json"},
+            {"@type": "DataDownload",
+             "name": "REST API (key required)",
+             "encodingFormat": "application/json",
+             "contentUrl": SITE + "/api/v1/buildings"},
+        ])
+
+
+# ------------------------------------------------- the three non-NYC datasets
+# WHY THIS EXISTS, 2026-09-17. Everything above describes ONE city. The catalog
+# both the /developers/ node and the 198 neighborhood slices hang off is called
+# "Find A Crib rent-regulation data", and until today it held exactly one
+# Dataset: the NYC DHCR roll. San Francisco (12,331 reported block-side
+# locations), Los Angeles (67,511 likely-RSO parcels) and Washington DC (4,316
+# registered properties) appeared in NO Dataset record anywhere on this site —
+# so the one index that reads this vocabulary, Google Dataset Search, plus the
+# answer engines that consume the same markup, have never been told that three
+# of the four cities the product is positioned on exist at all.
+#
+# That gap is worth closing here rather than anywhere else: for DC, SF and LA
+# this site is plausibly the only mapped, structured, address-level index of
+# the rolls, which is exactly the case Dataset Search exists to serve, and it
+# is a different index from the one where 0 of 490 tracked queries rank.
+#
+# THREE FIELDS THE NYC NODES CARRY ARE DELIBERATELY ABSENT, and adding any of
+# them later needs evidence, not a hunch:
+#   * no `temporalCoverage`. The DHCR file is dated 2024 and the NYC node says
+#     so. NOTHING in this checkout dates the SF, LA or DC extracts, and vintage
+#     is the first field anyone deciding whether to trust a housing dataset
+#     reads. Publishing a guessed year would be worse than publishing none.
+#   * no `distribution`. /buildings.min.json is the NYC bulk file and is known
+#     public. The city map shells fetch 'buildings.min.json' RELATIVELY from
+#     /sf/, /la/ and /dc/, which is suggestive but not proof that the docroot
+#     serves those three paths — scripts/deploy_app.sh ships the shells and not
+#     the data. A DataDownload pointing at a 404 is worse than no DataDownload,
+#     so conditionsOfAccess states access in words instead. The day someone
+#     confirms the docroot serves them, this is a three-line change.
+#   * no `license`, for the same reason the NYC node has none: /terms.html is a
+#     terms-of-use page, not a licence, and stamping one on a derived corpus is
+#     a legal claim this site has never made.
+#
+# `spatialCoverage` IS asserted and is computed from the records' own
+# coordinates — the claim is "this is the box the mapped records fall in", not
+# "this is the city", which is the only one the data supports.
+#
+# Every sentence of provenance and every caveat below is lifted verbatim from
+# CITY_FOOTER and CITY_BROWSE_COPY, which the pages already publish. Dataset
+# Search shows `description` to a human verbatim, so the LA "derived, not the
+# City's official inventory" line and the SF "anonymized to the block" line
+# travel WITH the record rather than being left behind on the page.
+CITY_DATASET = {
+    "sf": dict(
+        name="Rent-controlled housing in San Francisco (SF Rent Board inventory)",
+        sources=["San Francisco Rent Board",
+                 "San Francisco Office of the Assessor-Recorder"],
+        # Only variables the records demonstrably carry and the pages are
+        # willing to state. 'Block-side location', not 'Street address': the
+        # inventory is anonymized to the block and the field name has to say so.
+        variables=["Block-side location", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Units reported",
+                   "Reported rent", "Rent Board inventory status"],
+    ),
+    "la": dict(
+        name="Likely rent-stabilized (RSO) buildings in Los Angeles",
+        sources=["Los Angeles County Office of the Assessor"],
+        variables=["Street address", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Unit count",
+                   "RSO criteria match", "Open housing-code violations",
+                   "Open complaints"],
+    ),
+    "dc": dict(
+        name="Rent-controlled properties in Washington DC (RentRegistry filings)",
+        sources=["District of Columbia Rental Accommodations Division"],
+        variables=["Street address", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Registered units",
+                   "Reported rent", "Rent control registration status"],
+    ),
+}
+
+CITY_DATASET_ACCESS = ("Open to read on findacrib.com. No bulk download is "
+                       "published for this city.")
+
+
+def _city_bbox(items):
+    """A GeoShape box around a city's mapped records, or None.
+
+    Computed from the records themselves, never from a municipal boundary —
+    nothing here reads a boundary file, and the honest claim is the extent of
+    what this dataset maps. Returns None rather than a degenerate point when
+    too few records carry a usable position.
+    """
+    lats = [x["lat"] for x in items if isinstance(x.get("lat"), (int, float))]
+    lngs = [x["lng"] for x in items if isinstance(x.get("lng"), (int, float))]
+    if len(lats) < MIN_CITY_HUB or len(lngs) < MIN_CITY_HUB:
+        return None
+    if min(lats) == max(lats) or min(lngs) == max(lngs):
+        return None
+    return {"@type": "GeoShape",
+            "box": f"{min(lats):.4f} {min(lngs):.4f} {max(lats):.4f} {max(lngs):.4f}"}
+
+
+def _city_place(key, place):
+    """The spatialCoverage Place for one city slice.
+
+    LA is grouped on ZIP and the other two on neighborhood, so the ZIP goes in
+    `postalCode` where it is one and in the name where it is not — a
+    neighborhood name in postalCode would be a lie a consumer parses.
+    """
+    cfg = CITY_HUBS[key]
+    locality, region = {"sf": ("San Francisco", "CA"),
+                        "la": ("Los Angeles", "CA"),
+                        "dc": ("Washington", "DC")}[key]
+    addr = {"@type": "PostalAddress", "addressLocality": locality,
+            "addressRegion": region, "addressCountry": "US"}
+    if cfg["path"] == "zip":
+        addr["postalCode"] = str(place)
+        name = f"ZIP {place}, {locality}, {region}"
+    else:
+        name = f"{place}, {locality}, {region}"
+    return {"@type": "Place", "name": name, "address": addr}
+
+
+def city_dataset_jsonld(key, name, description, url, spatial, size=None):
+    """A Dataset node for an SF / LA / DC page that presents a collection.
+
+    Same shape as dataset_jsonld() and the same catalog, with this city's own
+    provenance and without the three fields named in the block comment above.
+    """
+    meta = CITY_DATASET[key]
+    return _dataset_node(
+        name, description, url, size=size,
+        unit_text=CITY_HUBS[key]["things"],
+        sourceOrganization=[{"@type": "GovernmentOrganization", "name": s}
+                            for s in meta["sources"]],
+        spatialCoverage=spatial,
+        variableMeasured=meta["variables"],
+        conditionsOfAccess=CITY_DATASET_ACCESS)
+
+
+NYC_FOOTER = """Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
+and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
+DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized."""
+
+CITY_FOOTER = {
+    "sf": """Data: San Francisco Rent Board housing inventory — units their owners reported
+as rent controlled, published anonymized to the block rather than the individual address, plus
+San Francisco Assessor build years. Coverage reflects what owners reported; it is not a
+determination that a specific unit is rent controlled.""",
+    "la": """Data: Los Angeles County Assessor parcel records, filtered to the Rent
+Stabilization Ordinance criteria (two or more units, built before 1 October 1978). This is a
+derived list labelled "likely RSO" — it is not the City of Los Angeles's official RSO inventory,
+which LAHD holds. Verify an address with LAHD or on ZIMAS before relying on it.""",
+    "dc": """Data: District of Columbia Rental Accommodations Division registration and
+exemption filings (RentRegistry). A property appears here because its housing provider filed it as
+covered by rent control; registration is per property, and a unit its provider never registered is
+generally treated as covered rather than exempt.""",
+}
+
+
+# The three non-NYC city hubs, linked from the header of every page this
+# pipeline writes. Two reasons, and the second one is the measured one.
+#
+# For a reader: a Brooklyn address page offered exactly two onward links —
+# "All neighborhoods" and "Guides" — and no route at all to the other three
+# cities this site covers. Someone reading about a Bed-Stuy building because
+# they are moving to LA had nowhere to go.
+#
+# For crawling: /building/ is the ONLY tier Googlebot is currently fetching —
+# on 2026-08-18 it was 51 of the 65 fetched URLs in the sampled cohort, with
+# fresh crawls on 08-16, 08-17 and 08-18, while /dc/ and /la/ had never been
+# fetched at all and /sf/ not since 07-28. The root index.html has linked all
+# three from its city nav for weeks and Google has not followed it, so this is
+# not a new signal — it is the same signal from 47,165 pages instead of one,
+# which is a different weight rather than a different idea. Judge it on
+# index_fetched_pct for the dc/la/sf families (growth/indexstatus.py), not on
+# traffic, and give it a fortnight: at 1-5 fetches a night the crawler needs
+# time to arrive. If those families are still 0% fetched in two weeks, link
+# volume is not the constraint and the next thing to suspect is site-level
+# crawl rationing, which no amount of internal linking fixes.
+#
+# THAT PRE-REGISTRATION RESOLVED NEGATIVE AND IS CASHED HERE, 2026-10-02, six
+# weeks rather than two after it was written. growth/index_status.json: the dc
+# family is 0 of 20 fetched and 0 of 20 known, la 0 of 20 and 0 of 20, sf 1 of
+# 20 — and that one is /sf/ itself, last crawled 2026-07-28, three weeks BEFORE
+# this nav shipped. Not one page of the tier these 47,165 links point at has
+# been fetched. So link volume is not the constraint, exactly as this comment
+# said it would not be, and the conclusion it names is the one to carry forward.
+#
+# THE SAME MORNING CLOSED THE STRONGER VERSION OF THE TEST, WHICH THIS COMMENT
+# DID NOT THINK TO SET. /la/ and /dc/ are not merely linked from 47,165 pages:
+# they are listed in sitemap-main.xml at priority 0.9, they carry a
+# self-referencing canonical and index,follow, and they are plain static <a href>
+# three times over in the root index.html — in the header city nav, in the
+# overflow menu and in the footer prose — checked against the served bytes
+# rather than assumed, all three outside every <script> block. The homepage is
+# the one URL on this domain Google has ever kept indexed and it was crawled on
+# 2026-10-02. Google has reported both as "URL is unknown to Google" on every
+# reading since 2026-08-22, 41 consecutive days. An inbound link from the single
+# trusted node on the domain does not convert either, which also pre-refutes
+# T070 homepage_anchored_crawl_spine: its whole mechanism is "the homepage links
+# to the four city hubs", and that has been shipped and measured for six weeks.
+#
+# DO NOT ADD MORE INTERNAL LINKS TO THIS TIER ON AN INDEXING ARGUMENT. The nav
+# STAYS, on the reader argument in the paragraph above, which was always the
+# first of the two reasons and is unaffected by any of this. What has NOT been
+# eliminated is whether Google ever DOWNLOADED the sitemap shard these URLs live
+# in — every "unknown to Google" reading on this site is taken against the LOCAL
+# sitemap files. That is measured from 2026-10-02 by growth/sitemapstatus.py, and
+# until it reports, the rationing conclusion is an inference and not a
+# measurement.
+#
+# Anchor text is the wording the homepage already uses for these three, which
+# is accurate for each: SF and DC are rent CONTROL registries, LA is the RSO.
+# The coverage caveats — LA derived and "likely RSO", SF anonymized to the
+# block — live on the hub pages themselves, which is where a caveat belongs;
+# naming a destination is not asserting a claim about its contents.
+CITY_NAV = (
+    '<span class="cities">Also mapped: '
+    '<a href="/sf/">rent-controlled San Francisco</a> &nbsp;·&nbsp; '
+    '<a href="/la/">rent-stabilized (RSO) Los Angeles</a> &nbsp;·&nbsp; '
+    '<a href="/dc/">rent-controlled Washington DC</a></span>')
+
+# The provenance page every page this pipeline writes links to from its footer.
+# Defined here rather than beside methodology_page() because page() needs it.
+METHODOLOGY_URL = "/methodology/"
+
+
+# ── SITE-INVARIANT CHROME ───────────────────────────────────────────────────
+# Every run of bytes page() emits that is byte-identical on all ~49,000 pages.
+# It lives in named constants for ONE reason: _lastmod_body() strips exactly
+# these strings before it hashes a page, so a tag added HERE can never again
+# claim that the whole corpus changed — and a tag added to page()'s f-string
+# below, outside them, can. See _lastmod_body's docstring for the two times
+# that has already happened (CITY_NAV on 2026-08-18, the Smart App Banner meta
+# on 2026-10-06, which restamped 4,082 of the 4,105 submitted URLs in one
+# night). ADD SITE-WIDE HEAD TAGS TO HEAD_CHROME, not to the template.
+#
+# The test is mechanical, not a matter of judgement: a fragment belongs here if
+# and only if it contains no page-specific value. <title>, the description, the
+# robots tag, the canonical and the three og: fields that interpolate the page's
+# own title/description/url are NOT chrome and stay in the hash, because a
+# change to any of them is a change to the page.
+HEAD_CHROME = ('<meta charset="utf-8">'
+               '<meta name="viewport" content="width=device-width,initial-scale=1">'
+               '<meta name="apple-itunes-app" content="app-id=6807549249">')
+HEAD_ICON = '<link rel="icon" href="/favicon.ico?v=2" sizes="any">'
+OG_CHROME = ('<meta property="og:type" content="website">'
+             '<meta property="og:site_name" content="Find A Crib">')
+# og:image and twitter:card are one fragment because they are adjacent in the
+# rendered page (the newline between them is part of the run that gets stripped).
+OG_IMAGE_CARD = (f'<meta property="og:image" content="{SITE}/og-image.png">\n'
+                 f'<meta name="twitter:card" content="summary_large_image">')
+
+# Everything _lastmod_body() removes by exact match. <style>, header.site and
+# footer.site are removed by pattern instead, because CSS and the city nav are
+# edited in place rather than added, and the footer carries a per-tier caveat.
+PAGE_CHROME = (HEAD_CHROME, HEAD_ICON, OG_CHROME, OG_IMAGE_CARD,
+               MEDIAVINE_TAG, TRACK_SNIPPET)
+
+
+def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None,
+         robots_name="robots"):
+    # og_title: what a shared link shows in iMessage / Slack / social cards.
+    # Defaults to the <title>; the building tier passes a plain address so a
+    # share reads "164 Sherman Ave — Inwood, Manhattan" while the <title> keeps
+    # the question form that matches what people type into Google.
+    og_title = og_title or title
+    ld = ""
+    if jsonld:
+        ld = '<script type="application/ld+json">%s</script>' % json.dumps(jsonld)
+    # `robots` is only ever set to noindex,follow, and only on the building tier
+    # that index_triage() declines to promote — see the note there. follow, not
+    # nofollow, because the page still passes a reader and a crawler onward to
+    # the neighbourhood and borough hubs, which is the tier we want crawled.
+    #
+    # `robots_name` is WHICH CRAWLERS that directive is addressed to, and the
+    # default is every one of them. The building tier passes TRIAGE_ROBOTS_UA
+    # instead — see the comment there for why a directive aimed at Google must
+    # not be served to the only channel on this site with a positive verdict.
+    rb = f'<meta name="{robots_name}" content="{robots}">' if robots else ""
+    return f"""<!doctype html><html lang="en"><head>
+{HEAD_CHROME}
+<title>{esc(title)}</title>
+<meta name="description" content="{esc(desc)}">{rb}
+<link rel="canonical" href="{canonical}">
+{HEAD_ICON}
+{OG_CHROME}
+<meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
+<meta property="og:url" content="{canonical}">{OG_IMAGE_CARD}
+<style>{CSS}</style>{ld}{MEDIAVINE_TAG}</head><body>
+<header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
+<a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
+<a href="/guide/">Guides</a>{CITY_NAV}</header>
+<main>{body}</main>
+<footer class="site">{footer or NYC_FOOTER}
+<a href="{METHODOLOGY_URL}">How this data is compiled</a> &nbsp;·&nbsp;
+&copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>
+{TRACK_SNIPPET}
+</body></html>"""
+
+
+def _lastmod_body(contents):
+    """The part of a page whose change means the page changed.
+
+    v3, 2026-10-06. The rule below (v2) excluded <style>, header.site and
+    footer.site, and its own docstring states the principle it was written to
+    enforce: "A chrome edit must never again be able to claim 47,596 pages
+    changed." It did not enforce it. Everything in the <head> stayed inside the
+    hash, and the <head> is mostly chrome: charset, viewport, the favicon link,
+    og:type, og:site_name, og:image, twitter:card, the Mediavine loader — plus
+    the visit beacon at the end of <body>. Every one of those is byte-identical
+    on all ~49,000 pages, so editing any of them restamps all ~49,000 lastmods.
+
+    That is not hypothetical. On 2026-10-06 at 01:18 UTC one line was added to
+    page()'s head — <meta name="apple-itunes-app"> for Safari's Smart App Banner
+    (2ac0b35, a correct product change that must stay) — and the 05:40 build
+    pushed 4,082 of the 4,105 submitted URLs into LM_CHANGED and out to IndexNow
+    in a single payload, against 318 and 327 on the two preceding nights. The
+    whole advertised corpus told Google it changed on one day, for a banner.
+    That is the second occurrence of the exact event v2 was written to prevent,
+    which is the argument for fixing the rule rather than the one tag: the next
+    site-wide head tag (an AdSense slot id is already an open owner ask) would
+    do it a third time.
+
+    So v3 removes PAGE_CHROME — the invariant runs page() emits, held in named
+    constants above for exactly this purpose — by exact match, before hashing.
+    After this, a chrome edit changes the bytes of every page (it has to: they
+    all carry the tag) and the lastmod of none of them, which is the honest
+    answer to both questions.
+
+    WHAT THIS DELIBERATELY DOES NOT DO: it does not make lastmod unfalsifiable.
+    <title>, the meta description, the robots tag, the canonical and the three
+    og: fields that carry the page's own title, description and URL all stay in
+    the hash, because a change to any of them IS a change to the page. Nor does
+    it touch the bytes served: page() renders the same document as before to the
+    byte — only what gets hashed moved.
+
+    The v2 rule is kept below, reachable through _LM_RULES, so the first build
+    after this change can tell "this page's content moved" from "the hashing
+    rule moved" — see the migration branch in _track_lastmod. Without that, this
+    change would itself restamp every lastmod on the site and ping the whole
+    submitted set, which is the event it exists to prevent, committed once on
+    the way to preventing it. v1 made that mistake's twin and the comment it
+    left is why this one is guarded.
+    """
+    body = _lastmod_body_v2(contents)
+    # str.replace, not a regex: these are literal constants the template emits,
+    # and a pattern loose enough to match them would be loose enough to eat a
+    # page-specific tag by accident. A fragment that is "" (MEDIAVINE_TAG when
+    # ads are off) is skipped — replacing the empty string is a no-op today but
+    # relies on a CPython detail nobody should have to look up.
+    for frag in PAGE_CHROME:
+        if frag:
+            body = body.replace(frag, "")
+    return body
+
+
+def _lastmod_body_v2(contents):
+    """The 2026-09-06 rule: strip the stylesheet, the site header and the footer.
+
+    Superseded by v3 above, which strips the invariant head chrome too. Kept
+    because a state entry stamped v:2 has to be re-checked against the rule it
+    was written under before the first v3 build calls its page changed.
+
+    lastmod is a promise to a crawler that the *content* moved. The stylesheet
+    is inlined into all 47,596 pages, so adding one CSS rule rewrites every
+    file byte-for-byte and — hashing the whole document — would bump every
+    lastmod on the site to today. Mass-bumping lastmod on a corpus that did not
+    change is precisely the signal Google learns to distrust, and it would have
+    buried the few hundred pages that genuinely did change.
+
+    SITE CHROME IS EXCLUDED FOR THE SAME REASON, and it took a corpus-wide
+    restamp to notice. The <style> block was the only exclusion until today,
+    while page() also injects a site <header> and a site <footer> that are
+    byte-identical across every page in a tier. On 2026-08-18 CITY_NAV added
+    three links to that header. That is one edit to one string, and it changed
+    the hash of all 47,596 pages: every lastmod in the corpus was restamped to
+    2026-08-18, and the whole submitted set went into LM_CHANGED and out to
+    IndexNow in a single payload (capped at 10,000, so 10,000 of them). Two
+    days later gsc_serving_pages began the monotonic 63 -> 4 slide it has not
+    come out of, and gsc_serving_ever has been frozen at 277 ever since.
+    That sequence is correlation, not proof — nothing here can prove what
+    Google did with it — but the code four hundred lines down already calls a
+    bulk submission of an unchanged corpus "the kind of bulk submission that
+    makes a small domain look like a spam farm", and it is right. A chrome edit
+    must never again be able to claim 47,596 pages changed.
+
+    The cost is real and accepted: the footer carries each tier's data caveat,
+    so a genuine caveat rewrite will no longer bump lastmod either. That is the
+    correct trade. Restamping the entire corpus is never the right way to
+    announce a footer edit; if one ever needs announcing, announce those URLs
+    deliberately rather than by hashing the boilerplate into every page.
+
+    So THIS rule covers everything except <style>, header.site and footer.site —
+    which is what it claimed, and not enough; v3 above is why.
+    """
+    body = _lastmod_body_v1(contents)
+    body = re.sub(r'<header class="site">.*?</header>', "", body, flags=re.S)
+    return re.sub(r'<footer class="site">.*?</footer>', "", body, flags=re.S)
+
+
+def _lastmod_body_v1(contents):
+    """The pre-2026-09-06 rule: strip the stylesheet only.
+
+    Kept solely so the first build after the change above can tell "this page's
+    content moved" from "the hashing rule moved". Without it, narrowing the
+    hash would itself restamp all 47,596 lastmods and ping IndexNow with the
+    whole corpus — precisely the event it exists to prevent, committed once on
+    the way to preventing it. See the migration branch in write().
+    """
+    return re.sub(r"<style>.*?</style>", "", contents, flags=re.S)
+
+
+# Superseded hashing rules, by the "v" a state entry was stamped with, so the
+# migration branch in _track_lastmod can re-check an entry against the rule that
+# wrote it. An entry with no "v" at all predates stamping and is v1.
+_LM_RULES = {1: _lastmod_body_v1, 2: _lastmod_body_v2}
+LM_VERSION = 3
+
+
+def _track_lastmod(loc, contents):
+    """Record loc's <lastmod> from the page's own bytes, and return it.
+
+    Split out of write() on 2026-09-10 so the six pages sitemap-main.xml LISTS
+    but this build does not GENERATE can go through the identical rule — see
+    track_static_lastmods. One code path, so the migration branch below cannot
+    be right for the corpus and wrong for the app shells.
+    """
+    h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
+    prev = LM_STATE.get(loc)
+    # One-time migration, now per version: a state entry written under an
+    # EARLIER rule is re-checked against that rule before it is called a
+    # change. Only the answer "the old hash still matches, so nothing but the
+    # hashing rule moved" is accepted; a page that genuinely changed falls
+    # through and bumps as normal. Entries are stamped with LM_VERSION below,
+    # so this branch stops firing after the first build on a new rule. It is
+    # not optional: without it, narrowing the hash restamps every lastmod in
+    # the corpus on the night the narrowing ships.
+    if prev is not None and prev.get("v") != LM_VERSION and prev.get("h") != h:
+        old = _LM_RULES.get(prev.get("v") or 1)
+        if old is not None and hashlib.sha1(old(contents).encode("utf-8")).hexdigest() == prev["h"]:
+            prev = dict(prev, h=h)
+    if prev and prev.get("h") == h:
+        lastmod = prev["m"]                 # unchanged -> keep old date (honest)
+    else:
+        lastmod = BUILD_DATE                # new or changed -> bump
+        if prev is not None:
+            LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
+    LM_NEW[loc] = {"h": h, "m": lastmod, "v": LM_VERSION}
+    LASTMOD[loc] = lastmod
+    return lastmod
+
+
+def write(relpath, contents):
+    full = os.path.join(OUT, relpath)
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, "w") as f:
+        f.write(contents)
+    # track lastmod for crawlable HTML pages (…/index.html) only
+    if relpath.endswith("index.html"):
+        loc = SITE + "/" + relpath[:-len("index.html")]  # …/foo/index.html -> …/foo/
+        _track_lastmod(loc, contents)
+
+
+# --- the six pages this build LISTS but does not GENERATE -----------------
+# sitemap-main.xml carries the highest-priority URLs on the domain — the map
+# shell at 1.0, the three city maps at 0.9, the developer portal and the
+# lottery-agent directory at 0.8 — and until 2026-09-10 every one of them was
+# stamped <lastmod>today</lastmod> on every nightly build, unconditionally,
+# because they are app shells deployed by scripts/deploy_app.sh rather than
+# pages write() hashes. The date did not depend on the page in any way: the
+# shard containing the homepage said the homepage had changed, on every night
+# this pipeline has ever run, whether it had or not.
+#
+# NO EDIT-RATE FIGURE IS QUOTED HERE ON PURPOSE. The obvious sentence to write
+# is "index.html really changes on N nights in 30", and the daily review cannot
+# check it: the cloud checkout it runs in is a SHALLOW clone (2026-09-10:
+# `git rev-parse --is-shallow-repository` = true, four days of history), so
+# `git log -- index.html` there answers a question about the clone, not about
+# the page. The defect does not need the figure. "Unconditional" is visible in
+# the line itself, and a lastmod that cannot be wrong cannot be informative.
+#
+# That is the exact claim _lastmod_body's docstring calls "precisely the signal
+# Google learns to distrust", made about the six URLs this domain can least
+# afford to have discounted — and the homepage is the one URL in the whole
+# 456-page index census Google has ever kept. Google's own line on it hardened
+# in July 2026: it uses lastmod only while it believes it, it discounts the
+# signal for the whole site once it does not, and Illyes' advice for a site
+# with unreliable dates is that it is "probably better off without the
+# lastmods" at all. Being right about six URLs is cheaper than that.
+#
+# The pages are read from the LIVE DOCROOT, not from this build directory.
+# refresh_seo.sh hands only build_seo.py, seo_guides.py, split_hpd.py and three
+# data files over from the checkout, and $BUILD has not been a git worktree on
+# any recorded night, so $BUILD's own index.html is whatever was on the droplet
+# the day it was set up. The docroot copy is the page Google actually fetches.
+# SEO_DOCROOT is the same variable refresh_seo.sh and growth_run.sh read, with
+# the same default, so the three cannot disagree about which directory is live.
+#
+# Ordering is already right and must stay that way: growth_run.sh runs the
+# growth build first and fires this pipeline afterwards, and this pipeline reads
+# the docroot BEFORE its own rsync, so what is hashed here is the page that has
+# been live all day and will still be live tonight.
+#
+# Unreadable is non-fatal and falls back to today's date — the behaviour this
+# replaces — but it says so in the build log, because a silent fallback here
+# would look exactly like the bug being fixed.
+DOCROOT = os.environ.get("SEO_DOCROOT", "/var/www/rent-map")
+STATIC_PAGE_SOURCES = {
+    "/": "index.html",
+    "/developers/": "developers/index.html",
+    "/embed/": "embed/index.html",
+    "/marketing-agents/": "marketing-agents/index.html",
+    "/sf/": "sf/index.html",
+    "/la/": "la/index.html",
+    "/dc/": "dc/index.html",
+}
+
+# --- the three of those seven that NOTHING deploys ------------------------
+# The comment above says these pages "are app shells deployed by
+# scripts/deploy_app.sh rather than pages write() hashes". That is true of four
+# of the seven. It is NOT true of /developers/, /embed/ and /marketing-agents/,
+# and the gap cost a shipped change: deploy_app.sh scp's index.html, the four
+# city shells and supercluster.min.js, and nothing else. refresh_seo.sh rsyncs
+# only $BUILD/seo/, which holds generated pages. So these three hand-authored
+# files have no deploy path at all — they reached the docroot by hand once and
+# every repo edit to them since has been dead on arrival.
+#
+# Measured, 2026-09-13: on 2026-09-12 this repo added two href="/embed/" links
+# to developers/index.html so that T016's widget page would stop being an
+# orphan. The next morning t_crawl_paths — which reads the LIVE docroot, which
+# is exactly why it is written that way — still reported "/embed/ ORPHANED,
+# reachable only from sitemap-daily.xml", and the depth crawl still failed to
+# reach /embed/ within 3 clicks of the homepage. The link is in git twice and
+# on the live site zero times.
+#
+# So: stage them into OUT and let the rsync that already runs deploy them.
+# This adds no URL — all three have been live and in sitemap-main.xml for
+# weeks — and it makes their <lastmod> MORE honest rather than less, because
+# write() then hashes the bytes about to be rsynced instead of the bytes the
+# last hand-deploy happened to leave behind (see track_static_lastmods, which
+# already has the branch for a static page this build generated).
+#
+# The four app shells are deliberately NOT in this list and must not be added.
+# deploy_app.sh gates them behind tests/journeys.py, run against the local
+# build and again against the live site; the city shells are regenerated from
+# index.html by build_city_pages.py at that moment. Rsyncing the checkout's
+# copies nightly would push this domain's five most important pages with no
+# journey ever run. That is a worse failure than a stale developer portal.
+STAGED_STATIC_PAGES = ("/developers/", "/embed/", "/marketing-agents/")
+
+
+def stage_static_pages(paths=STAGED_STATIC_PAGES):
+    """Copy the hand-authored pages no deploy script owns into OUT.
+
+    Returns how many were staged.
+
+    Read from this script's own directory, which on the droplet is $BUILD —
+    so refresh_seo.sh must hand these files across from the checkout the same
+    way it hands build_seo.py across, and it does. $BUILD is not a git
+    worktree on any recorded night, so without that handover this would stage
+    whatever was on the droplet the day it was set up: the exact shape of the
+    growth/gsc_pages.json bug that silently disabled the ever-served rule for
+    two days in August.
+
+    A source that is missing, unreadable, empty, or does not end in a closing
+    </html> is SKIPPED and named on stdout. The guard is not decoration: a
+    half-written or truncated file staged here goes straight to the docroot on
+    the same run, and a blank /developers/ is worse than a stale one. Skipping
+    is non-fatal and leaves the previous deploy in place, because the docroot
+    copy is never deleted — rsync runs without --delete.
+    """
+    base = _ROOT
+    staged, skipped = [], []
+    for path in paths:
+        rel = STATIC_PAGE_SOURCES.get(path)
+        if not rel:
+            skipped.append(f"{path} (no source mapping)")
+            continue
+        try:
+            with open(os.path.join(base, rel), encoding="utf-8", errors="replace") as f:
+                contents = f.read()
+        except OSError:
+            skipped.append(f"{path} (unreadable under {base})")
+            continue
+        if "</html>" not in contents[-2048:]:
+            skipped.append(f"{path} ({len(contents):,}B, no closing </html> — truncated?)")
+            continue
+        write(rel, contents)
+        staged.append(path)
+    if skipped:
+        print(f"static deploy: SKIPPED {', '.join(skipped)} — the docroot keeps "
+              f"its previous copy")
+    print(f"static deploy: staged {len(staged)} of {len(paths)} hand-authored pages "
+          f"({', '.join(staged) or 'none'}) — nothing else deploys these")
+    return len(staged)
+
+
+def track_static_lastmods(paths):
+    """Hash the live copy of each listed-but-not-generated page.
+
+    Returns how many were read. A path with no source mapping, or whose file
+    cannot be read, is left out of LASTMOD entirely so the caller's
+    LASTMOD.get(loc, BUILD_DATE) falls back to today exactly as before.
+
+    A genuine change to one of these six DOES reach IndexNow, via
+    _track_lastmod's LM_CHANGED, and that is intended: `submitted` at the end of
+    main() has always included static_pages, and six URLs on the night the
+    homepage really changed is the opposite of a bulk submission. On the first
+    build after this shipped there is no prior hash for any of them, so all six
+    take the brand-new branch — dated today, and NOT announced.
+    """
+    read = []
+    missing = []
+    for path in paths:
+        if SITE + path in LASTMOD:
+            # This build generated it after all, so write() has already dated it
+            # from the bytes it wrote. Those are the bytes about to be rsynced;
+            # the docroot copy is the previous deploy. Never overwrite the
+            # generator's answer with the older one.
+            read.append(path)
+            continue
+        rel = STATIC_PAGE_SOURCES.get(path)
+        if not rel:
+            missing.append(path)
+            continue
+        try:
+            with open(os.path.join(DOCROOT, rel), encoding="utf-8", errors="replace") as f:
+                contents = f.read()
+        except OSError:
+            missing.append(path)
+            continue
+        _track_lastmod(SITE + path, contents)
+        read.append(path)
+    if missing:
+        print(f"static lastmod: could not read {', '.join(missing)} under {DOCROOT} "
+              f"— those URLs keep today's date")
+    return len(read)
+
+
+_SITEMAP_LASTMOD_RE = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
+
+
+def daily_shard_lastmod():
+    """The newest <lastmod> inside the live sitemap-daily.xml, or today's date.
+
+    The sitemap index entry for this shard was also stamped BUILD_DATE
+    unconditionally, and that one was worse than the six above, because the
+    shard it describes is mostly frozen: /brief/ was retired on 2026-08-16 and
+    its 17 pages cannot change again, so "sitemap-daily.xml changed today" has
+    been false on every night since that no /section8/ listing moved. Every
+    other shard's index entry is already the max of its own URLs' lastmods;
+    this makes the daily shard obey the same rule.
+
+    growth/techniques.py:t_sitemap_daily writes the shard into the docroot at
+    05:40, before growth_run.sh fires this pipeline, so the file read here is
+    tonight's. If it cannot be read — a workstation run, or a night the growth
+    build failed before writing it — fall back to today, which is what this
+    line did unconditionally before.
+    """
+    try:
+        with open(os.path.join(DOCROOT, "sitemap-daily.xml"), encoding="utf-8") as f:
+            dates = _SITEMAP_LASTMOD_RE.findall(f.read())
+    except OSError:
+        dates = []
+    if not dates:
+        print(f"daily shard lastmod: no dated URLs in {DOCROOT}/sitemap-daily.xml "
+              f"— the index entry keeps today's date")
+        return BUILD_DATE
+    return max(dates)
+
+
+# --- what a guide can say that a law firm's cannot ------------------------
+# The nine guides are well-formed and have never been fetched by Google. Part of
+# that is crawl budget, which the index triage addresses. The other part is that
+# as written they compete with nyc.gov, HCR and every tenant-law firm on ground
+# those sites own, using words anybody could type. What none of them can do is
+# count: this site holds the DHCR register joined to HPD's violation record and
+# recomputes it on every build. So each NYC guide carries a live figure block
+# and links into the tier that answers the next question.
+_GUIDE_STATS = {}
+
+
+def guide_stats():
+    """City-wide figures for the guide pages. Computed once, cached."""
+    if _GUIDE_STATS:
+        return _GUIDE_STATS
+    try:
+        blds = json.load(open(os.path.join(_ROOT,
+                                           "buildings.min.json")))
+    except Exception:
+        return {}
+    yrs = sorted(b["yr"] for b in blds if b.get("yr"))
+    viol = sum(((b.get("h") or {}).get("violations") or {}).get("open") or 0 for b in blds)
+    cc = sum(((b.get("h") or {}).get("violations") or {}).get("oc") or 0 for b in blds)
+    clean = sum(1 for b in blds if not (((b.get("h") or {}).get("violations") or {}).get("open") or 0))
+    try:
+        n_ll = len(json.load(open(LANDLORD_PATH)).get("landlords") or [])
+    except Exception:
+        n_ll = 0
+    _GUIDE_STATS.update({
+        "buildings": len(blds),
+        "units": sum(b.get("u") or 0 for b in blds),
+        "median_year": yrs[len(yrs) // 2] if yrs else None,
+        "open_violations": viol, "class_c": cc, "clean": clean,
+        "landlords": n_ll,
+    })
+    return _GUIDE_STATS
+
+
+def guide_numbers_html(slug):
+    """A live figure block plus the links this particular question leads to."""
+    st = guide_stats()
+    if not st or not st.get("buildings"):
+        return ""
+    rows = [("Rent-stabilized buildings on the DHCR register", f"{st['buildings']:,}"),
+            ("Apartments in them", f"{st['units']:,}"),
+            ("Median year built", str(st["median_year"] or "—")),
+            ("Open HPD violations against them", f"{st['open_violations']:,}"),
+            ("…of those, class C (immediately hazardous)", f"{st['class_c']:,}"),
+            ("Buildings with no open violation", f"{st['clean']:,}")]
+    NEXT = {
+        "is-my-apartment-rent-stabilized": [
+            ("/buildings/", "Find your building by neighborhood"),
+            ("/landlord/", "Look your landlord up by name")],
+        "what-is-rent-stabilization": [
+            ("/buildings/", "Every stabilized building, by neighborhood"),
+            ("/council-district/", "How the register breaks down by City Council district")],
+        "rent-stabilized-vs-rent-controlled": [
+            ("/buildings/", "Browse the stabilized register"),
+            ("/sf/", "Rent control in San Francisco"), ("/dc/", "Rent control in Washington DC")],
+        "how-to-find-a-rent-stabilized-apartment": [
+            ("/", "Search every stabilized building on the map"),
+            ("/section8/", "Buildings taking Section 8 and other vouchers")],
+        "rent-stabilized-tenant-rights": [
+            ("/landlord/", f"All {st['landlords']:,} landlords, ranked by open violations"),
+            ("/council-district/", "Your council district's violation record")],
+        "rent-stabilized-lease-renewal-and-rent-increases": [
+            ("/buildings/", "Check whether your building is on the register"),
+            ("/landlord/", "See what else your landlord owns")],
+        "deed-theft-nyc": [
+            ("/buildings/", "Find your building's BBL for an ACRIS search"),
+            ("/landlord/", "Look up who is recorded as your building's owner")],
+    }
+    links = "".join(f"<li><a href='{u}'>{esc(t)}</a></li>" for u, t in NEXT.get(slug, []))
+    return (f"<h2>New York City by the numbers</h2>"
+            f"<table class='facts'>"
+            + "".join(f"<tr><td class='k'>{esc(k)}</td><td>{v}</td></tr>" for k, v in rows)
+            + "</table>"
+            f"<p class='note'>Recomputed from the DHCR rent-stabilization register and HPD's "
+            f"violation data every time this page is rebuilt.</p>"
+            + (f"<h2>Where to go next</h2><ul>{links}</ul>" if links else ""))
+
+
+def guide_page(g, browse_ok=True):
+    """Render one cornerstone guide from seo_guides.GUIDES. Returns (canonical, html).
+
+    Lifted out of main() so there is exactly one renderer for these pages. The
+    daily growth build (growth/techniques.py:t_city_guides) publishes a guide
+    through its own rsync when this pipeline has not deployed it — on
+    2026-08-02 the SF/LA/DC guides had been sitting in git for four days — and
+    two independent renderers would overwrite each other's bytes every night,
+    churning lastmod on a page that never changed. Import this; do not copy it.
+
+    browse_ok=False drops the "browse this city" link. The growth build passes
+    False when /<city>/buildings/ is not live in the docroot: a cornerstone page
+    is a trust page, and it does not ship pointing at a 404.
+    """
+    canonical = SITE + f"/guide/{g['slug']}/"
+    crumb = breadcrumb([("Home", SITE + "/"), ("Guides", SITE + "/guide/"), (g["h1"], canonical)])
+    # Article schema helps these rank as informational content.
+    article = {"@context": "https://schema.org", "@type": "Article",
+               "headline": g["title"], "description": g["desc"],
+               "mainEntityOfPage": canonical, "author": {"@type": "Organization", "name": "Find A Crib"},
+               "publisher": {"@type": "Organization", "name": "Find A Crib",
+                             "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
+    gcity = g.get("city", "nyc")
+    # Answer-first, dated, with a matching FAQ (2026-10-29, owner: get Gemini,
+    # Claude and ChatGPT to cite us). An answer engine lifts a self-contained
+    # paragraph or a question/answer pair; the dated line says how fresh the
+    # facts are without churning lastmod, since it changes only when the
+    # guide's text does. "{buildings}" is filled from the register at build.
+    st = guide_stats() if gcity == "nyc" else {}
+    n_bld = f"{st['buildings']:,}" if st.get("buildings") else "the"
+
+    def fill(text):
+        return text.replace("{buildings}", n_bld)
+
+    faq = [(fill(q), fill(a)) for q, a in g.get("faq", [])]
+    if g.get("updated"):
+        article["dateModified"] = g["updated"]
+    top = ""
+    if g.get("updated"):
+        d = datetime.date.fromisoformat(g["updated"])
+        top += f"<p class='note'>Updated {d.strftime('%B')} {d.day}, {d.year}</p>"
+    if g.get("answer"):
+        top += answer_block([fill(x) for x in g["answer"]])
+    if g.get("lookup"):
+        # The map's own ?q= prefill (index.html) does the search; no new code.
+        top += ("<form action='/' method='get' class='lookup' style='display:flex;gap:8px;flex-wrap:wrap;margin:14px 0'>"
+                "<label for='lookup-q' style='width:100%;font-weight:600'>Check a building now</label>"
+                "<input id='lookup-q' name='q' type='search' required maxlength='80' "
+                "placeholder='Street address, e.g. 1245 Edward L Grant Hwy' "
+                "style='flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px'>"
+                "<button type='submit' class='cta' style='margin:0;border:0;cursor:pointer;font-size:16px'>Check</button></form>")
+    # A guide about San Francisco footed "Data: NYC DHCR…" is simply wrong,
+    # and these three shipped that way on 2026-07-29. Each non-NYC guide now
+    # carries its own city's provenance, and links into that city's browse
+    # tier — the contextual link the new hubs need to not be orphans.
+    body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
+            f"<h1>{esc(g['h1'])}</h1>"
+            + top +
+            f"<div class='guide-body'>{g['body']}</div>"
+            + (guide_numbers_html(g["slug"]) if gcity == "nyc" else "")
+            + (faq_html(faq) if faq else "")
+            + (f"<p><a href='/{gcity}/buildings/'>Browse "
+               f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
+               if browse_ok and gcity in CITY_HUBS else "")
+            + _related(g["slug"], GUIDES))
+    ld = [article, crumb] + ([faq_jsonld(faq)] if faq else [])
+    return canonical, page(g["title"] + " | Find A Crib", g["desc"], canonical, body,
+                           ld, footer=CITY_FOOTER.get(gcity))
+
+
+# --- the sibling-link ring on building pages -------------------------------
+# Every building page carries a short list of other stabilized buildings in the
+# same neighborhood. Until 2026-08-13 that list was `sorted_by_address[:12]`,
+# recomputed identically on every page in the neighborhood — so it was a STAR,
+# not a mesh: in Bushwick (West) the same 13 addresses collected 1,196 inbound
+# links each and the other 1,184 building pages had exactly one inbound link on
+# the whole site, their neighborhood hub. Measured over buildings.min.json:
+# 44,738 of 47,165 building pages (94.9%) had two or fewer inbound internal
+# links, 11,294 had exactly one, and only 2,430 buildings — 5.2% — were ever
+# linked from a sibling page. Google will not crawl 47,600 pages it reaches
+# only through 198 hub pages carrying up to 1,197 links each, and 66 pages
+# earning a Search Console impression is what that looks like from outside.
+#
+# A window that follows the page's own position turns the star into a ring:
+# every page links to the NEAR_LINKS entries around it, so every page is also
+# linked FROM that many, and the neighborhood becomes one connected cycle a
+# crawler can walk. In-degree goes from {1 for 94.9%, ~n for 13} to a flat 12.
+#
+# Ordered geographically rather than alphabetically, because the same window
+# then reads as a real neighbour list to a human: addresses sort lexically
+# ("1180 Gerard" next to "119 E 149th"), which is nothing to a reader, while a
+# snaked column sort puts physically adjacent buildings next to each other.
+# The heading stays "Other rent-stabilized buildings in <neighborhood>" — a
+# claim the ordering cannot falsify — rather than "nearby", which a snake's
+# column boundaries would occasionally make untrue.
+#
+# Deterministic, and no randomness anywhere: seo_lastmod.json only bumps a
+# page's <lastmod> when its HTML really changed, so a shuffled list would
+# rewrite 47,165 lastmods every night and turn that honesty into noise. This
+# does change every building page once, which is a real change and an honest
+# one-time bump.
+NEAR_LINKS = 12
+GEO_COL_DEG = 0.0035   # ~295 m of longitude at NYC's latitude
+
+
+def _geo_ring_order(items):
+    """One neighborhood's buildings, ordered so consecutive entries are close.
+
+    Snaked column sort: bucket by longitude into ~295 m columns, then sort by
+    latitude, alternating direction column to column so the end of one column
+    is adjacent to the start of the next instead of diagonally across the
+    neighborhood. Buildings with no coordinates sort last, by address, so they
+    still take part in the ring. BBL breaks every tie, so the order is stable
+    across runs.
+    """
+    def key(x):
+        lat, lng = x.get("lat"), x.get("lng")
+        if lat is None or lng is None:
+            return (1, 0, 0.0, x.get("a") or "", str(x["bbl"]))
+        col = int(math.floor(lng / GEO_COL_DEG))
+        return (0, col, lat if col % 2 == 0 else -lat, x.get("a") or "", str(x["bbl"]))
+    return sorted(items, key=key)
+
+
+def _ring_window(order, i, k=NEAR_LINKS):
+    """The k entries around position i in `order`, wrapping, excluding i itself.
+
+    Half before and half after, so the lists of adjacent buildings overlap and
+    the ring is walkable in both directions. With len(order) <= k the window is
+    simply every other building in the neighborhood, which is what the old
+    slice already did for small neighborhoods.
+    """
+    n = len(order)
+    if n <= 1:
+        return []
+    if n <= k + 1:
+        return [x for j, x in enumerate(order) if j != i]
+    half = k // 2
+    offsets = list(range(-half, 0)) + list(range(1, k - half + 1))
+    return [order[(i + o) % n] for o in offsets]
+
+
+# ---- computed per-building facts (T046) ------------------------------------
+# The building tier is the only one Googlebot fetches in any volume — 51 of the
+# 65 ever-fetched URLs in the 2026-08-18 index sample were /building/ — and it
+# is also the tier Google is rejecting: 2 of the 71 URLs fetched since
+# 2026-07-01 were kept, and on 2026-08-19/20 two pages that had been indexed
+# since June were re-crawled and came back "Crawled - currently not indexed".
+#
+# The reason is visible in the generator above. A building page is a template
+# with six variable tokens — address, ZIP, neighborhood, year built, unit count,
+# violation count — and every other word on it is identical 47,165 times over.
+# That is the documented shape of a corpus that gets crawled and dropped.
+#
+# So these sentences add text, and deliberately not the SAME text: every one of
+# them carries a number computed for THIS building against the neighborhood it
+# sits in, and a building with no such number gets no sentence rather than a
+# filler one. Four rules keep it honest, because a tenant makes a housing
+# decision on this page:
+#
+#   - Every comparison names its base set. "larger than 78% of the 1,204
+#     rent-stabilized buildings this site tracks in Chelsea-Hudson Yards" is a
+#     claim the dataset supports; "larger than 78% of buildings in Chelsea" is
+#     not, because the base is DHCR-registered stabilized buildings only.
+#   - Ties belong to neither side of a percentile. Hundreds of buildings in a
+#     neighborhood share a unit count, so "larger than X%" counts only the ones
+#     strictly smaller and "smaller than Y%" only the ones strictly larger.
+#   - The HPD class counters count only violations whose class field is literally
+#     A, B or C, while `total` counts every row (fetch_hpd.fetch_violations) —
+#     a+b+c falls short of total for 33,218 of the 46,245 buildings that have
+#     any. So the class sentence says "N of the M violations on record are class
+#     C" and never implies what the other M-N are.
+#   - Fewer than FACTS_MIN_SENTENCES computable sentences and the block is
+#     omitted outright. A page with nothing to say should say nothing.
+FACTS_MIN_SENTENCES = 3
+FACTS_MAX_SENTENCES = 5
+# PLUTO records a placeholder year for buildings whose date it does not know;
+# 218 rows sit below this line and none of them should produce a date sentence.
+PLUTO_MIN_YEAR = 1850
+# Below this many buildings a neighborhood percentile is noise, not a comparison.
+FACTS_MIN_BASE = 20
+
+
+def _count_below_above(sorted_vals, v):
+    """(count strictly below v, count strictly above v) within a sorted list."""
+    if not sorted_vals:
+        return None, None
+    return (bisect.bisect_left(sorted_vals, v),
+            len(sorted_vals) - bisect.bisect_right(sorted_vals, v))
+
+
+def _floor_pct(part, whole):
+    """Percent, rounded DOWN.
+
+    Rounding to nearest turned 499 of 500 into "larger than 100% of the 500
+    buildings this site tracks", which is false on its face — the page cannot be
+    larger than itself. A share quoted about the reader's own building has to
+    round in the direction that keeps it true.
+    """
+    return int(math.floor(100.0 * part / whole)) if whole else 0
+
+
+def neighborhood_norms(items):
+    """The comparison base for one (borough, neighborhood) group.
+
+    Computed once per group and shared by every building page in it — 198 groups
+    against 47,165 pages — so the per-page cost is a dict lookup and a bisect.
+    """
+    units = sorted(x["u"] for x in items if x.get("u"))
+    years = sorted(x["yr"] for x in items if (x.get("yr") or 0) >= PLUTO_MIN_YEAR)
+    rates = [(((x.get("h") or {}).get("violations") or {}).get("open") or 0) / x["u"]
+             for x in items if x.get("u")]
+    rates.sort()
+    # `clean` counts every tracked building with no open violation on file,
+    # including the ones with no unit count — the claim it backs is about the
+    # neighborhood, not about the subset that happens to have a denominator.
+    clean = sum(1 for x in items
+                if not (((x.get("h") or {}).get("violations") or {}).get("open") or 0))
+    # `clean` above is the right base for a sentence ABOUT ONE BUILDING ("no open
+    # violations at this address — one of N such buildings"), because the reader
+    # is standing on a page that already shows whether this address has an HPD
+    # record at all. It is the wrong base for an AGGREGATE claim: it folds the
+    # buildings HPD holds no violation record for in with the ones it holds a
+    # clean record for, and "HPD lists no open violation at 1,200 buildings"
+    # would then be counting silence as a clean bill of health. So the hub block
+    # gets its own pair — how many buildings have a violation record at all, and
+    # how many of THOSE are clean — and says both numbers out loud.
+    with_rec = [x for x in items if ((x.get("h") or {}).get("violations"))]
+    # `oc_n` counts the records carrying at least one violation STILL OPEN at
+    # class C, over the same with_rec base as clean_rec — never over len(items),
+    # for the reason written above: a building HPD holds no record for has not
+    # been found hazard-free, and a share computed against the whole tracked set
+    # would quietly say it has.
+    #
+    # min(oc, c) is the clamp build_seo's own building sentence and
+    # growth/techniques.py:_live_listings already apply, lifted here rather than
+    # reinvented so one corpus cannot produce three different class-C counts on
+    # three tiers. oc > c is a data inconsistency, not a real state, and this
+    # counts a building only where BOTH fields agree it has an open class-C row.
+    def _open_c(x):
+        v = x["h"]["violations"]
+        return min(v.get("oc") or 0, v.get("c") or 0)
+    return {"n": len(items), "units": units, "unit_med": _med(units),
+            "year_med": _med(years), "rate_med": _med(rates), "rate_n": len(rates),
+            "clean": clean,
+            "rec_n": len(with_rec),
+            "oc_n": sum(1 for x in with_rec if _open_c(x) >= 1),
+            "clean_rec": sum(1 for x in with_rec
+                             if not ((x["h"]["violations"]).get("open") or 0))}
+
+
+def _rate_phrase(rate):
+    """A violations-per-apartment rate in words that never round to nothing.
+
+    "{rate:.1f} per apartment" reads as "0.0 per apartment" for a 198-unit
+    building with 8 open violations — a sentence that contradicts its own first
+    half and reads as "none" to someone deciding whether to take the apartment.
+    Below one violation per two apartments the honest form is the reciprocal.
+    Callers guarantee rate > 0.
+    """
+    if rate >= 0.5:
+        return f"{rate:.1f} per apartment"
+    return f"one for every {max(2, int(round(1 / rate))):,} apartments"
+
+
+# Sentences are written with {PLACE} and resolved by _name_place(): the full
+# neighborhood name the first time, "the neighborhood" after that. Some of these
+# names are four hyphenated neighborhoods long, and repeating
+# "Carroll Gardens-Cobble Hill-Gowanus-Red Hook" three times in one paragraph
+# reads like a template filling itself in, which is the impression this block
+# exists to undo.
+def _name_place(sentences, nb):
+    out, seen = [], False
+    for s in sentences:
+        if "{PLACE}" in s and seen:
+            out.append(s.replace("{PLACE}", "the neighborhood"))
+        else:
+            if "{PLACE}" in s:
+                seen = True
+            out.append(s.replace("{PLACE}", nb))
+    return out
+
+
+def building_facts(b, nb, norms):
+    """Sentences about THIS building that no other page on the site repeats.
+
+    Each sentence carries its own number, comparison and source, because the
+    point is to be liftable one sentence at a time by an answer engine, not only
+    readable in place.
+    """
+    out = []
+    h = b.get("h") or {}
+    v = h.get("violations") or {}
+    cm = h.get("complaints") or {}
+    units = b.get("u")
+    yr = b.get("yr") if (b.get("yr") or 0) >= PLUTO_MIN_YEAR else None
+    big_enough = norms.get("n", 0) >= FACTS_MIN_BASE
+
+    # 1. size, against the stabilized buildings around it
+    if units and big_enough and norms.get("units"):
+        # The base is the buildings the percentile was actually computed over —
+        # the ones with a unit count on file — not the whole neighborhood, or
+        # the sentence quotes a denominator it did not use.
+        peers = len(norms["units"])
+        below, above = _count_below_above(norms["units"], units)
+        base = f"the {peers:,} rent-stabilized buildings this site tracks in {{PLACE}}"
+        # 184 rows in the registry carry a single unit, so "1 apartments" is a
+        # real output, not a hypothetical. Every count in this block agrees with
+        # its noun for the same reason.
+        apts = f"{units:,} apartment{'' if units == 1 else 's'}"
+        if below == peers - 1:
+            out.append(f"With about {apts} it is the largest of {base}.")
+        elif above == peers - 1:
+            out.append(f"With about {apts} it is the smallest of {base}.")
+        elif _floor_pct(below, peers) >= 60:
+            out.append(f"With about {apts} it is larger than {_floor_pct(below, peers)}% of {base}.")
+        elif _floor_pct(above, peers) >= 60:
+            out.append(f"With about {apts} it is smaller than {_floor_pct(above, peers)}% of {base}.")
+        elif norms.get("unit_med") and units != norms["unit_med"]:
+            out.append(f"With about {apts} it sits near the middle of {base}, where the "
+                       f"median building has {norms['unit_med']:,}.")
+        # units == unit_med falls through deliberately: see THE DEGENERATE
+        # COMPARISON note above sentence 2.
+
+    # THE DEGENERATE COMPARISON, measured 2026-10-20 and the reason sentences 1
+    # and 2 can now decline to speak.
+    #
+    # A comparison sentence whose two numbers are the SAME number conveys
+    # nothing and reads as a template filling itself in: "Its 1931 construction
+    # date sits close to the 1931 median" is a number held up against itself.
+    # It is also, measurably, the template shape this whole block exists to
+    # undo. In Bushwick (West) — 1,197 tracked buildings, median year 1931,
+    # median size 6 — that exact sentence was emitted on 975 of them and "With
+    # about 6 apartments it sits near the middle ... where the median building
+    # has 6" on 791, each one word-for-word identical to the last. By
+    # t_page_uniqueness's own definition (a shingle carried by half the sample
+    # or more is boilerplate) those two sentences ARE boilerplate, and they were
+    # spending 2 of FACTS_MAX_SENTENCES slots to say "typical" twice.
+    #
+    # So the equal-to-median case emits nothing and the slot goes to a sentence
+    # that differs between neighbours — in practice sentence 3b, the open-
+    # violation grade. Rewording was not an option and the distinction matters:
+    # every 6-apartment building in a 6-apartment-median neighborhood really is
+    # identical in that respect, so any honest sentence about it is identical
+    # too. The fix for sibling duplication is to say something ELSE that is
+    # true, never to say the same thing in varied words.
+    #
+    # Only the exact tie is dropped. d of 1 or 2 years still earns its sentence:
+    # "Its 1933 construction date sits close to the 1931 median" is a real, if
+    # small, comparison, and suppressing a band rather than a tie would start
+    # withholding true comparisons to flatter a metric.
+    if yr and big_enough and norms.get("year_med"):
+        d = yr - norms["year_med"]
+        if d <= -15:
+            out.append(f"It went up in {yr}, {abs(d)} years before the {norms['year_med']} median "
+                       f"for stabilized buildings tracked in {{PLACE}}.")
+        elif d >= 15:
+            out.append(f"It went up in {yr}, {d} years after the {norms['year_med']} median for "
+                       f"stabilized buildings tracked in {{PLACE}}.")
+        elif d:
+            out.append(f"Its {yr} construction date sits close to the {norms['year_med']} median "
+                       f"for stabilized buildings tracked in {{PLACE}}.")
+
+    # 3. open violations per apartment — the number that varies most, and the
+    #    one a tenant deciding about an address actually wants
+    openv = v.get("open") or 0
+    if units and big_enough and norms.get("rate_n", 0) >= FACTS_MIN_BASE \
+            and norms.get("rate_med") is not None:
+        med = norms["rate_med"]
+        plural = "" if openv == 1 else "s"
+        if openv and med <= 0:
+            out.append(f"HPD lists {openv:,} open violation{plural} here, about "
+                       f"{_rate_phrase(openv / units)}, in a neighborhood where the median "
+                       f"tracked building has none open at all.")
+        elif openv:
+            rate = openv / units
+            here, there = _rate_phrase(rate), _rate_phrase(med)
+            rel = "above" if rate > med * 1.25 else "below" if rate < med * 0.8 else "close to"
+            if rel == "close to" and here == there:
+                out.append(f"HPD lists {openv:,} open violation{plural} here, about {here} — "
+                           f"matching the median for tracked buildings in {{PLACE}}.")
+            else:
+                out.append(f"HPD lists {openv:,} open violation{plural} here, about {here} — "
+                           f"{rel} the {there} median for tracked buildings in {{PLACE}}.")
+        elif norms.get("clean"):
+            # Counts, not a percentage: 1 clean building in 527 rounds to 0%,
+            # and "0% of the tracked buildings" on a page that is itself one of
+            # them contradicts its own first clause.
+            out.append(f"HPD lists no open violations at this address — one of {norms['clean']:,} "
+                       f"such buildings among the {norms['n']:,} this site tracks in {{PLACE}}.")
+
+    # 4. how severe the record is, in HPD's own vocabulary — and how much of
+    #    that severity is STILL OPEN, which is the part a tenant deciding about
+    #    an address this week actually needs.
+    #
+    # `oc` counts the open class-C rows and `c` the whole lifetime class-C
+    # record, which includes rows HPD has already certified as corrected. Both
+    # numbers ride one sentence rather than two, because "class C — HPD's
+    # immediately hazardous grade" is a nine-word clause and saying it twice in
+    # one paragraph both reads like a template and hands t_page_uniqueness a
+    # shingle every sibling shares. One sentence, two independent numbers.
+    #
+    # The open count is clamped to the class-C record because oc > c is a data
+    # inconsistency rather than a real state, and "7 are class C, 9 of them
+    # still open" is the kind of arithmetic that costs a reader their trust in
+    # every other number on the page. Same judgement as the header note that
+    # keeps a+b+c from implying anything about total.
+    #
+    # Be honest about what the clamp earns today: the `ocv >= cv` branch below
+    # already catches every inconsistent pair and renders "all of them", so no
+    # input in the current corpus produces a different sentence with the min()
+    # than without it, and the test for that invariant passes on branch order
+    # alone. It stays because the invariant — this sentence never names more
+    # open rows than the record it draws them from — should not depend on two
+    # branches keeping their order, and the next edit here will not know that.
+    total_v, cv = v.get("total") or 0, v.get("c") or 0
+    ocv = min(v.get("oc") or 0, cv)
+    if cv and total_v:
+        grade = "class C — HPD's immediately hazardous grade"
+        if total_v == 1:
+            s = f"The one violation on record at the address is {grade}"
+        elif cv >= total_v:
+            s = f"All {total_v:,} violations on record at the address are {grade}"
+        else:
+            s = (f"Of the {total_v:,} violations on record at the address, {cv:,} "
+                 f"{'is' if cv == 1 else 'are'} {grade}")
+        # Singular and plural are tracked separately all the way down because
+        # 'none of them still open' about a single violation reads as a
+        # different claim than it is.
+        if cv == 1:
+            s += ", and it is still open." if ocv else ", and it is no longer open."
+        elif ocv >= cv:
+            s += ", and all of them are still open."
+        elif ocv:
+            s += (f", and {ocv:,} of them {'is' if ocv == 1 else 'are'} still open.")
+        else:
+            s += ", and none of them are still open."
+        out.append(s)
+
+    # 4b. how recent the record is. `last_12mo` counts violations whose HPD
+    #     issue date (novissueddate) falls inside the last year — newly ISSUED,
+    #     not newly closed; fetch_hpd.py builds it from that column and
+    #     building_report.py already labels it "new violations, last 12 months",
+    #     so this sentence says the same thing in words and the two cannot
+    #     disagree. It is on file for 98.6% of the corpus and non-zero for
+    #     62.6%, and unlike a lifetime total it separates a building with a long
+    #     settled history from one with a live problem — two addresses with the
+    #     same 40-violation record and a different last twelve months are the
+    #     case the rest of this block cannot tell apart.
+    #     Deliberately self-contained, with no "of them" referring back to
+    #     sentence 4: that sentence is independently suppressed when the address
+    #     has no class-C record, and either sentence can be cut by the
+    #     FACTS_MAX_SENTENCES slice, so a pronoun here would sooner or later
+    #     point at nothing.
+    recent_v = v.get("last_12mo") or 0
+    if recent_v:
+        out.append(f"HPD issued {recent_v:,} new violation{'' if recent_v == 1 else 's'} "
+                   f"at the address in the last twelve months.")
+
+    # 5. what tenants themselves reported
+    ct = cm.get("total") or 0
+    if ct:
+        recent = cm.get("last_12mo") or 0
+        tail = (f"{recent:,} of them in the last twelve months" if recent
+                else "none of them in the last twelve months")
+        out.append(f"Tenants have filed {ct:,} HPD complaint{'' if ct == 1 else 's'} at the "
+                   f"address, {tail}.")
+
+    return _name_place(out[:FACTS_MAX_SENTENCES], nb)
+
+
+# A hub block needs two sentences to be worth a heading. One number under an
+# <h2> is a caption, and a caption that sometimes appears and sometimes does not
+# reads as a broken template; the caller omits the block instead of padding it.
+HUB_FACTS_MIN_SENTENCES = 2
+
+# Below this many buildings a hub reports TOTALS and no median. 26 of the 198
+# NYC neighborhoods hold fewer than 20 buildings and three hold exactly one, and
+# "a median of 180 apartments per building" over a sample of one is not a
+# statistic — it is one building's unit count wearing the authority of one. The
+# totals stay, because a total over three buildings is an exact fact about three
+# buildings; it is only the median that needs a base. Same judgement as
+# FACTS_MIN_BASE and the same number, kept separate because that one guards a
+# percentile inside building_facts() and this one guards a median on a hub, and
+# a later run should be able to move one without silently moving the other.
+HUB_MEDIAN_MIN_BASE = 20
+
+
+def _hpd_record_sentence(n, rec_n, clean_rec):
+    """'HPD holds a violation record for N of the M buildings tracked here…'
+
+    One sentence, four shapes, because this is the claim most likely to be read
+    out of context and it has to be grammatical and exact at n=1 as well as at
+    n=500. Shared with the FAQ answer so the two can never disagree about a
+    number or hedge it differently. Returns None when HPD holds no record at
+    all for this place, which is a true thing the sentence cannot say — "HPD
+    holds a violation record for 0 buildings" invites the reader to conclude
+    something about the buildings rather than about the record.
+    """
+    if not rec_n:
+        return None
+    if n == rec_n:
+        whole = {1: "the one building", 2: "both buildings"}.get(n, f"all {n:,} buildings")
+        head = f"HPD holds a violation record for {whole} tracked here"
+    else:
+        head = (f"HPD holds a violation record for {rec_n:,} of the {n:,} buildings "
+                f"tracked here")
+    if clean_rec == rec_n:
+        tail = (" and lists no open violation against it"
+                if rec_n == 1 else " and lists no open violation at any of them")
+    elif not clean_rec:
+        tail = (", and it has at least one open violation"
+                if rec_n == 1 else
+                ", and every one of them has at least one open violation")
+    else:
+        tail = f", and lists no open violation at {clean_rec:,} of those"
+    return head + tail + "."
+
+
+def hub_condition_facts(place, norms):
+    """Sentences about the buildings ONE hub page lists, from the same norms dict.
+
+    Why this exists (2026-10-09). The index census stopped being a story about
+    whether Google crawls this site and became a story about WHICH TIER it still
+    comes back to. Of 158 building pages Google has ever fetched, 6 were
+    re-crawled in the last 28 days (3.8%); of 15 neighborhood hubs, 3 (20%); of
+    5 borough hubs, 2 (40%). 174 of the 186 ever-fetched URLs carry a crawl date
+    before 2026-08-28. So the "0% acceptance on /building/" every recent journal
+    entry has quoted is a July/August verdict on a tier Google has since
+    abandoned, and a content change to that tier would not be LOOKED AT for
+    months. The hub tiers are the only ones with a crawl loop still running, and
+    a neighborhood hub stated exactly two facts about its own place — the
+    building count and the median year built.
+
+    neighborhood_norms() has computed the rest since the comparison block
+    shipped: one pass per group, already in memory, read only by the building
+    pages. This reads it at the hub level, where the page is the aggregate.
+
+    Rules it holds to, all of them the same ones building_facts() holds to:
+
+      * every number is an aggregate of records THIS PAGE already lists, so the
+        block cannot say something the page contradicts;
+      * every sentence carries its own denominator, because "no open violations
+        at 1,200 buildings" is a different claim depending on whether the base
+        is 1,300 or 13,000;
+      * the apartment count keeps PLUTO's own hedge. The hub is not the place to
+        quietly promote an estimate into a census;
+      * silence is not a clean record — see neighborhood_norms' rec_n comment;
+      * nothing is padded. Fewer than HUB_FACTS_MIN_SENTENCES true things to say
+        and the caller drops the heading too.
+
+    `place` is already named in the <h1> and the answer block immediately above,
+    so these sentences say "here" rather than repeating a four-hyphen
+    neighborhood name twice more — the same reason _name_place() exists.
+    """
+    out = []
+    n = norms.get("n") or 0
+    if not n:
+        return out
+
+    units, unit_med = norms.get("units") or [], norms.get("unit_med")
+    if len(units) == 1:
+        u = units[0]
+        out.append(f"{'The one building here has' if n == 1 else 'The one of them with a recorded apartment count has'} "
+                   f"about {u:,} apartment{'' if u == 1 else 's'} on file, from the NYC "
+                   f"PLUTO count the city publishes as an estimate.")
+    elif units:
+        base = ((("Both of them" if len(units) == 2 else f"All {len(units):,} of them")
+                 if len(units) == n
+                 else f"The {len(units):,} of them with a recorded apartment count"))
+        med = (f" — a median of {unit_med:,} per building"
+               if unit_med and n >= HUB_MEDIAN_MIN_BASE else "")
+        out.append(f"{base} hold about {sum(units):,} apartments between them{med}, from "
+                   f"the NYC PLUTO counts the city publishes as estimates.")
+
+    rec_n = norms.get("rec_n") or 0
+    rec = _hpd_record_sentence(n, rec_n, norms.get("clean_rec") or 0)
+    if rec:
+        out.append(rec)
+        # The class-C refinement of the sentence above, and the reason this
+        # block was worth extending on 2026-10-30. The aggregate it reports —
+        # DHCR registration joined to HPD's open enforcement record at the
+        # immediately-hazardous grade — exists on no other site: the register
+        # and the violation feed are both public and nobody publishes the join.
+        # On /section8/ (2026-10-29) it was 188 of 253 matched buildings.
+        #
+        # SUPPRESSED AT ZERO, deliberately, and this is the one rule here worth
+        # not undoing. "None of the 412 records carries an open class C" reads
+        # as a clean bill of health for a whole neighborhood, and HPD's record
+        # does not support that: a building can hold a closed class-C history,
+        # and _hpd_record_sentence has already said how many records are clean,
+        # so the zero case adds a safety claim and no information. Same
+        # judgement, same reason, as the suppression on /section8/.
+        #
+        # Immediately after `rec` because "those records" takes its antecedent
+        # from it, and gated on rec_n for the same reason: no record sentence,
+        # no pronoun. oc_n > 0 also implies clean_rec < rec_n — a building with
+        # no open violation at all cannot have an open class-C one — so this
+        # can never contradict the shape of the sentence it follows.
+        oc_n = norms.get("oc_n") or 0
+        if oc_n:
+            grade = "class C — HPD's immediately hazardous grade"
+            if rec_n == 1:
+                out.append(f"That record carries a violation still open at {grade}.")
+            elif oc_n >= rec_n:
+                out.append(f"Every one of those records carries a violation still "
+                           f"open at {grade}.")
+            elif oc_n == 1:
+                out.append(f"One of those records carries a violation still open "
+                           f"at {grade}.")
+            else:
+                out.append(f"{oc_n:,} of those records carry a violation still open "
+                           f"at {grade}.")
+
+    # The median rate is taken over every building with an apartment count, clean
+    # ones included at zero — which is what makes it a statement about the place
+    # and not about its worst addresses. Said out loud, because a median that
+    # silently dropped the zeroes would read identically and mean something far
+    # worse. Skipped when it is 0 (_rate_phrase promises its caller a positive
+    # rate, and "zero per apartment" is already the sentence above) and skipped
+    # below HUB_MEDIAN_MIN_BASE for the reason written at that constant.
+    rate_med, rate_n = norms.get("rate_med"), norms.get("rate_n") or 0
+    if rate_med and rate_n and n >= HUB_MEDIAN_MIN_BASE:
+        out.append(f"Counting the buildings with no open violation as zero, the median "
+                   f"across the {rate_n:,} with an apartment count is "
+                   f"{_rate_phrase(rate_med)}.")
+
+    return out
+
+
+def hub_conditions_html(place, norms):
+    """hub_condition_facts() as a block, plus the FAQ pair it entitles the page to.
+
+    Returns (html, faq_pairs). Both empty when the records cannot carry the
+    block — and the FAQ pair is returned ONLY alongside the html, never without
+    it: faq_jsonld() marks up a FAQPage, and a question answered in structured
+    data but not in the rendered text is markup describing content that is not
+    on the page. faq_html()'s docstring makes that rule; this keeps it.
+    """
+    facts = hub_condition_facts(place, norms)
+    if len(facts) < HUB_FACTS_MIN_SENTENCES:
+        return "", []
+    html = (f"<h2>What the records say about {esc(place)}</h2>"
+            f"<div class='compare'><p>{esc(' '.join(facts))}</p></div>")
+    faq = []
+    n = norms.get("n") or 0
+    rec_n, clean_rec = norms.get("rec_n") or 0, norms.get("clean_rec") or 0
+    # Only where there is a real split to report. With every record clean, or
+    # none of them, the block's own sentence already says so in plain words and
+    # an FAQ pair would be the same fact asked as a question.
+    if rec_n and 0 < clean_rec < rec_n:
+        faq.append((
+            f"How many rent-stabilized buildings in {place} have open HPD violations?",
+            f"HPD holds a violation record for {rec_n:,} of the {n:,} DHCR-registered "
+            f"rent-stabilized buildings Find A Crib tracks in {place}. "
+            f"{rec_n - clean_rec:,} of those have at least one open violation on file; "
+            f"{clean_rec:,} have none. A building with no HPD violation record is not "
+            f"counted either way."))
+    # NO SECOND FAQ PAIR FOR THE CLASS-C SENTENCE, and the measurement that
+    # decided it (2026-10-30). A matching pair was written, rendered and then
+    # dropped: _dup_measure's own shingle rule, run over the real 24-page even
+    # sample of each tier, priced it at +4.1 points of duplicate share on
+    # /neighborhood/ (22.7% -> 26.8%) and +5.8 on /zip/ (20.4% -> 26.2%),
+    # against +0.7 and +2.0 for the sentence alone. 86 of its 103 words and 57
+    # of its 66 boilerplate shingles were the pair, because an FAQ answer has to
+    # restate its own denominator and caveat in full on every page, and 365
+    # pages restating them is the template talking.
+    #
+    # It is NOT a trimmed caveat, which this block would not do for a metric.
+    # The pair's caveats are already load-bearing somewhere else on the page:
+    # _hpd_record_sentence states the denominator immediately before
+    # ("HPD holds a violation record for 493 of the 500 buildings tracked
+    # here"), the whole block counts BUILDINGS and says so, and the zero case is
+    # suppressed, so no address on a hub is implied clean. On /section8/ the
+    # equivalent note stayed, and had to: that page lists advertised APARTMENTS
+    # and tags individual rows, so the per-building scope and the untagged-is-
+    # not-clean reading both needed saying. A hub lists neither.
+    return html, faq
+
+
+def hpd_registration_line(h):
+    """'October 7, 2025' from the HPD lastregistrationdate, or None."""
+    reg = (h or {}).get("lastregistration")
+    if not reg:
+        return None
+    try:
+        d = datetime.date.fromisoformat(str(reg)[:10])
+    except ValueError:
+        return None
+    return f"{d.strftime('%B')} {d.day}, {d.year}"
+
+
+# Google truncates around 155-160 characters; past that the tail is spent, not
+# shown. The builder below fills the budget with facts and drops the ones that
+# do not fit, rather than writing one sentence and padding it.
+DESC_LIMIT = 158
+
+
+def building_meta_desc(addr, nb, units, yr, open_viol, voucher=False,
+                       limit=DESC_LIMIT):
+    """The <meta name="description"> for one building page.
+
+    It used to be a template with one variable slot:
+
+        "{addr} in {nb}, {boro} is a NYC rent-stabilized building.
+         See units, year built, owner, and HPD violations."
+
+    Every one of the 47,165 building pages carried the same 14-word tail, and
+    the only thing that varied — the address — was already in the <title>, the
+    <h1> and the URL. So the description, which is the only line of the page a
+    searcher reads before deciding to click, added nothing to what the title
+    already said, and it promised facts ("see units, year built…") instead of
+    stating them. On 2026-08-14, 62 building pages held a median Search Console
+    position of 6 with 111 impressions and 2 clicks; a low CTR at a good
+    position is a snippet problem, not a ranking problem.
+
+    So state the facts instead. Everything here is a field already displayed in
+    the page body, from the same record, and nothing is asserted that the page
+    does not also say:
+
+      * "about N apartments" keeps the body's own hedge — the unit count comes
+        from PLUTO and the body says "about". A meta description is not the
+        place to quietly upgrade an approximation into a fact.
+      * the DHCR registration is the claim the page exists to make.
+      * open HPD violations are shown in the body's "Building conditions" table
+        and are the other reason someone searches an address.
+
+    Degrades on missing fields rather than emitting an empty slot: 99.6% of
+    buildings have a unit count and 99.8% a year, but the remainder must still
+    read as a sentence.
+    """
+    facts = []
+    if units:
+        facts.append(f"about {units} apartment{'' if units == 1 else 's'}")
+    if yr:
+        facts.append(f"built {yr}")
+    def _lead(head, drop_year=False):
+        f = [x for x in facts if not (drop_year and x.startswith("built "))]
+        if f:
+            return head + ": " + ", ".join(f) + ", registered as rent stabilized with NY State DHCR."
+        return head + ": registered as rent stabilized with NY State DHCR."
+
+    lead = _lead(f"{addr}, {nb}")
+    # 19 of 47,165 buildings pair a long address with a long neighborhood name
+    # ("114-15 To 114-19 Rockaway Beach Blvd, Breezy Point-Belle Harbor-Rockaway
+    # Park-Broad Channel") and blow the budget on the lead alone, so the DHCR
+    # claim — the whole point of the line — is what gets truncated away. Drop
+    # the neighborhood in that case; the <title> carries it either way.
+    if len(lead) > limit:
+        lead = _lead(addr)
+
+    extras = []
+    # FIRST of the three, on the ~250 pages a night that get it, and the order
+    # is the whole of the decision: DESC_LIMIT is 158 and a typical lead already
+    # spends 104 of it, so exactly one extra survives on most pages. Of the
+    # two this is the rarest (0.5% of the corpus against most of the rest
+    # carrying a violation count) and the only one that matches
+    # a query a voucher holder actually types. It is a claim about a listing on
+    # AffordableHousing.com, never about the landlord — see load_voucher_listings.
+    if voucher:
+        extras.append("An apartment here is listed to voucher holders.")
+    if open_viol:
+        extras.append(f"{open_viol} open HPD violation{'' if open_viol == 1 else 's'} on file.")
+
+    # BUY THE VOUCHER LINE OUT OF THE LEAD'S OPTIONAL DETAIL WHEN IT WILL NOT
+    # OTHERWISE FIT. Measured before this branch existed: only 75 of the 238
+    # voucher pages in a full scratch build had room for it, because a lead like
+    # "229 W 115th St, Harlem (South): about 20 apartments, built 1900, …" spends
+    # 114 of 158 characters and the shorter violation count then wins the
+    # remainder. The year built is the least useful fact a snippet can carry for
+    # someone searching for an apartment they can rent this month; it stays on
+    # the page and in the facts table either way. Same escalation as the
+    # neighborhood drop above, and it applies ONLY when there is a voucher
+    # listing — no other page loses its year.
+    if voucher and len(lead) + 1 + len(extras[0]) > limit:
+        for cand in (_lead(f"{addr}, {nb}", drop_year=True),
+                     _lead(addr, drop_year=True)):
+            if len(cand) + 1 + len(extras[0]) <= limit:
+                lead = cand
+                break
+
+    out = lead
+    for e in extras:
+        if len(out) + 1 + len(e) <= limit:
+            out += " " + e
+    return out
+
+
+# The DHCR building file's own STATUS1/STATUS2/STATUS3 columns, as
+# parse_pdfs.py lifts them verbatim from the borough PDFs. 88 distinct values
+# appear across the 47,165 rows and only these 18 are well-formed; the rest of
+# the tail is parse noise, and it is recognisable as noise rather than as rare
+# programs. The PDF column truncates at seven characters ("OWNER O",
+# "MORTGAG", "REG AGM", "6 APT B", "3 FAMIL", "RENT CO"), the text layer
+# mis-reads some rows ("GLASS A" for CLASS A, "MULTII", "STABLIL", "RENTSTA"),
+# and a few cells hold a bare number or a shrug ("000", "3", "2522.6", "X",
+# "N/A", "NONE"). Those ~70 values account for ~110 of ~62,000 code instances.
+#
+# Naming a code in prose is a claim that DHCR records it, so the prose names
+# only what is unambiguously DHCR's own vocabulary and says nothing about the
+# rest. Every one of the 47,165 rows carries at least one code from this set
+# today, so the silent branch below is insurance against a future parse or a
+# future file, not a path any current building takes.
+DHCR_STATUS_CODES = {
+    "MULTIPLE DWELLING A", "MULTIPLE DWELLING B", "GARDEN COMPLEX",
+    "421-A (1-15)", "421-A (16)", "421-G", "J-51",
+    "NON-EVICT COOP/CONDO", "EVICT COOP/CONDO", "COOP/CONDO PLAN FILE",
+    "SECTION 610 OF PHFL", "ARTICLE 11", "ARTICLES 14 & 15", "SEC 608",
+    "ROOMING HOUSE", "HOTEL", "420C", "ART V",
+}
+
+
+def dhcr_status_phrase(codes):
+    """'its stabilization code is J-51' / '…codes are J-51 and GARDEN COMPLEX'.
+
+    None when this building carries no code from DHCR's own vocabulary, so the
+    answer can leave the clause out rather than name a truncated cell.
+
+    Deliberately the same words as the facts table's "Stabilization code" row,
+    which renders the same field for the same building: a reader who compares
+    the prose with the table must not find two different labels for one cell.
+    """
+    known = [c for c in (codes or []) if c in DHCR_STATUS_CODES]
+    if not known:
+        return None
+    if len(known) == 1:
+        return f"its stabilization code is {known[0]}"
+    return (f"its stabilization codes are {', '.join(known[:-1])} "
+            f"and {known[-1]}")
+
+
+def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
+                 voucher=None, voucher_asof=None, codes=None):
+    """The Q&A pairs for one building page, for faq_html AND faq_jsonld.
+
+    WHY THIS EXISTS, 2026-10-11, and it is two defects in one string.
+
+    The building tier built its FAQPage node by hand, inline, with exactly one
+    question — "Is <addr> rent stabilized?", the page's own <h1> — and this
+    answer:
+
+        "Yes. 164 Sherman Ave in Inwood, Manhattan is a DHCR-registered
+         rent-stabilized building with about 48 apartments."
+
+    FIRST DEFECT: NOTHING ON THE PAGE RENDERED IT. faq_html's docstring states
+    the rule the rest of the site follows — "structured data with no visible
+    counterpart describes content that isn't there, and AI answer engines
+    extract from rendered text, not hidden JSON-LD" — and every other tier
+    pairs faq_jsonld with faq_html over one list of pairs. The building tier,
+    which is 47,165 of ~49,300 published pages and the only tier that has ever
+    earned a Search Console impression at any scale (260 of the 273 URLs that
+    have ever served one), paired it with nothing. 185 of the 442 URLs in the
+    index census read "Crawled - currently not indexed".
+
+    SECOND DEFECT, and the one that decided this change: THAT SENTENCE IS THE
+    ONE SENTENCE ON THIS SITE MOST LIKELY TO BE REPEATED TO A TENANT AS FACT,
+    AND IT CARRIED NO CAVEAT. An acceptedAnswer.text is the canonical
+    extraction unit — a retrieved passage is scored, ranked and handed to a
+    model on its own, stripped of the page it came from — which is the same
+    argument place_dataset() makes for carrying the city caveat inside Dataset
+    `description`, and the same one that moved the retired /brief/ line in
+    llms.txt on 2026-09-21. The page is honest to a human: NYC_FOOTER says
+    "it is not a guarantee that a specific unit is available or currently
+    stabilized". But the footer is site chrome, it is the first thing a
+    passage-level retriever drops, and "Yes." is not what the footer says.
+    Asked "is my apartment at 164 Sherman Ave rent stabilized?", the old
+    answer said yes. The registration is about the BUILDING. A unit in a
+    registered building can have been deregulated, and a tenant acting on
+    "Yes." has been told something this data cannot support.
+
+    So: no "Yes.", the source named in the answer rather than left to the
+    footer, and the per-building limit in the same passage as the claim it
+    limits. Every clause is a fact already on the page — the DHCR registration
+    is the facts table's "Rent-stabilized: Yes — DHCR registered", units and
+    year are its "Apartments" and "Year built" rows (PLUTO, which is why the
+    body says "about" and so does this), and the voucher answer is the wording
+    of voucher_html, narrowed the same way: a listing is the landlord's own
+    statement and silence is not a refusal.
+
+    WHAT 2026-10-21 CHANGED, and why it is the same argument one tier down.
+    Measured over the 185 neighborhoods with enough blocks to compare, with
+    t_page_uniqueness's own 8-word shingles and half-the-sample bar, this
+    block was 70.0% shared with its siblings at the median — worst 77.8%, and
+    above 60% in 185 of 185 groups, against 22.4% for the computed comparison
+    block after its own 2026-10-20 repair. 37.4% of its shingles were present
+    on every page sampled across the whole corpus. The caveats are the reason
+    and they are NOT the thing to cut: this block exists because the sentence
+    it replaced carried none. So the two edits are the two that cost nothing —
+    one duplicated caveat removed (see the apartments answer below), and the
+    per-building DHCR status code added, which is text that genuinely differs
+    between neighbours. 27.8% of buildings carry more than one code.
+
+    A question is asked ONLY where this record answers it. A page with no unit
+    count gets no apartments question rather than an empty slot, for the same
+    reason building_meta_desc degrades instead of emitting one: 0.4% of the
+    corpus has no unit count and those pages must still read as written, not
+    as a template with the filling missing.
+
+    Returns [(question, plain-text answer)]. PLAIN TEXT, not HTML: faq_html
+    escapes it and faq_jsonld hands it to json.dumps, so an escaped string
+    would be double-escaped into the rendered page and the markup both.
+    """
+    # The recorded code rides in the first answer because that answer is the
+    # extraction unit: a retrieved passage is scored and handed to a model on
+    # its own, and "which DHCR status is this building in the file under" is
+    # the one fact about its registration that differs between neighbours. It
+    # was already on the page as a bare facts-table cell and nowhere in the
+    # marked-up answer — the same gap the 2026-10-20 recency sentence closed
+    # for violations.last_12mo, and closed the same way.
+    #
+    # VERBATIM, WITH NO GLOSS, AND THAT IS A DELIBERATE LIMIT. 421-a and J-51
+    # are tax-benefit codes and the obvious next sentence — that stabilization
+    # tied to a benefit ends when the benefit does — is WRONG as a flat claim.
+    # The Rent Guidelines Board's position is that expiry does not by itself
+    # deregulate: it turns on the 12-point notice in the lease and each
+    # renewal, on whether the building was stabilized before the benefit, and
+    # on pre/post-1984 occupancy. A tenant who read "your stabilization has
+    # ended" and stopped asserting a right they still hold would be harmed by
+    # this page, which is the one failure this site cannot afford. The primary
+    # sources could not be read from the environment this was written in, so
+    # the prose states the file's own value and leaves the consequence to the
+    # caveat that follows it and to DHCR.
+    code_txt = dhcr_status_phrase(codes)
+    where = f", where {code_txt}" if code_txt else ""
+    faq = [(f"Is {addr} rent stabilized?",
+            f"{addr} in {nb}, {boro} is registered as rent stabilized in the New York "
+            f"State DHCR 2024 rent-stabilized building files{where}. Registration is "
+            f"recorded "
+            f"for the building, not for each apartment in it, so an individual unit "
+            f"here can still have been deregulated — ask the landlord or DHCR for that "
+            f"apartment's rent history before relying on it.")]
+    bbl_txt = f" (BBL {bbl})" if bbl else ""
+    if units:
+        built = f" and was built in {yr}" if yr else ""
+        # The trailing clause here used to add "and the DHCR files this site is
+        # built on register the building rather than its individual
+        # apartments", which is the caveat the FIRST answer already makes, in
+        # the same block, in stronger terms (it names the consequence and the
+        # action). Said twice it was ~20 words identical on 46,981 of 47,165
+        # pages, and the 2026-10-20 class-C rule applies unchanged: a clause
+        # repeated inside one block reads like a template and hands
+        # t_page_uniqueness a shingle every sibling shares. Dropped here and
+        # not there, because the first answer is unconditional and this one is
+        # not, so the caveat cannot be lost. The PLUTO-specific half STAYS —
+        # that PLUTO's unit count is not a count of stabilized units is a
+        # different point, and the only place on the page that makes it.
+        faq.append((f"How many apartments are at {addr}?",
+                    f"{addr}{bbl_txt} has about {units} residential "
+                    f"apartment{'' if units == 1 else 's'}{built}, from NYC PLUTO. "
+                    f"PLUTO counts the building's units; it does not say how many of "
+                    f"them are rent stabilized."))
+    elif yr:
+        # No unit count, so the year cannot ride along in the answer above. It
+        # is still the second-most-asked fact about an address and it is on the
+        # page, so it gets its own pair rather than being dropped with the
+        # count it would have been attached to.
+        faq.append((f"When was {addr} built?",
+                    f"{addr}{bbl_txt} was built in {yr}, according to NYC PLUTO. "
+                    f"A build year is not what puts a New York building under rent "
+                    f"stabilization — DHCR registration is — so treat it as a "
+                    f"description of the building and not as a test of its status."))
+    if voucher:
+        n = voucher.get("n") or 1
+        price = f", from ${voucher['p']:,} a month" if voucher.get("p") else ""
+        asof = f", in the feed as of {voucher_asof}" if voucher_asof else ""
+        faq.append((f"Is an apartment at {addr} listed to housing-voucher holders?",
+                    f"{'An apartment' if n == 1 else f'{n:,} apartments'} at {addr} "
+                    f"{'is' if n == 1 else 'are'} listed to housing-voucher holders on "
+                    f"AffordableHousing.com{price}{asof}. That listing is the landlord's "
+                    f"own statement about {'that apartment' if n == 1 else 'those apartments'}. "
+                    f"A building with no listing "
+                    f"here has refused nobody, and refusing a voucher is illegal in "
+                    f"New York City."))
+    return faq
+
+
+# ---- /methodology/ — where every number on this site comes from ------------
+# WHY THIS PAGE EXISTS, and why it is one page rather than a tier.
+#
+# The 2026-09-06 URL Inspection census read 455 sampled published URLs and
+# found exactly ONE indexed: the homepage. Of the 94 it has fetched and settled
+# on, all 94 came back "Crawled - currently not indexed", and they are spread
+# across every template the site owns — 67 building pages, 15 neighborhood
+# hubs, 5 borough hubs, 4 ZIP hubs, one SF hub, /buildings/ and /developers/.
+# Acceptance among pages crawled more than 21 days ago has read 0.0% for
+# thirteen consecutive days. A refusal that uniform across templates is not a
+# template defect. It is a judgement about the site.
+#
+# This site is YMYL by any reading — people decide where to live on it — and it
+# had no page anywhere stating who compiles the data, from which records, how
+# the join is made, how often each part refreshes, or what each city's list
+# does NOT mean. Those facts existed, precisely and honestly, only in the
+# source comments of build_dc.py, build_la.py, build_sf.py and fetch_hpd.py:
+# nowhere a reader, a journalist, a crawler or an answer engine could see them.
+# This publishes them.
+#
+# THREE RULES IT IS BUILT UNDER, because a provenance page that overclaims is
+# worse than none:
+#   1. Every caveat here is the one the relevant pages already carry
+#      (NYC_FOOTER, CITY_FOOTER), not a softer restatement of it.
+#   2. Every figure is computed from the data files this build reads, at build
+#      time. Nothing is typed in.
+#   3. No named author, no credential, no licence, no review claim. Nobody has
+#      one on file, and inventing one is exactly the failure this page exists
+#      to correct.
+#
+# It is ONE page. The site's problem is not too few URLs.
+def _methodology_counts():
+    """Record counts for the four cities, read from the files this build uses."""
+    here = _ROOT
+    out = {}
+    try:
+        blds = json.load(open(os.path.join(here, "buildings.min.json")))
+        out["nyc"] = (len(blds), sum(b.get("u") or 0 for b in blds))
+    except Exception:
+        out["nyc"] = (0, 0)
+    for key in ("sf", "la", "dc"):
+        try:
+            out[key] = (len(json.load(open(os.path.join(here, key, "buildings.min.json")))), 0)
+        except Exception:
+            out[key] = (0, 0)
+    return out
+
+
+def methodology_page():
+    """Render /methodology/. Returns (canonical, html) or (None, None)."""
+    c = _methodology_counts()
+    if not c["nyc"][0]:
+        # No corpus, nothing true to say about it. A provenance page with
+        # placeholder numbers would be the opposite of the point.
+        return None, None
+    n_nyc, u_nyc = c["nyc"]
+    n_sf, n_la, n_dc = c["sf"][0], c["la"][0], c["dc"][0]
+    total = n_nyc + n_sf + n_la + n_dc
+    canonical = SITE + METHODOLOGY_URL
+
+    def row(k, v):
+        return f"<tr><td class='k'>{k}</td><td>{v}</td></tr>"
+
+    overview = "<table class='facts'>" + "".join([
+        row("New York City",
+            f"{n_nyc:,} buildings on the DHCR rent-stabilized register, "
+            f"{u_nyc:,} apartments by PLUTO's tax-lot unit counts"),
+        row("San Francisco", f"{n_sf:,} block-side records from the Rent Board inventory"),
+        row("Los Angeles", f"{n_la:,} parcels meeting the RSO criteria (derived, likely RSO)"),
+        row("Washington, DC", f"{n_dc:,} properties on the DC Rent Registry"),
+    ]) + "</table>"
+
+    cadence = "<table class='facts'>" + "".join([
+        row("Housing-voucher listings (/section8/)", "Rebuilt nightly"),
+        row("HPD violations, complaints, owner and agent", "Refreshed from NYC Open Data on the "
+            "data build, not on every page build"),
+        row("DC Rent Registry", "The source publishes nightly export files"),
+        row("SF Rent Board inventory", "DataSF refreshes the extract every 24 hours; owners "
+            "report annually, so the underlying filings move once a year"),
+        row("LA County Assessor parcels", "The source layer refreshes monthly"),
+        row("DHCR rent-stabilized building files", "Annual. The edition in use is 2024"),
+    ]) + "</table>"
+
+    body = f"""<div class='crumbs'><a href='/'>Home</a> › How this data is compiled</div>
+<h1>How Find A Crib compiles its rent-regulation data</h1>
+<p class='lead'>Every building on this site comes from a public record, and this page says which
+one, how it was joined to the rest, how often it changes, and what it does not prove. Four cities,
+four different registries, and they are not alike — the differences are the most important thing
+on this page.</p>
+<div class='answer'><p>Find A Crib maps {total:,} records across New York City, San Francisco,
+Los Angeles and Washington, DC. New York and DC are official registries of rent-regulated
+buildings. San Francisco is an owner-reported inventory the city publishes anonymized to the block
+rather than the address. Los Angeles publishes no building-level list at all, so the Los Angeles
+layer is derived from assessor records against the city's own criteria and is labelled likely RSO.
+No listing here is a determination about a specific apartment.</p></div>
+
+<h2>What is on the map</h2>
+{overview}
+
+<h2>New York City — DHCR register, joined to PLUTO and HPD</h2>
+<div class='guide-body'>
+<p>The starting record is the New York State Division of Housing and Community Renewal's 2024
+rent-stabilized building file, which DHCR publishes as one PDF per borough. Those five files are
+parsed into rows keyed by Borough-Block-Lot (BBL), which is the join key for everything that
+follows.</p>
+<ul>
+<li><strong>Coordinates, year built and apartment counts</strong> come from the NYC Department of
+City Planning's PLUTO extract. Unit counts are tax-lot figures, which is why every apartment count
+on this site is written as "about".</li>
+<li><strong>Registered owner and managing agent, open housing-maintenance-code violations, and
+complaints</strong> come from NYC Open Data — HPD's registrations
+(<a href="https://data.cityofnewyork.us/d/tesw-yqqr">tesw-yqqr</a>), registration contacts
+(<a href="https://data.cityofnewyork.us/d/feu5-w2e2">feu5-w2e2</a>), violations
+(<a href="https://data.cityofnewyork.us/d/wvxf-dwi5">wvxf-dwi5</a>) and complaints
+(<a href="https://data.cityofnewyork.us/d/ygpa-z7cr">ygpa-z7cr</a>) — matched on BBL and linked
+back to the building's own record on HPD Online.</li>
+</ul>
+<p class='disclaimer'>{NYC_FOOTER}</p>
+</div>
+
+<h2>San Francisco — reported to the Rent Board, published by the block</h2>
+<div class='guide-body'>
+<p>The source is the San Francisco Rent Board housing inventory, published by DataSF as dataset
+<a href="https://data.sfgov.org/d/gdc7-dmcn">gdc7-dmcn</a>: one row per unit per submission year,
+from the annual reports owners of units covered by the Rent Ordinance are required to file. Build
+years come from the San Francisco Assessor.</p>
+<p>The anonymization is the source's, not ours, and it changes what a record means. DataSF
+publishes the address as a block ("1000 Block of Revere Ave") and the coordinate as the nearest
+mid-block point, so <strong>one San Francisco record is a block-side, not a building</strong>. That
+is why San Francisco is published here only as neighborhood aggregates: a per-address page would
+assert something the data does not contain.</p>
+<p class='disclaimer'>{CITY_FOOTER['sf']}</p>
+</div>
+
+<h2>Los Angeles — derived, not published</h2>
+<div class='guide-body'>
+<p>Los Angeles publishes no building-level RSO inventory. The city's criteria, however, are
+mechanical: a residential property in the City of Los Angeles with two or more units, built on or
+before 1 October 1978. This site applies those criteria to the Los Angeles County Assessor parcel
+layer and keeps what matches — {n_la:,} parcels.</p>
+<p>Two limits worth stating plainly. Year built is tax-roll data, and the filter actually applied
+is assessor year-built of 1978 or earlier, which is marginally wider than an ordinance cut-off of
+1 October 1978. And exemptions that exist in the ordinance — luxury-exempt units, substantially
+renovated buildings — cannot be derived from assessor records at all. Both are reasons this layer
+is labelled likely RSO and carries a verification link rather than an answer.</p>
+<p class='disclaimer'>{CITY_FOOTER['la']}</p>
+</div>
+
+<h2>Washington, DC — the Rent Registry, counted per unit</h2>
+<div class='guide-body'>
+<p>The source is the District's RentRegistry, run by the Rental Accommodations Division, which has
+published public export files of the whole registry since June 2025. Three files are used: one row
+per housing-provider registration, one per registered property, and one per unit.</p>
+<p>Coverage under the Rental Housing Act is a <strong>per-unit</strong> determination, not a
+per-building one: a single property can hold both covered and exempt units — subsidized housing,
+new construction, an owner of four units or fewer, co-ops and others. So coverage here is counted
+from the unit file, a property is kept when at least one of its units is not exempt, and the rent
+shown is the median <em>registered</em> rent of the non-exempt units. A registered rent is the
+legal rent on file with the District. It is not an asking rent and not what a unit is listed
+for.</p>
+<p>Two derived fields to know about: DC publishes no ZIP on the accommodation record and no
+neighborhood polygons, so the ZIP comes from a Census ZCTA point-in-polygon test and the
+neighborhood is the nearest DC neighborhood label point. The neighborhood label is a nearest-point
+assignment, not an official boundary.</p>
+<p class='disclaimer'>{CITY_FOOTER['dc']}</p>
+</div>
+
+<h2>How often each part changes</h2>
+{cadence}
+<p>Page-level dates follow the same rule. A page's sitemap <code>lastmod</code> is only moved when
+that page's own content hash changes, so an unchanged building page keeps the date it last
+genuinely changed.</p>
+
+<h2>What none of this decides</h2>
+<div class='guide-body'>
+<ul>
+<li>None of it is legal advice, and none of it is a determination about a particular apartment. A
+building's presence on a register is about the building.</li>
+<li>Regulated status can change, and a registry reflects what was filed, at the time it was filed.
+The New York edition here is the 2024 file.</li>
+<li>Where a city's record is derived or anonymized — Los Angeles and San Francisco — the label on
+the page says so, and the verification route is named on the page rather than here.</li>
+</ul>
+<p>If a record here is wrong, that is worth knowing and worth fixing:
+<a href="/support/">tell us what is wrong with it</a> and name the address.</p>
+</div>
+
+<h2>Using or citing this data</h2>
+<div class='guide-body'>
+<p>The New York corpus is downloadable in full as
+<a href="{SITE}/buildings.min.json">buildings.min.json</a>, and there is a
+<a href="/developers/">REST API</a> for querying it. If you cite the figures on this site, cite the
+underlying registry as the source of the record and Find A Crib for the join and the derivation —
+the agencies named above did the collecting.</p>
+<p class='aka'>Find A Crib was previously published as Jay's Home Finder (jayshomefinder.com) —
+same rent-stabilization data, same maps, new name.</p>
+</div>
+<a class='cta' href='/'>🔎 Open the interactive map →</a>"""
+
+    ld = {"@context": "https://schema.org", "@graph": [
+        breadcrumb([("Home", SITE + "/"),
+                    ("How this data is compiled", canonical)]),
+        {"@type": "WebPage", "@id": canonical + "#page", "url": canonical,
+         "name": "How Find A Crib compiles its rent-regulation data",
+         "description": "The public record behind every building on Find A Crib: sources, join "
+                        "keys, refresh cadence and the limits of each city's data.",
+         "dateModified": BUILD_DATE,
+         "isPartOf": {"@id": SITE + "/#website"},
+         "publisher": {"@id": SITE + "/#org"}},
+    ]}
+    # breadcrumb() carries its own @context; inside an @graph that is redundant
+    # and, on some validators, an error. Strip it.
+    ld["@graph"][0].pop("@context", None)
+
+    return canonical, page(
+        "How Find A Crib compiles its rent-regulation data — sources & method",
+        # Under DESC_LIMIT (158) like every other description this build writes.
+        "Where every record comes from: DHCR, PLUTO and HPD in New York, the SF Rent Board, "
+        "LA assessor data, the DC Rent Registry — and each list's limits.",
+        canonical, body, ld,
+        # NOT the default NYC_FOOTER. This is the one page on the site that
+        # covers all four cities, and footing a four-city page with "Data: NYC
+        # DHCR…" is the same error guide_page() already guards against — it
+        # would be the only untrue sentence on a page about being true. Every
+        # caveat it would have carried is stated in full in the body above.
+        footer="Sources in full above: New York State DHCR, NYC PLUTO and HPD, the San Francisco "
+               "Rent Board, the Los Angeles County Assessor and the DC Rent Registry. Each city's "
+               "list means something different; the section for that city says what.")
+
+
+def main():
+    blds = json.load(open("buildings.min.json"))
+    # Owner / managing agent used to ride along inside each building's `h` blob.
+    # They were split out when buildings.min.json was slimmed for the map app —
+    # and this builder was never repointed, so `h.get("owner")` has been empty
+    # on every one of the 47,165 building pages and the whole "Owner &
+    # management" section has silently rendered as nothing. hpd_contacts.json is
+    # the same data build_hpd_contacts.py writes for the Supabase table.
+    try:
+        contacts = json.load(open("hpd_contacts.json"))
+    except Exception as e:
+        print(f"hpd_contacts.json: unavailable ({e}) — owner blocks will be empty")
+        contacts = {}
+    # A separate feed and a separate claim: these are apartments listed to
+    # housing-voucher holders on AffordableHousing.com tonight. See load_voucher_listings for why this build reads
+    # it at all and why an old feed yields nothing rather than a hedge.
+    voucher_avail, voucher_asof = load_voucher_listings()
+
+    # index buildings by (borough, neighborhood) for neighborhood pages + nearby links
+    by_nb = defaultdict(list)
+    for b in blds:
+        if b.get("nb"):
+            by_nb[(b["b"], b["nb"])].append(b)
+    for k in by_nb:
+        by_nb[k].sort(key=lambda x: x.get("a", ""))
+
+    # The sibling-link ring (see _geo_ring_order). Kept separate from by_nb:
+    # the hub pages list their neighborhood alphabetically, which is how a
+    # reader looks an address up, while the ring is ordered geographically.
+    ring = {k: _geo_ring_order(v) for k, v in by_nb.items()}
+    # The comparison base behind building_facts(): one pass per neighborhood,
+    # not one per page.
+    norms = {k: neighborhood_norms(v) for k, v in by_nb.items()}
+    ring_pos = {}
+    for k, v in ring.items():
+        for i, x in enumerate(v):
+            ring_pos[x["bbl"]] = i
+
+    def bld_url(b):
+        return f"/building/{BORO_SLUG.get(b['b'],'nyc')}/{slugify(b.get('a'))}-{b['bbl']}/"
+
+    def nb_url(boro, nb):
+        return f"/neighborhood/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
+
+    def vblock(items, place):
+        """voucher_hub_block for a hub page, from the buildings it covers.
+
+        The addresses link to their own building pages rather than out to
+        AffordableHousing.com: the listing link belongs on the page about that
+        address, and a hub that sends a crawler off-site at the one place it
+        found something new is spending the crawl it just earned.
+        """
+        return voucher_hub_block(
+            [x["bbl"] for x in items], voucher_avail, voucher_asof, place,
+            addr_links={x["bbl"]: f"<a href=\"{bld_url(x)}\">"
+                                  f"{esc(titlecase_addr(x.get('a')))}</a>"
+                        for x in items if x["bbl"] in voucher_avail})
+
+    def zip_url(z):
+        return f"/zip/{z}/"
+
+    def boro_list_url(boro, kind):  # kind = "largest" | "oldest"
+        return f"/borough/{BORO_SLUG.get(boro,'nyc')}/{kind}/"
+
+    urls = []  # (loc, priority) for sitemaps
+    promoted_bbls = set()   # building pages that earned a sitemap entry
+
+    # ---- building pages ----
+    for b in blds:
+        addr = titlecase_addr(b.get("a"))
+        boro = BORO_NAME.get(b["b"], "New York")
+        nb = b.get("nb") or boro
+        url = bld_url(b)
+        canonical = SITE + url
+        h = b.get("h") or {}
+        units = b.get("u")
+        yr = b.get("yr")
+        vch = voucher_avail.get(b["bbl"])
+        promoted = promoted_building(b)
+
+        # unique, data-driven lead sentence (avoids thin/duplicate content)
+        bits = [f"<strong>{esc(addr)}</strong> is a registered NYC rent-stabilized building in "
+                f"<a href=\"{nb_url(b['b'], b.get('nb') or boro)}\">{esc(nb)}</a>, {esc(boro)}"]
+        if b.get("z"):
+            bits[0] += f" ({esc(b['z'])})"
+        bits[0] += "."
+        if units:
+            bits.append(f"It has about {esc(units)} apartment{'s' if units != 1 else ''}"
+                        + (f", built in {esc(yr)}." if yr else "."))
+        if vch:
+            bits.append("An apartment here is <strong>listed to housing-voucher "
+                        "holders</strong> on AffordableHousing.com.")
+        lead = " ".join(bits)
+
+        # The daily fact, on the daily-crawled page. Everything in it comes from
+        # the one feed and carries that feed's date; no sentence here describes
+        # the landlord's policy, only the listing. Rendered as its own block
+        # rather than folded into the hook above because the hook is a signup
+        # ask and this is a fact about the address.
+        voucher_html = ""
+        if vch:
+            price = f" from <b>${vch['p']:,}/mo</b>" if vch.get("p") else ""
+            units_txt = ("An apartment" if vch["n"] == 1
+                         else f"{vch['n']:,} apartments")
+            voucher_html = (
+                f"<div class='hook'><strong>🎟️ {units_txt} here "
+                f"{'is' if vch['n'] == 1 else 'are'} listed to housing-voucher "
+                f"holders.</strong> Posted on AffordableHousing.com{price}, from the "
+                f"feed as of {esc(voucher_asof)} — "
+                f"<a href='{esc(vch['url'])}' rel='nofollow noopener' target='_blank'>"
+                f"view the listing →</a> or see "
+                # /section8/ and not /section8/<borough>/: t_fresh_section8 skips
+                # a borough page below three listings, so the per-borough URL is
+                # not guaranteed to exist and the hub always is.
+                f"<a href='/section8/'>every rent-stabilized building with a "
+                f"voucher listing</a>. Listing this apartment as "
+                f"voucher-friendly is the landlord's own statement; a building with "
+                f"no listing here has refused nobody, and refusing a voucher is "
+                f"illegal in New York City.</div>")
+
+        # The abbreviation the city files an address under is often not the one a
+        # searcher types. Rendered as visible text, not a hidden keyword list.
+        aka = address_variants(b.get("a"), boro, b.get("z"))
+        aka_html = (f"<p class='aka'>Also written as {esc(' — or '.join(aka))}.</p>"
+                    if aka else "")
+
+        rows = [("Borough", boro), ("Neighborhood", esc(nb)), ("ZIP", b.get("z")),
+                ("Year built", yr), ("Apartments", units),
+                ("Rent-stabilized", "Yes — DHCR registered"),
+                ("Stabilization code", ", ".join(b.get("s") or []) or "—"),
+                ("BBL", b["bbl"])]
+        facts = "".join(f"<tr><td class='k'>{esc(k)}</td><td>{esc(v)}</td></tr>"
+                        for k, v in rows if v not in (None, "", "—") or k == "Stabilization code")
+
+        owner_html = ""
+        con = contacts.get(b["bbl"]) or {}
+        o = con.get("owner") or h.get("owner") or {}
+        m = con.get("manager") or h.get("manager") or {}
+        if o.get("name") or m.get("name"):
+            # Where the operator has a portfolio page, link to it. This is the
+            # one link on a building page that leads somewhere the reader cannot
+            # reach any other way, and it is the natural next question after
+            # "is this building stabilized" — what else do they own?
+            def _named(name):
+                slug = LANDLORD_SLUGS.get((name or "").strip().upper())
+                return (f"<a href=\"{landlord_url(slug)}\">{esc(name)}</a>"
+                        if slug else esc(name))
+            parts = []
+            if o.get("name"):
+                parts.append(f"<tr><td class='k'>Owner</td><td>{_named(o['name'])}"
+                             + (f"<br><span style='color:#4a4a68'>{esc(o.get('address'))}</span>" if o.get("address") else "")
+                             + "</td></tr>")
+            if m.get("name"):
+                parts.append(f"<tr><td class='k'>Managing agent</td><td>{_named(m['name'])}</td></tr>")
+            owner_html = "<h2>Owner &amp; management</h2><table class='facts'>" + "".join(parts) + "</table>"
+
+        cond_html = ""
+        v = h.get("violations") or {}
+        c = h.get("complaints") or {}
+        reg_line = hpd_registration_line(h)
+        if v or c or reg_line:
+            vr = (f"<tr><td class='k'>HPD violations</td><td>{esc(v.get('open',0))} open / "
+                  f"{esc(v.get('total',0))} total"
+                  + (f" · {esc(v.get('last_12mo',0))} in last 12 mo" if v.get('last_12mo') else "")
+                  + "</td></tr>") if v else ""
+            cr = (f"<tr><td class='k'>HPD complaints</td><td>{esc(c.get('open',0))} open / "
+                  f"{esc(c.get('total',0))} total</td></tr>") if c else ""
+            # Owners of most multiple dwellings have to keep an HPD property
+            # registration current, so the date one was last filed is a fact a
+            # tenant can use. Reported as a date and nothing more — this build
+            # cannot tell whether a registration is validly in force today.
+            rr = (f"<tr><td class='k'>HPD registration last filed</td>"
+                  f"<td>{esc(reg_line)}</td></tr>") if reg_line else ""
+            link = (f"<tr><td class='k'>City record</td><td><a href=\"{esc(h['hpd_url'])}\" "
+                    f"rel=\"nofollow noopener\" target=\"_blank\">View on HPD Online ↗</a></td></tr>") if h.get("hpd_url") else ""
+            cond_html = "<h2>Building conditions</h2><table class='facts'>" + vr + cr + rr + link + "</table>"
+
+        # The computed comparison block. Omitted, not padded, when this building
+        # does not have enough on file to say three true things about it.
+        compare_html = ""
+        nb_norms = norms.get((b["b"], b.get("nb")))
+        if nb_norms:
+            sentences = building_facts(b, nb, nb_norms)
+            if len(sentences) >= FACTS_MIN_SENTENCES:
+                compare_html = ("<h2>How this building compares</h2>"
+                                f"<div class='compare'><p>{esc(' '.join(sentences))}</p></div>")
+
+        # ---- the one-time $9 Building Report, offered where the reader is ----
+        #
+        # Why this exists (2026-08-27): the report launched 2026-07-27 to test
+        # whether a single purchase converts where the $4.99/mo Plus
+        # subscription never has — and then was only ever offered inside the
+        # map app (index.html's detail panel). These static /building/ pages
+        # are the ONLY tier that earns search impressions: 260 of the 273 URLs
+        # that have ever served a Search Console impression are building
+        # pages, against 9 hubs and the home page. So for 30 days the product
+        # built to convert search visitors was invisible to every one of them,
+        # and the only offer they were shown was Plus, which has 0 conversions
+        # for its entire lifetime. That is not evidence the $9 ask fails; it
+        # is evidence it was never asked. This puts the ask where the readers
+        # are.
+        #
+        # Gated on compare_html, deliberately. That flag means building_facts()
+        # found at least FACTS_MIN_SENTENCES true comparative things to say,
+        # which is exactly what section 1 of the report ("How this compares")
+        # is built from — so where the block is absent, the report would be
+        # thin and we do not offer it. Selling a $9 report on a building we
+        # can say nothing about is the one version of this that trades the
+        # site's credibility for revenue.
+        #
+        # The copy is deliberately WORD-FOR-WORD the description already
+        # shipped beside the live button in index.html, so the two surfaces
+        # cannot drift into making different claims about one product. It
+        # promises the pre-filled DHCR request, not the rent history itself —
+        # the history is free and the report says so.
+        #
+        # The link is the same /#d=<bbl> deep link the other CTAs on this page
+        # use: it opens the map detail panel, where the real Stripe button
+        # lives. A static page cannot POST to /api/reports/checkout, and
+        # inventing a GET checkout route here would be a change to the payment
+        # path, not to the page.
+        report_html = ""
+        if compare_html:
+            report_html = (
+                "<h2>Full building report — $9</h2>"
+                "<div class='hook'>"
+                "<strong>📄 Get the full building report — $9.</strong> "
+                "How this building's violation record compares citywide, who "
+                "owns it and what else they own, and a pre-filled DHCR "
+                "rent-history request. One-time, no account needed. The report "
+                "also states plainly what the data cannot tell you."
+                f" <a href='/#d={b['bbl']}'>Get the report for {esc(addr)} &rarr;</a>"
+                "</div>")
+
+        # sibling buildings in the same neighborhood, as a ring rather than a
+        # star, so every building page is linked from ~12 others instead of 94.9%
+        # of them hanging off one hub link (see _geo_ring_order above).
+        nb_ring = ring.get((b["b"], b.get("nb")), [])
+        nearby = _ring_window(nb_ring, ring_pos.get(b["bbl"], 0)) if nb_ring else []
+        near_html = ""
+        if nearby:
+            items = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in nearby)
+            near_html = (f"<h2>Other rent-stabilized buildings in {esc(nb)}</h2><div class='cols'>{items}</div>"
+                         f"<p><a href=\"{nb_url(b['b'], b.get('nb') or boro)}\">See all in {esc(nb)} →</a></p>")
+
+        # broaden-search links to the ZIP hub + borough listicles (internal linking / crawl)
+        more = [f"<a href=\"{boro_list_url(b['b'],'largest')}\">Largest buildings in {esc(boro)}</a>",
+                f"<a href=\"{boro_list_url(b['b'],'oldest')}\">Oldest buildings in {esc(boro)}</a>"]
+        if b.get("z"):
+            more.insert(0, f"<a href=\"{zip_url(b['z'])}\">All rent-stabilized in ZIP {esc(b['z'])}</a>")
+        area_html = "<h2>Explore more</h2><div class='cols'>" + "".join(more) + "</div>"
+
+        # Visible AND marked up, from one list of pairs — see building_faq for
+        # what the single hand-built node here used to say and why "Yes." was
+        # the problem. faq_html renders the same pairs faq_jsonld marks up, so
+        # the two cannot drift, which is the arrangement every other tier on
+        # this site already had.
+        faq_pairs = building_faq(addr, nb, boro, units=units, yr=yr,
+                                 bbl=b["bbl"], voucher=vch,
+                                 voucher_asof=voucher_asof, codes=b.get("s"))
+        faq = faq_jsonld(faq_pairs)
+        crumb = breadcrumb([
+            ("Home", SITE + "/"),
+            (boro, SITE + f"/borough/{BORO_SLUG.get(b['b'],'nyc')}/"),
+            (nb, SITE + nb_url(b['b'], b.get('nb') or boro)),
+            (addr, canonical),
+        ])
+        # A building is a Place, not a Dataset. Marking these up as Dataset —
+        # which is what "add Dataset schema to the building pages" would mean
+        # literally — would tell every consumer that a single address is a
+        # published data collection, which it isn't. ApartmentComplex is the
+        # schema.org type that actually describes a multi-unit residential
+        # building, and it carries the fields we genuinely hold.
+        place = {
+            "@context": "https://schema.org",
+            "@type": "ApartmentComplex",
+            "name": addr,
+            "url": canonical,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": addr,
+                "addressLocality": boro,
+                "addressRegion": "NY",
+                "addressCountry": "US",
+            },
+            # Rent stabilization has no schema.org vocabulary, so it goes in an
+            # additionalProperty rather than being crammed into a field that
+            # means something else.
+            "additionalProperty": [{
+                "@type": "PropertyValue",
+                "name": "Rent stabilized",
+                "value": "Registered with NY State DHCR",
+            }],
+        }
+        if b.get("z"):
+            place["address"]["postalCode"] = str(b["z"])
+        if b.get("lat") and b.get("lng"):
+            place["geo"] = {"@type": "GeoCoordinates",
+                            "latitude": b["lat"], "longitude": b["lng"]}
+        if units:
+            place["numberOfAccommodationUnits"] = {
+                "@type": "QuantitativeValue", "value": units}
+        if b.get("yr"):
+            place["yearBuilt"] = b["yr"]
+        # Only name an operator we actually have on file, and only as the
+        # registered contact — not as an endorsement or a verified manager.
+        operator = (m.get("name") or o.get("name") or "").strip()
+        if operator:
+            place["additionalProperty"].append({
+                "@type": "PropertyValue",
+                "name": "HPD-registered operator",
+                "value": operator,
+            })
+        if aka:
+            place["alternateName"] = aka
+        jsonld = [place, faq, crumb]
+
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(b['b'],'nyc')}/'>{esc(boro)}</a> › "
+                f"<a href='{nb_url(b['b'], b.get('nb') or boro)}'>{esc(nb)}</a></div>"
+                f"<h1>Is {esc(addr)} rent stabilized?</h1>"
+                f"<p class='lead'>{lead}</p>"
+                + aka_html
+                + (f"<p><span class='badge'>Listed to voucher holders</span></p>" if vch else "")
+                + voucher_html
+                + compare_html
+                + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
+                # conversion hook: give organic readers a reason to act, not just leave
+                + (f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
+                   f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a Find A Crib account</a> and get a listing alert. "
+                   f"Signed in, you also see the managing agent's phone number and the owner's full portfolio.</div>")
+                + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
+                # report offer sits after the conditions table on purpose: the
+                # reader has just seen the open-violation count and the whole
+                # question the report answers is what that number means here.
+                + owner_html + cond_html + report_html
+                # Last block of content, first block before navigation. The
+                # <h1> asks "Is <addr> rent stabilized?" and until today the
+                # only answer that named its source or its limit was in a
+                # <script> tag; near_html and area_html below are link lists.
+                + faq_html(faq_pairs)
+                + near_html + area_html)
+
+        write(url.strip("/") + "/index.html",
+              page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
+                   building_meta_desc(addr, nb, units, yr,
+                                      (h.get("violations") or {}).get("open"),
+                                      voucher=bool(vch)),
+                   canonical, body, jsonld,
+                   robots=None if promoted else "noindex,follow",
+                   # Addressed to Googlebot alone. See TRIAGE_ROBOTS_UA: the
+                   # triage is a Search Console decision and must not also
+                   # un-publish the corpus to the AI answer engines, which are
+                   # the one channel here with a measured positive verdict.
+                   robots_name=TRIAGE_ROBOTS_UA,
+                   og_title=f"{addr} — {nb}, {boro}"))
+        if promoted:
+            urls.append((canonical, "0.6", b["b"]))
+            promoted_bbls.add(b["bbl"])
+
+    # ---- which ZIP codes get a hub page: decided HERE, once ---------------
+    # The ZIP hubs themselves are built much further down, but the neighborhood
+    # and borough pages above them now link into that tier, so membership has
+    # to be settled before the first page that mentions it is written. One dict,
+    # three readers: a link can never point at a ZIP that fell under the
+    # ZIP_HUB_MIN floor and got no page.
+    #
+    # WHY THE LINKS WERE ADDED, 2026-09-15. t_crawl_paths has reported for weeks
+    # that /zip/'s single inbound source is "building page", and it is the only
+    # section on the site whose one source is a tier that is 92% noindex,follow:
+    # index_triage() promotes ~3,000 of 47,165 buildings and leaves the rest
+    # noindexed, so the crawl path into 165 indexable ZIP hubs ran through pages
+    # Google is told to discard. It showed: in the 2026-09-15 URL Inspection
+    # census /zip/ read 4 of 40 ever fetched (10%), the worst of the established
+    # NYC families, against /neighborhood/ 37.5%, /borough/ 50% and /buildings/
+    # 100% — the three tiers that now link into it. Nothing here publishes a new
+    # page; it links pages that have been live for weeks from pages a crawler
+    # actually reaches, and the reciprocal is one a reader wants anyway, since
+    # the ZIP hubs have always linked back out to their neighborhoods.
+    by_zip = defaultdict(list)
+    for b in blds:
+        if b.get("z"):
+            by_zip[str(b["z"])].append(b)
+    zip_hubs = {}                  # zip -> (buildings sorted by address, dominant borough)
+    for z, zitems in by_zip.items():
+        if len(zitems) < ZIP_HUB_MIN:
+            continue               # skip thin pages
+        zboro = defaultdict(int)
+        for x in zitems:
+            zboro[x["b"]] += 1
+        zip_hubs[z] = (sorted(zitems, key=lambda x: x.get("a", "")),
+                       max(zboro, key=zboro.get))
+    zips_by_boro = defaultdict(list)
+    for z, (zitems, dom) in zip_hubs.items():
+        zips_by_boro[dom].append((z, len(zitems)))
+
+    def zip_links_html(zips, counts=None):
+        """A ZIP link row, or "" when there is nothing to link.
+
+        `counts` is the ZIP's own citywide building total and is shown only
+        where the page can support that number. The borough page can — it is
+        listing the whole tier. A neighborhood page cannot: the only count it
+        knows is how many of ITS buildings fall in that ZIP, and rendering that
+        in the same "ZIP 11221 (12)" shape the borough page uses would read as
+        the ZIP's size on one page and as something else on the other. So the
+        neighborhood page links the bare ZIP rather than publish an ambiguous
+        figure.
+
+        Returns "" rather than an empty <h2> so a borough or neighborhood with
+        no qualifying ZIP does not publish a heading over nothing.
+        """
+        zips = sorted(zips)
+        if not zips:
+            return ""
+        return "".join(
+            f"<a href=\"{zip_url(z)}\">ZIP {esc(z)}"
+            + (f" ({counts[z]:,})" if counts else "") + "</a>"
+            for z in zips)
+
+    # ---- neighborhood pages ----
+    for (boro, nb), items in by_nb.items():
+        boroname = BORO_NAME.get(boro, "New York")
+        url = nb_url(boro, nb)
+        canonical = SITE + url
+        n = len(items)
+        yrs = [x["yr"] for x in items if x.get("yr")]
+        med = sorted(yrs)[len(yrs) // 2] if yrs else None
+        links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items)
+        # A flat list of 1,197 identical links spreads this page's weight across
+        # 1,197 pages, and the handful that can actually rank are buried in it
+        # alphabetically. The promoted buildings — among the largest, or already earning search impressions — get their own block
+        # above it, with the reason they are there written next to them.
+        # ZIP codes this neighborhood's own buildings actually sit in. No count:
+        # see zip_links_html for why this page is not entitled to print one.
+        nb_zips = zip_links_html({str(x.get("z") or "") for x in items} & set(zip_hubs))
+        notable = [x for x in items if x["bbl"] in promoted_bbls][:40]
+        notable_html = ""
+        if notable:
+            rows = []
+            for x in notable:
+                # Mirrors promoted_building() in the same order. The last
+                # branch is the ever-served rule, which has no fact of its own
+                # to quote, so it says what is true of every building here.
+                why = (f"{x.get('u'):,} apartments"
+                       if (x.get("u") or 0) >= PROMOTE_UNITS
+                       else "frequently searched")
+                rows.append(f"<tr><td><a href=\"{bld_url(x)}\">"
+                            f"{esc(titlecase_addr(x.get('a')))}</a></td>"
+                            f"<td>{esc(why)}</td></tr>")
+            notable_html = (f"<h2>Notable buildings in {esc(nb)}</h2>"
+                            f"<table class='facts'><tr><th>Building</th><th>Why</th></tr>"
+                            + "".join(rows) + "</table>")
+        nb_cond_html, nb_cond_faq = hub_conditions_html(
+            f"{nb}, {boroname}", norms.get((boro, nb)) or {})
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
+                f"<h1>Rent-stabilized buildings in {esc(nb)}, {esc(boroname)}</h1>"
+                + answer_block([
+                    f"{nb}, {boroname} has {n:,} buildings registered as rent stabilized with "
+                    f"New York State DHCR"
+                    + (f", most of them built around {med}." if med else "."),
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — check the address below and ask the landlord for its "
+                    "rent history.",
+                ])
+                # Before the CTA and after the answer block, the same placement
+                # the building pages give their comparison block: it is the
+                # substance of the answer, not an appendix to it. `norms` is the
+                # dict the building pages already compare against — see
+                # hub_condition_facts() for why this tier and not /building/.
+                + nb_cond_html
+                + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
+                + vblock(items, f"{nb}, {boroname}")
+                + notable_html
+                # The ZIP hubs have always linked out to the neighborhoods they
+                # overlap; this is the reciprocal. Only ZIPs actually present in
+                # THIS neighborhood's buildings, so the link is a fact about the
+                # page's own records rather than a borough-wide link block
+                # stamped onto every page.
+                + (f"<h2>ZIP codes in {esc(nb)}</h2>"
+                   f"<div class='cols'>{nb_zips}</div>" if nb_zips else "")
+                + f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
+        nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
+                   f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
+                   f"according to NY State DHCR registration data.")]
+        if med:
+            nb_faq.append((f"What year were most rent-stabilized buildings in {nb} built?",
+                           f"Most rent-stabilized buildings in {nb}, {boroname} were built around {med}, "
+                           f"based on NYC PLUTO records for the {n:,} DHCR-registered buildings tracked here."))
+        nb_faq += nb_cond_faq
+        body += faq_html(nb_faq)
+        nb_crumb = breadcrumb([
+            ("Home", SITE + "/"),
+            (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+            (nb, canonical),
+        ])
+        # This page IS a collection — every stabilized building in one
+        # neighborhood — so it carries a Dataset node for that slice.
+        nb_ds = dataset_jsonld(
+            name=f"Rent-stabilized buildings in {nb}, {boroname}",
+            description=(f"The {n:,} buildings in {nb}, {boroname} registered as rent "
+                         f"stabilized with New York State DHCR, with address, BBL, year "
+                         f"built, apartment count, registered owner and open HPD "
+                         f"violations. A slice of the citywide Find A Crib dataset."),
+            url=canonical,
+            spatial={"@type": "Place", "name": f"{nb}, {boroname}, New York, NY",
+                     "address": {"@type": "PostalAddress", "addressLocality": boroname,
+                                 "addressRegion": "NY", "addressCountry": "US"}},
+            size=n)
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Find A Crib",
+                   f"All {n} rent-stabilized buildings in {nb}, {boroname}. Check any address for status, owner, and violations.",
+                   canonical, body, [nb_crumb, faq_jsonld(nb_faq), nb_ds]))
+        urls.append((canonical, "0.7", boro))
+
+    # ---- borough hub pages ----
+    nbs_by_boro = defaultdict(list)
+    for (boro, nb), items in by_nb.items():
+        nbs_by_boro[boro].append((nb, len(items)))
+    for boro, nbs in nbs_by_boro.items():
+        boroname = BORO_NAME.get(boro, "New York")
+        url = f"/borough/{BORO_SLUG.get(boro,'nyc')}/"
+        canonical = SITE + url
+        total = sum(c for _, c in nbs)
+        links = "".join(f"<a href=\"{nb_url(boro, nb)}\">{esc(nb)} ({c:,})</a>"
+                        for nb, c in sorted(nbs))
+        boro_zip_pairs = dict(zips_by_boro.get(boro, []))
+        boro_zips = zip_links_html(boro_zip_pairs, counts=boro_zip_pairs)
+        # The borough's own buildings, flattened once and used twice — the
+        # voucher block below already walks exactly this list. neighborhood_norms
+        # over it is five extra passes for the whole build, against 198 it
+        # already does per neighborhood.
+        boro_items = [x for nb, _c in nbs for x in by_nb[(boro, nb)]]
+        boro_cond_html, boro_cond_faq = hub_conditions_html(
+            boroname, neighborhood_norms(boro_items))
+        body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
+                f"<h1>Rent-stabilized buildings in {esc(boroname)}</h1>"
+                + answer_block([
+                    f"{sentence_start(boroname)} has {total:,} buildings registered as rent "
+                    f"stabilized with New York State DHCR, spread across "
+                    f"{len(nbs)} neighborhoods.",
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — find the address here and ask the landlord for its "
+                    "rent history.",
+                ])
+                + boro_cond_html
+                + f"<a class='cta' href='/'>Open the map →</a>"
+                f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
+                f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
+                + vblock(boro_items, boroname)
+                + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>"
+                # The second way into the same buildings, and the one crawl path
+                # into /zip/ that does not run through the noindexed building
+                # tier. A ZIP is listed under the borough that holds most of its
+                # buildings, which is the same rule its own breadcrumb uses, so
+                # the two cannot point at different boroughs for one ZIP.
+                + (f"<h2>ZIP codes in {esc(boroname)}</h2>"
+                   f"<div class='cols'>{boro_zips}</div>" if boro_zips else ""))
+        boro_faq = [(f"How many rent-stabilized buildings are in {boroname}?",
+                     f"There are {total:,} registered rent-stabilized buildings across {len(nbs)} "
+                     f"neighborhoods in {boroname}, according to NY State DHCR registration data.")]
+        boro_faq += boro_cond_faq
+        body += faq_html(boro_faq)
+        boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings in {boroname} ({total}) | Find A Crib",
+                   f"Browse {total} rent-stabilized buildings across {boroname} by "
+                   + ("neighborhood and ZIP code." if boro_zips else "neighborhood."),
+                   canonical, body, [boro_crumb, faq_jsonld(boro_faq)]))
+        urls.append((canonical, "0.8", boro))
+
+    # ---- master hub /buildings/ ----
+    hub_links = ""
+    for boro in ["M", "Bk", "Q", "Bx", "SI"]:
+        if boro not in nbs_by_boro:
+            continue
+        boroname = BORO_NAME.get(boro)
+        nl = "".join(f"<a href=\"{nb_url(boro, nb)}\">{esc(nb)} ({c:,})</a>"
+                     for nb, c in sorted(nbs_by_boro[boro]))
+        hub_links += (f"<h2><a href='/borough/{BORO_SLUG[boro]}/'>{esc(boroname)}</a></h2>"
+                      f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings</a> &nbsp;·&nbsp; "
+                      f"<a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
+                      f"<div class='cols'>{nl}</div>")
+    write("buildings/index.html",
+          page("NYC rent-stabilized buildings by neighborhood | Find A Crib",
+               "Browse every NYC rent-stabilized building by borough and neighborhood — Manhattan, Brooklyn, Queens, the Bronx, Staten Island.",
+               SITE + "/buildings/",
+               f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "
+               f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
+               f"or <a href='/'>open the interactive map</a>.</p>"
+               # The citywide count, with no address list: naming twelve of a few
+               # hundred on the page that covers all five boroughs would be an
+               # arbitrary sample, and the hub link already leads to all of them.
+               + voucher_hub_block([b["bbl"] for b in blds], voucher_avail,
+                                   voucher_asof, "New York City")
+               # /buildings/ is one of the few pages a crawler reliably reaches,
+               # so the council tier hangs off it rather than depending on the
+               # homepage nav alone.
+               + "<p><a href='/landlord/'>Who owns NYC's rent-stabilized buildings</a> — "
+                 "every landlord and managing agent ranked by portfolio size and open "
+                 "violations.</p>"
+               + "<p><a href='/council-district/'>Rent-stabilized housing and open HPD "
+                 "violations by NYC Council District →</a></p>"
+               + hub_links
+               # /buildings/ is a priority-0.9 page and one of the few places a
+               # crawler reliably reaches. The other three cities' browse tiers
+               # hang off it so they are not dependent on the city guides alone
+               # for internal links.
+               + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
+               + "".join(f"<a href='/{k}/buildings/'>{esc(c['browse_h1'])}</a>"
+                         for k, c in CITY_HUBS.items())
+               + "</div>"))
+    urls.append((SITE + "/buildings/", "0.9", "hub"))
+
+    # ===== long-tail hub + listicle pages (high-intent searches) =====
+    # ---- ZIP-code hubs: "rent-stabilized buildings in ZIP 11221" ----
+    # Membership, the address sort and the dominant borough were all settled in
+    # zip_hubs above, because the neighborhood and borough pages link into this
+    # tier and are written first. Recomputing them here would let the links and
+    # the pages drift apart on a future edit.
+    for z, (items, dom) in zip_hubs.items():
+        boroname = BORO_NAME.get(dom, "New York")     # dominant borough: breadcrumb + copy
+        nbs = sorted({x["nb"] for x in items if x.get("nb")})
+        url = zip_url(z)
+        canonical = SITE + url
+        n = len(items)
+        links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items[:400])
+        nb_links = "".join(f"<a href=\"{nb_url(dom, nb)}\">{esc(nb)}</a>" for nb in nbs)
+        # WHY THIS TIER GOT THE CONDITIONS BLOCK, 2026-10-30. It was the only
+        # NYC hub tier stating nothing about the records it lists: two counts
+        # (buildings, neighborhoods) and one FAQ pair, where /neighborhood/ and
+        # /borough/ have carried hub_conditions_html since 2026-10-09. It is
+        # also the tier that most needs it. /zip/ has 7 of the 289 URLs this
+        # property has EVER served, second only to /building/ among generated
+        # pages, and growth/results.jsonl read its sibling-shared text at 20.4%
+        # on 2026-10-30 against 14.2% on 2026-10-12 — the first rebuild in
+        # seventeen days raised it, and these pages had the least of their own
+        # to say in the first place.
+        #
+        # norms is computed from THIS ZIP's own buildings, so every number is an
+        # aggregate of rows the page already lists — the rule the block was
+        # written to and the reason it can be trusted beside the link list.
+        # A ZIP can straddle boroughs, so the heading names the ZIP and not the
+        # dominant borough: the records are the ZIP's, whichever borough they
+        # fall in.
+        zip_cond_html, zip_cond_faq = hub_conditions_html(
+            f"ZIP code {z}", neighborhood_norms(items))
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(dom,'nyc')}/'>{esc(boroname)}</a></div>"
+                f"<h1>Rent-stabilized buildings in ZIP {esc(z)}</h1>"
+                + answer_block([
+                    f"ZIP code {z} in {boroname} contains {n:,} buildings registered as rent "
+                    f"stabilized with New York State DHCR.",
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — find the address below and ask the landlord for its "
+                    "rent history.",
+                ])
+                # Same placement as /neighborhood/: after the answer block and
+                # before the CTA, because it is the substance of the answer.
+                + zip_cond_html
+                + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
+                + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
+                + vblock(items, f"ZIP {z}")
+                + f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
+        zip_faq = [(f"How many rent-stabilized buildings are in ZIP code {z}?",
+                    f"There are {n:,} registered rent-stabilized buildings in ZIP code {z} "
+                    f"({boroname}), according to NY State DHCR registration data.")]
+        zip_faq += zip_cond_faq
+        body += faq_html(zip_faq)
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            (boroname, SITE + f"/borough/{BORO_SLUG.get(dom,'nyc')}/"),
+                            (f"ZIP {z}", canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings in ZIP {z}, {boroname} ({n}) | Find A Crib",
+                   f"All {n} rent-stabilized buildings in ZIP code {z} ({boroname}). Check any address for status, owner, year built, and violations.",
+                   canonical, body, [crumb, faq_jsonld(zip_faq)]))
+        urls.append((canonical, "0.7", dom))
+
+    # ---- borough "largest" + "oldest" listicles ----
+    SUPER = [("largest", "Largest rent-stabilized buildings", lambda x: -(x.get("u") or 0), "u",
+              lambda x: f"{x['u']:,} apartments", "apartment count", "Apartments"),
+             ("oldest", "Oldest rent-stabilized buildings", lambda x: (x.get("yr") or 99999), "yr",
+              lambda x: f"built {x['yr']}", "year built", "Year built")]
+    for boro in ["M", "Bk", "Q", "Bx", "SI"]:
+        bb = [x for x in blds if x["b"] == boro]
+        if len(bb) < 10:
+            continue
+        boroname = BORO_NAME.get(boro, "New York")
+        for kind, htext, keyf, field, label, by_phrase, col in SUPER:
+            ranked = sorted([x for x in bb if x.get(field)], key=keyf)[:50]
+            if len(ranked) < 5:
+                continue
+            url = boro_list_url(boro, kind)
+            canonical = SITE + url
+            rows = "".join(
+                f"<tr><td>{i+1}</td><td><a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a></td>"
+                f"<td>{esc(x.get('nb') or '')}</td><td>{esc(label(x))}</td></tr>"
+                for i, x in enumerate(ranked))
+            body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                    f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
+                    f"<h1>{htext} in {esc(boroname)}</h1>"
+                    f"<p class='lead'>The {len(ranked)} {kind} DHCR rent-stabilized buildings in "
+                    f"{esc(boroname)}, ranked by {by_phrase}.</p>"
+                    f"<a class='cta' href='/'>Open the map →</a>"
+                    f"<table class='facts'><thead><tr><th>#</th><th>Building</th>"
+                    f"<th>Neighborhood</th><th>{col}</th></tr></thead><tbody>{rows}</tbody></table>")
+            crumb = breadcrumb([("Home", SITE + "/"),
+                                (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+                                (htext, canonical)])
+            write(url.strip("/") + "/index.html",
+                  page(f"{htext} in {boroname} | Find A Crib",
+                       f"The {len(ranked)} {kind} rent-stabilized buildings in {boroname}, ranked by {by_phrase}.",
+                       canonical, body, crumb))
+            urls.append((canonical, "0.6", boro))
+
+    # ---- "no open violations" (best-maintained) borough pages ----
+    # Renters search for well-maintained buildings; this cut refreshes as HPD
+    # violation data updates each month, so it's naturally fresh content.
+    def open_viol(x):
+        return ((x.get("h") or {}).get("violations") or {}).get("open")
+    for boro in ["M", "Bk", "Q", "Bx", "SI"]:
+        boroname = BORO_NAME.get(boro, "New York")
+        # buildings with an HPD record (so 0 is real, not "unknown") and 0 open violations
+        clean = [x for x in blds if x["b"] == boro and open_viol(x) == 0]
+        clean.sort(key=lambda x: -(x.get("u") or 0))   # biggest well-maintained first
+        clean = clean[:60]
+        if len(clean) < 5:
+            continue
+        url = f"/borough/{BORO_SLUG.get(boro,'nyc')}/no-violations/"
+        canonical = SITE + url
+        rows = "".join(
+            f"<tr><td>{i+1}</td><td><a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a></td>"
+            f"<td>{esc(x.get('nb') or '')}</td><td>{esc(x.get('u') or '—')}</td></tr>"
+            for i, x in enumerate(clean))
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
+                f"<h1>Rent-stabilized buildings with no open violations in {esc(boroname)}</h1>"
+                f"<p class='lead'>{len(clean)} DHCR rent-stabilized buildings in {esc(boroname)} that currently "
+                f"have <strong>zero open HPD violations</strong> on record — a useful signal of a well-maintained "
+                f"building. Largest first. Always verify a building's current record before you sign.</p>"
+                f"<a class='cta' href='/'>Open the map →</a>"
+                f"<table class='facts'><thead><tr><th>#</th><th>Building</th>"
+                f"<th>Neighborhood</th><th>Apartments</th></tr></thead><tbody>{rows}</tbody></table>"
+                f"<p style='margin-top:16px'><a href='/guide/rent-stabilized-tenant-rights/'>"
+                f"Learn your rights as a rent-stabilized tenant →</a></p>")
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+                            ("No open violations", canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings with no open violations in {boroname} | Find A Crib",
+                   f"{len(clean)} rent-stabilized buildings in {boroname} with zero open HPD violations. "
+                   f"A signal of well-maintained buildings — verify before you sign.",
+                   canonical, body, crumb))
+        urls.append((canonical, "0.6", boro))
+
+    # ---- /available/ (buildings advertised for rent) was REMOVED 2026-10-06:
+    # it was built entirely from the Zumper/StreetEasy listing feed the owner
+    # dropped. refresh_seo.sh deploys without --delete, so the live pages were
+    # removed from the docroot by hand the same day.
+
+    # ---- cornerstone guide pages (/guide/ hub + one page per guide) ----
+    for g in GUIDES:
+        canonical, doc = guide_page(g)
+        write(f"guide/{g['slug']}/index.html", doc)
+        urls.append((canonical, "0.8", "guide"))
+
+    # /guide/ hub linking every guide
+    hub_canonical = SITE + "/guide/"
+    # Grouped by city. A flat list of nine cards reads as one NYC pile with three
+    # strays in it; the headings are also what tells a reader (and a crawler)
+    # that SF/LA/DC are covered here at all.
+    CITY_LABELS = [("nyc", "New York City"), ("sf", "San Francisco"),
+                   ("la", "Los Angeles"), ("dc", "Washington, DC")]
+    sections = []
+    for key, label in CITY_LABELS:
+        group = [g for g in GUIDES if g.get("city", "nyc") == key]
+        if not group:
+            continue
+        cards = "".join(
+            f"<a class='card' href='/guide/{g['slug']}/'><strong>{esc(g['h1'])}</strong>"
+            f"<div style='color:#4a4a68;font-size:14px;margin-top:4px'>{esc(g['desc'])}</div></a>"
+            for g in group)
+        sections.append(f"<h2>{esc(label)}</h2><div class='grid'>{cards}</div>")
+    hub_crumb = breadcrumb([("Home", SITE + "/"), ("Guides", hub_canonical)])
+    hub_body = ("<div class='crumbs'><a href='/'>Home</a> › Guides</div>"
+                "<h1>Rent stabilization &amp; rent control guides</h1>"
+                "<p class='lead'>Plain-English answers to the most common questions about rent-regulated "
+                "apartments in New York City, San Francisco, Los Angeles and Washington, DC — what the rules are, "
+                "how to check your own unit, and what your rights are as a tenant. Each city's rules are different, "
+                "so start with your city.</p>"
+                + "".join(sections) +
+                "<h2>Check a building</h2><p>Rent regulation is building-specific — look up any address on the map.</p>"
+                "<a class='cta' href='/'>🔎 Open the Find A Crib map →</a>")
+    write("guide/index.html",
+          page("Rent Stabilization & Rent Control Guides — NYC, SF, LA, DC | Find A Crib",
+               "Plain-English guides to rent regulation in NYC, San Francisco, Los Angeles and Washington DC: "
+               "check if your apartment is covered, tenant rights, lease renewals, and the exemptions that matter.",
+               hub_canonical, hub_body, hub_crumb))
+    urls.append((hub_canonical, "0.9", "guide"))
+
+    # ---- /methodology/ (see methodology_page) ----
+    # In the guide shard rather than a shard of its own: it is one URL, and a
+    # one-URL sitemap shard is noise in the index. Priority 0.9 — every page on
+    # the site links to it and it is the page that says why any of them can be
+    # believed.
+    meth_canonical, meth_doc = methodology_page()
+    if meth_doc:
+        write("methodology/index.html", meth_doc)
+        urls.append((meth_canonical, "0.9", "guide"))
+    else:
+        print("methodology: skipped — no corpus to describe")
+
+    # ---- the SF / LA / DC browse tier (see CITY_HUBS above) ----
+    # Sharded into its own sitemap per city by the loop below, because the key
+    # in `urls` is the shard name: 2026 guidance on large sites is consistent
+    # that mixing thousands of URLs into one sitemap makes it harder, not
+    # easier, for a crawler to tell the important pages from the noise.
+    city_built = city_hub_pages(urls)
+    print("city hubs: " + ", ".join(f"{k}={v}" for k, v in sorted(city_built.items())))
+
+    # ---- NYC Council district tier (see council_district_pages) ----
+    council = council_district_pages(urls)
+    print(f"council districts: {len(council)}")
+
+    # ---- landlord / managing-agent tier (see landlord_pages) ----
+    landlord_pages(urls)
+
+    # ---- sitemaps (sharded by borough, < 50k each) + index ----
+    by_boro_urls = defaultdict(list)
+    for loc, pri, key in urls:
+        by_boro_urls[key].append((loc, pri))
+    smaps = []
+    shard_lastmod = {}
+    for key, locs in by_boro_urls.items():
+        name = f"sitemap-{key}.xml"
+        body = "".join(f"<url><loc>{loc}</loc><lastmod>{LASTMOD.get(loc, BUILD_DATE)}</lastmod>"
+                       f"<priority>{pri}</priority></url>" for loc, pri in locs)
+        write(name, f'<?xml version="1.0" encoding="UTF-8"?>'
+                    f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>')
+        shard_lastmod[name] = max((LASTMOD.get(loc, BUILD_DATE) for loc, _ in locs), default=BUILD_DATE)
+        smaps.append(name)
+    idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{shard_lastmod.get(n, BUILD_DATE)}</lastmod></sitemap>"
+                  for n in sorted(smaps))
+    # main sitemap = homepage + hand-authored pages (developer API portal).
+    # These aren't generated in the loop above, so list them here explicitly.
+    static_pages = [("/", "1.0"), ("/developers/", "0.8"),
+                    # The free keyless address-check widget (T016). Live since
+                    # before 2026-08-08 and, until 2026-09-12, in no sitemap and
+                    # linked from nowhere on the site — the only way to reach it
+                    # was to type the URL. Its technique's hypothesis is that
+                    # every embed becomes a permanent backlink, which cannot
+                    # start while the page describing the widget is unreachable.
+                    ("/embed/", "0.6"),
+                    # HPD lottery-agent directory (hand-written page, data from
+                    # build_marketing_agents.py)
+                    ("/marketing-agents/", "0.8"),
+                    # city maps (sf/la/dc pages are generated by build_city_pages.py)
+                    ("/sf/", "0.9"), ("/la/", "0.9"), ("/dc/", "0.9")]
+    # Stage the three hand-authored pages no deploy script owns, BEFORE the
+    # lastmod pass below. Order matters and is the whole reason this line sits
+    # here: write() puts each staged page into LASTMOD from the bytes about to
+    # be rsynced, and track_static_lastmods then takes its "this build
+    # generated it after all" branch and leaves those dates alone. Called the
+    # other way round, the three would be dated from the PREVIOUS deploy and
+    # the sitemap would announce yesterday's page while serving today's.
+    stage_static_pages()
+    # Their <lastmod> now comes from the live pages' own bytes rather than from
+    # today's date — see track_static_lastmods. This runs before the index is
+    # written because sitemap-main.xml's entry in the index is the max of what
+    # the shard contains, exactly like every generated shard above.
+    n_static = track_static_lastmods([p for p, _ in static_pages])
+    main_lastmod = max((LASTMOD.get(SITE + p, BUILD_DATE) for p, _ in static_pages),
+                       default=BUILD_DATE)
+    main_urls = "".join(f'<url><loc>{SITE}{p}</loc>'
+                        f'<lastmod>{LASTMOD.get(SITE + p, BUILD_DATE)}</lastmod>'
+                        f'<priority>{pr}</priority></url>' for p, pr in static_pages)
+    print(f"static lastmod: {n_static} of {len(static_pages)} listed-but-not-generated "
+          f"pages dated from their own bytes; sitemap-main.xml lastmod {main_lastmod}")
+    # sitemap-daily.xml is owned by the daily growth engine (growth/techniques.py).
+    # This monthly build must still list it, or a rebuild would silently drop the
+    # daily section out of the index until the next growth run repaired it.
+    idx += (f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc>"
+            f"<lastmod>{daily_shard_lastmod()}</lastmod></sitemap>")
+    write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
+          f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+          f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{main_lastmod}</lastmod></sitemap>{idx}</sitemapindex>')
+    write("sitemap-main.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
+          f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{main_urls}</urlset>')
+    # robots.txt is deliberately NOT written here. The daily growth engine owns it
+    # (growth/techniques.py:t_llms_txt) because it names the AI crawlers explicitly
+    # and lists both sitemaps; writing the short version here would revert that
+    # every month until the next daily run.
+
+    # persist lastmod state + emit the list of changed URLs for IndexNow.
+    # Only submitted URLs are worth pinging: the triage above put noindex on
+    # ~46k building pages, which changes their bytes and so marks every one of
+    # them "changed". Announcing 46,000 freshly-noindexed pages to IndexNow is
+    # at best wasted quota and at worst the kind of bulk submission that makes
+    # a small domain look like a spam farm — the pages we want crawled would be
+    # a rounding error in the payload.
+    submitted = {loc for loc, _, _ in urls} | {SITE + p for p, _ in static_pages}
+    json.dump(LM_NEW, open(LM_STATE_PATH, "w"))
+    ping = sorted(set(LM_CHANGED) & submitted)
+    with open(os.path.join(OUT, "changed_urls.txt"), "w") as f:
+        f.write("\n".join(ping))
+    print(f"IndexNow: {len(ping):,} changed URLs to ping "
+          f"({len(set(LM_CHANGED)):,} pages changed, {len(set(LM_CHANGED)) - len(ping):,} "
+          f"not submitted so not announced)")
+
+    n_bld = len(blds)
+    # The serving-history line is here so a future reader can see, in the build
+    # log, whether the fourth rule is still doing work — if `kept` ever falls to
+    # roughly zero it means the pages Google shows now also clear the other
+    # rules, and the rule can be retired rather than quietly carried forever.
+    served_in_corpus = EVER_SERVED_BBLS & {str(b["bbl"]) for b in blds}
+    kept = served_in_corpus & promoted_bbls
+    print(f"index triage: {len(promoted_bbls):,} of {n_bld:,} building pages promoted "
+          f"({len(promoted_bbls) * 100.0 / n_bld:.1f}%); the rest are noindex,follow "
+          f"and out of the sitemap")
+    print(f"index triage: {len(kept):,} of {len(served_in_corpus):,} building pages "
+          f"that have ever served are promoted (serving history: "
+          f"{len(EVER_SERVED_BBLS):,} BBLs)")
+    print(f"Generated {len(urls):,} submitted URLs + {len(smaps)+2} sitemaps into {OUT}/ "
+          f"({len(LM_CHANGED)} pages changed this run)")
+
+
+if __name__ == "__main__":
+    main()

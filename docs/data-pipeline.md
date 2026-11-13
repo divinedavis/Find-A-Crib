@@ -2,6 +2,9 @@
 
 Moved from the README on 2026-11-06. Back to the [README](../README.md).
 
+Every script named here lives in `pipeline/` (moved from the repo root on
+2026-11-13); run them from the repo root, e.g. `python3 pipeline/fetch_hpd.py`.
+
 ## Data pipeline
 
 | Step | Script | Output |
@@ -60,11 +63,11 @@ the report sequence all use it. A job that loses the slot holds its content
 (`state["held"]` per subscriber, `state["pending"]` per user) for tomorrow.
 
 ```sh
-python3 saved_alerts.py --dry-run                        # print, no sends
-python3 saved_alerts.py --weekly --dry-run               # force the digest
-python3 saved_alerts.py --test-email you@x.com           # one sample email
-python3 lottery_alerts.py --nudge --dry-run              # first-week round-up
-python3 lottery_alerts.py --weekly --test-email you@x.com
+python3 pipeline/saved_alerts.py --dry-run                        # print, no sends
+python3 pipeline/saved_alerts.py --weekly --dry-run               # force the digest
+python3 pipeline/saved_alerts.py --test-email you@x.com           # one sample email
+python3 pipeline/lottery_alerts.py --nudge --dry-run              # first-week round-up
+python3 pipeline/lottery_alerts.py --weekly --test-email you@x.com
 ```
 
 The map's first view: `/api/geo` resolves the visitor's network address

@@ -53,7 +53,7 @@ if [ "$SKIP" != "--skip-tests" ]; then
 fi
 
 echo "== regenerating city pages from index.html"
-"$PY" build_city_pages.py | tail -1
+"$PY" pipeline/build_city_pages.py | tail -1
 
 if [ "$SKIP" != "--skip-tests" ]; then
   "$PY" tests/apple_street_preview.py

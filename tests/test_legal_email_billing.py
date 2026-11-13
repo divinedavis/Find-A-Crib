@@ -57,13 +57,13 @@ class OneClickUnsubscribe(unittest.TestCase):
     def test_no_sender_puts_a_fragment_in_list_unsubscribe(self):
         # The header url is what one-click POSTs to; a #fragment never reaches
         # a server. Saved alerts and the account series used to do exactly that.
-        for f in ("saved_alerts.py", "growth/accounts.py"):
+        for f in ("pipeline/saved_alerts.py", "growth/accounts.py"):
             src = read(f)
             self.assertNotRegex(src, r'f"\{SITE\}/#unsub=', f)
             self.assertIn("account_unsub_url(", src, f)
 
     def test_api_route_get_never_unsubscribes_post_does(self):
-        src = read("api_server.py")
+        src = read("api/api_server.py")
         i = src.index('@app.route("/email/unsubscribe"')
         body = src[i:src.index("\n@app.route", i + 10)]
         self.assertIn('methods=["GET", "POST"]', body)
@@ -86,7 +86,7 @@ class OneClickUnsubscribe(unittest.TestCase):
         self.assertIn("grant execute on function public.unsubscribe_casa(uuid) to service_role", sql)
 
     def test_casa_alerts_send_the_header(self):
-        src = read("casa_alerts.py")
+        src = read("pipeline/casa_alerts.py")
         self.assertIn('emailkit.send(w["email"], subject, html, text, unsub_url=w.get("unsub"))', src)
         self.assertIn('account_unsub_url(tok[w["user_id"]], "casa")', src)
 
@@ -112,7 +112,7 @@ class OneClickUnsubscribe(unittest.TestCase):
         for part in (text, html):
             self.assertIn(ADDRESS, part)
             self.assertIn("Unsubscribe", part)
-        src = read("founding_members.py")
+        src = read("pipeline/founding_members.py")
         self.assertIn('msg["List-Unsubscribe"]', src)
         self.assertIn('msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"', src)
         self.assertIn('not r.get("opted_out")', src)
@@ -127,7 +127,7 @@ class OneClickUnsubscribe(unittest.TestCase):
             self.assertNotIn("caprecruiting", part)
             self.assertNotRegex(part.lower(), r"\bfree\b")  # FAC copy rule
         self.assertNotRegex(subject.lower(), r"\bfree\b")
-        src = read("comp_campaign.py")
+        src = read("pipeline/comp_campaign.py")
         self.assertIn('msg["List-Unsubscribe"]', src)
         self.assertIn('msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"', src)
         self.assertIn('r.get("opted_out")', src)
@@ -141,9 +141,9 @@ class OneClickUnsubscribe(unittest.TestCase):
     def test_hand_built_user_mail_is_gone_or_footed(self):
         # Any script that mails a user without emailkit.render must say how it
         # carries the address. Owner-only reports are listed as exempt.
-        owner_only = {"check_dhcr_list.py", "seo_health.py", "seo_search_console.py",
-                      "traffic_report.py", "monitoring/uptime_watch.py"}
-        for path in [*ROOT.glob("*.py"), *ROOT.glob("growth/*.py"), *ROOT.glob("monitoring/*.py")]:
+        owner_only = {"pipeline/check_dhcr_list.py", "pipeline/seo_health.py", "pipeline/seo_search_console.py",
+                      "pipeline/traffic_report.py", "monitoring/uptime_watch.py"}
+        for path in [*ROOT.glob("pipeline/*.py"), *ROOT.glob("api/*.py"), *ROOT.glob("growth/*.py"), *ROOT.glob("monitoring/*.py")]:
             rel = str(path.relative_to(ROOT))
             src = path.read_text(errors="ignore")
             if "smtplib.SMTP" not in src or rel == "growth/emailkit.py" or rel in owner_only:
@@ -169,7 +169,7 @@ class BillingNotices(unittest.TestCase):
             self.assertNotIn("Unsubscribe", part)   # transactional
 
     def test_reminder_never_waits_for_the_daily_mail_cap(self):
-        src = read("billing_notices.py")
+        src = read("pipeline/billing_notices.py")
         self.assertNotIn("mailcap.claim", src.replace("Deliberately no mailcap.claim()", ""))
 
     def test_webhook_records_trial_will_end(self):

@@ -12,6 +12,10 @@ rent-stabilized and income-restricted apartments. It is mostly Python
 (scrapers, builders, an API server), one large `index.html` front end, and a
 SwiftUI app in `ios/`. Data pipeline overview: `docs/data-pipeline.md`.
 
+Scripts live in `pipeline/` (jobs, builders, shared modules) and the Flask
+server in `api/`; run them from the repo root (`python3 pipeline/x.py`). Never
+add a script at the top level (`tests/test_repo_layout.py` fails if you do).
+
 ## Setup and checks
 
 No API keys, database or server access are needed. Use Python 3.14 (what CI
@@ -59,8 +63,8 @@ JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/j
   pushed is public forever. The pre-push hook and CI run gitleaks.
 - **Contributors: never run the deploy or ship scripts** (`scripts/deploy_*.sh`,
   `ios/scripts/ship.sh`, `ios/scripts/submit_for_review.py`) or anything that
-  sends email, push notifications or posts (`growth/`, `growth_daily.py`,
-  `*_alerts.py`, `comp_campaign.py`). They target production and fail without
+  sends email, push notifications or posts (`growth/`, `pipeline/growth_daily.py`,
+  `pipeline/*_alerts.py`, `pipeline/comp_campaign.py`). They target production and fail without
   the maintainer's keys anyway.
 - **No live calls to paid APIs in tests.** Mock the Anthropic client and other
   network calls; `tests/run_unit.py` must pass offline with no keys.

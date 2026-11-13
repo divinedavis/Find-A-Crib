@@ -10,9 +10,9 @@ owner's own visits are always excluded. Needs the Supabase PAT in the macOS
 keychain (`supabase-pat-clockin`).
 
 ```sh
-python3 traffic_report.py                      # dashboard
-python3 traffic_report.py --json               # raw JSON
-python3 traffic_report.py --email a@b.com      # email the dashboard
+python3 pipeline/traffic_report.py                      # dashboard
+python3 pipeline/traffic_report.py --json               # raw JSON
+python3 pipeline/traffic_report.py --email a@b.com      # email the dashboard
 ```
 
 Emailing uses `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` from the

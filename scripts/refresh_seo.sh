@@ -157,7 +157,7 @@ elif [ "$SRC" = "$BUILD" ]; then
   CODE_STATE=no-source
 elif ! git -C "$SRC" rev-parse --short HEAD >/dev/null 2>&1; then
   CODE_STATE=no-source
-elif ! ( cd "$SRC" && python3 -m py_compile build_seo.py seo_guides.py ) 2>/dev/null; then
+elif ! ( cd "$SRC" && python3 -m py_compile pipeline/build_seo.py pipeline/seo_guides.py ) 2>/dev/null; then
   # Source is present but broken. Leave $BUILD alone and say so loudly enough
   # that the morning review sees a named cause instead of an unexplained freeze.
   CODE_STATE=skipped-compile
@@ -187,11 +187,14 @@ else
   for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json \
            growth/gsc_pages.json \
            developers/index.html embed/index.html marketing-agents/index.html; do
-    if [ -f "$SRC/$f" ] && ! cmp -s "$SRC/$f" "$BUILD/$f"; then
+    # Scripts live in the checkout's pipeline/ since 2026-11-13; $BUILD stays flat.
+    src="$SRC/$f"
+    case "$f" in *.py) src="$SRC/pipeline/$f" ;; esac
+    if [ -f "$src" ] && ! cmp -s "$src" "$BUILD/$f"; then
       mkdir -p "$BUILD/$(dirname "$f")"
       # `cp && n=…` as the last statement of the loop body would take the whole
       # script out under `set -e` if the copy ever failed on permissions.
-      if cp -f "$SRC/$f" "$BUILD/$f"; then n=$((n + 1)); fi
+      if cp -f "$src" "$BUILD/$f"; then n=$((n + 1)); fi
     fi
   done
   if [ "$n" -gt 0 ]; then CODE_STATE="synced-$n"; else CODE_STATE=in-sync; fi

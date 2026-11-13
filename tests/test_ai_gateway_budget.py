@@ -36,7 +36,7 @@ class Budget(unittest.TestCase):
         self.assertEqual(gateway().allow(None, "apply_help"), "sign_in_required")
 
     def test_api_marks_broker_fee_free(self):
-        src = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api_server.py")).read()
+        src = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api/api_server.py")).read()
         self.assertIn('AI.allow(user, "broker_fee", "rules")', src)
 
 

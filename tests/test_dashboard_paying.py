@@ -10,7 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class DashboardPaying(unittest.TestCase):
     def test_api_sends_paying_range(self):
-        with open(os.path.join(ROOT, "api_server.py")) as f:
+        with open(os.path.join(ROOT, "api/api_server.py")) as f:
             src = f.read()
         self.assertIn('"paying_range": (_fac_paying, since)', src)
         self.assertIn('rpc("dashboard_paying"', src)

@@ -111,7 +111,7 @@ class FreeGateway(unittest.TestCase):
         self.assertIn(R.MODEL, ai_gateway.PRICES)
 
     def test_api_routes_gate_as_designed(self):
-        src = open(os.path.join(ROOT, "api_server.py")).read()
+        src = open(os.path.join(ROOT, "api/api_server.py")).read()
         self.assertIn('_rules_tool("repair", renter_tools.repair, _REPAIR_KEYS)', src)
         self.assertIn('_rules_tool("renewal", lambda a: renter_tools.renewal(a, FMR), _RENEWAL_KEYS, plus=True)', src)
         self.assertIn("renter_tools.py", open(os.path.join(ROOT, "scripts", "deploy_api.sh")).read())

@@ -273,7 +273,7 @@ class TheOwnerCanActuallyRecordASend(unittest.TestCase):
 
     def test_the_cli_exposes_outreach_mark(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(root, "growth_daily.py"), encoding="utf-8") as f:
+        with open(os.path.join(root, "pipeline/growth_daily.py"), encoding="utf-8") as f:
             src = f.read()
         self.assertIn("outreach-mark", src)
         self.assertIn("cmd_outreach_mark", src)

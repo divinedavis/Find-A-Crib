@@ -20,5 +20,5 @@ def test_no_job_mails_the_growth_report():
 def test_the_engine_is_paused_with_its_lines_kept():
     text = CRON.read_text()
     assert not [l for l in _jobs() if "growth_run.sh" in l]
-    assert "#PAUSED-20261107 0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh daily" in text
-    assert "#PAUSED-20261107 40 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh build --deploy" in text
+    assert "#PAUSED-20261107 0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/pipeline/growth_run.sh daily" in text
+    assert "#PAUSED-20261107 40 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/pipeline/growth_run.sh build --deploy" in text

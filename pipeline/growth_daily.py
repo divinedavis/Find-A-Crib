@@ -1,0 +1,1018 @@
+#!/usr/bin/env python3
+"""Find A Crib growth engine — daily driver.
+
+Two crons run this on the web droplet:
+
+  05:40 UTC  growth_daily.py build --deploy      (after the 04:15 voucher scrape)
+  06:00 ET   growth_daily.py daily --email …     (measure, review, report)
+
+Commands:
+  build     run every active technique, write pages into growth_out/
+  deploy    rsync growth_out/ into the docroot
+  measure   pull yesterday's traffic/funnel/revenue numbers into the ledger
+  review    judge active techniques; retire the dead and the redundant
+  report    print / email the daily growth report
+  daily     measure → review → report
+  status    print the ledger and the scoreboard
+  seo-status  re-read the SEO corpus after growth_run.sh's watchdog repaired it,
+              and correct the build record it was too early to describe
+
+Nothing here touches the live docroot except `deploy`, and `--dry-run` makes
+every command read-only, so it is safe to run by hand on the server.
+"""
+import argparse
+import json
+import os
+import subprocess
+import sys
+import traceback
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _ROOT)   # growth/ lives at the repo root
+
+from growth import ledger, keywords, metrics, report, review, seed, techniques  # noqa: E402
+
+DEFAULT_BUILD = _ROOT
+DEFAULT_DOCROOT = "/var/www/rent-map"
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+# ------------------------------------------------------------------- build
+
+def cmd_build(args):
+    seed.run()
+    keywords.seed()
+    ctx = techniques.Context(args.build_dir, args.docroot, dry_run=args.dry_run, log=log)
+
+    active = {t["slug"] for t in ledger.active()}
+    run_log = []
+    for slug in techniques.ORDER:
+        if slug not in active:
+            log(f"  skip {slug} (not active in the ledger)")
+            continue
+        fn = techniques.REGISTRY.get(slug)
+        if not fn:
+            log(f"  skip {slug} (no implementation)")
+            continue
+        try:
+            res = fn(ctx)
+        except Exception as e:
+            traceback.print_exc()
+            res = {"ok": False, "detail": f"crashed: {e}"}
+        res["slug"] = slug
+        run_log.append(res)
+        log(f"  [{'ok ' if res.get('ok') else 'FAIL'}] {slug}: {res.get('detail', '')}")
+
+    ledger.set_state("last_build", {"date": ledger.today(), "log": run_log,
+                                    "new": len(ctx.new_urls), "changed": len(ctx.changed_urls)})
+    if not args.dry_run:
+        # Record how stale the separately-built SEO corpus is as its own field,
+        # not only inside a technique's detail string. It is the biggest single
+        # blocker when it goes stale — the 47k pages Google actually crawls stop
+        # being rewritten, so every build_seo.py change sits in git — and both
+        # readers of this file need it first-class: the report, to put one
+        # actionable line on the owner's phone, and the cloud review agent,
+        # which cannot see the docroot at all and had been reverse-engineering
+        # the date out of a sentence in t_crawl_paths' detail.
+        age = techniques._seo_corpus_age(args.docroot)
+        # …and what that pipeline says about itself. The age above is an mtime:
+        # it dates the freeze but never explains it, and a cron that never
+        # fired, a crashed build_seo.py and a failed rsync are three different
+        # owner actions behind one identical number. refresh_seo.sh writes a
+        # status record into the docroot; this build is the only thing that can
+        # carry it out to the cloud review, because it is the only one that
+        # commits. None until the droplet picks up the 2026-08-12 script.
+        ledger.write_last_run("build", {
+            "new_urls": len(ctx.new_urls), "changed_urls": len(ctx.changed_urls),
+            "techniques": _stamp_unchanged(run_log),
+            "seo_corpus": {"written": age[0], "days_old": age[1]} if age else None,
+            "seo_pipeline": techniques._seo_pipeline_status(args.docroot),
+            "deployed": bool(args.deploy)})
+    log(f"  {len(ctx.new_urls)} new URLs, {len(ctx.changed_urls)} changed")
+
+    if args.deploy and not args.dry_run:
+        cmd_deploy(args)
+    return run_log
+
+
+def _stamp_unchanged(run_log):
+    """Techniques whose result today is word-for-word yesterday's result.
+
+    Several techniques are verifiers, not builders — t_hub_direct_answers and
+    t_crawl_paths say so in their own docstrings. On a healthy day they re-read
+    the docroot, find the block already where it should be, and report the same
+    sentence they reported last night. That is the technique working, but it is
+    not something the run built, and the owner's dashboard card is headed "What
+    the growth engine shipped": a card that lists "answer block on 623 of 623
+    hub pages" every morning for a fortnight teaches the reader to stop looking
+    at it, which is the opposite of what a build log is for.
+
+    build_log.did_work() already drops the no-ops a technique announces in words
+    ("nothing new to submit"). It cannot catch these, because a state statement
+    that happens to be identical is not phrased like a no-op. The comparison it
+    needs is against the PREVIOUS run, and this is the only place both runs are
+    in hand — last_run.json still holds last night's record when the build is
+    about to overwrite it.
+
+    `same_since` is the date the sentence last changed, carried forward across
+    runs, so the card can say how long a line has been standing still rather
+    than only that it did not move overnight. A failing technique is never
+    stamped: repeated failure is news every single day it repeats.
+    """
+    try:
+        prev = (ledger.read_last_run().get("build") or {}).get("techniques") or {}
+    except Exception:
+        prev = {}
+    today = ledger.today()
+    out = {}
+    for r in run_log:
+        ok = bool(r.get("ok"))
+        detail = r.get("detail", "")
+        rec = {"ok": ok, "detail": detail}
+        was = prev.get(r["slug"]) or {}
+        same = (ok and detail
+                and bool(was.get("ok")) and (was.get("detail") or "") == detail)
+        if same:
+            rec["unchanged"] = True
+            rec["same_since"] = was.get("same_since") or was.get("first_seen") or today
+        out[r["slug"]] = rec
+    return out
+
+
+def cmd_deploy(args):
+    out = os.path.join(args.build_dir, "growth_out")
+    if not os.path.isdir(out):
+        log("  nothing to deploy")
+        return
+    # No --delete: the docroot also holds the app, the data blobs and the
+    # monthly SEO build. We only ever add or overwrite our own files.
+    r = subprocess.run(["rsync", "-a", out + "/", args.docroot + "/"],
+                       capture_output=True, text=True)
+    if r.returncode:
+        log(f"  deploy FAILED: {r.stderr.strip()}")
+    else:
+        log(f"  deployed {out} -> {args.docroot}")
+
+
+# ----------------------------------------------------------------- measure
+
+def cmd_measure(args):
+    try:
+        data, totals = metrics.collect_and_record(days=args.days)
+    except Exception as e:
+        log(f"  measure failed: {e}")
+        return None
+    for d, m in sorted(data.items()):
+        log(f"  {d}: {m['visitors']} visitors, {m['organic_visitors']} organic, "
+            f"{m['ai_visitors']} AI")
+    log(f"  totals: {totals}")
+    try:
+        from growth import searchconsole
+        gsc = searchconsole.collect(days=7)
+        log(f"  search console: {gsc['page_clicks']} clicks, {gsc['page_impressions']} impressions "
+            f"(page dimension; query dimension sees {gsc['clicks']}/{gsc['impressions']}), "
+            f"{gsc['serving_pages']} pages serving, {gsc['tracked_ranking']}/{len(keywords.load())} "
+            f"tracked queries ranking, share {gsc['share_pct']}%")
+    except Exception as e:
+        log(f"  search console unavailable: {e}")
+    # Measured index coverage. gsc_serving_pages counts pages that earned an
+    # impression, which needs the page to be indexed AND someone to have
+    # searched for it; on 47k address pages the second half is the binding
+    # constraint, so that number has never actually said whether the corpus is
+    # indexed. This asks Google directly, for a stable stratified sample.
+    if os.environ.get("GROWTH_INDEX_STATUS", "1") != "0":
+        try:
+            from growth import indexstatus
+            ix = indexstatus.collect(args.docroot)
+            if ix.get("ok"):
+                log(f"  index status: {ix['inspected']} inspected, "
+                    f"{ix['read']}/{ix['cohort']} cohort read, "
+                    f"{ix['indexed_pct']}% indexed")
+            else:
+                log(f"  index status unavailable: {ix.get('detail')}")
+        except Exception as e:
+            log(f"  index status failed: {type(e).__name__}: {e}")
+    # Google's own view of the sitemaps, which is the half the census above
+    # cannot see. indexstatus builds its cohort from the LOCAL sitemap files, so
+    # every "URL is unknown to Google" reading it has ever produced assumes
+    # Google read the shard that URL lives in. Nothing checked that assumption
+    # until 2026-10-02. See growth/sitemapstatus.py for why the two readings
+    # call for opposite work.
+    if os.environ.get("GROWTH_SITEMAP_STATUS", "1") != "0":
+        try:
+            from growth import sitemapstatus
+            sm = sitemapstatus.collect(args.docroot)
+            log(f"  sitemap status: {sm.get('detail')}")
+        except Exception as e:
+            log(f"  sitemap status failed: {type(e).__name__}: {e}")
+    rec = {"days": args.days,
+           "latest_measured_day": max(data) if data else None}
+    # Where yesterday's visitors entered and what sent them. state.json is
+    # gitignored, so anything a later review needs to read has to ride in
+    # last_run.json — see growth/metrics.census().
+    if data:
+        cen = data[max(data)].get("_census")
+        if cen:
+            rec["traffic"] = cen
+            log(f"  entry: {cen['visitors']} visitors, channels {cen['by_channel']}"
+                + (f", tagged {cen['by_src']}" if cen["by_src"] else ""))
+    try:
+        _, changed = keywords.check_coverage(args.docroot)
+        s = keywords.summary()
+        log(f"  keywords: {s['covered']}/{s['total']} covered ({s['coverage_pct']}%), "
+            f"{changed} changed")
+        rec.update({"keywords_covered": s["covered"], "keywords_total": s["total"],
+                    "coverage_pct": s["coverage_pct"]})
+    except Exception as e:
+        # A coverage failure used to take the whole record with it, because the
+        # write was inside this try — and an absent `measure` record is exactly
+        # what a review reads as "measurement did not run last night".
+        log(f"  keyword coverage failed: {e}")
+        rec["keyword_coverage_error"] = f"{type(e).__name__}: {e}"[:200]
+    ledger.write_last_run("measure", rec)
+    return data
+
+
+# ------------------------------------------------------------------ review
+
+def cmd_review(args):
+    out = review.run(apply=not args.dry_run)
+    for r in out["evaluated"]:
+        if r["action"] != "skip":
+            log(f"  {r['id']} {r['slug']}: {r['action']} — {r['why']}")
+    for a in out["actions"]:
+        log(f"  {a}")
+    if not out["actions"]:
+        log("  no changes")
+    return out
+
+
+# ------------------------------------------------------------------ report
+
+def cmd_report(args, run_log=None, review_out=None):
+    # Built once: the console gets the text part, the email gets both parts.
+    built = report.build(run_log=run_log, review_out=review_out)
+    text = built[2]
+    print(text)
+    if args.email and not args.dry_run:
+        try:
+            report.email(args.email, prebuilt=built)
+            log(f"\n  emailed to {args.email}")
+        except Exception as e:
+            log(f"\n  email failed: {e}")
+    return text
+
+
+def cmd_journal(args):
+    """Append a decision-journal entry (see growth/journal.py)."""
+    from growth import journal
+    if not args.title:
+        print(journal.read(last=args.days or 1) or "(journal is empty)")
+        return
+    entry = journal.append(title=args.title, observed=args.observed or "",
+                           concluded=args.concluded or "", changed=args.changed or "",
+                           watching=args.watching or "", author=args.author or "daily-review")
+    print(entry)
+
+
+HEARTBEAT_PATH = os.path.join(DEFAULT_BUILD, "growth", "cron_heartbeat.jsonl")
+
+# The tracked copy of the droplet's growth cron. scripts/deploy_jobs.sh scp's it
+# into /etc/cron.d/rentmap-growth, and the file's own header forbids hand-editing
+# the box ("do not hand-edit the file on the box, or the repo and the droplet
+# drift apart silently"), so this copy is the intent of record — and the only
+# copy a review running on a bare checkout can read at all.
+GROWTH_CRON_PATH = os.path.join(DEFAULT_BUILD, "deploy", "cron-rentmap-growth")
+
+
+def growth_paused(path=None):
+    """Is the growth engine commented out on purpose? Returns (paused, marker).
+
+    Why this exists, 2026-10-13. The owner paused the whole engine on 2026-10-12
+    (commit 7182da1, "pause seo for FAC"): all three growth_run.sh cron lines
+    carry a #PAUSED-20261012 prefix and tests/test_job_sandbox.py pins them that
+    way. The next morning cron_liveness() led with "NO RUN FOR 1.2 DAYS — cron,
+    the host or the checkout" — failure-shaped, and naming three causes that are
+    all wrong. A deliberate pause is not a dead cron, and the standing
+    instruction to this review is to raise a cron-failure concern only when the
+    engine is GENUINELY stale, so the one file that can tell the two apart has to
+    be read before the age is interpreted.
+
+    error_report.dead_crons() already stands down on exactly this condition, but
+    it reads /etc/cron.d/rentmap-growth, which exists only on the droplet. This
+    reads the tracked copy, so it works where the review actually runs.
+
+    Three states, not two, and the difference matters:
+      * a live growth_run line        -> (False, "")  the engine is meant to run
+      * no growth_run line whatsoever -> (False, "")  UNKNOWN, not a pause. An
+        empty or truncated cron file must not be able to silence the staleness
+        alarm; that would turn the one honest failure signal into a no-op.
+      * every growth_run line commented out -> (True, marker)
+
+    Reports the TRACKED file and claims nothing about the box: the two can drift
+    until deploy_jobs.sh runs, so the caller says "the tracked cron" and leaves
+    the heartbeat's own age standing beside it as corroboration.
+    """
+    try:
+        with open(path or GROWTH_CRON_PATH) as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return False, ""
+    if not any("growth_run.sh" in l for l in lines):
+        return False, ""
+    if any(l.strip() and not l.lstrip().startswith("#") and "growth_run.sh" in l
+           for l in lines):
+        return False, ""
+    marker = ""
+    for l in lines:
+        i = l.find("#PAUSED-")
+        if i != -1:
+            marker = l[i:].split()[0]
+            break
+    return True, marker
+
+
+# Scripts under growth/ that a LIVE cron line runs: growth code with a path to
+# production while growth_run.sh itself is paused.
+#
+# Why this exists, 2026-10-22. The pause headline used to end "and nothing pushed
+# here reaches production". That was true on 2026-10-12 and false from 2026-10-21,
+# when the owner put growth/section8_refresh.py on cron-rentmap-scrape (5ceeb4d)
+# to keep /section8/ rebuilt while the engine is off. That script calls
+# t_fresh_section8 straight out of growth/techniques.py, and rerental_daily.sh
+# pulls origin/main into /root/Find-A-Crib at 06:45 UTC and every two hours from
+# 09:00, so a commit pushed here is executing on the droplet within hours. Nine
+# consecutive reviews deferred page changes on the strength of that sentence, so
+# it has to be DERIVED from the cron files rather than remembered.
+DEPLOY_DIR = os.path.join(DEFAULT_BUILD, "deploy")
+
+
+def growth_live_paths(deploy_dir=None):
+    """Live cron lines running a script under growth/. Returns [(cron file, script)].
+
+    Reads the TRACKED cron files, exactly as growth_paused() does, and claims
+    nothing about the box; the two can drift until deploy_jobs.sh runs.
+    growth_run.sh is deliberately excluded — growth_paused() reports that one,
+    and a live growth_run line means the engine is not paused at all.
+
+    The honest limit: a path is recognised as a bare whitespace-delimited token
+    starting "growth/" and ending ".py", so an invocation wrapped in shell
+    quotes (sh -c '... growth/x.py') is MISSED. Every cron line in deploy/ is
+    written plainly today and a quoted one would have to be added by hand; the
+    cost of missing it is this headline understating what reaches production,
+    which is the direction the sentence already erred in.
+    """
+    found = []
+    try:
+        names = sorted(os.listdir(deploy_dir or DEPLOY_DIR))
+    except OSError:
+        return found
+    for name in names:
+        if not name.startswith("cron-"):
+            continue
+        try:
+            with open(os.path.join(deploy_dir or DEPLOY_DIR, name)) as f:
+                lines = f.read().splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            if not line.strip() or line.lstrip().startswith("#") or "growth_run.sh" in line:
+                continue
+            for tok in line.split():
+                if tok.startswith("growth/") and tok.endswith(".py"):
+                    found.append((name, tok))
+    return found
+
+
+def cron_liveness(path=HEARTBEAT_PATH, now=None):
+    """Has the droplet's cron actually been running?
+
+    growth_run.sh appends a start and a finish record per invocation and commits
+    the file, so this is the one question a review running on a bare checkout can
+    answer directly instead of inferring from silence. Returns (summary, rows).
+    """
+    import datetime
+    try:
+        with open(path) as f:
+            rows = [json.loads(l) for l in f if l.strip()]
+    except FileNotFoundError:
+        return ("no heartbeat file — growth_run.sh has not run since it was added "
+                "on 2026-08-10, or an older copy is deployed on the droplet"), []
+    except json.JSONDecodeError as e:
+        return f"heartbeat file is corrupt ({e})", []
+    if not rows:
+        return "heartbeat file is empty", []
+    last = rows[-1]
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    try:
+        at = datetime.datetime.fromisoformat(last["at"].replace("Z", "+00:00"))
+        hours = (now - at).total_seconds() / 3600.0
+        age = f"{hours:.1f}h ago"
+    except Exception:
+        hours, age = None, "unparseable timestamp"
+    # A run that started and never finished is a crash mid-flight; a finish with
+    # rc != 0 is a run that reported its own failure. Both beat silence.
+    if last.get("phase") == "bootstrap":
+        state = "no droplet run recorded yet — only the file's bootstrap record"
+    elif last.get("phase") == "start":
+        state = f"STARTED BUT NEVER FINISHED ({last.get('job')}) — the run died mid-flight"
+    elif last.get("rc") not in (0, None):
+        state = f"last run FAILED rc={last.get('rc')} ({last.get('job')}): {last.get('note') or 'no output captured'}"
+    else:
+        state = f"last run ok ({last.get('job')})"
+    # Worth saying out loud even on a green run: it means the operator's push and
+    # the droplet's own ledger write collided, which used to wedge the checkout.
+    if last.get("pull") == "recovered":
+        state += " — but the pull hit a conflict and was reset to origin/main"
+    if hours is not None and hours > 26:
+        paused, marker = growth_paused()
+        if paused:
+            # Switched off, not broken. Still lead with the pause AND the age:
+            # a pause nobody meant to leave running looks exactly like a healthy
+            # one, so the number of quiet days stays in the headline.
+            live = growth_live_paths()
+            # The pause stops the growth BUILD. It does not stop a script under
+            # growth/ that some other, un-paused cron runs — and since 2026-10-21
+            # one does, so this must not go on saying nothing gets through.
+            reach = ("and nothing pushed here reaches production" if not live else
+                     "and the growth build publishes nothing — but "
+                     + ", ".join(f"{script} is live on {cron}" for cron, script in live)
+                     + ", run from the droplet checkout rerental_daily.sh pulls "
+                       "origin/main into, so code pushed here DOES reach readers")
+            state = (f"PAUSED ON PURPOSE — no live growth_run line in the tracked "
+                     f"deploy/cron-rentmap-growth"
+                     f"{f' ({marker})' if marker else ''}, so no measurement has "
+                     f"landed for {hours / 24:.1f} days {reach}. Resume: drop the "
+                     f"prefix and run scripts/deploy_jobs.sh. " + state)
+        else:
+            state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
+    return f"{state}; last record {age}", rows
+
+
+def cmd_seo_status(args):
+    """Re-read the SEO corpus after the watchdog has run, and correct last_run.json.
+
+    Ordering bug this exists to fix, observed 2026-08-20. growth_run.sh does
+    three things in this order: run `build --deploy` (which writes
+    last_run.json's build record, including seo_corpus and seo_pipeline read
+    from the docroot), then run the SEO watchdog (which re-runs
+    scripts/refresh_seo.sh and REWRITES that corpus), then commit and push. The
+    watchdog only fires when the corpus is stale — so on every morning it
+    succeeds, the record that gets committed is the pre-fix snapshot saying the
+    corpus is frozen. On 2026-08-20 the heartbeat carried seo_watchdog_finish
+    rc=0 "ran refresh_seo.sh to completion" at 05:41:24 while the committed
+    last_run.json said "NO RUN FOR 2.0 DAYS — cron, the host or the checkout",
+    and `status` printed that as its headline. The one file the cloud review is
+    told to trust as ground truth was structurally guaranteed to report failure
+    on the mornings the repair worked.
+
+    So: after the watchdog, re-read the docroot and patch those two fields in
+    place, and record what the watchdog itself did as `seo_watchdog` — rc, note
+    and time — so the outcome is first-class in last_run.json instead of only
+    in the heartbeat, which the report cannot read and no reviewer opens first.
+
+    --watchdog-rc/-note are the values growth_run.sh already computed for the
+    heartbeat. `ran` is always set explicitly, on every path, for the reason
+    2026-07-28 taught: a job whose record omits `ok` gets announced as a
+    failure it never had.
+    """
+    age = techniques._seo_corpus_age(args.docroot)
+    pipe = techniques._seo_pipeline_status(args.docroot)
+    rc = args.watchdog_rc
+    # Correct these two only upward in confidence: a re-read that comes back
+    # empty (unreadable docroot, a deleted status file) must leave the build's
+    # own reading standing rather than blank it. Both readers treat a MISSING
+    # seo_corpus as "nothing known" and fall silent, so clobbering a real
+    # "frozen since 08-18" with null would suppress the very alarm this command
+    # exists to keep honest. Keeping the older value can only under-report
+    # freshness, never claim a frozen corpus is fresh, and that is the side to
+    # err on.
+    rec = {"seo_watchdog": {
+            "ran": True,
+            "ok": rc == 0,
+            "rc": rc,
+            # Same truncation rule as the heartbeat note: this is committed to
+            # a public repo and the tail of a build log is not reviewed here.
+            "note": (args.watchdog_note or "")[:300],
+            "at": ledger.now_iso(),
+        },
+    }
+    if age:
+        rec["seo_corpus"] = {"written": age[0], "days_old": age[1]}
+    if pipe:
+        rec["seo_pipeline"] = pipe
+    techs = _reread_docroot_verifiers(args)
+    if techs is not None:
+        rec["techniques"] = techs
+    if args.dry_run:
+        log(f"  (dry run) would patch build: {json.dumps(rec, sort_keys=True)}")
+        return rec
+    ledger.patch_last_run("build", rec)
+    log(f"  corpus now {age[0] if age else 'UNREADABLE — left the build reading in place'} "
+        f"({age[1] if age else '?'}d old); watchdog rc={rc}")
+    return rec
+
+
+def _reread_docroot_verifiers(args):
+    """Re-run the pure docroot audits now the SEO pipeline has actually rebuilt.
+
+    The same lag cmd_seo_status corrects for seo_corpus and seo_pipeline applies
+    to every technique that reads the docroot, and it was left uncorrected for a
+    fortnight. `build --deploy` runs the audits, THEN the watchdog rewrites the
+    47,599 pages they audit, so each audit describes yesterday's corpus. See
+    techniques.DOCROOT_VERIFIERS for the membership rule and for the 2026-09-04
+    and 2026-09-16 worked examples — two mornings on which an audit reported a
+    good change as a failure because it had read the corpus ninety seconds
+    before the pipeline rebuilt it.
+
+    Returns the full `techniques` map to patch back, or None to leave the
+    build's own map standing. None on every failure path on purpose: this runs
+    after the night's measurements are taken and before they are committed, and
+    a crash here must cost the corpus correction above nothing at all. Each
+    audit is caught separately for the same reason — one unreadable section
+    should not strand the other audit's fresh reading.
+
+    Stamps. _stamp_unchanged() compares each detail against the previous run's
+    and carries `same_since` forward, so a card can say how long a line has
+    stood still. Those stamps were computed against the pre-refresh reading, so
+    they are only correct while the re-read agrees with it:
+
+      * detail identical  — the rebuild did not move this audit. Keep the
+        record exactly as the build stamped it.
+      * detail differs    — the sentence changed today. Drop `unchanged` and
+        date `same_since` to today, which is what _stamp_unchanged would have
+        concluded had it been able to read the rebuilt corpus. From the second
+        run onwards the previous night's committed record is itself post-
+        refresh, so this comparison is like-for-like; the first run after this
+        ships compares post- against pre-refresh once, and may date a
+        `same_since` a day early.
+
+    Every member that this pass reaches is marked, because a record with no mark
+    was silent about three different things: agreed, crashed, or never ran (not
+    active, not in the build's map, or no registry entry). `reread` reads
+    "post-seo-refresh" when the sentence moved, "agreed" when it did not, and
+    "crashed" when the audit raised — and its ABSENCE now means the pass did not
+    reach that audit, which is the one thing it could never say before.
+
+    `ok` is written explicitly on every record, including the failure path, for
+    the reason 2026-07-28 taught: an omitted `ok` gets announced to the owner as
+    "DID NOT RUN — unknown error" by a report that tests `ok is False`.
+    """
+    try:
+        techs = dict((ledger.read_last_run().get("build") or {}).get("techniques") or {})
+        if not techs:
+            return None
+        active = {t["slug"] for t in ledger.active()}
+        # dry_run=True stops a member that quietly writes from deploying pages
+        # out of a correction pass. reread=True is the one that carries meaning:
+        # it tells an audit that this pass runs AFTER the build, its rsync and
+        # the watchdog's rebuild, which is not what a dry run means — a dry run
+        # happens instead of a build, over whatever the last real run left
+        # behind. t_crawl_paths is the first member to need the distinction; it
+        # reads growth_out under ctx.staging_is_current (true in both passes,
+        # false in a dry run) and suppresses its state writes under
+        # ctx.readonly (true in both). See techniques.DOCROOT_VERIFIERS.
+        ctx = techniques.Context(args.build_dir, args.docroot,
+                                 dry_run=True, reread=True, log=log)
+    except Exception as e:
+        log(f"  verifier re-read skipped: {e}")
+        return None
+
+    today = ledger.today()
+    marks = {"post-seo-refresh": 0, "agreed": 0, "crashed": 0}
+    for slug in techniques.DOCROOT_VERIFIERS:
+        if slug not in active or slug not in techs:
+            continue
+        fn = techniques.REGISTRY.get(slug)
+        if not fn:
+            continue
+        try:
+            res = fn(ctx)
+        except Exception as e:
+            log(f"  verifier re-read: {slug} crashed ({e}) — keeping the build's reading")
+            # Say so in the record. Until 2026-09-27 a crash here and an audit
+            # that agreed with itself left byte-identical records, and the one
+            # morning that mattered — t_voucher_reach red at "0 of 288" after a
+            # rebuild that was the first ever to run the code being tested — no
+            # one could tell whether the audit had looked again or fallen over.
+            # A pre-refresh reading of a corpus the refresh then rewrote is not
+            # evidence about the rewrite, so which of the two happened decides
+            # whether the red means anything at all.
+            techs[slug] = dict(techs[slug], reread="crashed")
+            marks["crashed"] += 1
+            continue
+        detail, was = res.get("detail", ""), techs[slug]
+        if not detail or detail == was.get("detail"):
+            # Agreed. Keep ok, detail, `unchanged` and `same_since` exactly as
+            # the build stamped them — those stamps are correct precisely
+            # BECAUSE the re-read agrees, which is the rule this function's
+            # docstring sets out — and add only the fact that it was checked.
+            techs[slug] = dict(techs[slug], reread="agreed")
+            marks["agreed"] += 1
+            continue
+        techs[slug] = {"ok": bool(res.get("ok")), "detail": detail,
+                       "reread": "post-seo-refresh", "same_since": today}
+        marks["post-seo-refresh"] += 1
+        log(f"  verifier re-read: {slug} moved after the rebuild — {detail[:160]}")
+    reached = sum(marks.values())
+    if not reached:
+        # Not "they all agreed" — none of them was even reached. The ledger has
+        # no active member of DOCROOT_VERIFIERS, or the build wrote no technique
+        # map. Leave the build's record alone and name the real reason.
+        log(f"  verifier re-read: no member of DOCROOT_VERIFIERS was reached "
+            f"({len(techniques.DOCROOT_VERIFIERS)} in the set) — build record kept")
+        return None
+    log(f"  verifier re-read: {reached} of {len(techniques.DOCROOT_VERIFIERS)} audits "
+        f"re-read — {marks['post-seo-refresh']} moved, {marks['agreed']} agreed, "
+        f"{marks['crashed']} crashed")
+    return techs
+
+
+def revisit_lines(as_of=None):
+    """The due-revisit block for `status`, as a list of lines.
+
+    WHY THIS EXISTS AT ALL. ledger.revisit_due() had exactly one caller in the
+    whole repo: growth/report.py, the Friday email. So the one input the daily
+    review needs in order to do its third step — "handle anything due for
+    revisit" — was reachable only through a weekly report, and that report has
+    been switched off since the owner paused the growth crons on 2026-10-12.
+    `status` is the command the review actually runs, and it listed every
+    technique and every verdict while saying nothing about which ones were due.
+
+    That is not a hypothetical gap. On 2026-10-25 the review wrote, in the
+    journal, "no revisit pushed (none came due: the nearest is T023 on
+    2026-10-27)" while T011 lifecycle_email and T018 account_lifecycle were
+    both due THAT DAY, and three more came due the next morning. Two deliberate
+    second looks were skipped and the journal recorded the opposite, because
+    the date comparison was being done by eye against a ledger dump.
+
+    Nothing catches up a missed revisit: revisit_due() is a `<= as_of` filter,
+    so a skipped one simply stays due and silent. Hence `OVERDUE`, which the
+    weekly report never said either — it prints the scheduled date and leaves
+    the subtraction to the reader, so one day late and thirty days late read
+    identically.
+
+    Each line also carries ledger.measured_nights_since(), because a revisit
+    with no new evidence behind it is a different job from a real one. See that
+    function for why the date is still allowed to come due on the clock.
+    """
+    import datetime   # local, matching cron_liveness() above
+    due = ledger.revisit_due(as_of=as_of)
+    if not due:
+        return ["revisits: none due"]
+    today = as_of or ledger.today()
+
+    def overdue(t):
+        try:
+            return (datetime.date.fromisoformat(today)
+                    - datetime.date.fromisoformat(t.get("revisit_on"))).days
+        except Exception:
+            return None
+
+    # Most overdue first: the ones that have already been missed are the ones
+    # this block exists to stop being missed again.
+    ranked = sorted(due, key=lambda t: (-(overdue(t) or 0), t.get("id") or ""))
+    out = [f"due for revisit ({len(due)}) — decide keep / change / replace:"]
+    nights = []
+    for t in ranked:
+        n = overdue(t)
+        when = (f"scheduled {t.get('revisit_on')} — "
+                + ("due today" if n == 0 else
+                   f"{n} DAY{'S' if n != 1 else ''} OVERDUE" if n and n > 0 else
+                   "scheduled date unreadable"))
+        decided = ((t.get("verdict") or {}).get("decided")) or None
+        mn = ledger.measured_nights_since(decided)
+        nights.append(mn)
+        if decided and mn is not None:
+            when += f" · {mn} night{'s' if mn != 1 else ''} measured since the verdict of {decided}"
+        elif decided:
+            when += f" · verdict of {decided}, new evidence since it unreadable"
+        else:
+            # Not nothing-to-report: a due revisit on a technique that has
+            # never been judged is the T016 shape, and the reader needs to
+            # know the revisit has no verdict to re-examine.
+            when += " · NO VERDICT EVER RECORDED — nothing to re-examine"
+        mark = "!" if (n or 0) > 0 else "·"
+        out.append(f"  {mark} {t['id']} {t.get('name')}  [{t.get('kind')}/{t.get('status')}]")
+        out.append(f"      {when}")
+        if t.get("status") == "retired":
+            # revisit_due() only returns a retired technique when the
+            # retirement landed BEFORE the date booked for this look, so this
+            # is a statement of fact rather than an inference.
+            out.append(f"      RETIRED {t.get('retired')}, before this date — "
+                       f"reconsider that verdict, do not skip it")
+    # Said once rather than per row: when the engine is not measuring, EVERY
+    # due revisit is being asked on the same frozen evidence, and that is a
+    # fact about the loop rather than about any one technique.
+    if nights and all(n == 0 for n in nights):
+        out.append("      ^ every one of these has 0 new nights of evidence behind it — "
+                   "re-deciding on exactly the data that produced the verdict being re-decided")
+    return out
+
+
+def pre_registration_lines(as_of=None):
+    """The pre-registered-condition block for `status`, as a list of lines.
+
+    WHY IT IS A BLOCK OF ITS OWN, next to the due-revisit block rather than
+    inside it. A revisit asks "is this still the best version of this idea?"
+    on a date. A pre-registration is a promise made earlier about what
+    specific evidence would settle a specific question, and it does not come
+    due on the revisit's clock: T017's fell due 2026-10-26, T023's 2026-10-27,
+    T013's 2026-10-28, none of them on that technique's revisit date.
+
+    Before 2026-10-28 these conditions had no reader at all. Each lived as an
+    English sentence inside a `notes` blob — T013's 7,091 characters in — and
+    the review found it by grepping seed.py. That is the same defect as
+    revisit_lines() above (the one input the review needed, reachable only
+    through a switched-off weekly email) one level down, and it has the worse
+    failure mode: a condition nobody reads is decided by whoever happens to
+    remember it, and the reader who remembers it is the one who wrote it.
+
+    The line that matters most is `cashable`. A condition can be due and still
+    unsafe to act on, and the gap is not a detail: T013's fires on an ABSENCE
+    ("census_known still 0"), so the sixteen days the owner had the crons
+    paused would have supplied its evidence for free. See
+    ledger.pre_registrations for the two shapes and why they differ.
+    """
+    regs = ledger.pre_registrations(as_of=as_of)
+    if not regs:
+        return ["pre-registered conditions: none recorded"]
+    cash = [e for e in regs if e.get("cashable")]
+    blocked = [e for e in regs if e.get("due") and not e.get("cashable")]
+    head = (f"pre-registered conditions ({len(regs)}) — {len(cash)} ready to decide, "
+            f"{len(blocked)} due but NOT cashable:")
+    out = [head]
+    for e in regs:
+        mark = "!" if e.get("cashable") else ("x" if e.get("due") else "·")
+        out.append(f"  {mark} {e['id']} {e.get('slug')}  "
+                   f"[fires on {e.get('fires_on')}"
+                   + (f", written {e['written']}" if e.get("written") else "") + "]")
+        out.append(f"      IF {e.get('condition')}")
+        if e.get("malformed"):
+            out.append(f"      ^ MALFORMED RECORD — {e['malformed']}. Fix the ledger; "
+                       f"do not act on this condition")
+            continue
+        obs, need = e.get("observed_nights"), e.get("needs_nights")
+        if need and obs is not None:
+            out.append(f"      evidence: {obs} of {need} measured nights"
+                       + (f" since {e['since']}" if e.get("since") else ""))
+        elif need:
+            out.append(f"      evidence: none countable yet — {need} measured nights are owed "
+                       f"from the day the window opens")
+        if e.get("cashable"):
+            out.append("      ^ DUE AND CASHABLE — decide it this run, and say so in the journal")
+        else:
+            out.append(f"      ^ not cashable — {e.get('why_not')}")
+    return out
+
+
+def cmd_status(args):
+    summary, rows = cron_liveness()
+    log(f"cron: {summary}")
+    for r in rows[-6:]:
+        log(f"    {r.get('at')} {str(r.get('job'))[:18].ljust(18)} {str(r.get('phase')).ljust(9)}"
+            f" rc={r.get('rc')} pull={r.get('pull')} {(r.get('note') or '')[:60]}")
+    # The second cron, and the one that publishes 47,599 of ~47,600 pages. It
+    # runs from a different checkout and cannot commit, so the only copy that
+    # reaches a bare cloud checkout is the one the build folded into
+    # last_run.json — read it from there, not from the docroot.
+    build = ledger.read_last_run().get("build") or {}
+    corpus, pipe = build.get("seo_corpus") or {}, build.get("seo_pipeline")
+    if pipe:
+        log(f"seo pipeline: {pipe.get('state')}; last record {pipe.get('hours_ago', '?')}h ago"
+            f" ({pipe.get('corpus_pages', '?')} pages built, "
+            f"{pipe.get('changed_urls', '?')} changed, head {pipe.get('head', '?')}, "
+            f"pull {pipe.get('pull', '?')}, code {pipe.get('code', '?')})")
+    elif corpus:
+        log(f"seo pipeline: no status record — the droplet's refresh_seo.sh predates "
+            f"2026-08-12. Corpus mtime says {corpus.get('written')} "
+            f"({corpus.get('days_old')}d ago); that is all we know.")
+    # Whether the watchdog had to step in, and what happened when it did. Both
+    # fields above are re-read after it runs (see cmd_seo_status), so from
+    # 2026-08-20 they describe the corpus AFTER any repair rather than the
+    # snapshot the build happened to take a minute too early.
+    wd = build.get("seo_watchdog")
+    if isinstance(wd, dict) and wd.get("ran"):
+        log(f"seo watchdog: ran at {wd.get('at')}, rc={wd.get('rc')} "
+            f"({'ok' if wd.get('ok') else 'FAILED'}) — {wd.get('note') or 'no note'}")
+    log("")
+    for line in revisit_lines():
+        log(line)
+    log("")
+    for line in pre_registration_lines():
+        log(line)
+    log("")
+    techs = ledger.load_techniques()
+    stale = {t["id"]: ledger.verdict_staleness(t, techs=techs) for t in techs}
+
+    # Said ONCE, above the list, because the thing it prevents is a reader
+    # acting on a single line in isolation. Two consecutive reviews have
+    # already investigated a frozen verdict as though it were a live reading
+    # (2026-10-25's retired co-claimant, 2026-10-27's reclassified judge) and
+    # the second one had a pre-registered failure condition pointed straight
+    # at it. See ledger.verdict_staleness.
+    bad = [i for i, s in stale.items() if s and s["contradicted"]]
+    if bad:
+        log(f"NOTE: {len(bad)} stored verdict{'s' if len(bad) != 1 else ''} below "
+            f"({', '.join(sorted(bad))}) quote{'' if len(bad) != 1 else 's'} a ledger state "
+            f"that has since changed. The text is frozen at the date it was decided; review.py "
+            f"re-reads the live ledger on every run. Confirm with review.run(apply=False) "
+            f"before concluding that a field was reverted.")
+        log("")
+
+    for t in techs:
+        v = t.get("verdict") or {}
+        mark = {"active": "●", "candidate": "○", "retired": "×"}.get(t.get("status"), "?")
+        log(f"{mark} {t['id']} {t['name']}  [{t['kind']}/{t['status']}]")
+        if v:
+            mk = {True: "WORKS", False: "no"}.get(v.get("works"), "UNPROVEN")
+            log(f"    verdict: {mk} — {v.get('why')}")
+            s = stale.get(t["id"])
+            if s:
+                n = s["nights_since"]
+                age = f"      decided {s['decided']}"
+                if n is not None:
+                    age += (f" · {n} night{'s' if n != 1 else ''} measured since"
+                            + (" — NO new evidence behind it" if n == 0 else ""))
+                log(age)
+                for c in s["contradictions"]:
+                    log(f"      ^ FROZEN TEXT, NOT A LIVE READING — it {c}")
+    log("")
+    log(json.dumps(keywords.summary(), indent=2))
+
+
+def cmd_outreach(args):
+    """Research prospects and draft outreach. Never sends — see growth/outreach.py."""
+    if not any(t["slug"] == "b2b_outreach" for t in ledger.active()):
+        log("  b2b_outreach is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import outreach
+    except Exception as e:
+        log(f"  outreach unavailable: {e}")
+        return None
+    try:
+        return outreach.run(dry_run=args.dry_run)
+    except Exception as e:
+        log(f"  outreach failed: {e}")
+        return None
+
+
+
+def cmd_outreach_mark(args):
+    """Record that a human SENT (or got a reply to) one drafted outreach email.
+
+    The missing half of T008 b2b_outreach. growth/outreach.py has always
+    drafted and never sent — CAN-SPAM and GDPR need a human — and
+    outreach.mark() has existed to record what the human did since the module
+    was written, with no caller anywhere in the repo. So the send could only be
+    recorded by opening a Python REPL on the droplet, which means it never was,
+    which means review.py's execution count for this technique would have read
+    0 forever for the wrong reason: not "nobody was written to" but "nobody
+    told the loop". This is the command that tells it.
+
+    Takes the organisation name as it appears in growth/outreach_drafts/ and
+    prints nothing identifying beyond what the operator already typed.
+    """
+    if not args.org or not args.status:
+        log("  outreach-mark needs --org and --status "
+            f"({'/'.join(outreach_statuses())})")
+        return
+    from growth import outreach
+    if args.status not in outreach.SENT_STATUSES:
+        log(f"  unknown status {args.status!r} — "
+            f"expected one of {'/'.join(outreach.SENT_STATUSES)}")
+        return
+    p = outreach.mark(args.org, args.status)
+    if not p:
+        log(f"  no prospect matching {args.org!r} — check growth/prospects.json")
+        return
+    # Re-record today's count so the series reflects the mark immediately
+    # rather than waiting for tomorrow's cron. record_result is idempotent per
+    # (date, technique, metric), so this overwrites today's earlier reading.
+    n = outreach._record_sent()
+    log(f"  {args.org}: {args.status} (sent_at {p.get('sent_at') or '—'}) "
+        f"— {n if n is not None else '?'} send(s) recorded for today")
+
+
+def outreach_statuses():
+    from growth import outreach
+    return outreach.SENT_STATUSES
+def cmd_lifecycle(args):
+    """Buyer follow-up sequence. Only runs if the ledger says it's active."""
+    if not any(t["slug"] == "lifecycle_email" for t in ledger.active()):
+        log("  lifecycle_email is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import lifecycle
+    except Exception as e:
+        log(f"  lifecycle unavailable: {e}")
+        return None
+    try:
+        by_bbl = {}
+        try:
+            with open(os.path.join(args.docroot, "buildings.min.json")) as f:
+                by_bbl = {str(b["bbl"]): b for b in json.load(f)}
+        except Exception:
+            pass          # copy still sends; it just falls back to "your building"
+        return lifecycle.run(buildings_by_bbl=by_bbl, dry_run=args.dry_run)
+    except Exception as e:
+        log(f"  lifecycle failed: {e}")
+        return None
+
+
+def cmd_accounts(args):
+    """Free-account onboarding sequence. Gated on the ledger, like everything else."""
+    if not any(t["slug"] == "account_lifecycle" for t in ledger.active()):
+        log("  account_lifecycle is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import accounts
+    except Exception as e:
+        log(f"  accounts unavailable: {e}")
+        return None
+    try:
+        # The lapsed email cites the live voucher count, so it has to be real.
+        n = None
+        try:
+            with open(os.path.join(args.docroot, "s8.json")) as f:
+                n = len((json.load(f).get("avail") or {}))
+        except Exception:
+            pass
+        # The saved email names the building it is about and offers the report
+        # on it, so it needs the corpus. Without it the step still sends, but
+        # names no building and makes no offer — see accounts.report_target.
+        by_bbl = {}
+        try:
+            with open(os.path.join(args.docroot, "buildings.min.json")) as f:
+                by_bbl = {str(b["bbl"]): b for b in json.load(f)}
+        except Exception:
+            pass
+        return accounts.run(dry_run=args.dry_run, voucher_buildings=n,
+                            buildings_by_bbl=by_bbl)
+    except Exception as e:
+        log(f"  accounts failed: {e}")
+        return None
+
+
+def cmd_daily(args):
+    log("== measure ==")
+    cmd_measure(args)
+    log("== review ==")
+    rv = cmd_review(args)
+    log("== outreach ==")
+    cmd_outreach(args)
+    log("== lifecycle ==")
+    cmd_lifecycle(args)
+    log("== accounts ==")
+    cmd_accounts(args)
+    log("== report ==")
+    last = ledger.get_state("last_build", {})
+    cmd_report(args, run_log=last.get("log"), review_out=rv)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("command", choices=["build", "deploy", "measure", "review",
+                                       "outreach", "outreach-mark", "lifecycle", "accounts",
+                                       "report", "daily", "status",
+                                       "journal", "seo-status"])
+    p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
+    p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
+    p.add_argument("--deploy", action="store_true", help="rsync after build")
+    p.add_argument("--dry-run", action="store_true", help="write nothing, send nothing")
+    p.add_argument("--days", type=int, default=1, help="days to measure (backfill)")
+    p.add_argument("--email", help="email the report here")
+    # journal fields
+    p.add_argument("--title", help="journal: entry title")
+    p.add_argument("--observed", help="journal: what the numbers showed")
+    p.add_argument("--concluded", help="journal: what you concluded and why")
+    p.add_argument("--changed", help="journal: what you actually changed")
+    p.add_argument("--watching", help="journal: what to check next time")
+    p.add_argument("--author", help="journal: who wrote it")
+    # outreach-mark: the human send step T008 is judged on (see cmd_outreach_mark)
+    p.add_argument("--org", help="outreach-mark: organisation as named in the draft")
+    p.add_argument("--status", help="outreach-mark: sent / replied / won / declined")
+    # seo-status: what growth_run.sh's watchdog just did, so last_run.json can
+    # say it without anyone parsing the heartbeat.
+    p.add_argument("--watchdog-rc", type=int, default=0,
+                   help="seo-status: exit code of the watchdog's refresh_seo.sh")
+    p.add_argument("--watchdog-note", default="",
+                   help="seo-status: the watchdog's one-line outcome")
+    args = p.parse_args()
+
+    seed.run()
+    {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
+     "review": cmd_review, "outreach": cmd_outreach,
+     "outreach-mark": cmd_outreach_mark,
+     "lifecycle": cmd_lifecycle, "accounts": cmd_accounts,
+     "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
+     "journal": cmd_journal, "seo-status": cmd_seo_status}[args.command](args)
+
+
+if __name__ == "__main__":
+    main()

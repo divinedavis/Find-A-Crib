@@ -90,6 +90,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STATUS_PATH = os.path.join(HERE, "index_status.json")
 
 sys.path.insert(0, os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "pipeline"))   # pipeline/ holds seo_search_console and the other scripts since 2026-11-13
 
 INSPECT_API = "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect"
 SITE_URL = "https://findacrib.com/"

@@ -349,7 +349,7 @@ class TheReferringPhrasesAreReal(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        src = (Path(__file__).resolve().parent.parent / "build_seo.py").read_text()
+        src = (Path(__file__).resolve().parent.parent / "pipeline/build_seo.py").read_text()
         # Adjacent string literals are joined in the rendered HTML but split
         # across source lines, so close the concatenation seams before looking
         # for a phrase as a reader of the page would see it.

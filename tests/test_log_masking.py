@@ -16,7 +16,7 @@ def test_mask_email():
 
 
 def test_alert_logs_never_print_a_full_address():
-    for s in ("lottery_alerts.py", "saved_alerts.py", "growth/lifecycle.py", "growth/accounts.py"):
+    for s in ("pipeline/lottery_alerts.py", "pipeline/saved_alerts.py", "growth/lifecycle.py", "growth/accounts.py"):
         for i, line in enumerate((ROOT / s).read_text().splitlines(), 1):
             if "print(" in line:
                 assert not re.search(r"\{(sub|u|row)\['email'\]\}", line), f"{s}:{i}"

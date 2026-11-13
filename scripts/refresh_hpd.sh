@@ -25,7 +25,7 @@ main() {
   git pull -q --ff-only || echo "  ! git pull failed; running the checked-out version"
 
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] HPD refresh starting"
-  python3 refresh_hpd_counts.py --docroot "$DOCROOT" "$@"
+  python3 pipeline/refresh_hpd_counts.py --docroot "$DOCROOT" "$@"
 
   # The dashboard API caches the blob in memory, so it serves the old counts
   # until it is restarted. Non-fatal: a stale API is worse than a failed refresh,

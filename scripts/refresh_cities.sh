@@ -32,12 +32,12 @@ for c in "${CITIES[@]}"; do
   echo
   echo "################ $c"
   case "$c" in
-    la) "$PY" build_la.py && "$PY" build_la_records.py ;;
-    sf) "$PY" build_sf.py && "$PY" build_sf_records.py ;;
-    dc) "$PY" build_dc.py && "$PY" build_dc_records.py ;;
+    la) "$PY" pipeline/build_la.py && "$PY" pipeline/build_la_records.py ;;
+    sf) "$PY" pipeline/build_sf.py && "$PY" pipeline/build_sf_records.py ;;
+    dc) "$PY" pipeline/build_dc.py && "$PY" pipeline/build_dc_records.py ;;
     *)  echo "!! no builder for $c" >&2; exit 1 ;;
   esac
-  "$PY" split_hpd.py --docroot "$c"
+  "$PY" pipeline/split_hpd.py --docroot "$c"
   gzip -9 -kf "$c/buildings.min.json"
 done
 

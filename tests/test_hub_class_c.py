@@ -167,7 +167,7 @@ class TheZipTierCarriesTheBlock(unittest.TestCase):
     def test_the_block_is_wired_into_the_zip_page_source(self):
         """A rendered-page test cannot reach main(); this pins the call site."""
         with open(os.path.join(os.path.dirname(os.path.dirname(
-                os.path.abspath(__file__))), "build_seo.py"), encoding="utf-8") as f:
+                os.path.abspath(__file__))), "pipeline/build_seo.py"), encoding="utf-8") as f:
             src = f.read()
         self.assertIn('hub_conditions_html(\n            f"ZIP code {z}"', src)
         self.assertIn("zip_faq += zip_cond_faq", src)

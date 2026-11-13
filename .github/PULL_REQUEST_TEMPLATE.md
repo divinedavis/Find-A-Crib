@@ -11,7 +11,7 @@
 - [ ] `python3 tests/run_unit.py` passes
 - [ ] Added or updated tests in `tests/`
 - [ ] Touched `index.html` / `static/`? Ran `tests/journeys.py` and added a journey
-- [ ] Screenshots attached for any visible change (phone + desktop)
+- [ ] Screenshots attached for any visible change, before and after (`python3 scripts/preview.py --shots shots/after`; iOS: Simulator)
 
 ## Checklist
 

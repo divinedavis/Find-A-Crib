@@ -24,6 +24,11 @@ scripts/install_hooks.sh          # pre-push: secrets scan + unit tests
 python3 tests/run_unit.py         # must pass before every push (CI runs it too)
 ```
 
+To see a front-end change in a browser, `python3 scripts/preview.py` opens the
+live site with your local pages, scripts and styles swapped in (`--device phone`,
+`--shots DIR` for before/after screenshots). The iPhone app builds from a fresh
+clone with the steps in `ios/README.md` ("Build it from a fresh clone").
+
 If you change `index.html` or anything in `static/`, also run the journey
 suite. It loads your local `index.html` over the live site's data:
 
@@ -40,7 +45,7 @@ JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/j
   [`good first issue`](https://github.com/divinedavis/Find-A-Crib/labels/good%20first%20issue).
 - Add or update tests in `tests/test_<thing>.py` with every change, and delete
   tests for code you delete. Every UI change gets a journey in
-  `tests/journeys.py`.
+  `tests/journeys.py`, and its pull request gets before/after screenshots.
 - Commit messages: imperative subject ("Add flyer accuracy report"), then a
   body that explains why, in plain language.
 - The maintainer reviews, merges and deploys. The human contributor is

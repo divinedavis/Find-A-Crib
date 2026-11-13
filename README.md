@@ -66,11 +66,21 @@ pip install requests numpy pillow opencv-python-headless shapely PyJWT segno ant
 python3 tests/run_unit.py                 # unit tests (same as CI)
 ```
 
-To see a front-end change, run the user-journey suite. It loads **your local
-`index.html`** over the live site's data in phone, desktop and iPad browsers:
+To **look at** a front-end change, open the live site with your local files
+swapped in. Pages, scripts and styles come from your checkout; the data,
+`config.js` and the API come from findacrib.com, so no keys or data build:
 
 ```sh
 playwright install chromium webkit
+python3 scripts/preview.py                   # desktop window; Enter reloads after you save
+python3 scripts/preview.py --device phone    # iPhone (WebKit); also --device ipad, --path /sf/
+python3 scripts/preview.py --shots shots/after   # phone + desktop + iPad screenshots
+```
+
+To **test** a front-end change, run the user-journey suite. It loads **your local
+`index.html`** over the live site's data in phone, desktop and iPad browsers:
+
+```sh
 JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/journeys.py
 ```
 

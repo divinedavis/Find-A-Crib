@@ -13,6 +13,24 @@ Profile, floating pill tab bar.
 - `FindACrib/Features` — Search, Results (list + map + filters), Detail, Activity, Profile.
 - `FindACrib/Resources/Data` — seed copies of `buildings.slim.json.gz`, `s8.json`, `fmr.json`, `hcr.json`, `featured.json` (no listing data — removed 2026-10-06). Refresh with `scripts/refresh_data.sh` before a ship.
 
+## Build it from a fresh clone
+You need a Mac with Xcode and XcodeGen (`brew install xcodegen`). No Apple
+developer account is needed for the Simulator.
+
+```sh
+cd ios
+cp Secrets.xcconfig.example Secrets.xcconfig   # then paste the publishable key:
+curl -s https://findacrib.com/config.js | grep SUPABASE_ANON_KEY
+curl -fsS https://findacrib.com/buildings.slim.json.gz -o FindACrib/Resources/Data/buildings.slim.json.gz   # gitignored seed
+scripts/generate.sh
+open FindACrib.xcodeproj     # pick an iPhone simulator, Run
+```
+
+The Supabase key is the public "publishable" one the website already serves.
+Signing, TestFlight and App Store releases stay with the maintainer; never run
+`scripts/ship.sh` or `scripts/daily_ship.sh`. For a UI pull request, attach
+Simulator screenshots before and after.
+
 ## Data
 No API key anywhere in the app. It reads the four JSON files nginx already
 serves to the web app, conditionally (`If-None-Match`), and caches them in

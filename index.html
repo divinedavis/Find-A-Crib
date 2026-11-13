@@ -10,6 +10,7 @@
      App Banner under the status bar (owner, 2026-10-14: "i refreshed the
      screen and now i cant see the download the app ... banner"). Start every
      load, and every return from the back/forward cache, at the top. -->
+<script>/* View-transition promises reject (AbortError) when Safari skips one; catch them before the first frame (2026-11-13). */(function(){function q(e){var v=e.viewTransition;if(v)[v.ready,v.finished,v.updateCallbackDone].forEach(function(p){p&&p.catch&&p.catch(function(){})})}addEventListener('pagereveal',q);addEventListener('pageswap',q)})();</script>
 <script>(function(){try{history.scrollRestoration='manual'}catch(e){}function top(){var a=document.activeElement;if((window.scrollY||0)>0&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))window.scrollTo(0,0)}addEventListener('load',top);addEventListener('pageshow',top)})();</script>
   <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>
 <title>Find A Crib — Rent-Stabilized NYC: Manhattan, Bronx, Brooklyn, Queens + Staten Island</title>
@@ -2526,6 +2527,9 @@ function favActive() {
     // "(empty message)" and cannot be chased (2026-09-20).
     try {
       const r = e.reason;
+      // A skipped page transition (Safari, back/forward cache) is not an error:
+      // the head script catches its promises, this keeps any it misses quiet.
+      if (r && r.name === 'AbortError' && /view transition/i.test(String(r.message || ''))) return;
       const name = (r && (r.name || r.constructor && r.constructor.name)) || typeof r;
       const where = (r && r.stack ? String(r.stack).split('\n')[1] || '' : '').trim().slice(0, 80);
       track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200), name: String(name).slice(0, 40), at: where });

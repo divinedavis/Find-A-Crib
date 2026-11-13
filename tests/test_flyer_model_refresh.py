@@ -67,8 +67,19 @@ def test_printed_cents_become_whole_dollars_for_the_app():
     assert not cf.ungrounded("3249.65", nums) and cf.ungrounded("3299.65", nums)
 
 
+def test_a_bedroom_groups_rent_fills_its_household_rows():
+    rows = [{"beds": 0, "rent": 3543, "units_available": 2}, {"beds": 0, "rent": None, "units_available": None},
+            {"beds": 1, "rent": 3600, "units_available": 8}, {"beds": 1, "rent": None, "units_available": None},
+            {"beds": 1, "rent": 3784, "units_available": 37}, {"beds": 1, "rent": None, "units_available": None},
+            {"beds": 2, "rent": None, "units_available": 1}]
+    out = fr.fill_down_rent({"units": rows})["units"]
+    assert [u["rent"] for u in out] == [3543, 3543, 3600, 3600, 3784, 3784, None]
+    assert [u["units_available"] for u in out] == [2, None, 8, None, 37, None, 1]
+
+
 if __name__ == "__main__":
     test_older_model_is_reread_and_current_model_is_kept()
     test_past_the_limit_the_old_reading_stays_up()
     test_printed_cents_become_whole_dollars_for_the_app()
+    test_a_bedroom_groups_rent_fills_its_household_rows()
     print("ok flyer model refresh")

@@ -183,7 +183,7 @@ def source_numbers(meta, text):
 MONEY = ("rent", "income_min", "income_max")
 # What made a cached reading: the model and this reader's version. Any other
 # value is stale and is read again (bump the suffix when the schema changes).
-READER = f"{cf.HAIKU}/cents"
+READER = f"{cf.HAIKU}/cents+filldown"
 
 
 def whole_dollars(out):
@@ -191,6 +191,20 @@ def whole_dollars(out):
         for k in MONEY:
             if isinstance(u.get(k), float):
                 u[k] = int(u[k] + 0.5)
+    return out
+
+
+def fill_down_rent(out):
+    """Flyer tables print a bedroom size's rent once, on its first household
+    row ("1 Bedroom $3,600 | 1 person ... | 2 people ..."), and the model
+    copies the blank cells as null (House 55, 2026-11-13). A row with no rent
+    takes the rent of the row right above it when the bedroom count matches.
+    units_available is not copied: it belongs to the first row only."""
+    prev = None
+    for u in out.get("units") or []:
+        if prev and u.get("rent") is None and u.get("beds") is not None and u.get("beds") == prev.get("beds"):
+            u["rent"] = prev.get("rent")
+        prev = u
     return out
 
 
@@ -238,7 +252,7 @@ def read_one(listing):
         out["units"] = keep
         if out.get("deadline") and cf.ungrounded(out["deadline"], nums):
             out["deadline"] = None
-    whole_dollars(out)
+    fill_down_rent(whole_dollars(out))
     out["verified"] = verified
     out["read_at"] = datetime.date.today().isoformat()
     out["model"] = cf.HAIKU

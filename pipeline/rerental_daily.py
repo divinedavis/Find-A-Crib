@@ -384,9 +384,65 @@ def sweep_feeds(pages):
     return out
 
 
+def wp_items(name, meta, own=None):
+    """A WordPress board read over its REST API (rerental_feeds.wp_board),
+    turned into the same items a rendered page gives: the titles go through
+    listings_from() exactly as the page's lines would, so keys, the office
+    filter and the address rules are unchanged. Each item also carries the
+    date the agent posted it. Raises rerental_feeds.FeedError on any failure,
+    and the caller renders the page instead."""
+    import rerental_feeds
+    rows = rerental_feeds.wp_board(**meta["wp"])
+    text = "\n".join(r["title"] for r in rows)
+    anchors = [{"t": r["title"], "h": r["link"]} for r in rows if r.get("link")]
+    office = [own.get(name) if own else None] + list(meta.get("offices") or [])
+    items, stated = listings_from(text, name in WAITLIST, office, link_index(anchors))
+    by_label = {re.sub(r'\s+', ' ', r["title"])[:64]: r for r in rows}
+    for it in items:
+        r = by_label.get(it["label"])
+        if r:
+            it["posted"] = r.get("posted")
+            if r.get("link"):
+                it["url"] = r["link"]
+    return items, stated
+
+
+# Boards read over the WordPress REST API instead of a browser (see
+# rerental_feeds.wp_board). Kept here, not in data/rerental_pages.json, because
+# the droplet's sweep rewrites that file all day and the two would collide.
+WP_BOARDS = {
+    "Reside New York LLC": {"site": "https://residenewyork.com", "taxonomy": "property-status",
+                            "term": "open-market", "post_type": "property"},
+}
+
+
+def sweep_wp(pages, own):
+    """Pages with a "wp" entry, read over REST. A page whose REST read fails is
+    left out of the result, so sweep() renders it like any other board."""
+    import rerental_feeds
+    out = {}
+    for name, meta in pages.items():
+        wp = meta.get("wp") or WP_BOARDS.get(name)
+        if not wp or meta.get("feed"):
+            continue
+        meta = dict(meta, wp=wp)
+        try:
+            items, stated = wp_items(name, meta, own)
+        except rerental_feeds.FeedError as e:
+            print(f"  {name}: REST read failed ({e}) — rendering the board instead")
+            continue
+        except Exception as e:  # noqa: BLE001 — a parser bug must not cost the sweep
+            print(f"  {name}: REST read failed ({type(e).__name__}: {str(e)[:60]}) — rendering the board instead")
+            continue
+        out[name] = {"url": meta["url"], "status": 200, "error": None, "items": items,
+                     "stated": stated, "waitlist": name in WAITLIST, "source": "wp"}
+    return out
+
+
 def sweep(pages):
     out = sweep_feeds(pages)
-    rendered = {n: m for n, m in pages.items() if not m.get("feed")}
+    out.update(sweep_wp(pages, offices()))
+    rendered = {n: m for n, m in pages.items() if not m.get("feed") and n not in out}
     if not rendered:
         return out
     from playwright.sync_api import sync_playwright
@@ -561,6 +617,11 @@ def record_new(deltas, results, today):
                           "hood": pl.get("hood"),
                           "rent_low": it.get("rent_low") or fm.get("rent_low"),
                           "income_max": it.get("income_max") or fm.get("income_max"),
+                          # When the agent posted it (WordPress boards), and
+                          # whether it arrived in a batch-guard sweep: the
+                          # alert says "new" only when it really is.
+                          **({"posted": it["posted"]} if it.get("posted") else {}),
+                          **({"board_change": True} if it.get("board_change") else {}),
                           "seen": today, "seen_at": datetime.datetime.now(
                               datetime.timezone.utc).isoformat(timespec="seconds")})
             added += 1
@@ -594,12 +655,27 @@ def diff(prev, results):
         # The whole item travels, not just key/label/url: a feed item also
         # carries its borough, rent and geocoding address (record_new).
         by_key = {i["key"]: i for i in rec["items"]}
-        d[name] = {"new": [dict(by_key[k], url=by_key[k].get("url"))
-                           for k in now - before] if before else [],
+        new = [dict(by_key[k], url=by_key[k].get("url")) for k in sorted(now - before)] if before else []
+        # Batch guard (2026-11-13): Reside's board went from 7 to 17 listings
+        # in one sweep because the page finally rendered fully, not because 17
+        # apartments opened, and every one of them was mailed as "new". When a
+        # board grows by more than it held before (and by more than 5), and
+        # nothing says when those listings were posted, it is a change in what
+        # we can see. They are still recorded and still sent, as "still open",
+        # never as "new".
+        board_change = (len(new) > max(BOARD_CHANGE_MIN, len(before))
+                        and not any(i.get("posted") for i in new))
+        if board_change:
+            new = [dict(i, board_change=True) for i in new]
+        d[name] = {"new": new,
                    "gone": sorted(before - now) if before else [],
                    "failed": False,
+                   "board_change": board_change,
                    "first_seen": not before}
     return d
+
+
+BOARD_CHANGE_MIN = 5
 
 
 def build_report(results, deltas, today, had_history):
@@ -663,6 +739,14 @@ def build_report(results, deltas, today, had_history):
                           "body": "Same listings as yesterday. These pages are "
                                   "first-come, first-served, so a quiet day is normal."})
 
+    changed = sorted(n for n, d in deltas.items() if d.get("board_change"))
+    if changed:
+        blocks.append({"type": "callout", "tone": "warn",
+                       "heading": "Board change at " + ", ".join(changed),
+                       "items": [f"{n}: {len(deltas[n]['new'])} listings appeared at once. "
+                                 "Subscribers get them as \"still open\", not \"new\"."
+                                 for n in changed]})
+
     if failed:
         blocks.append({"type": "callout", "tone": "bad",
                        "heading": f"{len(failed)} page could not be loaded"
@@ -688,9 +772,16 @@ def to_text(results, deltas, today, new_total, failed):
             n = max(rec["stated"], len(rec["items"]))
             kind = "waitlist" if rec["waitlist"] else (f"{n} units" if n else "empty")
             d = deltas.get(name, {})
-            mark = f"  (+{len(d['new'])} new)" if d.get("new") else ""
+            mark = (f"  (+{len(d['new'])} at once — board change, sent as still open)"
+                    if d.get("board_change") else
+                    f"  (+{len(d['new'])} new)" if d.get("new") else "")
+            if rec.get("source") == "wp":
+                mark += "  [REST]"
             out.append(f"  {kind:12s} {name[:38]:38s}{mark}")
     out += ["", f"new since yesterday: {new_total}", f"failing: {len(failed)}"]
+    changed = sorted(n for n, d in deltas.items() if d.get("board_change"))
+    if changed:
+        out.append("board change at: " + ", ".join(changed))
     return "\n".join(out)
 
 

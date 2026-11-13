@@ -1,0 +1,191 @@
+{
+ "_comment": "Reside New York's WordPress REST answers for the open-market board, recorded 2026-11-13 (public listing titles and links only). Used by tests/test_rerental_wp_board.py; no network in run_unit.py.",
+ "terms": [
+  {
+   "id": 580,
+   "slug": "open-market"
+  }
+ ],
+ "properties": [
+  {
+   "date": "2026-11-03T21:49:49",
+   "modified": "2026-11-13T18:13:12",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/atlantic-bk-om/",
+   "title": {
+    "rendered": "Atlantic BK &#8211; OM "
+   }
+  },
+  {
+   "date": "2026-07-14T22:08:13",
+   "modified": "2026-11-13T17:09:26",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/4656-park-avenue-apartment-unit-6d/",
+   "title": {
+    "rendered": "4656 Park Avenue Apartment &#8211; Unit 6D"
+   }
+  },
+  {
+   "date": "2026-11-13T14:26:42",
+   "modified": "2026-11-13T14:58:19",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/2500-apartment-unit-706/",
+   "title": {
+    "rendered": "2500 Barker Ave Apartment &#8211; Unit 706"
+   }
+  },
+  {
+   "date": "2026-11-13T14:11:29",
+   "modified": "2026-11-13T14:11:32",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1526-sedgwick-avenue-apartment-unit-62/",
+   "title": {
+    "rendered": "1526 Sedgwick Avenue Apartment &#8211; Unit 62"
+   }
+  },
+  {
+   "date": "2026-11-12T18:24:35",
+   "modified": "2026-11-12T18:24:39",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1975-madison-om-apartment-one-1-bedroom-unit-2/",
+   "title": {
+    "rendered": "1975 Madison &#8211; OM Apartment – One 1-Bedroom Unit"
+   }
+  },
+  {
+   "date": "2026-11-11T21:10:47",
+   "modified": "2026-11-12T11:05:18",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/190-e-205-street-apartment-unit-3d/",
+   "title": {
+    "rendered": "190 E 205 Street Apartment &#8211; Unit 3D"
+   }
+  },
+  {
+   "date": "2026-11-11T18:13:02",
+   "modified": "2026-11-11T18:13:05",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1975-madison-om-apartment-one-1-bedroom-unit/",
+   "title": {
+    "rendered": "1975 Madison &#8211; OM Apartment – One 1-Bedroom Unit"
+   }
+  },
+  {
+   "date": "2026-11-11T15:53:49",
+   "modified": "2026-11-11T16:53:13",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1281-hoe-ave-apartment-unit-5c-2/",
+   "title": {
+    "rendered": "1281 Hoe Ave Apartment &#8211; Unit 5C"
+   }
+  },
+  {
+   "date": "2026-11-11T14:40:33",
+   "modified": "2026-11-11T14:40:37",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/250-west-49th-street-apartments-2-bedroom/",
+   "title": {
+    "rendered": "250 West 49th Street Apartments &#8211; 2 Bedroom"
+   }
+  },
+  {
+   "date": "2026-11-10T20:38:46",
+   "modified": "2026-11-10T20:38:52",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/98-himrod-street-apartment-unit-4f/",
+   "title": {
+    "rendered": "98 Himrod Street Apartment &#8211; Unit 4F"
+   }
+  },
+  {
+   "date": "2026-11-10T17:55:33",
+   "modified": "2026-11-10T17:55:36",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/864-49th-street-apartment-unit-d12/",
+   "title": {
+    "rendered": "864 49th Street Apartment – Unit D12"
+   }
+  },
+  {
+   "date": "2026-11-09T19:26:09",
+   "modified": "2026-11-09T19:26:11",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/173-tompkins-ave-apartments-2-bedroom/",
+   "title": {
+    "rendered": "173 Tompkins Ave Apartments &#8211; 2 Bedroom"
+   }
+  },
+  {
+   "date": "2026-11-09T18:14:17",
+   "modified": "2026-11-09T19:17:52",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/173-tompkins-ave-apartments-1-bedroom/",
+   "title": {
+    "rendered": "173 Tompkins Ave Apartments &#8211; 1 Bedroom"
+   }
+  },
+  {
+   "date": "2026-07-14T22:08:39",
+   "modified": "2026-11-09T17:47:59",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1047-ogden-avenue-apartments-unit-5e/",
+   "title": {
+    "rendered": "1047 Ogden Avenue Apartment &#8211; Unit 5E"
+   }
+  },
+  {
+   "date": "2026-11-05T22:19:12",
+   "modified": "2026-11-05T22:19:14",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/333-cypress-place-apartment-unit-4g/",
+   "title": {
+    "rendered": "333 Cypress Place Apartment – Unit 4G"
+   }
+  },
+  {
+   "date": "2026-11-05T21:35:58",
+   "modified": "2026-11-05T21:36:00",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/829-east-55-st-apartment-unit-3a/",
+   "title": {
+    "rendered": "829 East 55 St Apartment &#8211; Unit 3A"
+   }
+  },
+  {
+   "date": "2026-11-05T21:11:39",
+   "modified": "2026-11-05T21:11:42",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/350-rutland-road-apartment-unit-3b/",
+   "title": {
+    "rendered": "350 Rutland Road Apartment – Unit 3B"
+   }
+  },
+  {
+   "date": "2026-11-05T20:50:13",
+   "modified": "2026-11-05T20:50:16",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/1151-hoe-ave-apartment-unit-4c/",
+   "title": {
+    "rendered": "1151 Hoe Ave Apartment &#8211; Unit 4C"
+   }
+  },
+  {
+   "date": "2026-11-05T20:35:54",
+   "modified": "2026-11-05T20:35:56",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/637-east-176-st-apartment-unit-2c/",
+   "title": {
+    "rendered": "637 East 176 St Apartment &#8211; Unit #2C"
+   }
+  },
+  {
+   "date": "2026-07-14T22:18:22",
+   "modified": "2026-11-05T19:18:00",
+   "status": "publish",
+   "link": "https://residenewyork.com/property/872-home-street-apartment-unit-2b/",
+   "title": {
+    "rendered": "872 Home Street Apartment &#8211; Unit 2B"
+   }
+  }
+ ]
+}

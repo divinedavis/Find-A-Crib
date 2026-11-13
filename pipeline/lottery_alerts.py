@@ -256,7 +256,10 @@ def rerental_items(d):
                     "text": e.get("label") or e["key"],
                     "sub": " · ".join(bits),
                     "meta": " · ".join(b for b in (" · ".join(x for x in (e.get("hood"), e.get("boro")) if x),
-                                                   f"listed by {e['agent']}") if b),
+                                                   f"listed by {e['agent']}",
+                                                   posted_words(e.get("posted"))) if b),
+                    "posted": e.get("posted") if valid_date(e.get("posted")) else None,
+                    "board_change": bool(e.get("board_change")),
                     "price": money(e["rent_low"]) if e.get("rent_low") else None, "beds": None,
                     "url": (board_fragment(e["url"], e.get("label") or e["key"]) if shared.get(e.get("url"), 0) > 1
                             else e.get("url")) or f"{SITE}/marketing-agents/",
@@ -266,6 +269,53 @@ def rerental_items(d):
 
 
 BBL_BORO = {"1": "M", "2": "Bx", "3": "Bk", "4": "Q", "5": "SI"}
+
+
+# ------------------------------------------------------------ what is "new"
+# 2026-11-13: an email said "18 new re-rentals" when the agent had posted them
+# Nov 5-11; we had only just seen them. A re-rental is "new" to a subscriber
+# only if the agent posted it since that subscriber's last email (or in the
+# last two days when we don't know). Anything older is "still open": still
+# sent, never counted as new. A listing with no posting date is new unless it
+# came in a board-change sweep (rerental_daily's batch guard).
+FRESH_DAYS = 2
+
+
+def valid_date(v):
+    return bool(v) and bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)))
+
+
+def posted_words(v):
+    if not valid_date(v):
+        return None
+    try:
+        return "posted " + datetime.date.fromisoformat(v).strftime("%b %-d")
+    except ValueError:
+        return None
+
+
+def fresh_since(sub, now=None):
+    """The date a listing must be posted on or after to count as new."""
+    now = now or datetime.datetime.now(NY)
+    last = parse_ts((sub or {}).get("last_sent_at"))
+    if last:
+        return last.astimezone(NY).date()
+    return (now.astimezone(NY) - datetime.timedelta(days=FRESH_DAYS)).date()
+
+
+def is_new(item, since):
+    if item.get("kind") != "rerental":
+        return True
+    if item.get("posted"):
+        return item["posted"] >= since.isoformat()
+    return not item.get("board_change")
+
+
+def split_new(items, sub, now=None):
+    """(new, still_open) — still_open is only ever re-rentals."""
+    since = fresh_since(sub, now)
+    new = [i for i in items if is_new(i, since)]
+    return new, [i for i in items if not is_new(i, since)]
 
 
 def voucher_items(d):
@@ -494,9 +544,11 @@ def counts_block(items, total_label):
     return {"type": "counts", "items": tiles}
 
 
-def render_alert(items, sub, emailkit, upsell=False):
+def render_alert(items, sub, emailkit, upsell=False, now=None):
+    fresh, older = split_new(items, sub, now)
+    items = fresh + older                     # new first, still-open after
     lot = [i for i in items if i["kind"] == "lottery"]
-    rr = [i for i in items if i["kind"] == "rerental"]
+    rr = [i for i in fresh if i["kind"] == "rerental"]
     vo = [i for i in items if i["kind"] == "voucher"]
     shown = items[:MAX_ITEMS_PER_EMAIL]
     more = len(items) - len(shown)
@@ -508,7 +560,9 @@ def render_alert(items, sub, emailkit, upsell=False):
                    if it["kind"] == "lottery" else
                    f"New voucher listing in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}"
                    if it["kind"] == "voucher" else
-                   f"New re-rental in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}")
+                   f"New re-rental in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}"
+                   if not older else
+                   f"Re-rental still open in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}")
     else:
         parts = []
         if lot:
@@ -517,7 +571,13 @@ def render_alert(items, sub, emailkit, upsell=False):
             parts.append(f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'}")
         if vo:
             parts.append(f"{len(vo)} new voucher listing{'' if len(vo) == 1 else 's'}")
-        subject = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1] + f" in {where}"
+        if parts:
+            subject = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
+            if older:
+                subject += f" + {len(older)} more still open"
+        else:
+            subject = f"{len(older)} re-rental{'' if len(older) == 1 else 's'} still open"
+        subject += f" in {where}"
 
     blocks = []
     if upsell:
@@ -557,11 +617,12 @@ def render_alert(items, sub, emailkit, upsell=False):
             (("First come, first served", "warn") if it["kind"] in ("rerental", "voucher") else None),
             (it.get("beds"), None)]})
     else:
-        counts = counts_block(items, "new")
+        counts = counts_block(items, "new" if not older else "open")
         if counts:
             blocks.append(counts)
         lot_shown = [i for i in shown if i["kind"] == "lottery"]
-        rr_shown = [i for i in shown if i["kind"] == "rerental"]
+        rr_shown = [i for i in shown if i["kind"] == "rerental" and i in fresh]
+        old_shown = [i for i in shown if i in older]
         vo_shown = [i for i in shown if i["kind"] == "voucher"]
         if lot_shown:
             blocks.append({"type": "callout", "tone": "lottery",
@@ -571,6 +632,11 @@ def render_alert(items, sub, emailkit, upsell=False):
             blocks.append({"type": "callout", "tone": "info",
                            "heading": f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'} — usually first-come, first-served",
                            "items": rows(rr_shown)})
+        if old_shown:
+            blocks.append({"type": "callout", "tone": "mute",
+                           "heading": f"{len(older)}{' more' if fresh else ''} re-rental{'' if len(older) == 1 else 's'} still open"
+                                      " — first spotted today, posted earlier",
+                           "items": rows(old_shown)})
         if vo_shown:
             blocks.append({"type": "callout", "tone": "voucher",
                            "heading": f"{len(vo)} landlord{'' if len(vo) == 1 else 's'} now accepting vouchers — first come, first served",
@@ -610,24 +676,28 @@ def push_items(items, limit=8):
              "u": i.get("url") or "", "b": i.get("boro") or ""} for i in items[:limit]]
 
 
-def push_text(items):
+def push_text(items, sub=None, now=None):
     """Title and body for the phone. One item: what and where in the title,
-    the item on the line below. Several: the count, then the first few."""
+    the item on the line below. Several: the count, then the first few.
+    Re-rentals posted before the subscriber's last alert say "still open"."""
+    fresh, older = split_new(items, sub, now)
+    items = fresh + older
     first = items[0]
     where = BORO_NAME.get(first["boro"], "NYC")
     if len(items) == 1:
         what = {"lottery": "lottery", "voucher": "voucher listing"}.get(first["kind"], "re-rental")
-        title = f"New {what} in {where}"
+        title = f"New {what} in {where}" if fresh else f"Re-rental still open in {where}"
         body = first["text"] + (f" — {first['sub']}" if first.get("sub") else "")
     else:
-        lot = sum(1 for i in items if i["kind"] == "lottery")
-        rr = sum(1 for i in items if i["kind"] == "rerental")
-        vo = len(items) - lot - rr
+        lot = sum(1 for i in fresh if i["kind"] == "lottery")
+        rr = sum(1 for i in fresh if i["kind"] == "rerental")
+        vo = len(fresh) - lot - rr
         parts = [p for p in (
             f"{lot} lotter{'y' if lot == 1 else 'ies'}" if lot else None,
             f"{rr} re-rental{'' if rr == 1 else 's'}" if rr else None,
             f"{vo} voucher listing{'' if vo == 1 else 's'}" if vo else None) if p]
-        title = "New: " + ", ".join(parts)
+        title = ("New: " + ", ".join(parts) + (f" + {len(older)} still open" if older else "")
+                 if parts else f"{len(older)} re-rentals still open")
         body = " · ".join(i["text"] for i in items[:3]) + (f" +{len(items) - 3} more" if len(items) > 3 else "")
     return title[:60], body[:170]
 
@@ -1266,7 +1336,7 @@ def main():
         # email's one-a-day cap already decided this was the moment.
         if not to_push:
             continue
-        title, text_body = push_text(to_push)
+        title, text_body = push_text(to_push, sub)
         if digest:
             text_body = (text_body + " · Re-rentals go first come, first served: get them the minute they open with Plus")[:178]
         for dev in phones:

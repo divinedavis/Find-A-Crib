@@ -29,6 +29,7 @@ app, html.escape in the mailers) — nothing in this module builds markup.
 
   python3 pipeline/rerental_feeds.py            # fetch every feed, print what it yields
 """
+import html
 import json
 import re
 import sys
@@ -374,6 +375,68 @@ def progressive_records(rows, agent, page_url=PROG_PAGE):
             "_key": f"progressive {slug}",
         })
     return out
+
+
+# ------------------------------------------------------------------ WordPress
+# Reside New York's board (/property-status/open-market/) is a WordPress
+# taxonomy archive. Its first page is exactly this REST query: open-market
+# properties, most recently modified first, 20 a page (checked slug for slug
+# on 2026-11-13). Rendering the page in a browser gave 7 of those 20 for days,
+# then all of them at once on 2026-11-12, and 18 listings posted Nov 5-11 went
+# out as "18 new". The REST answer is the same set every time and carries each
+# listing's publish date and its own page.
+#
+# Only the titles go to rerental_daily, which keys and filters them with the
+# same listings_from() as a rendered board, so the switch re-keys nothing.
+WP_PER_PAGE = 20             # one board page; WordPress caps per_page at 100
+WP_TITLE_MAX = 90            # listings_from skips longer lines anyway
+
+
+def wp_board(site, taxonomy, term, post_type="property", fetch=fetch_json, per_page=WP_PER_PAGE):
+    """[{title, link, posted, modified}] for one WordPress board, as its first
+    page shows it. Raises FeedError when the site does not answer as expected,
+    so the caller can fall back to rendering the page."""
+    parts = urllib.parse.urlsplit(site)
+    if parts.scheme != "https" or not parts.hostname:
+        raise FeedError(f"wp site must be https: {site!r}")
+    host = parts.hostname
+    base = f"https://{host}/wp-json/wp/v2"
+    q = urllib.parse.urlencode
+    terms = fetch(f"{base}/{urllib.parse.quote(taxonomy)}?" + q({"slug": term, "_fields": "id,slug"}))
+    ids = [t.get("id") for t in terms if isinstance(t, dict) and isinstance(t.get("id"), int)] \
+        if isinstance(terms, list) else []
+    if not ids:
+        raise FeedError(f"{host}: no {taxonomy} term {term!r}")
+    rows = fetch(f"{base}/{urllib.parse.quote(post_type)}?" + q({
+        taxonomy: ids[0], "per_page": max(1, min(int(per_page), 100)),
+        "orderby": "modified", "order": "desc", "status": "publish",
+        "_fields": "date,modified,link,title,status"}))
+    if not isinstance(rows, list):
+        raise FeedError(f"{host}: {post_type} list is not a list")
+    out = []
+    for r in rows[:per_page]:
+        if not isinstance(r, dict) or r.get("status", "publish") != "publish":
+            continue
+        title = text(html.unescape(str((r.get("title") or {}).get("rendered") or "")), WP_TITLE_MAX)
+        link = str(r.get("link") or "")
+        lp = urllib.parse.urlsplit(link)
+        # Somebody else's data: a title is plain text, and a link must be a
+        # page on the agent's own site or it is dropped.
+        if lp.scheme != "https" or lp.hostname != host:
+            link = None
+        if not title:
+            continue
+        out.append({"title": title, "link": link,
+                    "posted": _wp_date(r.get("date")), "modified": _wp_date(r.get("modified"))})
+    if not out:
+        raise FeedError(f"{host}: board is empty over REST")
+    return out
+
+
+def _wp_date(v):
+    """'2026-11-05T21:35:10' -> '2026-11-05'; anything else -> None."""
+    m = re.match(r'(\d{4}-\d{2}-\d{2})T', str(v or ""))
+    return m.group(1) if m else None
 
 
 FEEDS = {

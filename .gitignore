@@ -122,3 +122,4 @@ data/boundaries/
 .apns_token.json
 comp_sent.json
 comp_recipients*.txt
+.venv/

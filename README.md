@@ -62,7 +62,7 @@ You need Python 3.14 (what CI runs) and no API keys.
 git clone https://github.com/divinedavis/Find-A-Crib.git
 cd Find-A-Crib
 python3.14 -m venv .venv && . .venv/bin/activate
-pip install requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic playwright==1.62.0
+pip install requests numpy pillow opencv-python-headless shapely PyJWT segno anthropic cryptography playwright==1.62.0
 python3 tests/run_unit.py                 # unit tests (same as CI)
 ```
 

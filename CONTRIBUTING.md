@@ -53,6 +53,14 @@ before and after copying anything.
   names, emails and addresses in tests.
 - **Every UI change gets a journey** in `tests/journeys.py`.
 
+## Using an AI coding agent
+
+Agents (Claude Code, Codex, Cursor and others) are welcome. Point yours at
+[AGENTS.md](AGENTS.md), which Claude Code also loads through `CLAUDE.md`. You
+are responsible for everything the agent writes: read the full diff before you
+open a pull request, and never paste keys, `.env` files or anyone's personal
+data into an agent or chat tool.
+
 ## Commit messages
 
 Imperative subject line ("Add flyer accuracy report"), then a body that

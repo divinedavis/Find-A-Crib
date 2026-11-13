@@ -19,7 +19,8 @@ def run(cached_models, limit):
             return None
         i = next(k for k in range(len(listings)) if fr.hashlib.sha1(listings[k]["href"].encode()).hexdigest() in path)
         m = cached_models[i]
-        return [{"payload": {"units": [{"old": True}], "verified": True, "model": m}}] if m else []
+        return [{"payload": {"units": [{"old": True}], "verified": True, "model": m,
+                             "reader": fr.READER if m == cf.HAIKU else None}}] if m else []
 
     class GW:
         def __init__(self, *a): pass
@@ -56,7 +57,18 @@ def test_past_the_limit_the_old_reading_stays_up():
     assert table["https://x.test/2.pdf"]["units"] == [{"old": True}]
 
 
+
+def test_printed_cents_become_whole_dollars_for_the_app():
+    out = fr.whole_dollars({"units": [{"rent": 3249.65, "income_min": 115771, "income_max": 198510.4, "beds": 1}]})
+    u = out["units"][0]
+    assert (u["rent"], u["income_min"], u["income_max"]) == (3250, 115771, 198510), u
+    assert all(isinstance(u[k], int) for k in fr.MONEY)
+    nums = fr.source_numbers({"address": "2180 Arthur Avenue"}, "1 Bedroom $3,249.65 1 1-3 people $115,771 – $198,510")
+    assert not cf.ungrounded("3249.65", nums) and cf.ungrounded("3299.65", nums)
+
+
 if __name__ == "__main__":
     test_older_model_is_reread_and_current_model_is_kept()
     test_past_the_limit_the_old_reading_stays_up()
+    test_printed_cents_become_whole_dollars_for_the_app()
     print("ok flyer model refresh")

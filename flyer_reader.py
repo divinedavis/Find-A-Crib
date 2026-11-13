@@ -49,10 +49,10 @@ SCHEMA = {
     "type": "object",
     "properties": {
         "units": {"type": "array", "items": {"type": "object", "properties": {
-            "beds": {"type": ["integer", "null"]}, "rent": {"type": ["integer", "null"]},
+            "beds": {"type": ["integer", "null"]}, "rent": {"type": ["number", "null"]},
             "units_available": {"type": ["integer", "null"]},
             "household_size_min": {"type": ["integer", "null"]}, "household_size_max": {"type": ["integer", "null"]},
-            "income_min": {"type": ["integer", "null"]}, "income_max": {"type": ["integer", "null"]},
+            "income_min": {"type": ["number", "null"]}, "income_max": {"type": ["number", "null"]},
             "ami_percent": {"type": ["integer", "null"]}},
             "required": ["beds", "rent", "units_available", "household_size_min", "household_size_max",
                          "income_min", "income_max", "ami_percent"], "additionalProperties": False}},
@@ -175,6 +175,25 @@ def source_numbers(meta, text):
     return cf.record_numbers({"listing": meta, "source": text, "joined": joined})
 
 
+# Dollars arrive as printed ("$3,249.65": the schema takes numbers so the model
+# can copy them and the grounding check can find them in the source), then go
+# out as whole dollars: the iPhone app decodes rent and incomes as Int
+# (Qualify.swift), and one decimal would fail its whole table (2026-11-13,
+# 70 rows had lost their rent to an integer-only schema).
+MONEY = ("rent", "income_min", "income_max")
+# What made a cached reading: the model and this reader's version. Any other
+# value is stale and is read again (bump the suffix when the schema changes).
+READER = f"{cf.HAIKU}/cents"
+
+
+def whole_dollars(out):
+    for u in out.get("units") or []:
+        for k in MONEY:
+            if isinstance(u.get(k), float):
+                u[k] = int(u[k] + 0.5)
+    return out
+
+
 def read_one(listing):
     href = listing["href"]
     meta = {k: listing.get(k) for k in ("agent", "title", "address", "borough", "beds", "money_kind", "money_low", "money_high")}
@@ -212,15 +231,18 @@ def read_one(listing):
         nums = source_numbers(meta, text)
         keep = []
         for u in out["units"]:
-            vals = [v for k, v in u.items() if isinstance(v, int) and k not in ("beds", "household_size_min", "household_size_max")]
+            vals = [v for k, v in u.items() if isinstance(v, (int, float)) and not isinstance(v, bool)
+                    and k not in ("beds", "household_size_min", "household_size_max")]
             if not any(cf.ungrounded(str(v), nums) for v in vals):
                 keep.append(u)
         out["units"] = keep
         if out.get("deadline") and cf.ungrounded(out["deadline"], nums):
             out["deadline"] = None
+    whole_dollars(out)
     out["verified"] = verified
     out["read_at"] = datetime.date.today().isoformat()
     out["model"] = cf.HAIKU
+    out["reader"] = READER
     return out, usage
 
 
@@ -244,7 +266,7 @@ def main():
         # rows (2026-11-12) are re-read instead of served for 30 days, and
         # stay up until their re-read comes round (the nightly limit).
         cached = rows[0]["payload"] if rows else None
-        if cached and cached.get("model") == cf.HAIKU:
+        if cached and cached.get("reader") == READER:
             table[href] = cached
             continue
         if not capped and read < a.limit and (rpc("ai_spend_month", {}) or 0) >= CAP_MICROS * STOP_AT:

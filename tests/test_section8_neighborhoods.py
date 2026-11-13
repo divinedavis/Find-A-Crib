@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from growth import ledger, techniques as T  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(REPO, "data")  # the committed data files (2026-11-13)
 FRESH = 2_000_000_000.0
 
 BLOCK_RE = re.compile(
@@ -274,7 +275,7 @@ class AgainstTheCommittedRecord(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ctx = T.Context(REPO, REPO)
+        ctx = T.Context(DATA, DATA)
         cls.rows = T._live_listings(ctx)
 
     def _counts(self, boro):

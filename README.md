@@ -38,6 +38,7 @@ re-rental opens up.
 | Web app (one file, Leaflet, no build step) | `index.html`, `static/` |
 | City pages generated from the root page | `pipeline/build_city_pages.py` → `sf/`, `la/`, `dc/` |
 | Data builders, scrapers, alerts, reports (one script per job) | `pipeline/` |
+| Committed data (DHCR PDFs, boundaries, snapshots of the published feeds) | `data/` |
 | API (Flask) | `api/` (server + auth); shared modules in `pipeline/`; `deploy/api/` |
 | Alerts | `pipeline/lottery_alerts.py`, `pipeline/saved_alerts.py`, `pipeline/apns.py` |
 | AI features | `pipeline/flyer_reader.py`, `pipeline/nl_search.py`, `pipeline/claude_features.py`, `pipeline/ai_gateway.py` |
@@ -52,7 +53,7 @@ More detail:
 [data pipeline, alerts and cities](docs/data-pipeline.md) ·
 [growth engine](docs/growth-engine.md) ·
 [traffic report](docs/traffic-report.md) ·
-[backlog](BACKLOG.md)
+[backlog](docs/BACKLOG.md)
 
 ## Quick start
 
@@ -121,7 +122,7 @@ Found a security problem? Please don't open an issue. See [SECURITY.md](SECURITY
 - **No listing-portal data.** The Zumper and StreetEasy feeds were removed on
   2026-10-06 (Zumper's Terms forbid scraping). Building cards link out to
   StreetEasy (NYC) or Zillow (other cities) instead. Don't add a portal scrape.
-- **Only cities with property-level records get a map.** See `BACKLOG.md` for
+- **Only cities with property-level records get a map.** See [`docs/BACKLOG.md`](docs/BACKLOG.md) for
   the ones that publish nothing below the town level.
 - **No badge never means "no."** Source-of-income discrimination is illegal in
   NYC, so a missing Section 8 badge never means vouchers aren't accepted.

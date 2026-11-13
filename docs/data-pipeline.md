@@ -21,6 +21,15 @@ Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`
 (split into `buildings.slim.json` + `buildings.hpd.json` by `split_hpd.py`),
 `s8.json` and `fmr.json` are the files the front end fetches.
 
+Scripts live in `pipeline/` and the data they commit lives in `data/`: the
+DHCR source PDFs (`data/dhcr/`), boundary files, hand-curated lists
+(`rerental_pages.json`, `owner_vacancy_pages.json`, `agent_buildings.json`,
+`housing_law_firms.json`) and snapshots of the published feeds
+(`buildings.min.json`, `s8.json`, `fmr.json`, `hcr.json`). The site still serves
+each feed at the root (`findacrib.com/fmr.json`); production jobs write the live
+copies straight to the web docroot, so the `data/` copies are what a fresh
+clone and the tests read. Regenerable intermediates stay gitignored.
+
 ### Section 8 / housing vouchers
 
 The **Section 8** filter and the green badges have two tiers:
@@ -97,7 +106,7 @@ Each city is a directory (`sf/`, `la/`, `dc/`) holding its own
 city is a builder script, a `CITIES` entry, and a `CITY_META` entry.
 
 Only cities that publish **property-level** coverage data get a map (see
-`BACKLOG.md` for the ones that don't — most rent-controlled jurisdictions in
+[`BACKLOG.md`](BACKLOG.md) for the ones that don't — most rent-controlled jurisdictions in
 the US publish nothing below the municipality level).
 
 | City | Script | Source | Records |

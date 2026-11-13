@@ -28,7 +28,7 @@ def test_config_and_service_worker_always_come_from_live():
 
 def test_data_files_are_live_unless_asked():
     assert rel(L + '/fmr.json') is None
-    assert rel(L + '/fmr.json', local_data=True) == 'fmr.json'
+    assert rel(L + '/fmr.json', local_data=True) == 'data/fmr.json'
 
 
 def test_missing_files_other_hosts_and_escapes_go_live():

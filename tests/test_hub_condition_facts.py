@@ -232,9 +232,9 @@ class RealDataRenders(unittest.TestCase):
     def setUpClass(cls):
         import json
         path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "buildings.min.json")
+                            "data", "buildings.min.json")
         if not os.path.exists(path):
-            raise unittest.SkipTest("buildings.min.json not in this checkout")
+            raise unittest.SkipTest("buildings.min.json not in this checkout's data/")
         with open(path) as fh:
             cls.blds = json.load(fh)
 

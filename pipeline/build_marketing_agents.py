@@ -15,17 +15,22 @@ import datetime
 import html
 import json
 import re
+import os
 import urllib.request
 
+# Tracked data files live in data/ in the repo (this script sits in pipeline/).
+_HERE = os.path.dirname(os.path.abspath(__file__))
+DATA = os.path.join(os.path.dirname(_HERE), "data") if os.path.basename(_HERE) == "pipeline" else _HERE
+
 SRC = "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page"
-OUT = "marketing_agents.json"
+OUT = os.path.join(DATA, "marketing_agents.json")
 # Hand-curated re-rental listing pages, merged in on top of the scrape. HPD only
 # publishes a corporate homepage, which is almost never where units get posted.
-RERENTALS = "rerental_pages.json"
+RERENTALS = os.path.join(DATA, "rerental_pages.json")
 # Hand-curated building -> agent attributions. NYC publishes no such mapping: the
 # Housing Connect datasets and API have no agent field, so each one is sourced by
 # hand from the agent's portfolio page or the lottery's "c/o <agent>" mail address.
-BUILDINGS = "agent_buildings.json"
+BUILDINGS = os.path.join(DATA, "agent_buildings.json")
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 

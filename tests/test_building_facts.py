@@ -244,9 +244,9 @@ class TheBlockKeepsItsContract(unittest.TestCase):
         """
         import json
         path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "buildings.min.json")
+                            "data", "buildings.min.json")
         if not os.path.exists(path):
-            self.skipTest("buildings.min.json not in this checkout")
+            self.skipTest("buildings.min.json not in this checkout's data/")
         with open(path, encoding="utf-8") as f:
             items = json.load(f)
         by = {}

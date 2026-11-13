@@ -45,6 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from growth import ledger, techniques as T  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(REPO, "data")  # the committed data files (2026-11-13)
 FRESH = 2_000_000_000.0
 
 HEAD = "How these asking rents compare with HUD’s typical rents"
@@ -277,7 +278,7 @@ class Loader(unittest.TestCase):
 
     def test_the_real_checkout_copy_loads_and_is_shaped_as_the_block_expects(self):
         """If fmr.json ever changes shape, fail here rather than silently render ""."""
-        fmr = T.Context(REPO, tempfile.mkdtemp()).fmr
+        fmr = T.Context(DATA, tempfile.mkdtemp()).fmr
         self.assertGreater(len(fmr), 100)
         ok = [a for a in fmr.values()
               if isinstance(a, list) and len(a) == 4 and list(a) == sorted(a)

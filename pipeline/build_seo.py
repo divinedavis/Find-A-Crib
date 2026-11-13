@@ -28,8 +28,10 @@ from seo_guides import GUIDES, _related
 # The repo root (data, seo/ output) is one level above pipeline/; the flat
 # SEO build in /root/dhcr-build keeps everything beside the script.
 _ROOT = os.path.dirname(os.path.abspath(__file__))
+_DATA = _ROOT
 if os.path.basename(_ROOT) == "pipeline":
     _ROOT = os.path.dirname(_ROOT)
+    _DATA = os.path.join(_ROOT, "data")  # tracked data files (buildings.min.json, s8.json, ...)
 
 SITE = "https://findacrib.com"
 OUT = os.path.join(_ROOT, "seo")
@@ -928,7 +930,7 @@ def city_hub_docs(key, guide_ok=True):
     return docs
 
 
-COUNCIL_PATH = os.path.join(_ROOT,
+COUNCIL_PATH = os.path.join(_DATA,
                             "council_districts.json")
 COUNCIL_SOURCE = ("Council district boundaries: NYC Open Data 872g-cjhh. Sitting members: "
                   "NYC Open Data uvw5-9znb. Violations and complaints: HPD via NYC Open Data, "
@@ -1339,7 +1341,7 @@ VOUCHER_STALE_HOURS = 48
 # writes to. refresh_seo.sh's STEP=data hands the docroot's fresher copy over
 # before the build; before 2026-09-27 nothing did, and every voucher claim on the
 # building tier was silently suppressed. See that block for the whole story.
-VOUCHER_PATH = os.path.join(_ROOT, "s8.json")
+VOUCHER_PATH = os.path.join(_DATA, "s8.json")
 
 
 def load_voucher_listings(path=None, now=None):
@@ -1423,7 +1425,7 @@ def voucher_hub_block(bbls, avail, asof, place, addr_links=None):
               "other subsidy is illegal in New York City.</p>")
 
 
-LANDLORD_PATH = os.path.join(_ROOT, "landlords.json")
+LANDLORD_PATH = os.path.join(_DATA, "landlords.json")
 # How many landlord pages go into the sitemap on the first run. The census that
 # prompted the index triage is just as binding here: dropping 1,400 new URLs on
 # a domain Google is already rationing would undo the concentration the triage
@@ -3642,7 +3644,7 @@ def _methodology_counts():
     here = _ROOT
     out = {}
     try:
-        blds = json.load(open(os.path.join(here, "buildings.min.json")))
+        blds = json.load(open(os.path.join(_DATA, "buildings.min.json")))
         out["nyc"] = (len(blds), sum(b.get("u") or 0 for b in blds))
     except Exception:
         out["nyc"] = (0, 0)
@@ -3837,7 +3839,7 @@ same rent-stabilization data, same maps, new name.</p>
 
 
 def main():
-    blds = json.load(open("buildings.min.json"))
+    blds = json.load(open(os.path.join(_DATA, "buildings.min.json")))
     # Owner / managing agent used to ride along inside each building's `h` blob.
     # They were split out when buildings.min.json was slimmed for the map app —
     # and this builder was never repointed, so `h.get("owner")` has been empty

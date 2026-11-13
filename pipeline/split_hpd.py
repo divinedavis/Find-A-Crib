@@ -84,7 +84,7 @@ def write_atomic(path, payload, mode_from=None):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--docroot", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else os.path.dirname(os.path.abspath(__file__)),
+    ap.add_argument("--docroot", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else os.path.dirname(os.path.abspath(__file__)),
                     help="directory holding buildings.min.json")
     args = ap.parse_args()
     src = Path(args.docroot) / "buildings.min.json"

@@ -29,6 +29,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# The building-list PDFs live in data/dhcr/ in the repo (2026-11-13).
+PDFS = HERE / "data" / "dhcr" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 PAGE = "https://rentguidelinesboard.cityofnewyork.us/resources/rent-stabilized-building-lists/"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "Chrome/126 Safari/537.36")
@@ -36,9 +38,9 @@ BOROUGHS = ["Manhattan", "Brooklyn", "Bronx", "Queens", "Staten-Island"]
 
 
 def have_year():
-    """Newest year among the building-list PDFs sitting next to this script."""
+    """Newest year among the building-list PDFs we hold (data/dhcr/ in the repo)."""
     years = [int(m.group(1))
-             for p in HERE.glob("*-DHCR-Bldg-File-*.pdf")
+             for p in PDFS.glob("*-DHCR-Bldg-File-*.pdf")
              if (m := re.match(r"(\d{4})-DHCR-Bldg-File-", p.name))]
     return max(years) if years else None
 
@@ -85,7 +87,7 @@ def main():
 
     mine = args.have or have_year()
     if mine is None:
-        sys.exit("no *-DHCR-Bldg-File-*.pdf next to this script; pass --have")
+        sys.exit(f"no *-DHCR-Bldg-File-*.pdf in {PDFS}; pass --have")
 
     try:
         avail = published()

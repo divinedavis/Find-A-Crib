@@ -182,7 +182,7 @@ class TheRealCorpus(unittest.TestCase):
         import collections
         import json
         path = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "buildings.min.json")
+            os.path.abspath(__file__))), "data", "buildings.min.json")
         with open(path, encoding="utf-8") as f:
             blds = json.load(f)
         cls.by_nb = collections.defaultdict(list)

@@ -94,7 +94,7 @@ scp -q static/mapillary-preview.js static/apple-street-preview.js static/apple-s
 scp -q index.html "$HOST:$DOC/index.html"
 # The borough housing-law-firm list the building sheet reads (2026-10-14);
 # the app bundles the same file (tests/test_nearby_legal.py keeps them equal).
-scp -q housing_law_firms.json "$HOST:$DOC/housing_law_firms.json"
+scp -q data/housing_law_firms.json "$HOST:$DOC/housing_law_firms.json"
 # Your Crib (2026-10-15): 311 calls and crime near your building; Plus alerts.
 ssh "$HOST" "install -d -m 755 $DOC/casa"
 scp -q casa/index.html "$HOST:$DOC/casa/index.html"

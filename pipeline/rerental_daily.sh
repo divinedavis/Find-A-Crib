@@ -54,7 +54,7 @@ fi
 # featured.json is deliberately NOT committed — it is regenerated every run and
 # served from the docroot, so tracking it would put this cron in conflict with
 # itself. See .gitignore.
-git add -A rerental_pages.json marketing_agents.json 2>/dev/null
+git add -A data/rerental_pages.json data/marketing_agents.json 2>/dev/null
 # Rebase first: a push to main during the ~20 min sweep refused this one
 # (2026-10-22), leaving the day's state commit stranded on the droplet.
 if ! git diff --cached --quiet; then

@@ -12,6 +12,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+DHCR = HERE / "data" / "dhcr" if Path(__file__).resolve().parent.name == "pipeline" else HERE  # the 2024 DHCR PDFs
 # borough numeric prefix used in NYC BBL
 BOROUGH_CODE = {"manhattan": 1, "bronx": 2, "brooklyn": 3, "queens": 4, "staten_island": 5}
 
@@ -105,7 +106,7 @@ def main():
         ("queens", "2024-DHCR-Bldg-File-Queens.pdf"),
         ("staten_island", "2024-DHCR-Bldg-File-Staten-Island.pdf"),
     ]:
-        path = HERE / fname
+        path = DHCR / fname
         print(f"Parsing {fname}...")
         recs = parse_pdf(path, borough)
         print(f"  {len(recs)} records")

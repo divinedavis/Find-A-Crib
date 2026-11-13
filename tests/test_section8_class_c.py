@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from growth import ledger, techniques as T  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(REPO, "data")  # the committed data files (2026-11-13)
 FRESH = 2_000_000_000.0
 
 
@@ -235,7 +236,7 @@ class TheRealCorpus(unittest.TestCase):
     """What the committed s8.json + buildings.min.json actually produce."""
 
     def test_the_join_finds_open_class_c_on_most_matched_buildings(self):
-        ctx = T.Context(REPO, tempfile.mkdtemp())
+        ctx = T.Context(DATA, tempfile.mkdtemp())
         rows = T._live_listings(ctx)
         self.assertGreater(len(rows), 200)
         tagged = [r for r in rows if r["oc"]]
@@ -245,7 +246,7 @@ class TheRealCorpus(unittest.TestCase):
         self.assertTrue(all(r["oc"] > 0 for r in tagged))
 
     def test_no_row_claims_more_open_than_the_lifetime_record(self):
-        ctx = T.Context(REPO, tempfile.mkdtemp())
+        ctx = T.Context(DATA, tempfile.mkdtemp())
         for r in T._live_listings(ctx):
             b = ctx.by_bbl[r["bbl"]]
             c = ((b.get("h") or {}).get("violations") or {}).get("c") or 0

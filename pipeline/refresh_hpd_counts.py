@@ -31,6 +31,8 @@ import fetch_hpd
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 # slim.py drops "closed" from the banked counts because the frontend never reads
 # it and it is derivable; match that exactly, or a refresh would quietly change
 # the shape of the blob the map loads.
@@ -128,8 +130,8 @@ def write_blob(records, path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--docroot", default=str(HERE),
-                    help="directory holding buildings.min.json (default: next to this script)")
+    ap.add_argument("--docroot", default=str(DATA),
+                    help="directory holding buildings.min.json (default: the repo's data/)")
     ap.add_argument("--dry-run", action="store_true", help="fetch and report, write nothing")
     args = ap.parse_args()
 

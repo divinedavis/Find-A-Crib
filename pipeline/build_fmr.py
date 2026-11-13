@@ -36,6 +36,8 @@ import openpyxl
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 URL = "https://www.huduser.gov/portal/datasets/fmr/fmr{fy}/fy{fy}_safmrs.xlsx"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "Chrome/126 Safari/537.36")
@@ -56,8 +58,7 @@ def fetch_safmr(fy):
 def load_zips():
     """ZIPs that have a building. buildings.min.json is the one input present
     everywhere — the droplet has no geo intermediates."""
-    for name, key in (("buildings.min.json", "z"), ("buildings_geo_nta.json", "zip")):
-        p = HERE / name
+    for p, key in ((DATA / "buildings.min.json", "z"), (HERE / "buildings_geo_nta.json", "zip")):
         if p.exists():
             return {r[key] for r in json.loads(p.read_text()) if r.get(key)}
     raise SystemExit("need buildings.min.json (or buildings_geo_nta.json) to know which ZIPs matter")
@@ -66,7 +67,7 @@ def load_zips():
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default=str(HERE), help="directory to write fmr.json into")
+    ap.add_argument("--out", default=str(DATA), help="directory to write fmr.json into")
     ap.add_argument("--fy", type=int, help="override the fiscal year")
     args = ap.parse_args()
 

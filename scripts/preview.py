@@ -48,12 +48,18 @@ def local_file(url: str, root: Path = ROOT, local_data: bool = False) -> Path | 
         return None
     if Path(rel).suffix in DATA_SUFFIXES and not local_data:
         return None
-    f = (root / rel).resolve()
-    try:
-        f.relative_to(root.resolve())
-    except ValueError:
-        return None
-    return f if f.is_file() else None
+    # Tracked data files live in data/ (2026-11-13) but are served at the site
+    # root (findacrib.com/fmr.json), so a data URL also looks there.
+    bases = (root, root / 'data') if Path(rel).suffix in DATA_SUFFIXES else (root,)
+    for base in bases:
+        f = (base / rel).resolve()
+        try:
+            f.relative_to(root.resolve())
+        except ValueError:
+            return None
+        if f.is_file():
+            return f
+    return None
 
 
 def context(p, device, headless):

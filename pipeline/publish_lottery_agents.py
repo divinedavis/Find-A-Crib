@@ -30,7 +30,9 @@ import argparse, json, os, re, subprocess, sys, urllib.error, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
-SRC = os.path.join(HERE, "marketing_agents.json")
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
+SRC = os.path.join(DATA, "marketing_agents.json")
 PROJECT_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
 
 # Everything here is withheld from the public file. `about` is deliberately NOT

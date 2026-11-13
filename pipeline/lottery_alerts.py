@@ -138,7 +138,7 @@ def iso_date(v):
 
 
 def load_json(name):
-    for base in (DATA_DIR, HERE):
+    for base in (DATA_DIR, os.path.join(HERE, "data"), HERE):
         p = os.path.join(base, name)
         try:
             with open(p) as f:

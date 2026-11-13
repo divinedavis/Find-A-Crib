@@ -415,7 +415,12 @@ def render(bbl, corpus, contacts, s8=None):
 
 def load_corpus(data_dir=None):
     d = data_dir or DATA_DIR
-    with open(os.path.join(d, "buildings.min.json")) as f:
+    p = os.path.join(d, "buildings.min.json")
+    if not os.path.exists(p):
+        # In the repo the tracked copy lives in data/ (2026-11-13); production
+        # passes the docroot or the flat API copy, which hold it directly.
+        p = os.path.join(d, "data", "buildings.min.json")
+    with open(p) as f:
         return Corpus(json.load(f))
 
 

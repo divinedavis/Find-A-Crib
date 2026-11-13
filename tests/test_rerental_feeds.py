@@ -316,11 +316,11 @@ class ProgressiveFeed(unittest.TestCase):
         self.assertEqual(len(calls), 4)                 # the index + 3 buildings
 
     def test_registered_as_a_feed(self):
-        pages = json.loads((ROOT / "rerental_pages.json").read_text())["pages"]
+        pages = json.loads((ROOT / "data" / "rerental_pages.json").read_text())["pages"]
         self.assertEqual(pages[PROG]["feed"], "progressive")
         self.assertIn("progressive", F.FEEDS)
         # and not in the market-rate list too, where it would be counted twice
-        owner = json.loads((ROOT / "owner_vacancy_pages.json").read_text())["pages"]
+        owner = json.loads((ROOT / "data" / "owner_vacancy_pages.json").read_text())["pages"]
         self.assertTrue(owner[PROG].get("skip"))
 
 

@@ -187,9 +187,13 @@ else
   for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json \
            growth/gsc_pages.json \
            developers/index.html embed/index.html marketing-agents/index.html; do
-    # Scripts live in the checkout's pipeline/ since 2026-11-13; $BUILD stays flat.
+    # Scripts live in the checkout's pipeline/ and tracked data in data/ since
+    # 2026-11-13; $BUILD stays flat.
     src="$SRC/$f"
-    case "$f" in *.py) src="$SRC/pipeline/$f" ;; esac
+    case "$f" in
+      *.py) src="$SRC/pipeline/$f" ;;
+      landlords.json) src="$SRC/data/$f" ;;
+    esac
     if [ -f "$src" ] && ! cmp -s "$src" "$BUILD/$f"; then
       mkdir -p "$BUILD/$(dirname "$f")"
       # `cp && n=…` as the last statement of the loop body would take the whole

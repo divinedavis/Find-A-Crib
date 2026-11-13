@@ -43,6 +43,8 @@ from addr_match import build_index, normalize_addr
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 SITE = "https://housingsearch.hcr.ny.gov"
 UA = "FindACrib/1.0 (+https://findacrib.com; findacrib data pipeline)"
 PAUSE = 1.0
@@ -51,7 +53,7 @@ COUNTY_TO_BORO = {"New York": "M", "Bronx": "Bx", "Kings": "Bk", "Queens": "Q", 
 
 _ctx = ssl.create_default_context()
 try:
-    _ctx.load_verify_locations(cafile=str(HERE / "hcr_chain.pem"))
+    _ctx.load_verify_locations(cafile=str(Path(__file__).resolve().parent / "hcr_chain.pem"))
 except Exception as e:  # keep going; the default store may have it
     print("warn: hcr_chain.pem not loaded:", e, file=sys.stderr)
 
@@ -191,7 +193,7 @@ def money(s):
 
 
 def main():
-    out = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else HERE / "hcr.json"
+    out = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else DATA / "hcr.json"
     ctx = aura_context()
     recs = list_records(ctx)
     nyc = [r for r in recs if r.get("County", "").split(" (")[0] in COUNTY_TO_BORO]
@@ -212,7 +214,7 @@ def main():
             keep = {}
         print(f"incremental: {len(keep)} stored records")
     try:
-        blds_all = json.load(open(HERE / "buildings.min.json"))
+        blds_all = json.load(open(DATA / "buildings.min.json"))
         addr_idx = {b: build_index([x for x in blds_all if x["b"] == b]) for b in COUNTY_TO_BORO.values()}
         dhcr_bbls = {x["bbl"] for x in blds_all}
     except Exception as e:

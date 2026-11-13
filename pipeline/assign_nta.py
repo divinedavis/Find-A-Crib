@@ -12,8 +12,10 @@ from shapely.strtree import STRtree
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 SRC = HERE / "buildings_geo.json"
-NTA = HERE / "nta_2020.geojson"
+NTA = DATA / "nta_2020.geojson"
 OUT = HERE / "buildings_geo_nta.json"
 
 # Within MN0201 (SoHo-Little Italy-Hudson Square), split into:

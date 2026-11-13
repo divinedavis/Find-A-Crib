@@ -15,7 +15,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-BUILDINGS = HERE / "buildings.min.json"
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+BUILDINGS = DATA / "buildings.min.json"
 OUT = HERE / "buildings_hpd.json"
 
 REGISTRATIONS = "https://data.cityofnewyork.us/resource/tesw-yqqr.json"

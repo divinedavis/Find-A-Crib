@@ -36,12 +36,14 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
 sys.path.insert(0, HERE)
 
 import featured_rerentals as FR                  # noqa: E402  (sweep, parse, filters)
 from addr_match import normalize_addr, build_index          # noqa: E402
 
-PAGES = os.path.join(HERE, "owner_vacancy_pages.json")
+PAGES = os.path.join(DATA, "owner_vacancy_pages.json")
 # The register. In the checkout on a laptop; only in the docroot on the
 # droplet, where the first run died on its absence (2026-09-23).
 BUILDINGS_CANDIDATES = [os.environ.get("BUILDINGS_FILE"),

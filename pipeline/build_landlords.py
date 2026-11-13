@@ -35,6 +35,8 @@ QUERY_URL = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
 # Names that read as a company rather than a person. Deliberately broad: a false
 # positive publishes a portfolio page for a landlord who is in fact an
 # individual, which the 10-building rule would have published anyway; a false
@@ -116,7 +118,7 @@ def main():
         from public.hpd_contacts where coalesce(manager->>'name','') <> '';""")
     print(f"hpd_contacts rows: {len(rows):,}")
 
-    blds = {b["bbl"]: b for b in json.load(open(os.path.join(HERE, "buildings.min.json")))}
+    blds = {b["bbl"]: b for b in json.load(open(os.path.join(DATA, "buildings.min.json")))}
     by_name = collections.defaultdict(lambda: {"bbls": set(), "roles": set()})
     for r in rows:
         nm = (r["nm"] or "").strip()
@@ -161,7 +163,7 @@ def main():
         if seen[e["slug"]] > 1:
             e["slug"] = f"{e['slug']}-{seen[e['slug']]}"
 
-    path = os.path.join(HERE, "landlords.json")
+    path = os.path.join(DATA, "landlords.json")
     json.dump({"generated": __import__("datetime").date.today().isoformat(),
                "org_min": ORG_MIN, "person_min": PERSON_MIN, "landlords": out},
               open(path, "w"), separators=(",", ":"))

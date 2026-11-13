@@ -53,7 +53,7 @@ def test_js_filter_matches_this_model():
 import json
 
 ROOT = Path(__file__).resolve().parent.parent
-FIRMS = ROOT / "housing_law_firms.json"
+FIRMS = ROOT / "data" / "housing_law_firms.json"
 APP_FIRMS = ROOT / "ios/FindACrib/Resources/Data/housing_law_firms.json"
 BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
 

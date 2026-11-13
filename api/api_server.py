@@ -39,7 +39,9 @@ import renter_tools          # repairs, rent increases, rights, renewal coach (2
 import webpush               # browser notifications (Web Push, db/0075)
 import passkeys              # sign in with a passkey (WebAuthn, db/0076)
 
-DATA_DIR = os.environ.get("DATA_DIR", ".")
+DATA_DIR = os.environ.get("DATA_DIR") or (
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "api" else ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "")

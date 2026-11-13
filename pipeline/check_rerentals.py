@@ -32,8 +32,10 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
-RERENTALS = os.path.join(HERE, "rerental_pages.json")
-AGENTS = os.path.join(HERE, "marketing_agents.json")
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
+RERENTALS = os.path.join(DATA, "rerental_pages.json")
+AGENTS = os.path.join(DATA, "marketing_agents.json")
 DROPLET = "root@142.93.183.172:/var/www/rent-map/"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")

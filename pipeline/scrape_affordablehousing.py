@@ -32,7 +32,8 @@ if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; 
 # The docroot these feeds are served from. Until 2026-10-07 this script lived
 # IN the docroot and wrote beside itself; now it runs from the checkout as the
 # unprivileged `scraper` user and is pointed at the docroot (FAC_DOCROOT).
-DATA = Path(os.environ.get("FAC_DOCROOT") or HERE)
+DATA = Path(os.environ.get("FAC_DOCROOT")
+            or (HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE))
 BUILDINGS = DATA / "buildings.min.json"
 OUT = DATA / "s8.json"
 

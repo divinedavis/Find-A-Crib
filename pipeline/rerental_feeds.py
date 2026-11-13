@@ -444,7 +444,7 @@ def main():
     import os
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, here)
-    pages = json.load(open(os.path.join(here, "rerental_pages.json")))["pages"]
+    pages = json.load(open(os.path.join(here, "data" if here != os.path.dirname(os.path.abspath(__file__)) else "", "rerental_pages.json")))["pages"]
     for name, meta in pages.items():
         if not meta.get("feed"):
             continue

@@ -29,7 +29,7 @@ PY=${FAC_PY:-/opt/findacrib/venv/bin/python}
 "$PY" pipeline/check_rerentals.py --apply --out "$GROWTH_DOCROOT" "$@"
 rc=$?
 
-git add -A rerental_pages.json marketing_agents.json 2>/dev/null
+git add -A data/rerental_pages.json data/marketing_agents.json 2>/dev/null
 if ! git diff --cached --quiet; then
   git commit -q -m "re-rentals: weekly check $(date -u +%Y-%m-%d)" \
     && git push -q origin main \

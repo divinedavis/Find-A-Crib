@@ -30,10 +30,12 @@ from shapely.strtree import STRtree
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-BUILDINGS = HERE / "buildings.min.json"
-DISTRICTS = HERE / "council_districts.geojson"
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+BUILDINGS = DATA / "buildings.min.json"
+DISTRICTS = DATA / "council_districts.geojson"
 CONTACTS = HERE / "hpd_contacts.json"
-OUT = HERE / "council_districts.json"
+OUT = DATA / "council_districts.json"
 
 MEMBERS = "https://data.cityofnewyork.us/resource/uvw5-9znb.json"
 # The Council's own district table is the authority on who currently holds a

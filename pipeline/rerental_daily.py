@@ -38,7 +38,9 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
-RERENTALS = os.path.join(HERE, "rerental_pages.json")
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
+RERENTALS = os.path.join(DATA, "rerental_pages.json")
 HISTORY = os.path.join(HERE, "rerental_history.json")
 # address -> {"hood": ..., "boro": ...}, so the same building is geocoded once
 # ever rather than every morning it stays listed.
@@ -360,7 +362,7 @@ def listings_from(text, waitlist, own_office=None, index=None):
 def offices():
     """agent name -> their own office address, so it can be filtered out."""
     try:
-        agents = json.load(open(os.path.join(HERE, "marketing_agents.json")))["agents"]
+        agents = json.load(open(os.path.join(DATA, "marketing_agents.json")))["agents"]
     except (FileNotFoundError, ValueError, KeyError):
         return {}
     return {a["name"]: a.get("address", "") for a in agents}
@@ -451,7 +453,7 @@ def update_site(results, today, outdir=None):
     data["checked"] = today
     json.dump(data, open(RERENTALS, "w"), indent=1, ensure_ascii=False)
 
-    agents_path = os.path.join(HERE, "marketing_agents.json")
+    agents_path = os.path.join(DATA, "marketing_agents.json")
     try:
         agents = json.load(open(agents_path))
     except (FileNotFoundError, ValueError):

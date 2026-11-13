@@ -389,7 +389,7 @@ class Runner:
                     # Shipped beside index.html by deploy_app.sh; the local page
                     # must read the local list, not whatever is live.
                     r.fulfill(status=200, content_type='application/json',
-                              body=(ROOT / 'housing_law_firms.json').read_text())
+                              body=(ROOT / 'data' / 'housing_law_firms.json').read_text())
                 elif self.local_data_path(u):
                     r.fulfill(status=200, content_type='application/json',
                               body=self.local_data_path(u).read_text())

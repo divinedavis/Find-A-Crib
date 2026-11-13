@@ -47,7 +47,9 @@ import rerental_deals
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
-RERENTALS = os.path.join(HERE, "rerental_pages.json")
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = os.path.join(HERE, "data") if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == "pipeline" else HERE
+RERENTALS = os.path.join(DATA, "rerental_pages.json")
 OUT = os.path.join(HERE, "featured.json")
 IMGDIR = os.path.join(HERE, "featured", "img")
 DROPLET = "root@142.93.183.172:/var/www/rent-map/"
@@ -763,7 +765,7 @@ def office_addresses():
     """The agents' own office addresses, which every one of these sites prints
     in the footer where it reads exactly like a listing."""
     try:
-        agents = json.load(open(os.path.join(HERE, "marketing_agents.json")))["agents"]
+        agents = json.load(open(os.path.join(DATA, "marketing_agents.json")))["agents"]
     except (FileNotFoundError, ValueError, KeyError):
         return set()
     out = set()

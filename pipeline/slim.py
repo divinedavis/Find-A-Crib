@@ -6,9 +6,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Tracked data files live in data/ in the repo (flat copies keep them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 SRC = HERE / "buildings_geo_nta.json"
 HPD = HERE / "buildings_hpd.json"
-OUT = HERE / "buildings.min.json"
+OUT = DATA / "buildings.min.json"
 
 records = json.loads(SRC.read_text())
 hpd = json.loads(HPD.read_text()) if HPD.exists() else {}

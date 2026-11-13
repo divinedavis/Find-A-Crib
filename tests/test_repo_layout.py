@@ -76,3 +76,57 @@ def test_shell_wrappers_run_pipeline_scripts():
                 continue
             for m in re.finditer(r"(?:python3?|\"\$PY\")\s+([\w./-]+\.py)", line):
                 assert (ROOT / m.group(1)).is_file(), f"{sh.name}: {m.group(1)}"
+
+
+def _tracked_root_files():
+    """Files git tracks at the top level. Ignored, generated data (buildings.json,
+    featured.json, ...) is allowed to sit there on a workstation or the droplet;
+    only what the repo itself carries is checked."""
+    import os
+    import subprocess
+    # Under a git hook GIT_DIR/GIT_INDEX_FILE point at the pushing checkout;
+    # strip them so ls-files reads this tree (reference: hooks flip core.bare).
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        out = subprocess.run(["git", "ls-files"], cwd=ROOT, env=env, check=True,
+                             capture_output=True, text=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return sorted(p for p in out.splitlines() if "/" not in p)
+
+
+def test_no_data_files_left_at_the_repo_root():
+    """Stage 2 (2026-11-13): committed data lives in data/ (served URLs unchanged)."""
+    files = _tracked_root_files()
+    if files is None:
+        return  # not a git checkout (a flat copy); nothing to check
+    # manifest.json is the web app manifest, not data; it moves with the web
+    # files, not here.
+    loose = [f for f in files
+             if f.endswith((".json", ".geojson", ".pdf", ".pem", ".csv")) and f != "manifest.json"]
+    assert loose == [], f"put committed data in data/ (and keep the served URL in the deploy step): {loose}"
+
+
+def test_moved_data_is_where_the_scripts_look():
+    for rel in ("data/buildings.min.json", "data/s8.json", "data/fmr.json", "data/hcr.json",
+                "data/housing_law_firms.json", "data/rerental_pages.json", "data/marketing_agents.json",
+                "data/landlords.json", "data/council_districts.json", "data/council_districts.geojson",
+                "data/nta_2020.geojson", "data/owner_vacancy_pages.json", "data/agent_buildings.json",
+                "pipeline/hcr_chain.pem", "docs/BACKLOG.md"):
+        assert (ROOT / rel).is_file(), rel
+    assert len(list((ROOT / "data" / "dhcr").glob("2024-DHCR-Bldg-File-*.pdf"))) == 5
+
+
+def test_bots_commit_the_state_files_at_their_new_paths():
+    for sh in ("pipeline/rerental_daily.sh", "pipeline/check_rerentals.sh"):
+        text = (ROOT / sh).read_text()
+        assert "git add -A data/rerental_pages.json data/marketing_agents.json" in text, sh
+
+
+def test_the_dhcr_list_checker_still_sees_the_2024_pdfs():
+    # It globs for *-DHCR-Bldg-File-*.pdf; after the move a root glob found
+    # nothing and the monthly cron would have exited without checking.
+    import sys
+    sys.path.insert(0, str(ROOT / "pipeline"))
+    import check_dhcr_list
+    assert check_dhcr_list.have_year() == 2024

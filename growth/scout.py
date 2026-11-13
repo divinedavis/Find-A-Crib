@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """The 6am scout: find techniques we are not running yet.
 
+RETIRED 2026-11-12 (owner: "i want to shut down the growth scout"). The daily
+job is gone from growth_daily.py and `run()` is no longer called; the Find A
+Crib growth-review cloud routine (trig_01KHc1UGGi6J6sWyT6Um2mpc) was disabled
+the same day. This module stays because outreach.py and ai_visibility.py use
+its helpers: load_key, call_api, price, record_spend, extract_json.
+
 Once a day it asks a model with live web search what is currently working for
 sites like this one — organic search, AI answer engines, distribution, and
 revenue — then filters the answers against the ledger so it proposes ideas we

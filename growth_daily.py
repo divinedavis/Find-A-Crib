@@ -4,16 +4,15 @@
 Two crons run this on the web droplet:
 
   05:40 UTC  growth_daily.py build --deploy      (after the 04:15 voucher scrape)
-  06:00 ET   growth_daily.py daily --email …     (measure, review, scout, report)
+  06:00 ET   growth_daily.py daily --email …     (measure, review, report)
 
 Commands:
   build     run every active technique, write pages into growth_out/
   deploy    rsync growth_out/ into the docroot
   measure   pull yesterday's traffic/funnel/revenue numbers into the ledger
   review    judge active techniques; retire the dead and the redundant
-  scout     research and propose new techniques (needs an LLM key)
   report    print / email the daily growth report
-  daily     measure → review → scout → report
+  daily     measure → review → report
   status    print the ledger and the scoreboard
   seo-status  re-read the SEO corpus after growth_run.sh's watchdog repaired it,
               and correct the build record it was too early to describe
@@ -248,21 +247,6 @@ def cmd_review(args):
     if not out["actions"]:
         log("  no changes")
     return out
-
-
-# ------------------------------------------------------------------- scout
-
-def cmd_scout(args):
-    try:
-        from growth import scout
-    except Exception as e:
-        log(f"  scout unavailable: {e}")
-        return None
-    try:
-        return scout.run(dry_run=args.dry_run, docroot=args.docroot)
-    except Exception as e:
-        log(f"  scout failed: {e}")
-        return None
 
 
 # ------------------------------------------------------------------ report
@@ -978,8 +962,6 @@ def cmd_daily(args):
     cmd_measure(args)
     log("== review ==")
     rv = cmd_review(args)
-    log("== scout ==")
-    cmd_scout(args)
     log("== outreach ==")
     cmd_outreach(args)
     log("== lifecycle ==")
@@ -994,7 +976,7 @@ def cmd_daily(args):
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
+    p.add_argument("command", choices=["build", "deploy", "measure", "review",
                                        "outreach", "outreach-mark", "lifecycle", "accounts",
                                        "report", "daily", "status",
                                        "journal", "seo-status"])
@@ -1024,7 +1006,7 @@ def main():
 
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
-     "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
+     "review": cmd_review, "outreach": cmd_outreach,
      "outreach-mark": cmd_outreach_mark,
      "lifecycle": cmd_lifecycle, "accounts": cmd_accounts,
      "report": cmd_report, "daily": cmd_daily, "status": cmd_status,

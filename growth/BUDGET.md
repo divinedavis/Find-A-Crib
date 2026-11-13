@@ -75,7 +75,7 @@ volume**:
 | Job | Model | Why |
 |---|---|---|
 | 6am review agent (cloud routine) | Opus 5 | Commits code to production unreviewed. Judgment. |
-| Scout — proposes techniques and keywords | Opus 5 | One call/day; its output steers the roadmap. |
+| ~~Scout — proposes techniques and keywords~~ | — | Retired 2026-11-12 (owner). |
 | Outreach — researches real organisations | Opus 5 | Names real third parties; being wrong is expensive. |
 | Anything per-page, per-row, or per-request | **not Opus** | Volume work. Use Haiku, or no model at all. |
 

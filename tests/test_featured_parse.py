@@ -80,7 +80,8 @@ def jev_run(records, listing):
         def __exit__(self, *a):
             return False
 
-        def system_one(self, state, questions):
+        def system_one(self, state, questions, model=None):
+            assert model == F.JEV_MODEL, model
             return types.SimpleNamespace(usage=types.SimpleNamespace(input_tokens=1),
                                          answers={"open": A(0.9), "listing": A(listing), "rent": A(0.5)})
 
@@ -102,3 +103,10 @@ def test_jev_still_drops_a_card_it_reads_as_no_apartment():
 def test_a_page_checked_by_hand_survives_jevs_not_a_listing_veto():
     # East Village Homes' RentCafe homepage: kept 10-28, dropped at 0.14 on 10-29.
     assert len(jev_run([jev_card(_vouched=True)], listing=0.14)) == 1
+
+
+def test_jev_is_pinned_to_the_same_model_everywhere():
+    import ai_gateway, nl_search, inspect
+    assert F.JEV_MODEL == ai_gateway.JEV_MODEL == "jev-1.14.0"
+    assert inspect.signature(nl_search.jev_places).parameters["model"].default == ai_gateway.JEV_MODEL
+    assert ai_gateway.JEV_MODEL in ai_gateway.PRICES

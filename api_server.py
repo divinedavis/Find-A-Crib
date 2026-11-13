@@ -606,11 +606,11 @@ def ai_search():
     if client and nl_search.needs_place(rest, f):
         try:
             from typesafe_sdk import Choice
-            places, tokens = nl_search.jev_places(client, q, NB_PAIRS, f["boroughs"], Choice)
+            places, tokens = nl_search.jev_places(client, q, NB_PAIRS, f["boroughs"], Choice, ai_gateway.JEV_MODEL)
             if places:
                 f["nbs"] = places
                 explain += list(dict.fromkeys(re.sub(r"\s*\(.*?\)", "", n) for n in places))
-            used_ai, model = True, "jev-1.13.0"
+            used_ai, model = True, ai_gateway.JEV_MODEL
         except Exception as e:      # Jev down: the rules' answer still stands
             app.logger.warning("ai_search jev failed: %s", type(e).__name__)
     AI.record(user, "search", model, input_tokens=tokens)

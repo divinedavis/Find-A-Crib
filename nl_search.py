@@ -119,7 +119,7 @@ def needs_place(rest, f):
     return bool(words) and bool(PLACE_HINT.search(" " + rest + " ") or len(words) >= 2)
 
 
-def jev_places(client, text, pairs, boroughs, Choice):
+def jev_places(client, text, pairs, boroughs, Choice, model="jev-1.14.0"):
     """Up to three neighborhoods Jev gives real weight to for `text`.
     `pairs` is [(official name, borough code)]."""
     pool = [(n, b) for n, b in pairs if not boroughs or b in boroughs]
@@ -128,7 +128,7 @@ def jev_places(client, text, pairs, boroughs, Choice):
     criteria = {f"n{i}": f"{n} ({ {'M': 'Manhattan', 'Bk': 'Brooklyn', 'Q': 'Queens', 'Bx': 'Bronx', 'SI': 'Staten Island'}.get(b, b) })"
                 for i, (n, b) in enumerate(pool)}
     criteria["none"] = "No particular neighborhood is named or implied"
-    r = client.system_one(state=f'An apartment search typed by a New York renter: "{text}"',
+    r = client.system_one(model=model, state=f'An apartment search typed by a New York renter: "{text}"',
                           questions={"area": Choice(instructions="Which New York neighborhood is the renter asking to live in or near?",
                                                     criteria=criteria)})
     probs = r.answers["area"].probabilities

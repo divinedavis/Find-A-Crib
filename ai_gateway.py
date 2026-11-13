@@ -29,9 +29,14 @@ USER_CAP_MICROS = int(os.environ.get("AI_USER_MONTHLY_MICROS", 1_000_000))   # $
 # writes cost 1.25x input (5-minute TTL) and cache reads 0.1x (claude-api skill,
 # prices cached 2026-09-25). A refusal fallback can answer on another model;
 # an unknown model is priced at FALLBACK_PRICE (the most expensive), never free.
+# Jev, pinned (owner, 2026-11-12). The SDK's default "jev-latest" moved to
+# 1.14.0 without a diff here; pinning makes the next upgrade a reviewed change.
+JEV_MODEL = "jev-1.14.0"
+
 PRICES = {
     "rules": (0.0, 0.0),           # answered by code, no model: free, but counts toward the daily limit
-    "jev-1.13.0": (0.042, 0.0),
+    "jev-1.13.0": (0.042, 0.0),    # kept for ai_usage rows written before the pin
+    JEV_MODEL: (0.042, 0.0),
     "claude-haiku-4-5": (1.0, 5.0),
     "claude-haiku-5-5": (0.10, 0.50),   # prompts <=100k tokens; lease_review caps input well under that
     "claude-sonnet-5-5": (2.0, 10.0),

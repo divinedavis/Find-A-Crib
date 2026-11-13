@@ -1342,8 +1342,7 @@ def build_blocks(run_log=None, review_out=None):
     # fails quietly (no key, no credit, rate limited) looks like a job with
     # nothing to report, and the difference matters.
     trouble = []
-    for key, label in (("scout_last", "Scout (new techniques)"),
-                       ("outreach_last", "Outreach (B2B prospects)")):
+    for key, label in (("outreach_last", "Outreach (B2B prospects)"),):
         st = ledger.get_state(key)
         # `is False` on purpose, not falsiness. Failure paths always write an
         # explicit ok=False with a detail; a record missing the key entirely is

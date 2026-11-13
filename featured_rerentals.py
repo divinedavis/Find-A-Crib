@@ -1204,6 +1204,12 @@ def rent_question(amount):
                              f"(not an income limit, fee or deposit)")
 
 
+# Pinned Jev (owner, 2026-11-12); keep equal to ai_gateway.JEV_MODEL. This
+# script runs from the docroot cron without the API's modules, so it carries
+# its own copy; tests/test_featured_parse.py checks the two agree.
+JEV_MODEL = "jev-1.14.0"
+
+
 def jev_questions():
     from typesafe_sdk import Noul
     return {
@@ -1233,7 +1239,7 @@ def jev_review(records):
             figure = r["money_low"] if r["money_kind"] == "rent" else (min(rents) if rents and r["money_kind"] is None else None)
             ask = dict(qs, **({"rent": rent_question(figure)} if figure else {}))
             try:
-                resp = client.system_one(state="\n".join(r["_card"]), questions=ask)
+                resp = client.system_one(model=JEV_MODEL, state="\n".join(r["_card"]), questions=ask)
             except Exception as e:  # noqa: BLE001 — Jev down must never cost a tile
                 changes.append(f"jev: error on {r['address'][:40]}: {type(e).__name__}")
                 kept.append(r)

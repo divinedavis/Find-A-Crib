@@ -9,7 +9,7 @@ traffic and revenue. Two crons on the web droplet (`/etc/cron.d/rentmap-growth`)
 | When | Command | What it does |
 |------|---------|--------------|
 | 05:40 UTC | `growth_daily.py build --deploy` | Rebuilds the daily pages from the overnight voucher feed, deploys them, submits new URLs to IndexNow |
-| 06:00 ET | `growth_daily.py daily --email …` | Measures yesterday, judges every active technique, retires the dead ones, scouts for new techniques, mails the report |
+| 06:00 ET | `growth_daily.py daily --email …` | Measures yesterday, judges every active technique, retires the dead ones, mails the report (the scout step was retired 2026-11-12) |
 
 A third job runs in Anthropic's cloud, not on the droplet:
 
@@ -389,7 +389,7 @@ without a deploy, which is what lets the review loop prune autonomously.
 | `growth/keywords.py` | The tracked query universe the search-share goal is measured against |
 | `growth/searchconsole.py` | Positions, serving pages and per-page impressions from Search Console |
 | `growth/indexstatus.py` | Google's own index coverage for a stable stratified sample of pages |
-| `growth/scout.py` | Researches and proposes NEW techniques (needs an Anthropic key) |
+| `growth/scout.py` | Shared Claude helpers for outreach and AI visibility. The daily scout job that proposed new techniques was retired 2026-11-12 |
 | `growth/outreach.py` | Daily B2B prospect research + drafted outreach — **never sends** |
 | `growth/journal.py` | The decision journal: what was observed, concluded, changed, watched |
 | `growth/report.py` | The daily email |

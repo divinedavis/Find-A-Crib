@@ -47,7 +47,12 @@
   "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)",
   "CGMR Compliance": "HPD links cgmrcompliance.com/housing-opportunities; 404 on 2026-10-28",
   "Ibis Advisors": "HPD links ibis.powerappsportals.com. LIVE again 2026-11-11 with 4 Bronx 130% AMI units (1254 Fteley #4E, 1492 Bryant #3C/#4B, 2809 Sedgwick; rents $1,463-$2,552 in images), but robots.txt is 'User-agent: * / Disallow: /' (the PowerApps portal default). Same rule as CGP&H's Salesforce site: ask support@ibisadvisorsny.com for permission before any automated check.",
-  "Riverton Square": "HPD links its StreetEasy building page; StreetEasy terms bar scraping"
+  "Riverton Square": "HPD links its StreetEasy building page; StreetEasy terms bar scraping",
+  "Brookfield Properties / LyvWell (Greenpoint Landing)": "lyvwellapartments.com/our-communities/{eagle-west,two-blue-slip}/affordable-housing/: per-building affordable pages (125-130% AMI, rents $1,481-$3,912), 0 units 2026-11-14. Terms (k) ban 'AI agents', 'web scraping', 'bots', 'robots' or 'spiders'. Ask Brookfield@affordablelivingNYC.com for permission before any automated check.",
+  "Avanath Communities (Brighthaven)": "Fully affordable 38 6th Ave and 535 Carlton Ave have RentCafe sites ({38sixthavenue,535carltonave}brighthaven.com/floorplans): 'Contact for Availability', 0 units 2026-11-14. RentCafe terms (d) and avanath.com terms ban robots/spiders/scrapers; Cloudflare blocks curl. Ask 38-6thmanagement@avanath.com first.",
+  "Shinda Management Corporation (SMC)": "shindamanagement.com: portfolio pages (Manhattan/Bronx), no prices or vacancies (checked 2026-11-14)",
+  "Lisa Management Inc.": "lisamgmt.com/residential lists market units only, none flagged income-restricted (checked 2026-11-14)",
+  "Georgica Green Ventures": "ggvllc.com/lottery + /apply: posts openings as news text, mostly Long Island; RealPage apply sites for Raven Hall (2006 Surf Ave) and Our Lady of Lourdes (1875 Broadway) showed no units 2026-11-14. Worth an occasional manual look, not a sweep."
  },
  "checked": "2026-11-14",
  "pages": {

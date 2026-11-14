@@ -27,7 +27,6 @@
   "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)",
   "B3 Compliance Solutions": "compliance consultancy site, no renter listings (verified 2026-08-10)",
   "Belmont Arthur Avenue LDC": "program + senior-housing info pages only, no unit board",
-  "Cornell Pace Inc.": "corporate LIHTC/property-management site, no listings page",
   "Fordham-Bedford Housing Corporation": "corporate/mission site, no unit board",
   "HANAC, INC.": "building portfolio pages, no availabilities",
   "Housing Line Inc": "B2B administering agent, no renter-facing listings",
@@ -35,7 +34,7 @@
   "Plaza Marketing (a subsidiary of Plaza Management USA Inc)": "portfolio pages only, no availabilities",
   "Prestige Management": "corporate site, no listings",
   "Regtime": "B2B software brand; same operator as MGNY (already listed), listings live there",
-  "RiseBoro": "program/service pages, no unit board",
+  "RiseBoro": "riseboro.org: program/service pages, no unit board (re-checked 2026-11-14). Markets only its own buildings; occasional application PDFs (e.g. Woodlawn, 2026-04) are uploaded but not linked from a listings page. HPD contact: HousingMarketing@riseboro.org",
   "SCT Compliance, LLC": "B2B compliance consultancy",
   "Style & Haus Realty": "market-rate broker/investment site",
   "The Bouklis Group Inc.": "market-rate Astoria brokerage",
@@ -44,7 +43,7 @@
   "City5 Consulting": "site broken - SSL protocol error (checked 2026-08-10)",
   "Conformity Habitat LLC": "HPD-listed domain dead - DNS (checked 2026-08-10)",
   "Reside Affordable Inc": "HPD-listed domain dead - DNS; operator's board is Reside New York's Open Market page",
-  "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
+  "Grenadier Realty Management": "Now GRC Realty (grcrealty.com, found via the HPD contact email Leasing@grcrealty.com): service pages + a general lease application, no availabilities or waitlist board (checked 2026-11-14). The old grealty.com/grenadierrealty.com domains are dead.",
   "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)",
   "CGMR Compliance": "HPD links cgmrcompliance.com/housing-opportunities; 404 on 2026-10-28",
   "Ibis Advisors": "HPD links ibis.powerappsportals.com. LIVE again 2026-11-11 with 4 Bronx 130% AMI units (1254 Fteley #4E, 1492 Bryant #3C/#4B, 2809 Sedgwick; rents $1,463-$2,552 in images), but robots.txt is 'User-agent: * / Disallow: /' (the PowerApps portal default). Same rule as CGP&H's Salesforce site: ask support@ibisadvisorsny.com for permission before any automated check.",
@@ -465,6 +464,15 @@
    "note": "Income-restricted buildings (LIHTC, 55% AMI, 62+ senior); each building's own page says '(1 available)' or 'applications being accepted'. No rents published. Moved from owner_vacancy_pages.json 2026-11-11.",
    "last_ok": "2026-11-14",
    "unit_count": 4
+  },
+  "Cornell Pace Inc.": {
+   "url": "https://cornellpace.com/",
+   "title": "Download Applications (waitlists)",
+   "units_seen": false,
+   "note": "Waitlist applications on the homepage (uploaded 2026-06): Oceanhill I and II (Ocean Hill, Brooklyn), The Graham, Creston Burnside (Bronx). Terms of use (cornellpace.com/wp-content/uploads/2025/04/CPI-Disclaimer-and-Terms-of-Use.pdf) have no scraping/robots clause; robots.txt allows all (checked 2026-11-14).",
+   "found": "2026-11-14",
+   "source": "Brooklyn affordable-building coverage scan (2026-11-14)",
+   "waitlist": true
   }
  }
 }

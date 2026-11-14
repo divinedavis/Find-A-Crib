@@ -131,7 +131,7 @@ def test_the_dhcr_list_checker_still_sees_the_2024_pdfs():
 
 # Stage 3 (2026-11-13): everything served at findacrib.com lives in web/, laid
 # out like the docroot, so the top level reads like a project, not a site dump.
-TOP_LEVEL_FILES = {".gitignore", ".gitleaks.toml", "README.md", "LICENSE.md", "CONTRIBUTING.md",
+TOP_LEVEL_FILES = {".gitignore", ".gitleaks.toml", "README.md", "LICENSE.md", "CHANGELOG.md", "CONTRIBUTING.md",
                    "SECURITY.md", "AGENTS.md", "CLAUDE.md"}
 TOP_LEVEL_DIRS = {".github", ".githooks", "api", "data", "db", "deploy", "docs", "growth", "ios",
                   "marketing", "monitoring", "pipeline", "scripts", "supabase", "tests", "web"}

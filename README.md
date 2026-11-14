@@ -110,6 +110,10 @@ in each worktree's `ios/build.nosync`; `scripts/clean_builds.sh` reports what
 it would reclaim (dry run by default, `--yes` to empty the idle trees,
 `--keep daily` to leave one alone; it never removes `ship-history.jsonl`).
 
+## Changelog
+
+See the [changelog](CHANGELOG.md) for what changed in each App Store version.
+
 ## Contributing
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)**. In short, fork the repo, open a pull

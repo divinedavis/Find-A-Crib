@@ -216,7 +216,16 @@ def js_errors(rows):
                                                                                # our pages or static/supabase/supabase.js
                                                                                # destructures `body` (searched: every
                                                                                # `{body` there is an object literal).
-                                                                               "Cannot destructure property 'body' from null or undefined value"))
+                                                                               "Cannot destructure property 'body' from null or undefined value",
+                                                                               # 2026-11-14 06:24 UTC: one iPhone visitor
+                                                                               # on /, stackless, 6 s after the page's
+                                                                               # first ad_impression; they kept searching
+                                                                               # for 6 more minutes. The string is in none
+                                                                               # of our files or the 62 scripts the live
+                                                                               # page loads on an iPhone (scanned that
+                                                                               # day): an ad or in-app-browser bridge
+                                                                               # timing out its postMessage handshake.
+                                                                               "Message Timeout"))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

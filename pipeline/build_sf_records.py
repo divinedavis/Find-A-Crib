@@ -24,7 +24,7 @@ the same way build_dc.py fills DC's.
 Writes, in place:
     sf/buildings.min.json   + `z` and `h` on each block that has them
 
-Then run `python3 pipeline/split_hpd.py --docroot sf`.
+Then run `python3 pipeline/split_hpd.py --docroot web/sf`.
 
 Usage:
     python3 pipeline/build_sf_records.py
@@ -44,7 +44,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-BUILDINGS = HERE / "sf" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+BUILDINGS = WEB / "sf" / "buildings.min.json"
 CACHE = HERE / "sf_raw"
 
 SOC = "https://data.sf.gov/resource/{}.json"
@@ -340,7 +343,7 @@ def main():
     for k, label in (("ev", "evictions"), ("pet", "petitions"), ("by", "buyouts")):
         print(f"  {label:12s} {counts[k]:6,} blocks ({counts[k]/n*100:5.1f}%)")
     print(f"  {'ZIP':12s} {with_zip:6,} blocks ({with_zip/n*100:5.1f}%)")
-    print("\nnext: python3 pipeline/split_hpd.py --docroot sf")
+    print("\nnext: python3 pipeline/split_hpd.py --docroot web/sf")
 
 
 if __name__ == "__main__":

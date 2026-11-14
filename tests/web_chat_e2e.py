@@ -63,9 +63,9 @@ def route_local(page):
     def handle(r):
         u = r.request.url.split("#")[0].split("?")[0]
         if u in (LIVE + "/casa/", LIVE + "/casa/index.html"):
-            r.fulfill(status=200, content_type="text/html; charset=utf-8", body=(ROOT / "casa" / "index.html").read_text())
+            r.fulfill(status=200, content_type="text/html; charset=utf-8", body=(ROOT / "web" / "casa" / "index.html").read_text())
         elif u.startswith(LIVE + "/static/chat/"):
-            f = ROOT / "static" / "chat" / u.rsplit("/", 1)[-1]
+            f = ROOT / "web" / "static" / "chat" / u.rsplit("/", 1)[-1]
             r.fulfill(status=200, content_type="text/css" if f.suffix == ".css" else "application/javascript", body=f.read_text())
         else:
             r.continue_()

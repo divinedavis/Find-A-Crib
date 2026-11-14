@@ -6,7 +6,7 @@ ios/FindACribTests/NearbyPlacesTests.swift — keep the two lists in step."""
 import re
 from pathlib import Path
 
-HTML = (Path(__file__).resolve().parent.parent / "index.html").read_text()
+HTML = (Path(__file__).resolve().parent.parent / "web" / "index.html").read_text()
 
 
 def rx(name):

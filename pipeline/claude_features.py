@@ -15,7 +15,7 @@ import json
 
 import anthropic
 
-# Haiku 5.5 since 2026-11-12 (research/2026-11-12-model-tests/report.md): on 14
+# Haiku 5.5 since 2026-11-12 (docs/research/2026-11-12-model-tests/report.md): on 14
 # live flyers Haiku 4.5 matched the unit rows 18% of the time — it merged a
 # flyer's per-household-size rows into one row carrying the largest
 # household's income limit (139 of 295 live rows) — against 88% for Haiku 5.5

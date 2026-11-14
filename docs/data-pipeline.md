@@ -99,7 +99,7 @@ link to that building's full record on HPD Online.
 
 ## Other cities
 
-Each city is a directory (`sf/`, `la/`, `dc/`) holding its own
+Each city is a directory (`web/sf/`, `web/la/`, `web/dc/`) holding its own
 `buildings.min.json` plus an `index.html` generated from the root one by
 `build_city_pages.py` — the frontend is city-aware at runtime via
 `<html data-city="…">` and the `CITIES` config inside `index.html`, so a new
@@ -123,8 +123,9 @@ file rather than trusting a building-level flag.
 
 ## Front end
 
-`index.html` — a single-file Leaflet map (marker clustering + Street View
-thumbnails). No build step; serve the directory statically. An optional Supabase
+`web/index.html` — a single-file Leaflet map (marker clustering + Street View
+thumbnails). No build step; `web/` is laid out like the docroot, and
+`python3 scripts/preview.py` shows it over the live site's data. An optional Supabase
 backend powers email accounts, cross-device saved buildings, and privacy-safe
-usage analytics. Copy `config.example.js` → `config.js` and fill in keys.
+usage analytics. Copy `web/config.example.js` → `web/config.js` and fill in keys.
 

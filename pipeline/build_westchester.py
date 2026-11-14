@@ -45,6 +45,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 SERVICE = ("https://services8.arcgis.com/ek7Sxtay3Z4WZWvk/arcgis/rest/services"
            "/reg_bldg_table/FeatureServer/0/query")
 UA = "findacrib.com building map (+https://findacrib.com)"
@@ -208,7 +211,7 @@ def main():
             seen[key] = rec
 
     out = sorted(seen.values(), key=lambda x: (x["z"], x["a"]))
-    dest = HERE / args.out
+    dest = WEB / args.out
     dest.mkdir(exist_ok=True)
     path = dest / "buildings.min.json"
     path.write_text(json.dumps(out, separators=(",", ":")))

@@ -76,7 +76,7 @@ def main():
         open(sw, "w").write(SWIFT_MAIN % {"chatcrypto": m.group(0), "bbl": BBL})
         subprocess.run(["swiftc", "-O", sw, "-o", exe], check=True, env={**os.environ, "PATH": "/usr/bin:" + os.environ["PATH"]})
         js = os.path.join(tmp, "node.js"); open(js, "w").write(NODE_MAIN)
-        libs = [os.path.join(ROOT, "static/chat/noble-chacha.js"), os.path.join(ROOT, "static/chat/chat-crypto.js")]
+        libs = [os.path.join(ROOT, "web/static/chat/noble-chacha.js"), os.path.join(ROOT, "web/static/chat/chat-crypto.js")]
         env = {**os.environ, "BBL": BBL}
         phone_priv, phone_pub = subprocess.check_output([exe, "gen"], text=True).split()
         phone_id, web_id = "11111111-aaaa-bbbb-cccc-000000000001", "11111111-aaaa-bbbb-cccc-000000000002:0123456789abcdef"

@@ -213,7 +213,7 @@ class OnlineCancel(unittest.TestCase):
         self.assertIn("[functions.billing-portal]", cfg)
 
     def test_page_offers_cancel_and_states_renewal_terms(self):
-        html = read("index.html")
+        html = read("web", "index.html")
         self.assertIn('id="profile-manage-plus"', html)
         self.assertIn(">Manage or cancel Plus</button>", html)
         self.assertIn("Settings › Apple Account › Subscriptions", html)

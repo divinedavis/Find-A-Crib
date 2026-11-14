@@ -32,6 +32,9 @@ _DATA = _ROOT
 if os.path.basename(_ROOT) == "pipeline":
     _ROOT = os.path.dirname(_ROOT)
     _DATA = os.path.join(_ROOT, "data")  # tracked data files (buildings.min.json, s8.json, ...)
+# The site's pages and city data live in web/ in the repo since 2026-11-13;
+# $BUILD on the droplet is flat, so there it is the build dir itself.
+_WEB = os.path.join(_ROOT, "web") if os.path.isdir(os.path.join(_ROOT, "web")) else _ROOT
 
 SITE = "https://findacrib.com"
 OUT = os.path.join(_ROOT, "seo")
@@ -635,7 +638,7 @@ def city_hub_docs(key, guide_ok=True):
     """
     cfg = CITY_HUBS[key]
     try:
-        recs = json.load(open(os.path.join(_ROOT,
+        recs = json.load(open(os.path.join(_WEB,
                                            key, "buildings.min.json")))
     except Exception as e:
         print(f"city hubs: skipping {key} ({e})")
@@ -2450,7 +2453,7 @@ def stage_static_pages(paths=STAGED_STATIC_PAGES):
     is non-fatal and leaves the previous deploy in place, because the docroot
     copy is never deleted — rsync runs without --delete.
     """
-    base = _ROOT
+    base = _WEB
     staged, skipped = [], []
     for path in paths:
         rel = STATIC_PAGE_SOURCES.get(path)
@@ -2566,7 +2569,7 @@ def guide_stats():
     if _GUIDE_STATS:
         return _GUIDE_STATS
     try:
-        blds = json.load(open(os.path.join(_ROOT,
+        blds = json.load(open(os.path.join(_DATA,
                                            "buildings.min.json")))
     except Exception:
         return {}
@@ -3641,7 +3644,7 @@ def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
 # It is ONE page. The site's problem is not too few URLs.
 def _methodology_counts():
     """Record counts for the four cities, read from the files this build uses."""
-    here = _ROOT
+    here = _WEB
     out = {}
     try:
         blds = json.load(open(os.path.join(_DATA, "buildings.min.json")))

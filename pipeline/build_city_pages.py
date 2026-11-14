@@ -19,7 +19,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-SRC = HERE / "index.html"
+# The site's pages live in web/ since 2026-11-13 (a flat copy keeps them beside the script).
+WEB = HERE / "web" if (HERE / "web").is_dir() else HERE
+SRC = WEB / "index.html"
 
 NYC_TITLE = "Find A Crib — Rent-Stabilized NYC: Manhattan, Bronx, Brooklyn, Queens + Staten Island"
 NYC_DESC = "Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island."
@@ -200,7 +202,7 @@ def main():
         html = substitute(html, f'<h1 class="sr-only">{NYC_H1}</h1>',
                           f'<h1 class="sr-only">{m["h1"]}</h1>', "h1")
         html = substitute(html, NYC_SEO_NAV, m["seo_nav"], "seo nav")
-        out = HERE / city / "index.html"
+        out = WEB / city / "index.html"
         out.parent.mkdir(exist_ok=True)
         out.write_text(html)
         print(f"Wrote {out} ({out.stat().st_size/1024:.0f} KB)")

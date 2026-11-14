@@ -64,7 +64,7 @@ class CasaRetries(unittest.TestCase):
         swift = read("ios", "FindACrib", "Services", "CasaService.swift")
         self.assertIn("for attempt in 0..<3", swift)
         self.assertIn("status == 429 || (500...599).contains(status)", swift)
-        web = read("casa", "index.html")
+        web = read("web", "casa", "index.html")
         self.assertIn("r.status === 429 || r.status >= 500 ? again(e)", web)
         self.assertIn('accessibilityIdentifier("casa-retry")', read("ios", "FindACrib", "Features", "Casa", "CasaView.swift"))
 

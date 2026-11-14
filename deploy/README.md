@@ -34,9 +34,9 @@ vanish, check which host the script used before debugging the page.
 
 | What | How |
 |---|---|
-| App shell (`index.html`, city pages, a few `static/` files) | `scripts/deploy_app.sh` — unit tests + local journeys, snapshot, scp, live journeys, rollback on failure |
+| App shell (`web/index.html`, city pages, a few `web/static/` files) | `scripts/deploy_app.sh` — unit tests + local journeys, snapshot, scp, live journeys, rollback on failure |
 | API (`api_server.py` and its modules) | `scripts/deploy_api.sh` — copies into `/root/findacrib-api`, restarts gunicorn, health-checks |
-| City data (`sf/`, `la/`, `dc/`, `westchester/`) | `scripts/deploy_city_data.sh` |
+| City data (`web/sf/`, `web/la/`, `web/dc/`, `web/westchester/`) | `scripts/deploy_city_data.sh` |
 | SEO pages (~47.6k) | Nightly `scripts/refresh_seo.sh` **on the droplet**, from `/root/dhcr-build` |
 | Owner dashboard | Separate repo (`owner-dashboard`) and separate droplet, not this one |
 
@@ -51,7 +51,7 @@ scripts/check_nginx_drift.sh
 
 # app shell: is the live page the one in this checkout?
 ssh root@142.93.183.172 'sha256sum /var/www/rent-map/index.html'
-shasum -a 256 index.html
+shasum -a 256 web/index.html
 
 # API: is the running copy the one in this checkout?
 ssh root@142.93.183.172 'sha256sum /root/findacrib-api/api_server.py'

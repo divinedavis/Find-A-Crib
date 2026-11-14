@@ -14,11 +14,12 @@ def rel(url, **kw):
     return f.relative_to(ROOT).as_posix() if f else None
 
 
+
 def test_pages_and_assets_come_from_the_checkout():
-    assert rel(L + '/') == 'index.html'
-    assert rel(L + '/?q=bronx') == 'index.html'
-    assert rel(L + '/sf/') == 'sf/index.html'
-    assert rel(L + '/static/supercluster/supercluster.min.js') == 'static/supercluster/supercluster.min.js'
+    assert rel(L + '/') == 'web/index.html'
+    assert rel(L + '/?q=bronx') == 'web/index.html'
+    assert rel(L + '/sf/') == 'web/sf/index.html'
+    assert rel(L + '/static/supercluster/supercluster.min.js') == 'web/static/supercluster/supercluster.min.js'
 
 
 def test_config_and_service_worker_always_come_from_live():

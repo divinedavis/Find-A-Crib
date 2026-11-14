@@ -19,11 +19,11 @@ def check(html, name):
 
 
 def test_map_page_turns_video_player_off():
-    check((ROOT / "index.html").read_text(), "index.html")
+    check((ROOT / "web" / "index.html").read_text(), "web/index.html")
 
 
 def test_city_pages_carry_it():
     subprocess.run([sys.executable, "pipeline/build_city_pages.py"], cwd=ROOT, check=True,
                    capture_output=True)
     for c in ("la", "sf", "dc", "westchester"):
-        check((ROOT / c / "index.html").read_text(), f"{c}/index.html")
+        check((ROOT / "web" / c / "index.html").read_text(), f"web/{c}/index.html")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the "Find a Crib" search-bar wordmark into brand/.
+"""Generate the "Find a Crib" search-bar wordmark into web/brand/.
 
 The concept: the standalone word "a" is not set in type at all — it is drawn as
 a search field. Its left end is the bowl of the a (with the magnifier sitting in
@@ -8,9 +8,9 @@ stem. "Find" and "Crib" stay in Oxanium 800, the face the site header already
 self-hosts, so the mark and the running wordmark are the same typeface.
 
 Everything is emitted as outlines — no font dependency in the SVG — by pulling
-the glyph contours straight out of fonts/oxanium-800.woff2 (Oxanium, OFL 1.1).
+the glyph contours straight out of web/fonts/oxanium-800.woff2 (Oxanium, OFL 1.1).
 
-    python3 scripts/make_logo.py            # writes brand/*.svg
+    python3 scripts/make_logo.py            # writes web/brand/*.svg
 
 Font units: 1000/em, baseline y=0, x-height 532, cap height 690. The SVG is
 emitted in those units under a flip transform so every number below can be read
@@ -21,8 +21,8 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FONT = os.path.join(ROOT, "fonts", "oxanium-800.woff2")
-OUT = os.path.join(ROOT, "brand")
+FONT = os.path.join(ROOT, "web", "fonts", "oxanium-800.woff2")
+OUT = os.path.join(ROOT, "web", "brand")
 
 UPEM, XH, CAP = 1000, 532, 690
 STEM = 167          # Oxanium 800 stem width, measured off the 'i'
@@ -146,4 +146,4 @@ if __name__ == "__main__":
         open(p, "w").write(icon(bg=bg, blue=blue, ink=ink))
         made.append((os.path.basename(p), "square"))
     for nm, dim in made:
-        print(f"  wrote brand/{nm}  ({dim})")
+        print(f"  wrote web/brand/{nm}  ({dim})")

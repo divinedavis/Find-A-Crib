@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Deploy the app shell (index.html + the city pages it generates + static/)
-# to the findacrib.com docroot — and refuse to unless the user journeys pass.
+# Deploy the app shell (web/index.html + the city pages it generates + web/static/)
+# to the findacrib.com docroot. Source files live in web/ since 2026-11-13;
+# SHIPPED below is docroot-relative, so every URL is unchanged. It refuses to
+# deploy unless the user journeys pass.
 #
 #   scripts/deploy_app.sh            # test local -> deploy -> test live
 #   scripts/deploy_app.sh --skip-tests   # only when you know why
@@ -89,27 +91,27 @@ echo "   $BACKUPS/$SNAP (scripts/rollback_app.sh $SNAP)"
 
 echo "== deploying"
 ssh "$HOST" "mkdir -p $DOC/static/supercluster"
-scp -q static/supercluster/supercluster.min.js "$HOST:$DOC/static/supercluster/supercluster.min.js"
-scp -q static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html "$HOST:$DOC/static/"
-scp -q index.html "$HOST:$DOC/index.html"
+scp -q web/static/supercluster/supercluster.min.js "$HOST:$DOC/static/supercluster/supercluster.min.js"
+scp -q web/static/mapillary-preview.js web/static/apple-street-preview.js web/static/apple-street-frame.html "$HOST:$DOC/static/"
+scp -q web/index.html "$HOST:$DOC/index.html"
 # The borough housing-law-firm list the building sheet reads (2026-10-14);
 # the app bundles the same file (tests/test_nearby_legal.py keeps them equal).
 scp -q data/housing_law_firms.json "$HOST:$DOC/housing_law_firms.json"
 # Your Crib (2026-10-15): 311 calls and crime near your building; Plus alerts.
 ssh "$HOST" "install -d -m 755 $DOC/casa"
-scp -q casa/index.html "$HOST:$DOC/casa/index.html"
+scp -q web/casa/index.html "$HOST:$DOC/casa/index.html"
 # Building chat on the web (2026-10-19): Your Crib's chat panel + its crypto.
 ssh "$HOST" "install -d -m 755 $DOC/static/chat"
-scp -q static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css "$HOST:$DOC/static/chat/"
-for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.html"; done
+scp -q web/static/chat/noble-chacha.js web/static/chat/chat-crypto.js web/static/chat/chat-ui.js web/static/chat/chat.css "$HOST:$DOC/static/chat/"
+for c in la sf dc westchester; do scp -q "web/$c/index.html" "$HOST:$DOC/$c/index.html"; done
 # Installable and offline (2026-11-10): the service worker, the web manifest
 # and its maskable icon, and the real-visit speed reporter.
 ssh "$HOST" "install -d -m 755 $DOC/static/platform"
-scp -q sw.js manifest.json icon-maskable-512.png "$HOST:$DOC/"
-scp -q static/platform/vitals.js "$HOST:$DOC/static/platform/vitals.js"
+scp -q web/sw.js web/manifest.json web/icon-maskable-512.png "$HOST:$DOC/"
+scp -q web/static/platform/vitals.js "$HOST:$DOC/static/platform/vitals.js"
 # The privacy page had no deploy path (copied by hand); it says what the
 # features above keep, so it ships with them. legal_pages checks it live.
-scp -q privacy/index.html "$HOST:$DOC/privacy/index.html"
+scp -q web/privacy/index.html "$HOST:$DOC/privacy/index.html"
 for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js /static/chat/chat-ui.js /sw.js /manifest.json /icon-maskable-512.png /static/platform/vitals.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done

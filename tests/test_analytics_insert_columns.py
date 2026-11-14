@@ -16,7 +16,7 @@ def test_no_id_or_created_at():
 
 
 def test_web_and_ios_only_send_granted_columns():
-    html = (ROOT / "index.html").read_text()
+    html = (ROOT / "web" / "index.html").read_text()
     for table in ("events", "visits"):
         m = re.search(r"from\('%s'\)\.insert\(\{(.*?)\n\s*\}\)" % table, html, re.S)
         assert m, table

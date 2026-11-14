@@ -619,7 +619,7 @@ def write_gz(path, obj):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(HERE))
+    ap.add_argument("--out", default=str(HERE / "web" if HERE.joinpath("web").is_dir() else HERE))
     ap.add_argument("--only", default="")
     a = ap.parse_args()
     only = [s.strip() for s in a.only.split(",") if s.strip()]

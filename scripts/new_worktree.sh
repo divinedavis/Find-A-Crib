@@ -88,12 +88,12 @@ PUBLIC=(
   "buildings.slim.json|buildings.slim.json"
   "buildings.hpd.json|buildings.hpd.json"
   "featured.json|featured.json"
-  "sf/buildings.slim.json|sf/buildings.slim.json"
-  "sf/buildings.hpd.json|sf/buildings.hpd.json"
-  "la/buildings.slim.json|la/buildings.slim.json"
-  "la/buildings.hpd.json|la/buildings.hpd.json"
-  "dc/buildings.slim.json|dc/buildings.slim.json"
-  "dc/buildings.hpd.json|dc/buildings.hpd.json"
+  "web/sf/buildings.slim.json|sf/buildings.slim.json"
+  "web/sf/buildings.hpd.json|sf/buildings.hpd.json"
+  "web/la/buildings.slim.json|la/buildings.slim.json"
+  "web/la/buildings.hpd.json|la/buildings.hpd.json"
+  "web/dc/buildings.slim.json|dc/buildings.slim.json"
+  "web/dc/buildings.hpd.json|dc/buildings.hpd.json"
   "ios/FindACrib/Resources/Data/buildings.slim.json.gz|buildings.slim.json.gz"
 )
 # A download replaces the main checkout's copy only if it looks like what it
@@ -141,7 +141,7 @@ DATA=(
   buildings_geo_nta.json
   buildings_hpd.json
   buildings.hpd.json
-  config.js
+  web/config.js
   featured.json
   seo_lastmod.json
   vacancies.json
@@ -150,16 +150,16 @@ DATA=(
   apify_export.json
   agent_phones.json
   hpd_contacts.json
-  sf/buildings.slim.json
-  sf/buildings.hpd.json
-  sf/buildings.min.json.gz
-  la/buildings.slim.json
-  la/buildings.hpd.json
-  la/buildings.min.json.gz
-  dc/buildings.slim.json
-  dc/buildings.hpd.json
-  dc/buildings.min.json.gz
-  westchester/buildings.slim.json
+  web/sf/buildings.slim.json
+  web/sf/buildings.hpd.json
+  web/sf/buildings.min.json.gz
+  web/la/buildings.slim.json
+  web/la/buildings.hpd.json
+  web/la/buildings.min.json.gz
+  web/dc/buildings.slim.json
+  web/dc/buildings.hpd.json
+  web/dc/buildings.min.json.gz
+  web/westchester/buildings.slim.json
   ios/FindACrib/Resources/Data/buildings.slim.json.gz
   ios/Secrets.xcconfig
   ios/scripts/asc-config.env
@@ -201,4 +201,4 @@ echo
 echo "Next:"
 echo "  cd $WT"
 echo "  ios/scripts/generate.sh      # regenerate the Xcode project"
-echo "  python3 -m http.server 8000  # or open index.html through your usual server"
+echo "  python3 scripts/preview.py   # the site with your web/ files over live data"

@@ -10,7 +10,7 @@ from apple_street_preview import SDK
 
 def main():
     for city in ('', *CITY_PAGES):
-        html = (ROOT / city / 'index.html').read_text()
+        html = (ROOT / 'web' / city / 'index.html').read_text()
         assert 'maps/api/streetview' not in html, f'Paid imagery remains in {city or "NYC"}'
         assert 'maps/embed/v1/streetview' not in html
         assert 'GMAPS_KEY' not in html

@@ -40,6 +40,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Hand-curated inputs live in data/ since 2026-11-13 (a flat copy keeps them beside the script).
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 # A full browser string, still naming us: Boston's WAF answers a short one
 # with an empty page and LA's host 403s a "compatible; bot" one.
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
@@ -227,7 +229,7 @@ def miami_leasing():
     the actual leasing site or availabilities")."""
     rows = json.loads(Path(LEASING_FILE).read_text())
     try:
-        links = json.loads((HERE / "mia" / "leasing_links.json").read_text())["buildings"]
+        links = json.loads((DATA / "mia" / "leasing_links.json").read_text())["buildings"]
     except (OSError, ValueError, KeyError):
         links = {}
     out = []

@@ -19,7 +19,7 @@ case "$KEY" in *[![:alnum:]_.-]*) echo "refusing: key has characters a URL query
 
 HOST=root@142.93.183.172
 REMOTE=/var/www/rent-map/config.js
-LOCAL="$(cd "$(dirname "$0")/.." && pwd)/config.js"
+LOCAL="$(cd "$(dirname "$0")/.." && pwd)/web/config.js"   # web/ since 2026-11-13
 
 set_key() {   # file
   local f="$1"

@@ -28,7 +28,7 @@ scripts/install_hooks.sh      # pre-push: secrets scan + unit tests
 4. **Run the checks:**
    ```sh
    python3 tests/run_unit.py
-   JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/journeys.py   # if you touched index.html or static/
+   JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/journeys.py   # if you touched anything in web/
    ```
 5. **Open a pull request** using the template. CI runs a secrets scan and the
    unit tests on every PR; front-end changes also run the journey suite.
@@ -40,7 +40,7 @@ before and after copying anything.
 ## Rules that matter here
 
 - **No secrets in the repo, ever.** Keys live in `.env` files and the
-  maintainer's keychain. `config.js` is gitignored; copy `config.example.js`.
+  maintainer's keychain. `web/config.js` is gitignored; copy `web/config.example.js`.
   This repo is public: anything pushed is public forever.
 - **AI output must be grounded.** Any feature that shows text written by a
   model must pass `claude_features.ungrounded()`, so every number it shows

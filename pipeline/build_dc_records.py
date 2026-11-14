@@ -26,7 +26,7 @@ here, and the UI says so rather than showing an empty panel.
 Writes, in place:
     dc/buildings.min.json   + `yr` and `h` on each property that resolves
 
-Then run `python3 pipeline/split_hpd.py --docroot dc`.
+Then run `python3 pipeline/split_hpd.py --docroot web/dc`.
 
 Usage:
     python3 pipeline/build_dc_records.py
@@ -44,7 +44,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-BUILDINGS = HERE / "dc" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+BUILDINGS = WEB / "dc" / "buildings.min.json"
 CACHE = HERE / "dc_raw"
 
 DCGIS = "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA"
@@ -299,7 +302,7 @@ def main():
                      ("yr", "year built"), ("owner", "owner of record"),
                      ("vacant_register", "on vacant register")):
         print(f"  {label:22s} {hit[k]:6,} ({hit[k]/n*100:5.1f}%)")
-    print("\nnext: python3 pipeline/split_hpd.py --docroot dc")
+    print("\nnext: python3 pipeline/split_hpd.py --docroot web/dc")
 
 
 if __name__ == "__main__":

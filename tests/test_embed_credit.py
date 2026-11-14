@@ -36,8 +36,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PAGE = (ROOT / "embed" / "index.html").read_text()
-WIDGET = (ROOT / "embed" / "widget.js").read_text()
+PAGE = (ROOT / "web" / "embed" / "index.html").read_text()
+WIDGET = (ROOT / "web" / "embed" / "widget.js").read_text()
 
 # The <pre><code> block the page tells people to paste.
 SNIPPET = re.search(r"<pre><code>(.*?)</code></pre>", PAGE, re.S)

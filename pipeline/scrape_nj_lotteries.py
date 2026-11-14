@@ -40,6 +40,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+DATA = HERE / "data" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 URL = "https://www.affordablehomesnewjersey.com/"
 # Where a card sends people (owner, 2026-09-24: "these links take me to a
 # generic website - i dont see the actual listing"). CGP&H's current-listings
@@ -72,7 +76,7 @@ def municipalities():
     """{lowercased name: [county, …]} from the NJ DCA survey join."""
     out = {}
     try:
-        zips = json.load(open(HERE / "nj" / "rentcontrol.json"))["zips"]
+        zips = json.load(open(WEB / "nj" / "rentcontrol.json"))["zips"]
     except (OSError, ValueError, KeyError):
         return out
     for ms in zips.values():
@@ -93,7 +97,7 @@ def town_key(t):
 
 def curated_links():
     try:
-        return json.load(open(HERE / "nj" / "cgph_links.json"))["towns"]
+        return json.load(open(DATA / "nj" / "cgph_links.json"))["towns"]
     except (OSError, ValueError, KeyError):
         return {}
 

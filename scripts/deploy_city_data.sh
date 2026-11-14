@@ -17,6 +17,9 @@
 # file is sent with its .gz or not at all.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# City data sits beside its page in web/<city>/ since 2026-11-13; the docroot
+# layout (and every URL) is unchanged.
+cd web
 HOST=root@142.93.183.172
 DOC=/var/www/rent-map
 CITIES=("$@")
@@ -34,7 +37,7 @@ for c in "${CITIES[@]}"; do
     printf '   %-22s %6.2f MB raw / %5.2f MB gz\n' "$f" \
       "$(echo "scale=2; $(wc -c <"$c/$f") / 1000000" | bc)" \
       "$(echo "scale=2; $(wc -c <"$c/$f.gz") / 1000000" | bc)"
-    python3 scripts/check_data_file.py "$c/$f" "$DOC/$c/$f"
+    python3 ../scripts/check_data_file.py "$c/$f" "$DOC/$c/$f"
     scp -q "$c/$f" "$c/$f.gz" "$HOST:$DOC/$c/"
   done
 done

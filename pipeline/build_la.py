@@ -21,7 +21,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-OUT = HERE / "la" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+OUT = WEB / "la" / "buildings.min.json"
 LAYER = ("https://public.gis.lacounty.gov/public/rest/services/"
          "LACounty_Cache/LACounty_Parcel/MapServer/0/query")
 WHERE = ("TaxRateCity='LOS ANGELES' AND UseType='Residential' "

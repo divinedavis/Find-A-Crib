@@ -39,7 +39,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]                      # docs/research/<run>/ -> repo root (moved 2026-11-13)
+sys.path.insert(0, str(ROOT / "pipeline"))  # claude_features, flyer_reader
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 import gw  # noqa: E402

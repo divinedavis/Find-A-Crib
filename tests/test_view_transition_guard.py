@@ -6,7 +6,7 @@ telemetry must not report any it misses."""
 import re
 from pathlib import Path
 
-HTML = (Path(__file__).resolve().parent.parent / "index.html").read_text()
+HTML = (Path(__file__).resolve().parent.parent / "web" / "index.html").read_text()
 HEAD = HTML.split("</head>", 1)[0]
 
 

@@ -35,7 +35,7 @@ parcel source carries none at all, which is why every LA record has had
 Writes, in place:
     la/buildings.min.json   + `h` and `nb` on each parcel that has them
 
-Then run `python3 pipeline/split_hpd.py --docroot la` to produce the boot/lazy split,
+Then run `python3 pipeline/split_hpd.py --docroot web/la` to produce the boot/lazy split,
 exactly as NYC does.
 
 Usage:
@@ -57,7 +57,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-BUILDINGS = HERE / "la" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+BUILDINGS = WEB / "la" / "buildings.min.json"
 CACHE = HERE / "la_raw"
 
 SOC = "https://data.lacity.org/resource/{}.json"
@@ -501,7 +504,7 @@ def main():
     print(f"  {'neighborhood':14s} {nb_hits:6,} parcels ({nb_hits/n*100:5.1f}%)")
     if vwindow:
         print(f"\n  violations window: {vwindow[0]} .. {vwindow[1]} (rolling, not all-time)")
-    print("\nnext: python3 pipeline/split_hpd.py --docroot la")
+    print("\nnext: python3 pipeline/split_hpd.py --docroot web/la")
 
 
 if __name__ == "__main__":

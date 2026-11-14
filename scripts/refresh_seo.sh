@@ -193,6 +193,7 @@ else
     case "$f" in
       *.py) src="$SRC/pipeline/$f" ;;
       landlords.json) src="$SRC/data/$f" ;;
+      */index.html) src="$SRC/web/$f" ;;   # the site's pages live in web/ since 2026-11-13
     esac
     if [ -f "$src" ] && ! cmp -s "$src" "$BUILD/$f"; then
       mkdir -p "$BUILD/$(dirname "$f")"

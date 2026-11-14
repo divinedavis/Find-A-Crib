@@ -44,7 +44,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-OUT = HERE / "dc" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+OUT = WEB / "dc" / "buildings.min.json"
 CACHE = HERE / "dc_raw"
 
 LIST_EXPORTS = ("https://rccd-rentregistry-export-prod-c4c8bndgambyfxg8"

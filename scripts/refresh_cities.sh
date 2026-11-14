@@ -37,8 +37,8 @@ for c in "${CITIES[@]}"; do
     dc) "$PY" pipeline/build_dc.py && "$PY" pipeline/build_dc_records.py ;;
     *)  echo "!! no builder for $c" >&2; exit 1 ;;
   esac
-  "$PY" pipeline/split_hpd.py --docroot "$c"
-  gzip -9 -kf "$c/buildings.min.json"
+  "$PY" pipeline/split_hpd.py --docroot "web/$c"   # city pages + data live in web/ since 2026-11-13
+  gzip -9 -kf "web/$c/buildings.min.json"
 done
 
 if [ "${NO_DEPLOY:-}" = "1" ]; then

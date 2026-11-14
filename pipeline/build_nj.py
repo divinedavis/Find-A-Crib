@@ -50,6 +50,9 @@ from xml.etree import ElementTree as ET
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
 SURVEY_URL = "https://www.nj.gov/dca/home/misc/Rent_Control_Survey.xlsx"
 XWALK_URL = ("https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/"
              "tab20_zcta520_cousub20_natl.txt")
@@ -253,7 +256,7 @@ def main():
             munis.append({k: v for k, v in m.items() if v not in ("", None)})
         out[z] = munis
 
-    dest = HERE / args.out
+    dest = WEB / args.out
     dest.mkdir(exist_ok=True)
     path = dest / "rentcontrol.json"
     path.write_text(json.dumps(

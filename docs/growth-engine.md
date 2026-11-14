@@ -44,7 +44,7 @@ independently of the pull's exit code and resets the conflicted paths to
 them every run.
 
 **Deploying the app shell.** `scripts/deploy_app.sh` is the only way to
-ship `index.html`: it runs `tests/journeys.py` (every visitor path, as an
+ship `web/index.html`: it runs `tests/journeys.py` (every visitor path, as an
 iPhone and as a desktop browser) against the local file, regenerates the
 city pages, copies everything to the docroot, and runs the journeys again
 against the live site. A real-iPhone lane is described in `tests/DEVICE.md`.
@@ -52,9 +52,9 @@ against the live site. A real-iPhone lane is described in `tests/DEVICE.md`.
 **What a git push does and does not deploy.** Only two paths reach the docroot
 on their own: `growth_daily.py build --deploy` rsyncs `growth_out/`, and
 `scripts/refresh_seo.sh` rsyncs `build_seo.py`'s `seo/`. **Nothing in either
-cron deploys the root `index.html`** — the app shell is copied to the docroot by
+cron deploys `web/index.html`** — the app shell is copied to the docroot by
 hand ("no build step; serve the directory statically", above). So a change the
-review agent pushes to `index.html` sits in git until someone deploys the app,
+review agent pushes to `web/index.html` sits in git until someone deploys the app,
 while a change to `build_seo.py` or `growth/techniques.py` goes live the next
 morning. This is not obvious from the checkout and has already cost one review
 cycle: on 2026-08-05 the review fixed two orphaned sections by adding links to

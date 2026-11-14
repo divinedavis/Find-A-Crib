@@ -12,7 +12,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 W, H = 1200, 630
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "og-image.png")
+OUT = os.path.join(ROOT, "web", "og-image.png")
 RAW = os.path.join(ROOT, "ios", "marketing", "raw")
 FONTS = os.path.join(ROOT, "ios", "FindACrib", "Resources", "Fonts")
 
@@ -36,7 +36,7 @@ f_city = font("SourceSans3-Semibold.ttf", 28, "/System/Library/Fonts/Supplementa
 f_pill = font("SourceSans3-Bold.ttf", 30)
 
 # the app icon (scripts/make_icon.py) + brand
-icon = Image.open(os.path.join(ROOT, "icon-512.png")).convert("RGBA").resize((68, 68), Image.LANCZOS)
+icon = Image.open(os.path.join(ROOT, "web", "icon-512.png")).convert("RGBA").resize((68, 68), Image.LANCZOS)
 img.paste(icon, (72, 96), icon)
 d.text((156, 90), "Find A Crib", font=f_brand, fill="white")
 

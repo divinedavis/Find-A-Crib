@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-MODULE = (ROOT / 'static/mapillary-preview.js').read_text()
+MODULE = (ROOT / 'web/static/mapillary-preview.js').read_text()
 HTML = '''<style>.tile{position:relative;width:300px;height:150px;margin:10px}
 .mly-visual{position:absolute;inset:0}img{width:100%;height:100%}[hidden]{display:none!important}</style>
 <div id="tiles"></div><script>window.MAPILLARY_PREVIEW_TOKEN='test-token';</script>
@@ -42,7 +42,7 @@ def main():
                 route.fulfill(content_type='application/json', body=json.dumps({'data':rows}))
             page.route('https://graph.mapillary.com/**', api)
             page.route('https://images.example/**', lambda r: r.fulfill(
-                content_type='image/png', body=(ROOT / 'icon-192.png').read_bytes()))
+                content_type='image/png', body=(ROOT / 'web' / 'icon-192.png').read_bytes()))
             page.goto('http://localhost/?photos=mapillary')
             def render(lat=40.8, count=1):
                 page.evaluate('''([lat,count]) => {

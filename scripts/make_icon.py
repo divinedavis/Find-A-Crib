@@ -13,9 +13,9 @@ does. The homes are one silhouette so the mark still reads at 16px.
 Writes:
   ios/FindACrib/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png
       (opaque, square — iOS rounds the corners itself)
-  icon-512.png icon-192.png favicon-32.png favicon.ico   (rounded, transparent corners)
-  apple-touch-icon.png (180, opaque square, iOS masks it)
-  brand/mark.svg  (the same drawing as vector, for the site header)
+  web/icon-512.png web/icon-192.png web/favicon-32.png web/favicon.ico   (rounded, transparent corners)
+  web/apple-touch-icon.png (180, opaque square, iOS masks it)
+  web/brand/mark.svg  (the same drawing as vector, for the site header)
 """
 import math, os
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
@@ -149,10 +149,11 @@ def svg():
 
 
 if __name__ == "__main__":
-    out_dir = os.environ.get("ICON_OUT", ROOT)
+    web = os.path.join(ROOT, "web")   # the site's files live in web/ since 2026-11-13
+    out_dir = os.environ.get("ICON_OUT", web)
     master = render(S)
-    os.makedirs(os.path.dirname(IOS_ICON), exist_ok=True) if out_dir == ROOT else None
-    ios_path = IOS_ICON if out_dir == ROOT else os.path.join(out_dir, "icon-1024.png")
+    os.makedirs(os.path.dirname(IOS_ICON), exist_ok=True) if out_dir == web else None
+    ios_path = IOS_ICON if out_dir == web else os.path.join(out_dir, "icon-1024.png")
     master.convert("RGB").save(ios_path, optimize=True)
     for name, size in (("icon-512.png", 512), ("icon-192.png", 192), ("favicon-32.png", 32)):
         rounded(master.resize((size, size), Image.LANCZOS)).save(os.path.join(out_dir, name), optimize=True)

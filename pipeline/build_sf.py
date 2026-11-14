@@ -25,7 +25,10 @@ from statistics import median
 HERE = Path(__file__).resolve().parent
 if HERE.name == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = HERE.parent
-OUT = HERE / "sf" / "buildings.min.json"
+# Served files (city pages + their data) live in web/ since 2026-11-13;
+# a flat copy keeps everything beside the script.
+WEB = HERE / "web" if Path(__file__).resolve().parent.name == "pipeline" else HERE
+OUT = WEB / "sf" / "buildings.min.json"
 # data.sfgov.org 301s to data.sf.gov as of 2026-09; point at the new host
 # directly so a redirect-follow is not load-bearing.
 API = "https://data.sf.gov/resource/gdc7-dmcn.json"

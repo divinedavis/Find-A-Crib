@@ -1,6 +1,6 @@
 # The user-journey suite (tests/journeys.py) — phone (WebKit), desktop
 # (Chromium) and iPad (WebKit) — whenever the app shell or the suite changes.
-# Local mode: the page under test is this commit's index.html + generated city
+# Local mode: the page under test is this commit's web/index.html + generated city
 # pages; data the repo doesn't carry (buildings.slim.json is gitignored) falls
 # through to the live site. deploy_app.sh still runs the suite itself before
 # and after every copy; this is the net for pushes that never get deployed by
@@ -9,8 +9,7 @@ name: journeys
 on:
   push:
     paths:
-      - 'index.html'
-      - 'static/**'
+      - 'web/**'
       - 'pipeline/build_city_pages.py'
       - 'tests/journeys.py'
       - '.github/workflows/journeys.yml'

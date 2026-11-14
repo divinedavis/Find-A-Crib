@@ -100,10 +100,7 @@ def test_no_data_files_left_at_the_repo_root():
     files = _tracked_root_files()
     if files is None:
         return  # not a git checkout (a flat copy); nothing to check
-    # manifest.json is the web app manifest, not data; it moves with the web
-    # files, not here.
-    loose = [f for f in files
-             if f.endswith((".json", ".geojson", ".pdf", ".pem", ".csv")) and f != "manifest.json"]
+    loose = [f for f in files if f.endswith((".json", ".geojson", ".pdf", ".pem", ".csv"))]
     assert loose == [], f"put committed data in data/ (and keep the served URL in the deploy step): {loose}"
 
 
@@ -130,3 +127,65 @@ def test_the_dhcr_list_checker_still_sees_the_2024_pdfs():
     sys.path.insert(0, str(ROOT / "pipeline"))
     import check_dhcr_list
     assert check_dhcr_list.have_year() == 2024
+
+
+# Stage 3 (2026-11-13): everything served at findacrib.com lives in web/, laid
+# out like the docroot, so the top level reads like a project, not a site dump.
+TOP_LEVEL_FILES = {".gitignore", ".gitleaks.toml", "README.md", "LICENSE.md", "CONTRIBUTING.md",
+                   "SECURITY.md", "AGENTS.md", "CLAUDE.md"}
+TOP_LEVEL_DIRS = {".github", ".githooks", "api", "data", "db", "deploy", "docs", "growth", "ios",
+                  "marketing", "monitoring", "pipeline", "scripts", "supabase", "tests", "web"}
+
+
+def test_top_level_is_only_the_allowlist():
+    files = _tracked_root_files()
+    if files is None:
+        return
+    extra = sorted(set(files) - TOP_LEVEL_FILES)
+    assert extra == [], ("new top-level files: put site files in web/, scripts in pipeline/, data in "
+                         f"data/, docs in docs/ — or add them here on purpose: {extra}")
+    import os
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    out = subprocess.run(["git", "ls-files"], cwd=ROOT, env=env, check=True,
+                         capture_output=True, text=True).stdout
+    dirs = {p.split("/", 1)[0] for p in out.splitlines() if "/" in p}
+    assert dirs <= TOP_LEVEL_DIRS, f"new top-level folders: {sorted(dirs - TOP_LEVEL_DIRS)}"
+
+
+def test_the_site_files_are_in_web():
+    for rel in ("index.html", "privacy.html", "terms.html", "sw.js", "manifest.json", "ads.txt",
+                "app-ads.txt", "favicon.ico", "apple-touch-icon.png", "og-image.png",
+                "static/supercluster/supercluster.min.js", "casa/index.html", "sf/index.html",
+                "la/index.html", "dc/index.html", "westchester/index.html", "privacy/index.html",
+                "brand/mark.svg", "fonts/oxanium-800.woff2", "nj/rentcontrol.json"):
+        assert (ROOT / "web" / rel).is_file(), rel
+    for rel in ("data/nj/cgph_links.json", "data/mia/leasing_links.json"):
+        assert (ROOT / rel).is_file(), rel
+
+
+def test_deploy_app_copies_from_web():
+    text = (ROOT / "scripts" / "deploy_app.sh").read_text()
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("scp ") and "housing_law_firms" not in s:
+            srcs = [t for t in shlex.split(s.split('"$HOST')[0]) if not t.startswith("-")][1:]
+            for src in srcs:
+                src = src.replace("$c", "sf")
+                assert src.startswith("web/"), f"deploy_app.sh copies {src} from outside web/"
+                assert (ROOT / src).is_file(), src
+
+
+def test_builders_read_and_write_the_moved_site_files():
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / "pipeline"))
+    bcp = importlib.import_module("build_city_pages")
+    assert bcp.SRC == ROOT / "web" / "index.html" and bcp.SRC.is_file()
+    for mod, attr, rel in (("build_sf", "OUT", "web/sf/buildings.min.json"),
+                           ("build_la", "OUT", "web/la/buildings.min.json"),
+                           ("build_dc", "OUT", "web/dc/buildings.min.json")):
+        assert getattr(importlib.import_module(mod), attr) == ROOT / rel, mod
+    nj = importlib.import_module("scrape_nj_lotteries")
+    assert (nj.WEB / "nj" / "rentcontrol.json").is_file() and (nj.DATA / "nj" / "cgph_links.json").is_file()
+    assert (importlib.import_module("build_openings").DATA / "mia" / "leasing_links.json").is_file()

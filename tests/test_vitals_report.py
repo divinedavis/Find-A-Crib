@@ -28,7 +28,7 @@ class Report(unittest.TestCase):
         self.assertNotIn("ttfb", vr.report(vr.parse(LOG, datetime(2026, 11, 5, tzinfo=timezone.utc)), "la")["measures"])
 
     def test_every_good_line_is_a_range_edge_the_page_sends(self):
-        js = (ROOT / "static" / "platform" / "vitals.js").read_text()
+        js = (ROOT / "web" / "static" / "platform" / "vitals.js").read_text()
         edges = {k: [float(x) for x in v.split(",")] for k, v in re.findall(r"(\w+): \[([\d, ]+)\]", js)}
         for k in ("ttfb", "fcp", "lcp", "inp"):
             for line in vr.LINES[k]:
@@ -37,7 +37,7 @@ class Report(unittest.TestCase):
     def test_the_log_takes_only_what_the_page_sends(self):
         conf = (ROOT / "deploy" / "nginx" / "conf.d" / "log_format_site.conf").read_text()
         allowed = re.search(r'"~\^\[(.+?)\]\{1,200\}\$"', conf).group(1)
-        js = (ROOT / "static" / "platform" / "vitals.js").read_text()
+        js = (ROOT / "web" / "static" / "platform" / "vitals.js").read_text()
         self.assertIn("log_format fac_vitals '$time_iso8601 $args';", conf, "no address, browser or cookie in the log")
         for sample in ("p=nyc&lcp=1500-2500&fcp=0-1000&ttfb=0-200&inp=0-100&cls=0-0.1&c=4g&i=1&r=1", "p=westchester&lcp=10000+"):
             self.assertRegex(sample, f"^[{allowed}]{{1,200}}$")

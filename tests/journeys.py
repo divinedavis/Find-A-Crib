@@ -37,6 +37,9 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
+# The website's source files (index.html, the city shells, static/) live in
+# web/ since 2026-11-13; every repo path below that is a served file reads it.
+WEB = ROOT / 'web'
 LIVE = 'https://findacrib.com'
 # What the inline QR in the Get-the-app modal must decode to (scripts/make_app_qr.py).
 APP_STORE_URL = 'https://apps.apple.com/us/app/find-a-crib/id6807549249'
@@ -254,20 +257,20 @@ class Journey:
 class Runner:
     def __init__(self, target, only, headed):
         self.target, self.only, self.headed = target, only, headed
-        self.html = None if target == 'live' else (ROOT / 'index.html').read_text()
+        self.html = None if target == 'live' else (WEB / 'index.html').read_text()
         # The city pages are generated FROM index.html by build_city_pages.py, so
         # a local run has to serve the generated copies too — otherwise a journey
         # that opens /la/ silently tests the deployed site and passes on a change
         # that was never built.
         self.city_html = {} if target == 'live' else {
-            c: (ROOT / c / 'index.html').read_text()
-            for c in CITY_PAGES if (ROOT / c / 'index.html').exists()
+            c: (WEB / c / 'index.html').read_text()
+            for c in CITY_PAGES if (WEB / c / 'index.html').exists()
         }
         # …and the buildings files with them. Serving a local page against the
         # DEPLOYED data is the worst of both: the page is the new one, the blob
         # is last week's, and the panel the change added renders empty. Read
         # lazily — LA's slim file is 14 MB and most journeys never ask for it.
-        self.sc = (ROOT / 'static' / 'supercluster' / 'supercluster.min.js').read_text()
+        self.sc = (WEB / 'static' / 'supercluster' / 'supercluster.min.js').read_text()
         self.results = []
 
     # ---- browser plumbing -------------------------------------------------
@@ -384,7 +387,7 @@ class Runner:
                 elif u.split('?')[0] in (LIVE + '/casa/', LIVE + '/casa/index.html'):
                     # Your Crib (2026-10-15), shipped by deploy_app.sh.
                     r.fulfill(status=200, content_type='text/html; charset=utf-8',
-                              body=(ROOT / 'casa' / 'index.html').read_text())
+                              body=(WEB / 'casa' / 'index.html').read_text())
                 elif u.split('?')[0] == LIVE + '/housing_law_firms.json':
                     # Shipped beside index.html by deploy_app.sh; the local page
                     # must read the local list, not whatever is live.
@@ -395,22 +398,22 @@ class Runner:
                               body=self.local_data_path(u).read_text())
                 elif any(u.split('?')[0] == LIVE + '/static/' + name for name in
                          ('apple-street-preview.js', 'apple-street-frame.html', 'mapillary-preview.js')):
-                    asset = ROOT / 'static' / u.split('?')[0].rsplit('/', 1)[-1]
+                    asset = WEB / 'static' / u.split('?')[0].rsplit('/', 1)[-1]
                     r.fulfill(status=200, content_type='text/html' if asset.suffix == '.html'
                               else 'application/javascript', body=asset.read_text())
                 elif u.startswith(LIVE + '/static/supercluster/'):
                     r.fulfill(status=200, content_type='application/javascript', body=self.sc)
                 elif u.split('?')[0] == LIVE + '/privacy/':
                     # Shipped by deploy_app.sh since 2026-11-10.
-                    r.fulfill(status=200, content_type='text/html; charset=utf-8', body=(ROOT / 'privacy' / 'index.html').read_text())
+                    r.fulfill(status=200, content_type='text/html; charset=utf-8', body=(WEB / 'privacy' / 'index.html').read_text())
                 elif u.startswith(LIVE + '/static/platform/') or u.split('?')[0] in (LIVE + '/manifest.json', LIVE + '/icon-maskable-512.png'):
                     # Browser features (2026-11-10), shipped by deploy_app.sh.
-                    asset = ROOT / u.split('?')[0][len(LIVE) + 1:]
+                    asset = WEB / u.split('?')[0][len(LIVE) + 1:]
                     kind = {'.js': 'application/javascript', '.json': 'application/manifest+json', '.png': 'image/png'}[asset.suffix]
                     r.fulfill(status=200, content_type=kind, body=asset.read_bytes())
                 elif u.startswith(LIVE + '/static/chat/'):
                     # Building chat on the web (2026-10-19), shipped by deploy_app.sh.
-                    asset = ROOT / 'static' / 'chat' / u.split('?')[0].rsplit('/', 1)[-1]
+                    asset = WEB / 'static' / 'chat' / u.split('?')[0].rsplit('/', 1)[-1]
                     r.fulfill(status=200, content_type='text/css' if asset.suffix == '.css' else 'application/javascript',
                               body=asset.read_text())
                 else:
@@ -427,7 +430,7 @@ class Runner:
         for c in self.city_html:
             for name in ('buildings.slim.json', 'buildings.hpd.json', 'buildings.min.json'):
                 if url == f'{LIVE}/{c}/{name}':
-                    p = ROOT / c / name
+                    p = WEB / c / name
                     return p if p.exists() else None
         return None
 
@@ -1220,8 +1223,8 @@ class Runner:
         in the shape nginx logs (deploy/nginx, fac_vitals)."""
         local = self.html is not None
         if local:
-            manifest = json.loads((ROOT / 'manifest.json').read_text())
-            exists = lambda path: (ROOT / path.lstrip('/').split('?')[0]).is_file()
+            manifest = json.loads((WEB / 'manifest.json').read_text())
+            exists = lambda path: (WEB / path.lstrip('/').split('?')[0]).is_file()
         else:
             manifest = page.request.get(LIVE + '/manifest.json').json()
             exists = lambda path: page.request.get(LIVE + path).status == 200
@@ -1270,7 +1273,7 @@ class Runner:
         ctx = b.new_context(viewport={'width': 1300, 'height': 900}, service_workers='allow')
         try:
             if local:
-                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(ROOT / 'sw.js').read_text()))
+                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(WEB / 'sw.js').read_text()))
                 ctx.route(LIVE + '/', lambda r: r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.html))
             p2 = ctx.new_page()
             p2.goto(LIVE + '/', wait_until='load', timeout=90000)
@@ -1322,7 +1325,7 @@ class Runner:
         ctx = page.context.browser.new_context(viewport={'width': 1300, 'height': 900}, service_workers='allow', permissions=['notifications'])
         try:
             if self.html is not None:
-                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(ROOT / 'sw.js').read_text()))
+                ctx.route(LIVE + '/sw.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=(WEB / 'sw.js').read_text()))
             p2 = self.page(ctx, j)
             p2.add_init_script("""(() => { let live = null;
                 const make = () => ({ endpoint: %s, toJSON: () => ({ endpoint: %s, keys: { p256dh: %s, auth: 'AwMDAwMDAwMDAwMDAwMDAw' } }),

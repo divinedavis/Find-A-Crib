@@ -74,7 +74,7 @@ class SendSkipsSuppressed(unittest.TestCase):
 
 class SignupTypos(unittest.TestCase):
     def test_web_and_app_share_one_typo_list(self):
-        web = open(os.path.join(ROOT, "index.html")).read()
+        web = open(os.path.join(ROOT, "web", "index.html")).read()
         web_keys = set(re.findall(r"'([a-z.]+)': '[a-z.]+'", web[web.index("EMAIL_DOMAIN_FIX = {"):][:1200].split("};")[0]))
         swift = open(os.path.join(ROOT, "ios/FindACrib/Models/EmailCheck.swift")).read()
         app_keys = set(re.findall(r'"([a-z.]+)": "[a-z.]+"', swift))
@@ -82,7 +82,7 @@ class SignupTypos(unittest.TestCase):
         self.assertIn("gmail.ckm", web_keys)
 
     def test_signup_checks_before_creating_the_account(self):
-        web = open(os.path.join(ROOT, "index.html")).read()
+        web = open(os.path.join(ROOT, "web", "index.html")).read()
         sub = web[web.index("authForm.addEventListener('submit'"):][:1500]
         self.assertLess(sub.index("emailFix(email)"), sub.index("supaClient.auth[fn]"))
 

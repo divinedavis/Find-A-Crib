@@ -3,8 +3,8 @@
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parent.parent
-MODULE=(ROOT/'static/apple-street-preview.js').read_text()
-FRAME=(ROOT/'static/apple-street-frame.html').read_text()
+MODULE=(ROOT/'web/static/apple-street-preview.js').read_text()
+FRAME=(ROOT/'web/static/apple-street-frame.html').read_text()
 HTML='''<style>.tile{position:relative;width:300px;height:150px;margin:10px}.apple-street-preview{position:absolute;inset:0}[hidden]{display:none!important}</style>
 <div id="tiles"></div><script>window.testCreated=0;window.testDestroyed=0;window.testLoading=0;window.testMaxLoading=0;</script><script src="/apple.js"></script>'''
 SDK='''

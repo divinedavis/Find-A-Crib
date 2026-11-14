@@ -9,7 +9,7 @@ agents too; this file covers what an agent most needs to know.
 
 Find A Crib (findacrib.com plus an iPhone app) helps renters find
 rent-stabilized and income-restricted apartments. It is mostly Python
-(scrapers, builders, an API server), one large `index.html` front end, and a
+(scrapers, builders, an API server), one large `web/index.html` front end, and a
 SwiftUI app in `ios/`. Data pipeline overview: `docs/data-pipeline.md`.
 
 Scripts live in `pipeline/` (jobs, builders, shared modules) and the Flask
@@ -33,8 +33,8 @@ live site with your local pages, scripts and styles swapped in (`--device phone`
 `--shots DIR` for before/after screenshots). The iPhone app builds from a fresh
 clone with the steps in `ios/README.md` ("Build it from a fresh clone").
 
-If you change `index.html` or anything in `static/`, also run the journey
-suite. It loads your local `index.html` over the live site's data:
+If you change anything in `web/`, also run the journey suite. It loads your
+local `web/index.html` over the live site's data:
 
 ```sh
 playwright install chromium webkit
@@ -58,8 +58,8 @@ JOURNEYS_SKIP=account_delete,plus_gates,renter_tools,ai_features python3 tests/j
 
 ## Never do these
 
-- **Never commit secrets.** No keys, tokens, `.env` contents or `config.js`
-  (it is gitignored; copy `config.example.js`). This repo is public: anything
+- **Never commit secrets.** No keys, tokens, `.env` contents or `web/config.js`
+  (it is gitignored; copy `web/config.example.js`). This repo is public: anything
   pushed is public forever. The pre-push hook and CI run gitleaks.
 - **Contributors: never run the deploy or ship scripts** (`scripts/deploy_*.sh`,
   `ios/scripts/ship.sh`, `ios/scripts/submit_for_review.py`) or anything that

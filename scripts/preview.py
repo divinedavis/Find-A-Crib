@@ -2,7 +2,7 @@
 """See your local front-end change on the real site, with live data.
 
 Opens a browser on findacrib.com but answers every page, script, stylesheet
-and image that exists in your checkout from your checkout. Everything else
+and image that exists in your checkout's web/ from your checkout. Everything else
 (the building data, listings, config.js, the API) still comes from the live
 site, so you need no keys and no data build. Same trick the journey suite
 uses, for human eyes.
@@ -26,6 +26,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, unquote
 
 ROOT = Path(__file__).resolve().parent.parent
+WEB = ROOT / 'web'          # the site's source files, laid out like the docroot
 LIVE = 'https://findacrib.com'
 DEVICES = ('phone', 'desktop', 'ipad')
 
@@ -36,7 +37,7 @@ ALWAYS_LIVE = {'config.js', 'sw.js'}
 DATA_SUFFIXES = {'.json', '.gz', '.geojson'}
 
 
-def local_file(url: str, root: Path = ROOT, local_data: bool = False) -> Path | None:
+def local_file(url: str, root: Path = WEB, local_data: bool = False) -> Path | None:
     """The file in the checkout that should answer `url`, or None for live."""
     parts = urlsplit(url)
     if f'{parts.scheme}://{parts.netloc}' != LIVE:
@@ -49,12 +50,13 @@ def local_file(url: str, root: Path = ROOT, local_data: bool = False) -> Path | 
     if Path(rel).suffix in DATA_SUFFIXES and not local_data:
         return None
     # Tracked data files live in data/ (2026-11-13) but are served at the site
-    # root (findacrib.com/fmr.json), so a data URL also looks there.
-    bases = (root, root / 'data') if Path(rel).suffix in DATA_SUFFIXES else (root,)
+    # root (findacrib.com/fmr.json), so a data URL also looks there. City data
+    # (sf/buildings.slim.json) sits beside its page in web/.
+    bases = (root, root.parent / 'data') if Path(rel).suffix in DATA_SUFFIXES else (root,)
     for base in bases:
         f = (base / rel).resolve()
         try:
-            f.relative_to(root.resolve())
+            f.relative_to(base.resolve())
         except ValueError:
             return None
         if f.is_file():
@@ -85,7 +87,7 @@ def open_page(ctx, path, local_data):
         f = local_file(r.request.url, local_data=local_data)
         if f is None:
             return r.continue_()
-        served.append(f.relative_to(ROOT).as_posix())
+        served.append(f.relative_to(WEB).as_posix())
         kind = mimetypes.guess_type(f.name)[0] or 'application/octet-stream'
         if kind.startswith('text/') or kind == 'application/javascript':
             kind += '; charset=utf-8'

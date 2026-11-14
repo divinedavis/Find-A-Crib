@@ -14,7 +14,7 @@ Profile, floating pill tab bar.
 - `FindACrib/Resources/Data` — seed copies of `buildings.slim.json.gz`, `s8.json`, `fmr.json`, `hcr.json`, `featured.json` (no listing data — removed 2026-10-06). Refresh with `scripts/refresh_data.sh` before a ship.
 
 ## Build it from a fresh clone
-You need a Mac with Xcode and XcodeGen (`brew install xcodegen`). No Apple
+You need a Mac with Xcode 26 or newer and XcodeGen (`brew install xcodegen`). No Apple
 developer account is needed for the Simulator.
 
 ```sh

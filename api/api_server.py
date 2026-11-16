@@ -245,7 +245,8 @@ def gate():
        or request.path.startswith("/reports/") \
        or request.path == "/email/unsubscribe" \
        or request.path.startswith("/embed/") \
-       or request.path in DASHBOARD_READ_PATHS:   # own key gate, see _dashboard_auth
+       or request.path in DASHBOARD_READ_PATHS \
+       or request.path in ("/monitor", "/owner/monitor"):   # own key gate / anonymous reports (monitor.py)
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.

@@ -145,3 +145,12 @@ class WebsiteHalf(unittest.TestCase):
         self.assertIn("/api/monitor", js)
         deploy = open(os.path.join(self.ROOT, "scripts/deploy_app.sh")).read()
         self.assertIn("static/platform/monitor.js", deploy)
+
+
+class ApiGate(unittest.TestCase):
+    def test_the_developer_key_gate_lets_the_monitor_routes_through(self):
+        src = open(os.path.join(os.path.dirname(__file__), "..", "api", "api_server.py")).read()
+        gate = src[src.index("def gate():"):src.index("key = request.headers.get(\"X-API-Key\")")]
+        self.assertIn('"/monitor"', gate)
+        self.assertIn('"/owner/monitor"', gate)
+        self.assertIn("fac_monitor.init_app(app)", src)

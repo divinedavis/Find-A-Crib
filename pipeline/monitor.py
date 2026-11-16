@@ -51,8 +51,10 @@ SESSION = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 OWNER_USER = os.environ.get("OWNER_USER_ID", "")   # the owner's account id, set on the server only
 
 # Supabase events: what each one is on the Monitor page.
+# Views and things that fire on their own (geo_start: the page located the
+# visitor; section_view: a building section scrolled into view) aren't taps.
 SKIP_EVENTS = {"tile_served", "ad_impression", "tile_impression", "push_registered", "app_open", "visit",
-               "usage_optin", "usage_optout", "push_permission"}
+               "usage_optin", "usage_optout", "push_permission", "section_view", "geo_start"}
 SCREEN_EVENTS = {"building_view": "building", "results_view": "results", "signin_view": "sign in"}
 ERROR_EVENTS = {"js_error", "app_error", "crash_trace", "render_storm"}
 
@@ -285,7 +287,7 @@ class Monitor:
             msg = props.get("msg") or props.get("message") or props.get("error") or props.get("kind") or human(ev)
             return (src, r["id"], ts, platform, visitor, session, "error", ev, None, clean_text(str(msg), 200), build, owner)
         if ev in SCREEN_EVENTS or ev == "tab":
-            sc = SCREEN_EVENTS.get(ev) or re.sub(r"[^a-z0-9_:-]", "", str(props.get("tab") or "tab").lower())[:40] or "tab"
+            sc = SCREEN_EVENTS.get(ev) or re.sub(r"[^a-z0-9_:-]", "", str(props.get("to") or props.get("tab") or "tab").lower())[:40] or "tab"
             return (src, r["id"], ts, platform, visitor, session, "screen", sc, sc, None, build, owner)
         detail = props.get("tool") or props.get("kind") or props.get("tab") or props.get("filter")
         name = human(ev) + (f" · {clean_text(str(detail), 30)}" if isinstance(detail, (str, int)) and str(detail) else "")

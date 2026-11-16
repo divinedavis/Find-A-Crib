@@ -65,7 +65,9 @@ class Data(unittest.TestCase):
             {"id": 3, "created_at": iso(NOW - 280_000), "visitor_id": "v-web-2", "user_id": None, "event": "js_error", "props": {"platform": "web", "msg": "x is undefined at a@b.co"}, "path": "/"},
             {"id": 4, "created_at": iso(NOW - 270_000), "visitor_id": "v-web-2", "user_id": None, "event": "tile_served", "props": {"platform": "web"}, "path": "/"},
             {"id": 5, "created_at": iso(NOW - 260_000), "visitor_id": "v-owner", "user_id": "owner-uuid", "event": "save", "props": {"platform": "web"}, "path": "/"},
-            {"id": 6, "created_at": iso(NOW - 250_000), "visitor_id": "v-web-2", "user_id": None, "event": "tab", "props": {"platform": "ios", "tab": "Map"}, "path": "/app"},
+            {"id": 6, "created_at": iso(NOW - 250_000), "visitor_id": "v-web-2", "user_id": None, "event": "tab", "props": {"platform": "ios", "to": "Map"}, "path": "/app"},
+            {"id": 7, "created_at": iso(NOW - 240_000), "visitor_id": "v-web-2", "user_id": None, "event": "section_view", "props": {"platform": "web", "sec": "photo"}, "path": "/"},
+            {"id": 8, "created_at": iso(NOW - 230_000), "visitor_id": "v-web-2", "user_id": None, "event": "geo_start", "props": {"platform": "web", "boro": "M"}, "path": "/"},
         ]
         out = [e for e in (m.event_row("events", r) for r in rows) if e]
         out.append(m.event_row("visits", {"id": 9, "created_at": iso(NOW - 200_000), "visitor_id": "v-web-2", "user_id": None, "path": "/brooklyn/x"}))
@@ -89,7 +91,8 @@ class Data(unittest.TestCase):
         saves = sum(t["n"] for t in o["taps"] if t["name"] == "Save")
         self.assertEqual(saves, 2, "web Save + app save (counted per screen); the owner's save is hidden")
         self.assertIn("building", {s["screen"] for s in o["screens"]})
-        self.assertIn("map", {s["screen"] for s in o["screens"]})
+        self.assertIn("map", {s["screen"] for s in o["screens"]}, "an app tab is named by where it went")
+        self.assertFalse({"Section view", "Geo start"} & {t["name"] for t in o["taps"]}, "views and automatic events aren't taps")
         self.assertIn("brooklyn", {s["screen"] for s in o["screens"]})
         self.assertTrue(any(e["message"] == "x is undefined at …@…" for e in o["errors"]))
         self.assertTrue(any(e["source"] == "server" for e in o["errors"]))

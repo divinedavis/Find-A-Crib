@@ -138,6 +138,101 @@ def events(since_iso, key):
         start += 1000
 
 
+def js_error_is_noise(p: dict) -> bool:
+    """Whether one js_error row (its props) is browser noise: an ad script, an
+    extension or a dropped connection, not our code. Shared by the digest and
+    the dashboard's Monitor page (pipeline/monitor.py)."""
+    p = p if isinstance(p, dict) else {}
+    msg = (p.get("msg") or "").strip() or "(empty message)"
+    src = p.get("src") or ""
+    key = f"{msg} — {src.rsplit('/', 1)[-1]}" if src else msg
+    # Mediavine's ad stack (live 9/29) throws unhandled promise rejections
+    # from its own files — UID2 from scripts.grow.me, $adManagementConfig
+    # from scriptwrapper.com — and its fetches get cut off stacklessly
+    # ("Load failed", "Fetch is aborted") as visitors pan and leave. The
+    # stack names the ad file when there is one; a stackless rejection of
+    # exactly those two messages started with the ads. Digest only.
+    at = p.get("at") or ""
+    # Safari hides a Safari extension's script behind webkit-masked-url://
+    # (2026-10-18: "_0x43b06e is not an Object", obfuscated names, one
+    # iPhone visitor). Our scripts always report a findacrib.com URL.
+    return (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
+                  or "webkit-masked-url://" in at
+                  # A promise rejected with no reason at all (typeof
+                  # undefined: no message, no name, no stack). 2026-10-29
+                  # 19:31 UTC: one desktop visitor, 4 in 25 s, tab idle
+                  # 9 min with only Mediavine's ad refresh running. Our one
+                  # bare Promise.reject() (the copy button with no
+                  # clipboard) has its own failure handler, so it is
+                  # never unhandled. Nothing in such a row can be chased.
+                  or (p.get("kind") == "promise" and not at and msg == "(empty message)"
+                      and p.get("name") == "undefined")
+                  or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted",
+                                                                           # Safari: a response body cut off
+                                                                           # mid-read (signal lost / page left);
+                                                                           # our streamed download catches its own
+                                                                           "The I/O read operation failed.",
+                                                                           # Safari's wording for a dynamic import()
+                                                                           # that failed. findacrib.com has no
+                                                                           # module scripts and no import(); the ad
+                                                                           # stack loads modules, and leaving or
+                                                                           # losing signal mid-load rejects it
+                                                                           # stacklessly (first seen 2026-09-30,
+                                                                           # 1 visitor, 1 s after landing).
+                                                                           "Importing a module script failed.",
+                                                                           # 2026-09-30: Safari when a storage write
+                                                                           # fails (full disk / private mode). This
+                                                                           # site uses no IndexedDB or Cache API —
+                                                                           # the ad stack's identity/prebid caches do.
+                                                                           "Failed writing data to the file system",
+                                                                           # An AbortError with no stack in the same
+                                                                           # second as IMA video-ad errors. Our one
+                                                                           # abort (the buildings stall timer, 15 s)
+                                                                           # is caught in boot, never unhandled.
+                                                                           "The operation was aborted.",
+                                                                           # 2026-10-05: one visitor, first minute, no
+                                                                           # stack — a TimeoutError and a DOMException
+                                                                           # named UnavailableError. Neither string is
+                                                                           # in our code (no AbortSignal.timeout, no
+                                                                           # "Unavailable"); the ad stack's identity
+                                                                           # scripts (UID2 failing the same minutes) are.
+                                                                           "operation timed out", "UnavailableError",
+                                                                           # 2026-10-06 04:21 UTC: a signed-out visitor,
+                                                                           # stackless, in the same second as Mediavine's
+                                                                           # scriptwrapper threw "$adManagementConfig.web.init
+                                                                           # is not a function" and three "Script error."s.
+                                                                           # Our awaited supabase calls never resolve to null.
+                                                                           "Cannot destructure property 'data' from null or undefined value",
+                                                                           # 2026-11-05 01:18 UTC: its twin, one
+                                                                           # iPhone visitor on /, stackless, 10 s
+                                                                           # after landing and 11 s before the
+                                                                           # page's first ad_impression. Nothing in
+                                                                           # our pages or static/supabase/supabase.js
+                                                                           # destructures `body` (searched: every
+                                                                           # `{body` there is an object literal).
+                                                                           "Cannot destructure property 'body' from null or undefined value",
+                                                                           # 2026-11-14 06:24 UTC: one iPhone visitor
+                                                                           # on /, stackless, 6 s after the page's
+                                                                           # first ad_impression; they kept searching
+                                                                           # for 6 more minutes. The string is in none
+                                                                           # of our files or the 62 scripts the live
+                                                                           # page loads on an iPhone (scanned that
+                                                                           # day): an ad or in-app-browser bridge
+                                                                           # timing out its postMessage handshake.
+                                                                           "Message Timeout"))
+                  # A rejected XMLHttpRequest object as the reason: this
+                  # site never uses XHR (supabase-js and ours are fetch);
+                  # Prebid in Mediavine's stack does (9/29).
+                  or (p.get("kind") == "promise" and not at and msg == "[object XMLHttpRequest]")
+                  # A file from another site (index.html sends its host
+                  # since 2026-10-27): an ad or extension script, not ours.
+                  or bool(p.get("host") and p["host"] not in OUR_HOSTS)
+                  # WebAssembly: this site ships none (2026-10-27, a third
+                  # party's rxEngine.wasm "memory access out of bounds",
+                  # 1 visitor, before the host was sent).
+                  or ".wasm" in src)
+
+
 # ------------------------------------------------------------------ sources
 
 def js_errors(rows):
@@ -152,91 +247,7 @@ def js_errors(rows):
         src = p.get("src") or ""
         key = f"{msg} — {src.rsplit('/', 1)[-1]}" if src else msg
         e = out[key]
-        # Mediavine's ad stack (live 9/29) throws unhandled promise rejections
-        # from its own files — UID2 from scripts.grow.me, $adManagementConfig
-        # from scriptwrapper.com — and its fetches get cut off stacklessly
-        # ("Load failed", "Fetch is aborted") as visitors pan and leave. The
-        # stack names the ad file when there is one; a stackless rejection of
-        # exactly those two messages started with the ads. Digest only.
-        at = p.get("at") or ""
-        # Safari hides a Safari extension's script behind webkit-masked-url://
-        # (2026-10-18: "_0x43b06e is not an Object", obfuscated names, one
-        # iPhone visitor). Our scripts always report a findacrib.com URL.
-        e["noise"] = (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
-                      or "webkit-masked-url://" in at
-                      # A promise rejected with no reason at all (typeof
-                      # undefined: no message, no name, no stack). 2026-10-29
-                      # 19:31 UTC: one desktop visitor, 4 in 25 s, tab idle
-                      # 9 min with only Mediavine's ad refresh running. Our one
-                      # bare Promise.reject() (the copy button with no
-                      # clipboard) has its own failure handler, so it is
-                      # never unhandled. Nothing in such a row can be chased.
-                      or (p.get("kind") == "promise" and not at and msg == "(empty message)"
-                          and p.get("name") == "undefined")
-                      or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted",
-                                                                               # Safari: a response body cut off
-                                                                               # mid-read (signal lost / page left);
-                                                                               # our streamed download catches its own
-                                                                               "The I/O read operation failed.",
-                                                                               # Safari's wording for a dynamic import()
-                                                                               # that failed. findacrib.com has no
-                                                                               # module scripts and no import(); the ad
-                                                                               # stack loads modules, and leaving or
-                                                                               # losing signal mid-load rejects it
-                                                                               # stacklessly (first seen 2026-09-30,
-                                                                               # 1 visitor, 1 s after landing).
-                                                                               "Importing a module script failed.",
-                                                                               # 2026-09-30: Safari when a storage write
-                                                                               # fails (full disk / private mode). This
-                                                                               # site uses no IndexedDB or Cache API —
-                                                                               # the ad stack's identity/prebid caches do.
-                                                                               "Failed writing data to the file system",
-                                                                               # An AbortError with no stack in the same
-                                                                               # second as IMA video-ad errors. Our one
-                                                                               # abort (the buildings stall timer, 15 s)
-                                                                               # is caught in boot, never unhandled.
-                                                                               "The operation was aborted.",
-                                                                               # 2026-10-05: one visitor, first minute, no
-                                                                               # stack — a TimeoutError and a DOMException
-                                                                               # named UnavailableError. Neither string is
-                                                                               # in our code (no AbortSignal.timeout, no
-                                                                               # "Unavailable"); the ad stack's identity
-                                                                               # scripts (UID2 failing the same minutes) are.
-                                                                               "operation timed out", "UnavailableError",
-                                                                               # 2026-10-06 04:21 UTC: a signed-out visitor,
-                                                                               # stackless, in the same second as Mediavine's
-                                                                               # scriptwrapper threw "$adManagementConfig.web.init
-                                                                               # is not a function" and three "Script error."s.
-                                                                               # Our awaited supabase calls never resolve to null.
-                                                                               "Cannot destructure property 'data' from null or undefined value",
-                                                                               # 2026-11-05 01:18 UTC: its twin, one
-                                                                               # iPhone visitor on /, stackless, 10 s
-                                                                               # after landing and 11 s before the
-                                                                               # page's first ad_impression. Nothing in
-                                                                               # our pages or static/supabase/supabase.js
-                                                                               # destructures `body` (searched: every
-                                                                               # `{body` there is an object literal).
-                                                                               "Cannot destructure property 'body' from null or undefined value",
-                                                                               # 2026-11-14 06:24 UTC: one iPhone visitor
-                                                                               # on /, stackless, 6 s after the page's
-                                                                               # first ad_impression; they kept searching
-                                                                               # for 6 more minutes. The string is in none
-                                                                               # of our files or the 62 scripts the live
-                                                                               # page loads on an iPhone (scanned that
-                                                                               # day): an ad or in-app-browser bridge
-                                                                               # timing out its postMessage handshake.
-                                                                               "Message Timeout"))
-                      # A rejected XMLHttpRequest object as the reason: this
-                      # site never uses XHR (supabase-js and ours are fetch);
-                      # Prebid in Mediavine's stack does (9/29).
-                      or (p.get("kind") == "promise" and not at and msg == "[object XMLHttpRequest]")
-                      # A file from another site (index.html sends its host
-                      # since 2026-10-27): an ad or extension script, not ours.
-                      or bool(p.get("host") and p["host"] not in OUR_HOSTS)
-                      # WebAssembly: this site ships none (2026-10-27, a third
-                      # party's rxEngine.wasm "memory access out of bounds",
-                      # 1 visitor, before the host was sent).
-                      or ".wasm" in src)
+        e["noise"] = js_error_is_noise(p)
         e["n"] += 1
         e["people"].add(r["visitor_id"])
         e["paths"][r.get("path") or "/"] += 1

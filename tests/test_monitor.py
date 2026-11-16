@@ -121,6 +121,82 @@ class Data(unittest.TestCase):
         self.assertGreater(self.m.db.execute("SELECT COUNT(*) FROM hourly").fetchone()[0], 0)
 
 
+class NoiseAndDiagnostics(unittest.TestCase):
+    """Owner, 2026-11-16: "what are these errors?" The Errors table led with
+    render storms and Mediavine's ad scripts. Those are kept apart now."""
+    AD = {"platform": "web", "msg": "Failed parsing identifiers", "kind": "promise", "name": "Error",
+          "at": "s@https://scripts.journeymv.com/tags/optable/1af4864eafad1bbd65ea.min.js:1:22267"}
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.m = m = monitor.Monitor(os.path.join(self.dir, "m.sqlite"), "salt", sync=False)
+        rows = [
+            {"id": 1, "created_at": iso(NOW - 300_000), "visitor_id": "v1", "user_id": None, "event": "js_error", "props": {"platform": "web", "msg": "x is undefined"}, "path": "/"},
+            {"id": 2, "created_at": iso(NOW - 290_000), "visitor_id": "v1", "user_id": None, "event": "js_error", "props": self.AD, "path": "/"},
+            {"id": 3, "created_at": iso(NOW - 280_000), "visitor_id": "v2", "user_id": None, "event": "js_error", "props": {"platform": "web", "msg": "Script error."}, "path": "/"},
+            {"id": 4, "created_at": iso(NOW - 270_000), "visitor_id": "v2", "user_id": None, "event": "render_storm", "props": {"platform": "web", "grid": 5}, "path": "/"},
+        ]
+        m.db.executemany("INSERT INTO sb_events(src,id,ts,platform,visitor,session,kind,name,screen,message,build,owner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                         [m.event_row("events", r) for r in rows])
+        m.client({"ts": NOW - 60_000, "platform": "web", "visitor": m.hv("v3"), "kind": "api", "name": "/sb/rest/v1/events", "method": "POST", "status": 0, "ms": 9})
+        m.client({"ts": NOW - 50_000, "platform": "web", "visitor": m.hv("v3"), "kind": "api", "name": "/sb/rest/v1/listings", "method": "GET", "status": 0, "ms": 9})
+        m.flush()
+
+    def test_kinds_at_ingest(self):
+        kinds = dict(self.m.db.execute("SELECT id, kind FROM sb_events").fetchall())
+        self.assertEqual(kinds, {1: "error", 2: "noise", 3: "noise", 4: "diag"})
+        self.assertEqual(monitor.api_failure_kind("POST", "/sb/rest/v1/events", 0), "noise")
+        self.assertEqual(monitor.api_failure_kind("POST", "/sb/rest/v1/events", 503), "error", "a 5xx from Supabase is still ours to know")
+        self.assertEqual(monitor.api_failure_kind("GET", "/sb/rest/v1/listings", 0), "error")
+        self.assertIsNone(monitor.api_failure_kind("GET", "/x", 200))
+
+    def check(self, o, hourly=False):
+        msgs = [e["message"] for e in o["errors"]]
+        self.assertIn("x is undefined", msgs)
+        if not hourly:   # hourly totals count failed calls per route but don't list them
+            self.assertIn("GET /sb/rest/v1/listings → no response", msgs)
+        self.assertFalse({"Failed parsing identifiers", "Script error.", "POST /sb/rest/v1/events → no response"} & set(msgs))
+        self.assertFalse(any("storm" in m.lower() for m in msgs))
+        self.assertEqual(o["noise"]["n"], 3, "ad script + Script error. + dropped analytics ping")
+        self.assertEqual([d["message"] for d in o["diagnostics"]], ["Render storm"])
+        self.assertEqual(o["kpis"]["client_errors"], 2)
+
+    def test_overview_raw(self):
+        self.check(self.m.overview({"range": "1h"}, NOW))
+
+    def test_overview_hourly(self):
+        self.m.catch_up_rollups(NOW + 3600_000)
+        self.check(self.m.overview({"range": "7d"}, NOW + 3600_000), hourly=True)
+
+    def test_stream_filters_by_kind(self):
+        self.assertEqual({r["kind"] for r in self.m.stream({"range": "1h", "kind": "noise"}, NOW)["rows"]}, {"noise"})
+        self.assertEqual(len(self.m.stream({"range": "1h", "kind": "diag"}, NOW)["rows"]), 1)
+
+    def test_reclassify_old_rows_once(self):
+        m = self.m
+        m.db.execute("UPDATE sb_events SET kind='error'")   # as stored before error_kind()
+        m.catch_up_rollups(NOW + 3600_000)
+        m.sb_url, m.sb_key = "https://x.test", "k"
+        calls = []
+        m._sb_get = lambda table, params: calls.append(params) or [{"id": 2, "props": self.AD}, {"id": 3, "props": {"msg": "Script error."}}, {"id": 1, "props": {"msg": "x"}}]
+        self.assertTrue(m.reclassify(NOW + 3600_000))
+        self.assertEqual(dict(m.db.execute("SELECT id, kind FROM sb_events").fetchall()), {1: "error", 2: "noise", 3: "noise", 4: "diag"})
+        self.check(m.overview({"range": "7d"}, NOW + 3600_000), hourly=True)
+        self.assertFalse(m.reclassify(NOW + 3600_000), "runs once")
+        self.assertEqual(len(calls), 1)
+
+    def test_reclassify_waits_for_supabase(self):
+        m = self.m
+        m.sb_url, m.sb_key = "https://x.test", "k"
+
+        def down(table, params):
+            raise OSError("down")
+        m._sb_get = down
+        with self.assertRaises(OSError):
+            m.reclassify(NOW)
+        self.assertIsNone(m.db.execute("SELECT 1 FROM sync_state WHERE src=?", (monitor.RECLASS,)).fetchone(), "tried again next loop")
+
+
 class NoPersonalData(unittest.TestCase):
     def test_no_owner_id_in_code(self):
         src = open(os.path.join(os.path.dirname(__file__), "..", "pipeline", "monitor.py")).read()

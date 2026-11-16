@@ -36,10 +36,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from error_report import js_error_is_noise
+
 KEEP_RAW_DAYS = 30
 KEEP_HOURLY_DAYS = 400
 RAW_MAX_MS = 86400_000
 KINDS = ("tap", "screen", "api", "error")
+FILTER_KINDS = KINDS + ("noise", "diag")   # what the stream can be narrowed to
+RECLASS = "reclass_v1"   # sync_state marker: rows stored before error_kind() existed were re-sorted
 PLATFORMS = ("web", "ios", "bot")
 RANGES = {"15m": 15 * 60e3, "1h": 3600e3, "6h": 6 * 3600e3, "24h": 86400e3, "7d": 7 * 86400e3,
           "30d": 30 * 86400e3, "90d": 90 * 86400e3, "1y": 365 * 86400e3}
@@ -57,6 +61,36 @@ SKIP_EVENTS = {"tile_served", "ad_impression", "tile_impression", "push_register
                "usage_optin", "usage_optout", "push_permission", "section_view", "geo_start"}
 SCREEN_EVENTS = {"building_view": "building", "results_view": "results", "signin_view": "sign in"}
 ERROR_EVENTS = {"js_error", "app_error", "crash_trace", "render_storm"}
+# Not every one of those is something to fix (owner, 2026-11-16: "what are
+# these errors?" — the Errors table led with 129 render storms and Mediavine's
+# ad scripts). Each row is stored as one of three kinds:
+#   error  ours, worth chasing
+#   noise  browser noise: an ad script, an extension or a dropped connection,
+#          decided by the same js_error_is_noise() the morning digest uses
+#   diag   a diagnostic tripwire, not a failure. render_storm fires when the
+#          results list refreshes 4+ times in 5 s (index.html, since 9/6),
+#          which panning and the page's own boot do routinely.
+DIAG_EVENTS = {"render_storm"}
+# Our own analytics writes. A phone that loses signal or leaves the page
+# mid-send rejects them with no response; nothing on screen breaks, and the
+# digest has always called that a dropped connection.
+BEACON_ROUTES = {"POST /sb/rest/v1/events", "POST /sb/rest/v1/visits"}
+
+
+def error_kind(ev, props):
+    """error, noise or diag for one Supabase error event."""
+    if ev in DIAG_EVENTS:
+        return "diag"
+    if ev == "js_error" and js_error_is_noise(props):
+        return "noise"
+    return "error"
+
+
+def api_failure_kind(method, route, status):
+    """None for a call that worked, else error or noise."""
+    if not (status == 0 or (status or 0) >= 500):
+        return None
+    return "noise" if status == 0 and f"{method} {route}" in BEACON_ROUTES else "error"
 
 
 def human(n):
@@ -285,7 +319,7 @@ class Monitor:
             return None
         if ev in ERROR_EVENTS:
             msg = props.get("msg") or props.get("message") or props.get("error") or props.get("kind") or human(ev)
-            return (src, r["id"], ts, platform, visitor, session, "error", ev, None, clean_text(str(msg), 200), build, owner)
+            return (src, r["id"], ts, platform, visitor, session, error_kind(ev, props), ev, None, clean_text(str(msg), 200), build, owner)
         if ev in SCREEN_EVENTS or ev == "tab":
             sc = SCREEN_EVENTS.get(ev) or re.sub(r"[^a-z0-9_:-]", "", str(props.get("to") or props.get("tab") or "tab").lower())[:40] or "tab"
             return (src, r["id"], ts, platform, visitor, session, "screen", sc, sc, None, build, owner)
@@ -336,11 +370,49 @@ class Monitor:
                     break
         return n
 
+    def reclassify(self, now=None):
+        """Once: sort rows stored before error_kind() into error / noise / diag,
+        then rebuild the hourly totals they fed. Needs each js_error's props,
+        which sb_events never kept, so they are read back from Supabase. Not
+        marked done until that read succeeds."""
+        with self.lock:
+            if self.db.execute("SELECT 1 FROM sync_state WHERE src=?", (RECLASS,)).fetchone():
+                return False
+        if not self.sb_url or not self.sb_key:
+            return False
+        now = now or time.time() * 1000
+        since = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(now / 1000 - KEEP_RAW_DAYS * 86400))
+        noisy, last = [], None
+        for _ in range(200):
+            params = {"select": "id,props", "event": "eq.js_error", "order": "id.asc", "limit": "1000"}
+            params["id" if last is not None else "created_at"] = f"gt.{last}" if last is not None else f"gte.{since}"
+            rows = self._sb_get("events", params)   # raises: retried on the next loop
+            noisy += [r["id"] for r in rows if js_error_is_noise(r.get("props"))]
+            if len(rows) < 1000:
+                break
+            last = rows[-1]["id"]
+        this_hour = int(now // 3600_000 * 3600_000)
+        first = this_hour - KEEP_RAW_DAYS * 86400_000
+        with self.lock:
+            self.db.execute("BEGIN")
+            self.db.execute(f"UPDATE sb_events SET kind='diag' WHERE kind='error' AND name IN ({','.join('?' * len(DIAG_EVENTS))})", sorted(DIAG_EVENTS))
+            self.db.executemany("UPDATE sb_events SET kind='noise' WHERE src='events' AND id=? AND kind='error'", [(i,) for i in noisy])
+            self.db.execute("DELETE FROM hourly WHERE hour>=?", (first,))
+            self.db.execute("COMMIT")
+        h = first
+        while h < this_hour:
+            self.rollup_hour(h)
+            h += 3600_000
+        with self.lock:
+            self.db.execute("INSERT OR REPLACE INTO sync_state(src,last_id) VALUES(?,?)", (RECLASS, len(noisy)))
+        return True
+
     def _loop(self):
         last_roll = 0
         while True:
             try:
                 self.flush()
+                self.reclassify()
                 self.sync()
                 if time.time() - last_roll > 600:
                     self.catch_up_rollups()
@@ -377,9 +449,12 @@ class Monitor:
             if c["visitor"] in owners:
                 continue
             if c["kind"] == "api":
-                add(c["platform"], "capi", f"{c['method']} {c['name']}", c["ms"], c["status"] == 0 or (c["status"] or 0) >= 500, c["visitor"])
-            elif c["kind"] == "error":
-                add(c["platform"], "error", c["message"] or c["name"], None, True, c["visitor"])
+                fk = api_failure_kind(c["method"], c["name"], c["status"])
+                add(c["platform"], "capi", f"{c['method']} {c['name']}", c["ms"], fk == "error", c["visitor"])
+                if fk == "noise":
+                    add(c["platform"], "noise", f"{c['method']} {c['name']} → no response", None, False, c["visitor"])
+            elif c["kind"] in ("error", "noise", "diag"):
+                add(c["platform"], c["kind"], c["message"] or c["name"], None, c["kind"] == "error", c["visitor"])
             else:
                 add(c["platform"], c["kind"], (f"{c['screen']} › " if c["kind"] == "tap" and c.get("screen") else "") + (c["name"] or ""), None, False, c["visitor"])
             add(c["platform"], "visit", "*", None, False, c["visitor"])
@@ -448,7 +523,7 @@ class Monitor:
             else:
                 where.append("0")
         k = q.get("kind")
-        if table != "requests" and k in KINDS:
+        if table != "requests" and k in FILTER_KINDS:
             where.append("kind=?")
             args.append(k)
         if table == "requests" and k and k != "request":
@@ -491,6 +566,8 @@ class Monitor:
         def slot(ts):
             return series[min(len(series) - 1, max(0, int((ts - start) // bucket)))]
         routes, taps, screens, errs, capi, builds = {}, {}, {}, {}, {}, set()
+        diags = {}
+        noise = {"n": 0, "v": set(), "vn": 0}
         visitors, sessions = set(), set()
         k = {"req": 0, "rerr": 0, "taps": 0, "cerr": 0, "ms": []}
         if span <= RAW_MAX_MS:
@@ -538,8 +615,12 @@ class Monitor:
                     g["n"] += 1
                     g["v"].add(c["visitor"])
                 elif kind == "api":
-                    err = c["status"] == 0 or (c["status"] or 0) >= 500
+                    fk = api_failure_kind(c["method"], c["name"], c["status"])
+                    err = fk == "error"
                     key = f"{c['method']} {c['name']}"
+                    if fk == "noise":
+                        noise["n"] += 1
+                        noise["v"].add(c["visitor"])
                     g = capi.setdefault(key, {"route": key, "n": 0, "errors": 0, "ms": []})
                     g["n"] += 1
                     g["errors"] += err
@@ -554,10 +635,14 @@ class Monitor:
                         e["last"] = max(e["last"], c["ts"])
                         e["platforms"].add(c["platform"])
                         e["v"].add(c["visitor"])
-                elif kind == "error":
-                    k["cerr"] += 1
+                elif kind == "noise":
+                    noise["n"] += 1
+                    noise["v"].add(c["visitor"])
+                elif kind in ("error", "diag"):
+                    if kind == "error":
+                        k["cerr"] += 1
                     msg = c["message"] or c["name"]
-                    e = errs.setdefault("err\0" + msg, {"source": "client", "kind": c["name"], "message": msg, "n": 0, "last": 0, "platforms": set(), "v": set()})
+                    e = (errs if kind == "error" else diags).setdefault("err\0" + msg, {"source": "client", "kind": c["name"], "message": msg, "n": 0, "last": 0, "platforms": set(), "v": set()})
                     e["n"] += 1
                     e["last"] = max(e["last"], c["ts"])
                     e["platforms"].add(c["platform"])
@@ -618,9 +703,13 @@ class Monitor:
                     if h["p50"] is not None:
                         g["ms"].append(h["p50"])
                     k["cerr"] += h["errors"]
-                elif h["src"] == "error":
-                    k["cerr"] += h["n"]
-                    e = errs.setdefault("err\0" + h["key"], {"source": "client", "kind": "error", "message": h["key"], "n": 0, "last": 0,
+                elif h["src"] == "noise":
+                    noise["n"] += h["n"]
+                    noise["vn"] += h["visitors"] or 0
+                elif h["src"] in ("error", "diag"):
+                    if h["src"] == "error":
+                        k["cerr"] += h["n"]
+                    e = (errs if h["src"] == "error" else diags).setdefault("err\0" + h["key"], {"source": "client", "kind": "error" if h["src"] == "error" else "diagnostic", "message": h["key"], "n": 0, "last": 0,
                                                             "platforms": set(), "v": set(), "vn": 0})
                     e["n"] += h["n"]
                     e["last"] = max(e["last"], h["hour"] + 3600_000)
@@ -649,6 +738,11 @@ class Monitor:
             "screens": [{"screen": g["screen"], "n": g["n"], "visitors": g.get("vn") or len(g["v"])} for g in by_n(screens)[:25]],
             "errors": [{"source": e["source"], "kind": e["kind"], "message": e["message"], "n": e["n"], "last": e["last"] or None,
                         "platforms": sorted(e["platforms"]), "visitors": e.get("vn") or len(e["v"])} for e in by_n(errs)[:40]],
+            # Kept apart from errors (see error_kind): the page shows noise as one
+            # grey line and diagnostics in their own small table.
+            "noise": {"n": noise["n"], "visitors": noise["vn"] or len(noise["v"])},
+            "diagnostics": [{"source": e["source"], "kind": e["kind"], "message": e["message"], "n": e["n"], "last": e["last"] or None,
+                             "platforms": sorted(e["platforms"]), "visitors": e.get("vn") or len(e["v"])} for e in by_n(diags)[:10]],
             "builds": sorted(builds, key=lambda b: -int(b))[:15],
         }
 

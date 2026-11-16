@@ -392,10 +392,15 @@ WP_PER_PAGE = 20             # one board page; WordPress caps per_page at 100
 WP_TITLE_MAX = 90            # listings_from skips longer lines anyway
 
 
-def wp_board(site, taxonomy, term, post_type="property", fetch=fetch_json, per_page=WP_PER_PAGE):
+def wp_board(site, taxonomy, term, post_type="property", fetch=None, per_page=WP_PER_PAGE):
     """[{title, link, posted, modified}] for one WordPress board, as its first
     page shows it. Raises FeedError when the site does not answer as expected,
     so the caller can fall back to rendering the page."""
+    # Looked up at call time, not bound as the default: a default of
+    # fetch_json froze the real function in, so a test patching
+    # rerental_feeds.fetch_json still read residenewyork.com live and failed
+    # whenever that site was slow (2026-11-16).
+    fetch = fetch or fetch_json
     parts = urllib.parse.urlsplit(site)
     if parts.scheme != "https" or not parts.hostname:
         raise FeedError(f"wp site must be https: {site!r}")

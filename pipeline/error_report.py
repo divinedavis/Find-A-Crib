@@ -1053,6 +1053,22 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
     return html, "\n".join(lines)
 
 
+def worth_emailing(digest, js, new_msgs, crash, app, five, tracebacks, stale, crons, claims) -> bool:
+    """Whether this run sends an email at all.
+
+    Hourly: something never seen before, something breaking on the server, or
+    a real burst. The morning digest: anything real still open. Browser noise
+    never counts on either (owner, 2026-11-16: "If I don't get any errors I
+    shouldn't get alert emails": the 2026-11-15 digest was sent with nothing
+    in it but "plus 64 browser-noise errors", because the digest counted the
+    noise the hourly run already skipped)."""
+    if digest:
+        real_js = any(not v["noise"] for v in js.values())
+        return bool(real_js or crash or app or five or tracebacks or stale or crons or claims)
+    return bool(new_msgs) or bool(tracebacks) or bool(stale) or sum(five.values()) >= 5 \
+        or sum(v["n"] for v in crash.values()) >= 10 or sum(v["n"] for v in app.values()) >= 3
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hours", type=float, default=1.0)
@@ -1089,11 +1105,8 @@ def main():
     # emails. The digest fires once a morning at 08:10 ET and names it in the
     # subject line, which is one email per day of outage and the first of them
     # on the morning after the first missed night.
-    worth_it = bool(new_msgs) or bool(tracebacks) or bool(stale) or sum(five.values()) >= 5 \
-        or sum(v["n"] for v in crash.values()) >= 10 or sum(v["n"] for v in app.values()) >= 3
-    if a.digest:
-        worth_it = bool(js or crash or app or five or tracebacks or stale or crons or claims)
-    else:
+    worth_it = worth_emailing(a.digest, js, new_msgs, crash, app, five, tracebacks, stale, crons, claims)
+    if not a.digest:
         crons = {}
         # Digest-only for the same reason as a dead cron: a page that has been
         # frozen for days is a fact with a daily cadence, and the hourly path

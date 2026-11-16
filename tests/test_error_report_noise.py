@@ -95,3 +95,34 @@ def test_a_third_party_file_is_noise():
             "visitor_id": "v1", "path": "/", "created_at": "2026-10-28T00:13:16Z"}
     assert all(v["noise"] for v in E.js_errors([wasm, other]).values())
     assert not any(v["noise"] for v in E.js_errors([ours]).values())
+
+
+def worth(digest, js=None, **kw):
+    args = dict(new_msgs=set(), crash={}, app={}, five={}, tracebacks={}, stale=[], crons={}, claims={})
+    args.update(kw)
+    return E.worth_emailing(digest, js or {}, **args)
+
+
+def test_a_digest_of_only_browser_noise_sends_nothing():
+    # 2026-11-15's digest: nothing but "plus 64 browser-noise errors".
+    noise = E.js_errors([row("operation timed out"), row("UnavailableError")])
+    assert all(v["noise"] for v in noise.values())
+    assert not worth(True, noise)
+    assert not worth(False, noise)
+
+
+def test_a_quiet_day_sends_nothing():
+    assert not worth(True)
+    assert not worth(False)
+
+
+def test_a_digest_with_one_real_error_still_sends():
+    real = E.js_errors([row("TypeError: undefined is not an object (evaluating 'b.price')", kind="error",
+                            at="https://findacrib.com/:4410"), row("operation timed out")])
+    assert worth(True, real)
+
+
+def test_a_digest_sends_for_server_and_app_problems():
+    assert worth(True, five={"/api/x": 1})
+    assert worth(True, stale=["hcr.json"])
+    assert worth(True, crons={"growth": "down"})

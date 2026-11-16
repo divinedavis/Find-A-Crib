@@ -7,7 +7,9 @@
 // Never sends what's typed into a field. Loaded before the page's own
 // scripts so the Supabase client picks up the timed fetch.
 (function () {
-  if (typeof window.fetch !== "function" || /bot|crawl|spider|headless|lighthouse|playwright/i.test(navigator.userAgent)) return;
+  // Automated browsers (the journey suite, crawlers) aren't visitors: the same test as the page's isBot().
+  if (typeof window.fetch !== "function" || navigator.webdriver ||
+      /bot|crawl|spider|slurp|headless|lighthouse|prerender|playwright|facebookexternal|mediapartners|google-inspectiontool|googleother/i.test(navigator.userAgent)) return;
   var ENDPOINT = "/api/monitor", queue = [], orig = window.fetch.bind(window);
   var sid = (function () {
     try {

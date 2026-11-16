@@ -146,6 +146,7 @@ class WebsiteHalf(unittest.TestCase):
         self.assertNotIn("textarea", js)
         self.assertNotRegex(js, r'input\[type="(text|search|email|password)')
         self.assertIn("/api/monitor", js)
+        self.assertIn("navigator.webdriver", js, "the journey suite's browsers must not count as visitors")
         deploy = open(os.path.join(self.ROOT, "scripts/deploy_app.sh")).read()
         self.assertIn("static/platform/monitor.js", deploy)
 

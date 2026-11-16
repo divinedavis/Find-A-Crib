@@ -10,6 +10,7 @@
      App Banner under the status bar (owner, 2026-10-14: "i refreshed the
      screen and now i cant see the download the app ... banner"). Start every
      load, and every return from the back/forward cache, at the top. -->
+<script src="/static/platform/monitor.js?v=1"></script>
 <script>/* View-transition promises reject (AbortError) when Safari skips one; catch them before the first frame (2026-11-13). */(function(){function q(e){var v=e.viewTransition;if(v)[v.ready,v.finished,v.updateCallbackDone].forEach(function(p){p&&p.catch&&p.catch(function(){})})}addEventListener('pagereveal',q);addEventListener('pageswap',q)})();</script>
 <script>(function(){try{history.scrollRestoration='manual'}catch(e){}function top(){var a=document.activeElement;if((window.scrollY||0)>0&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))window.scrollTo(0,0)}addEventListener('load',top);addEventListener('pageshow',top)})();</script>
   <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>

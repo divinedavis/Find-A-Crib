@@ -81,6 +81,12 @@ app = Flask(__name__)
 # Without this Flask reads an unbounded body, so a large POST to a portal
 # endpoint is a cheap memory-exhaustion vector. 16 KB is generous for our shape.
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+# The owner dashboard's Monitor page (monitor.py, 2026-11-15): every request
+# timed, the website's taps and call timings at POST /monitor, Supabase
+# events copied each minute, read back at GET /owner/monitor behind
+# MONITOR_KEY. Registered first so its timer wraps the other hooks.
+import monitor as fac_monitor
+MONITOR = fac_monitor.init_app(app)
 
 
 def _tier():

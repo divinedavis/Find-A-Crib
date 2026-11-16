@@ -18,6 +18,7 @@
      service worker (sw.js) keeps the site and its data for the next visit and
      offline. Redirect counters (/c, /t/, /rent, /tt…) and anything with a
      query are never pre-loaded: a pre-load would count as a scan or a visit. -->
+<script src="/static/platform/monitor.js?v=1"></script>
 <script type="speculationrules">
 {"prefetch":[{"source":"document","eagerness":"moderate","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/auth/*"}},{"not":{"href_matches":"/dashboard*"}},{"not":{"href_matches":"/report/*"}},{"not":{"href_matches":"/alerts*"}},{"not":{"href_matches":"/reset*"}},{"not":{"href_matches":"/go/*"}},{"not":{"href_matches":"/c"}},{"not":{"href_matches":"/c/*"}},{"not":{"href_matches":"/t/*"}},{"not":{"href_matches":"/rent"}},{"not":{"href_matches":"/tt"}},{"not":{"href_matches":"/ig"}},{"not":{"href_matches":"/yt"}},{"not":{"href_matches":"/rd"}},{"not":{"href_matches":"/*.pdf"}},{"not":{"href_matches":"/*.json"}},{"not":{"selector_matches":"a[href*='?'], a[href*='#'], [rel~=nofollow], [download], [target=_blank]"}}]}}]}
 </script>

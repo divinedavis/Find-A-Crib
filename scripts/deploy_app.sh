@@ -47,7 +47,7 @@ net_retry() {
     echo "== network drop, retrying ($((try + 1))/3): $*"; sleep 15
   done
 }
-SHIPPED="index.html housing_law_firms.json casa/index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css sw.js manifest.json icon-maskable-512.png static/platform/vitals.js privacy/index.html"
+SHIPPED="index.html housing_law_firms.json casa/index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css sw.js manifest.json icon-maskable-512.png static/platform/vitals.js static/platform/monitor.js privacy/index.html"
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== unit tests"
@@ -109,10 +109,12 @@ for c in la sf dc westchester; do scp -q "web/$c/index.html" "$HOST:$DOC/$c/inde
 ssh "$HOST" "install -d -m 755 $DOC/static/platform"
 scp -q web/sw.js web/manifest.json web/icon-maskable-512.png "$HOST:$DOC/"
 scp -q web/static/platform/vitals.js "$HOST:$DOC/static/platform/vitals.js"
+# Taps and request timings for the owner's Monitor page (2026-11-15).
+scp -q web/static/platform/monitor.js "$HOST:$DOC/static/platform/monitor.js"
 # The privacy page had no deploy path (copied by hand); it says what the
 # features above keep, so it ships with them. legal_pages checks it live.
 scp -q web/privacy/index.html "$HOST:$DOC/privacy/index.html"
-for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js /static/chat/chat-ui.js /sw.js /manifest.json /icon-maskable-512.png /static/platform/vitals.js; do
+for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js /static/chat/chat-ui.js /sw.js /manifest.json /icon-maskable-512.png /static/platform/vitals.js /static/platform/monitor.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done
 scripts/check_docroot_leaks.sh

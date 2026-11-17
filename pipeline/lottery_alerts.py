@@ -33,6 +33,9 @@ Since 2026-10-06 that minute-it-appears send is Find A Crib Plus only (owner:
 "users who pay 4.99 can get real time alerts ... otherwise once a day at
 8AM"). Without Plus every match is held and goes out in the 8 AM digest
 (`--digest`), whose email and push both carry a "get real-time alerts" call.
+Plus is the one exception to the one-a-day rule (owner, 2026-11-17: "i
+should've gotten an email at the same time as the push notification"): every
+real-time alert is emailed with its push, up to PLUS_EMAILS_PER_DAY.
 
 Two more entry points share the list, the sender and the opt-out:
 
@@ -90,8 +93,10 @@ GONE_GRACE_DAYS = 3
 HELD_MAX = 30             # per subscriber; older held items fall off the front
 # Real-time is Plus (owner, 2026-10-06). Everyone else hears once a day, in the
 # 8 AM digest (`--digest`, cron 0 8 * * * New York). A Plus subscriber is
-# pushed the moment an item appears; their email goes with it while the day's
-# one email slot is free (else tomorrow's first email carries it).
+# pushed the moment an item appears and emailed at the same moment, even after
+# the day's one email (owner, 2026-11-17), up to PLUS_EMAILS_PER_DAY; past that
+# the push still goes and tomorrow's first email carries the items.
+PLUS_EMAILS_PER_DAY = 6
 UPSELL_URL = SITE + "/?plus=realtime&src=digest"
 NUDGE_MIN_DAYS, NUDGE_MAX_DAYS = 2, 8
 WEEK_DAYS = 7
@@ -404,6 +409,17 @@ def load_state():
         return None
 
 
+def plus_emails_today(st, sid, now):
+    """Real-time alert emails this Plus subscriber has had today (New York day)."""
+    rec = st.get("plus_mail", {}).get(sid) or {}
+    return rec.get("n", 0) if rec.get("day") == now.astimezone(NY).date().isoformat() else 0
+
+
+def count_plus_email(st, sid, now):
+    day = now.astimezone(NY).date().isoformat()
+    st.setdefault("plus_mail", {})[sid] = {"day": day, "n": plus_emails_today(st, sid, now) + 1}
+
+
 def save_state(st):
     tmp = STATE + ".tmp"
     json.dump(st, open(tmp, "w"), indent=0)
@@ -417,6 +433,8 @@ def prune(st, now):
     hour_ago = (now - datetime.timedelta(hours=1)).isoformat()
     st["sends"] = [t for t in st.get("sends", []) if t >= hour_ago]
     st.pop("per_sub", None)          # pre-ledger daily counter, superseded
+    today = now.astimezone(NY).date().isoformat()
+    st["plus_mail"] = {k: v for k, v in st.get("plus_mail", {}).items() if v.get("day") == today}
     st.setdefault("held", {})
 
 
@@ -1297,15 +1315,20 @@ def main():
             continue
         # One Find A Crib email a day, from any job (owner rule, 2026-09-05).
         # The 8 AM digest runs before the other morning mails (moved after it),
-        # so it normally holds the day's slot. A Plus subscriber whose slot is
-        # used still gets the real-time push; the email waits for tomorrow.
+        # so it normally holds the day's slot.
         email_it = True
         # Held items a push-only run already put on the phone. They still ride
         # tomorrow's email but never buzz the phone again: the 2026-10-07 bug
         # re-pushed one held re-rental on every later run that found anything
         # new for anyone (owner got 570 Nostrand Ave. three times).
         to_push = [i for i in mine if not i.get("pushed")]
-        if not ok:
+        # Plus: the email goes out WITH the push, even after the day's one
+        # email (owner, 2026-11-17: 180 W. 20th St. was pushed at 10 AM but
+        # its email was held because 984 Madison St. had used the slot at
+        # 2 AM). PLUS_EMAILS_PER_DAY is the backstop against a flapping feed;
+        # past it the old push-now, email-tomorrow behaviour takes over.
+        plus_room = is_plus and to_push and plus_emails_today(st, sid, now) < PLUS_EMAILS_PER_DAY
+        if not ok and not plus_room:
             if is_plus and (phones or screens) and to_push:
                 email_it = False
                 # tomorrow's first email carries them; copies, because `new`
@@ -1324,10 +1347,13 @@ def main():
                 emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
             except Exception as e:
                 print(f"     FAILED {type(e).__name__}: {str(e)[:80]}")
-                mailcap.release(sub["email"])
+                if ok:   # only give back a slot this run claimed
+                    mailcap.release(sub["email"])
                 hold("send failed")
                 continue
             sent += 1
+            if is_plus:
+                count_plus_email(st, sid, now)
             st["sends"].append(now.isoformat())
             st["held"].pop(sid, None)
         sent_ids.append(sub["id"])

@@ -1,6 +1,9 @@
 """A held item is pushed once, never again (2026-10-07: the owner, Plus with
 the day's email already used, got the 570 Nostrand Ave. re-rental pushed on
-three runs — every later run that found anything new re-pushed the held list)."""
+three runs — every later run that found anything new re-pushed the held list).
+Since 2026-11-17 a Plus email goes with each push; push-only now happens once
+the subscriber has had PLUS_EMAILS_PER_DAY real-time emails today."""
+import datetime
 import os
 import sys
 from contextlib import ExitStack
@@ -41,7 +44,9 @@ def run(feeds, state, pushes):
 
 
 def test_push_only_item_is_not_pushed_again():
-    state = {"seen": {}, "sends": [], "held": {}}
+    today = datetime.datetime.now(L.NY).date().isoformat()
+    state = {"seen": {}, "sends": [], "held": {},
+             "plus_mail": {"7": {"day": today, "n": L.PLUS_EMAILS_PER_DAY}}}
     pushes = []
     run([RR1], state, pushes)           # 570 Nostrand appears: pushed
     run([RR1, RR2], state, pushes)      # something else new: only that one

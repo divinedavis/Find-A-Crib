@@ -20,6 +20,11 @@ nobody received. A job that loses the claim keeps its content — the borough
 dispatcher holds items per subscriber, the saved-building job keeps a pending
 list per user — so the reader gets it in tomorrow's one email.
 
+One exception (owner, 2026-11-17): a Find A Crib Plus real-time alert is
+emailed with its push even when the day's slot is used, up to
+lottery_alerts.PLUS_EMAILS_PER_DAY. It still claims first, so the other jobs
+see the day as used.
+
 `--dry-run` callers pass dry=True and get True without touching the ledger.
 Without a service key the claim raises: silently sending unmetered would be
 the one failure mode this module exists to prevent.

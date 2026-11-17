@@ -56,8 +56,8 @@ struct HPDRecordsView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(title).font(.se(19, .bold)).foregroundStyle(.white)
-                    Text(b.address).font(.se(13, .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
+                    Text(title).font(.se(19, .bold)).foregroundStyle(SE.ink)
+                    Text(b.address).font(.se(13, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
                 }
                 .frame(width: UIScreen.main.bounds.width - 150, alignment: .leading)
             }

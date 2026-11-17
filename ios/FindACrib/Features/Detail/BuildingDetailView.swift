@@ -147,8 +147,8 @@ struct BuildingDetailView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(b.address).font(.se(19, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
-                    Text(b.neighborhood).font(.se(13, .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
+                    Text(b.address).font(.se(19, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(b.neighborhood).font(.se(13, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
                 }
                 .frame(width: UIScreen.main.bounds.width - 150, alignment: .leading)
             }
@@ -164,7 +164,7 @@ struct BuildingDetailView: View {
                         Label(activity.isSaved(b.bbl) ? String(localized: "Unsave") : String(localized: "Save"), systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
                     }
                 } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 20, weight: .bold)).foregroundStyle(.white).frame(width: 36, height: 36)
+                    Image(systemName: "ellipsis").font(.system(size: 20, weight: .bold)).foregroundStyle(SE.ink).frame(width: 36, height: 36)
                 }
                 .accessibilityIdentifier("detail-menu")
             }

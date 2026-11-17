@@ -1827,6 +1827,16 @@ class Runner:
             return {name: c.dataset.hcName || '', boro: c.dataset.hcBoro || '', flag: !!c.querySelector('.hc-flag')};
         })()""")
         self.ok(feat is not None or hc is not None, 'no sponsored or lottery tile rendered in the list at all', j)
+        # A lottery tile shows the city's own photo when Housing Connect
+        # published one (owner, 2026-11-17: the street view was scaffolding).
+        hcp = page.evaluate("""(async () => {
+            const L = (await (await fetch('/housing_connect.json')).json()).lotteries || [];
+            const withImg = new Set(L.filter(l => l.image).map(l => (l.name || l.address || '').trim()));
+            const tiles = [...document.querySelectorAll('#grid .card.hc-card')].filter(c => withImg.has(c.dataset.hcName));
+            return {tiles: tiles.length, photos: tiles.filter(c => c.querySelector('img.listing-photo[src^="https://a806-housingconnectapi.nyc.gov/"]')).length};
+        })()""")
+        if hcp['tiles']:
+            self.ok(hcp['photos'] == hcp['tiles'], f'lottery tiles with a city photo should show it: {hcp}', j)
         # Alerts are a daily 8 AM digest without Plus (2026-10-06): the tile
         # prompt says so, and never promises "the minute" to a signed-out visitor.
         al = page.evaluate("[...document.querySelectorAll('#grid .alert-link')].map(a => a.textContent)")

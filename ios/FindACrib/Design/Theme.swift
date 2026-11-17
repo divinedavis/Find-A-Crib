@@ -25,7 +25,9 @@ enum SE {
     static let canvas    = Color(hex: 0xF2F2F7)
     static let badge     = Color(hex: 0xE8E8E8)
     static let facts     = Color(hex: 0x1F2937)
-    static let good      = Color(hex: 0x248A3D)
+    /// Kept at 1E7B34: Liquid Glass's 248A3D "nearly passed" Apple's
+    /// contrast audit on its pale green chips (2026-11-17).
+    static let good      = Color(hex: 0x1E7B34)
     static let warn      = Color(hex: 0xB25000)
     static let bad       = Color(hex: 0xB91C1C)
     /// The app icon's teal (scripts/make_icon.py MID/RIM), for the mark in the hero card.

@@ -58,7 +58,11 @@ struct AddToCalendarButton: View {
     var label = String(localized: "Add to Calendar")
     @State private var showing: CalendarItem?
     var body: some View {
-        Button { showing = item } label: { Label(label, systemImage: "calendar.badge.plus").font(.se(16, .semibold)) }
+        Button { showing = item } label: {
+            // 44 pt tall to tap: SF Pro sets this line shorter than Source
+            // Sans did, under the audit's hit-region minimum (2026-11-17).
+            Label(label, systemImage: "calendar.badge.plus").font(.se(16, .semibold))..frame(minHeight: 44).contentShape(Rectangle())
+        }
             .sheet(item: $showing) { CalendarAddSheet(item: $0).ignoresSafeArea() }
     }
 }

@@ -53,6 +53,8 @@ struct ProfileView: View {
                                 if auth.isSignedIn {
                                     Text(auth.email?.components(separatedBy: "@").first?.capitalized ?? String(localized: "Signed in")).font(.se(30, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                                     Text(auth.email ?? "").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1)
+                                        // The audit calls a bare address "not human-readable" (2026-11-17).
+                                        .accessibilityLabel(Text("Signed in as \((auth.email ?? "").replacingOccurrences(of: "@", with: " at ").replacingOccurrences(of: ".", with: " dot "))"))
                                     if auth.hasPlus {
                                         SEBadge(text: String(localized: "Find A Crib Plus"), icon: "star.fill", fill: SE.paleBlue, ink: SE.royal)
                                     }
@@ -69,7 +71,7 @@ struct ProfileView: View {
                                 }.buttonStyle(.plain).accessibilityIdentifier("sign-out")
                                 Spacer()
                                 Button(role: .destructive) { confirmDelete = true } label: {
-                                    Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.bad)
+                                    Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.bad).frame(minHeight: 44).contentShape(Rectangle())
                                 }.buttonStyle(.plain).accessibilityIdentifier("delete-account")
                             }
                             if auth.hasPlus {
@@ -185,6 +187,7 @@ struct ProfileView: View {
                             Button { confirmTurnOff = true } label: {
                                 HStack(spacing: 4) { Text(turnOffFailed ? String(localized: "Try again") : String(localized: "Turn off alerts")).font(.se(17, .semibold)).layoutPriority(1); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
                                     .foregroundStyle(turnOffFailed ? SE.bad : SE.royal)
+                                    .frame(minHeight: 44).contentShape(Rectangle())
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-off")
                         }
                     }

@@ -165,6 +165,7 @@ struct LotteriesView: View {
             sheet = feed.subscribed ? .alerts : .beds
         }
         .font(.se(16, .bold)).foregroundStyle(SE.royal)
+        .frame(minHeight: 44).contentShape(Rectangle())
         .buttonStyle(.plain)
     }
 

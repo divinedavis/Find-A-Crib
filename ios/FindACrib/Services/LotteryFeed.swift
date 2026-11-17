@@ -31,6 +31,9 @@ final class LotteryFeed {
         let beds: [String]?
         let closes: String?
         let href: String?
+        /// The one photo Housing Connect publishes for the lottery (usually
+        /// the developer's rendering), shown instead of the street (2026-11-17).
+        var image: String? = nil
     }
     private struct Payload: Decodable { let lotteries: [Lottery] }
 

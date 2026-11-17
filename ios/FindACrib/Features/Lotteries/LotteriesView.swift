@@ -432,7 +432,7 @@ struct LotteriesView: View {
 
     private func card(_ l: LotteryFeed.Lottery) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-        LotteryPhoto(key: "hc-\(l.id)", lat: l.lat, lng: l.lng)
+        LotteryPhoto(key: "hc-\(l.id)", url: l.image.flatMap(URL.init(string:)), lat: l.lat, lng: l.lng)
         VStack(alignment: .leading, spacing: 6) {
             Text(l.name).font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text(whereWhen(l)).font(.se(15, .semibold)).foregroundStyle(urgent(l) ? SE.warn : SE.ink2)

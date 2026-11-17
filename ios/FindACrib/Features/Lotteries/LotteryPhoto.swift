@@ -4,24 +4,30 @@ import UIKit
 
 /// The photo at the top of a lottery card (owner, 2026-09-25: "are we not
 /// able to get images for these?"). The listing's own photo where the agency
-/// publishes one (SF DAHLIA, Access Housing LA, Doorway); otherwise the street
-/// at its address from Apple Look Around, the same picture the building cards
-/// use (Housing Connect, Miami's lease-ups). No photo and no place: no header.
+/// publishes one (SF DAHLIA, Access Housing LA, Doorway, NYC Housing Connect
+/// since 2026-11-17); otherwise the street at its address from Apple Look
+/// Around, the same picture the building cards use (Miami's lease-ups). No
+/// photo and no place: no header.
 struct LotteryPhoto: View {
     let key: String
     var url: URL? = nil
     var lat: Double? = nil
     var lng: Double? = nil
     @State private var image: UIImage?
+    /// The agency photo would not load: show the street instead of a blank.
+    @State private var failed = false
 
     var body: some View {
-        if let url {
+        if let url, !(failed && lat != nil && lng != nil) {
             ZStack {
                 ImagePlaceholder()
                 if let image { FillImage(image: image) }
             }
             .frame(height: 190).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
-            .task(id: url) { image = await RemotePhotos.shared.image(url) }
+            .task(id: url) {
+                image = await RemotePhotos.shared.image(url)
+                failed = image == nil
+            }
             .accessibilityElement(children: .ignore).accessibilityLabel("Photo of the building")
             .accessibilityIdentifier("lottery-photo")
         } else if let lat, let lng {

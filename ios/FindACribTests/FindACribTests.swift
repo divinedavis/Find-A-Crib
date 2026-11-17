@@ -1074,6 +1074,17 @@ final class LotteryFeedTests: XCTestCase {
                             beds: ["Studio", "1-bed"], closes: closes, href: "https://housingconnect.nyc.gov/PublicWeb/details/\(id)")
     }
 
+    /// The city's one photo per lottery rides in the feed as `image` (2026-11-17);
+    /// an older feed without it still decodes.
+    func testLotteryPhotoDecodesAndIsOptional() throws {
+        let with = #"{"id":1,"name":"A","borough":"Brooklyn","image":"https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/1.png"}"#
+        let without = #"{"id":2,"name":"B","borough":"Bronx"}"#
+        let a = try JSONDecoder().decode(LotteryFeed.Lottery.self, from: Data(with.utf8))
+        let b = try JSONDecoder().decode(LotteryFeed.Lottery.self, from: Data(without.utf8))
+        XCTAssertEqual(a.image, "https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/1.png")
+        XCTAssertNil(b.image)
+    }
+
     func testOnlyTheirBoroughsStillOpenSoonestFirst() {
         let all = [lot(1, "Bronx", "2026-10-05"), lot(2, "Brooklyn", "2026-09-22"), lot(3, "Queens", "2026-09-20"),
                    lot(4, "Bronx", "2026-09-18"), lot(5, "Bronx", "2026-09-19")]

@@ -110,6 +110,13 @@ def coords_for(address, borough):
     return xy
 
 
+def hc_photo(url):
+    """The lottery photo URL, only if it is an https URL on the city's API
+    host: the value lands in an <img src> on the site and in the app."""
+    u = (url or "").strip()
+    return u if u.startswith("https://a806-housingconnectapi.nyc.gov/") and len(u) < 300 else None
+
+
 def one(rec):
     lo, hi = parse_rents(rec.get("rents"))
     marks = rec.get("markers") or []
@@ -145,6 +152,11 @@ def one(rec):
         "days_left": rec.get("endIn"),
         "closes": (rec.get("lotteryEndDate") or "")[:10] or None,
         "href": DETAILS + str(rec.get("lotteryId")),
+        # The one photo Housing Connect publishes per lottery (usually the
+        # developer's rendering; the city's own site shows only this one).
+        # Cards used the Look Around street view before, which for a building
+        # under construction was a wall of scaffolding (owner, 2026-11-17).
+        "image": hc_photo(rec.get("defaultPhotoStream")),
     }
 
 

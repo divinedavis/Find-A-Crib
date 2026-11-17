@@ -943,8 +943,16 @@ final class FindACribUITests: XCTestCase {
             // only because it started below a white strip.
             let city = app.buttons["city-field"]
             XCTAssertTrue(city.waitForExistence(timeout: 10))
-            XCTAssertGreaterThanOrEqual(banner.frame.maxY, 219, "200 pt of banner below the status bar (20 pt on an SE)")
-            XCTAssertLessThan(banner.frame.maxY, 270)
+            // Liquid Glass (2026-11-17): an ordinary day is a large-title
+            // header (~80 pt under the status bar); a holiday keeps its 200 pt
+            // banner.
+            if holiday == nil {
+                XCTAssertGreaterThanOrEqual(banner.frame.maxY, 90, "the large title sits below the status bar")
+                XCTAssertLessThan(banner.frame.maxY, 200, "an ordinary day's header is a large title, not the old banner")
+            } else {
+                XCTAssertGreaterThanOrEqual(banner.frame.maxY, 219, "200 pt of banner below the status bar (20 pt on an SE)")
+                XCTAssertLessThan(banner.frame.maxY, 270)
+            }
             XCTAssertGreaterThan(city.frame.minY, banner.frame.maxY, "the form starts below the banner")
             let name = holiday ?? "everyday"
             let top = XCTAttachment(screenshot: app.screenshot()); top.name = "hero-top-\(name)"; top.lifetime = .keepAlways; add(top)

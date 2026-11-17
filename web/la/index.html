@@ -2336,7 +2336,7 @@
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
-        <div class="profile-feat-sub">An email when a building you saved gets a voucher listing, a lottery or re-rental, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
+        <div class="profile-feat-sub">An email when a building you saved gets a voucher listing, a lottery or re-rental, or its violations change. Never more than five emails a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
@@ -3436,7 +3436,7 @@ function favActive() {
     t.className = 'folder-toast'; t.id = 'folder-toast';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">♥ Saved — we’ll watch it for you</div>
-      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when a voucher listing, lottery or re-rental opens here, or its HPD violations change. Never more than one email a day.</div>
+      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when a voucher listing, lottery or re-rental opens here, or its HPD violations change. Never more than five emails a day.</div>
       <div class="ft-opts"><button type="button" data-watch-settings>Alert settings</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);

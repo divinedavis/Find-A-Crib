@@ -241,8 +241,8 @@ struct ResultsView: View {
                 NavyHeader {
                     HStack(spacing: 10) {
                         Button { dismiss() } label: {
-                            Image(systemName: "chevron.left").font(.system(size: 19, weight: .semibold)).foregroundStyle(.white)
-                                .frame(width: 44, height: 44).background(Color.white.opacity(0.14), in: Circle())
+                            Image(systemName: "chevron.left").font(.system(size: 19, weight: .semibold)).foregroundStyle(SE.ink)
+                                .frame(width: 44, height: 44).background(Color.white, in: Circle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text("Back"))

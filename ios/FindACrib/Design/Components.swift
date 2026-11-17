@@ -20,7 +20,8 @@ struct SEPrimaryButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(fill)
-            .clipShape(RoundedRectangle(cornerRadius: 2))
+            // Liquid Glass (2026-11-17): 14 pt continuous corners. Was 2 pt.
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -40,7 +41,8 @@ struct SEOutlineButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(Color.white)
-            .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(SE.line, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -92,7 +94,9 @@ struct SEChip: View {
 
 struct SEFieldLabel: View {
     let text: String
-    var body: some View { Text(text).font(.se(20, .bold)).foregroundStyle(SE.ink2) }
+    /// Liquid Glass: a small section label over a white field on the grey,
+    /// as iOS Settings. Was 20 pt bold.
+    var body: some View { Text(text).font(.system(size: 15, weight: .semibold)).foregroundStyle(SE.ink2) }
 }
 
 struct SEFieldBox<Content: View>: View {
@@ -101,12 +105,13 @@ struct SEFieldBox<Content: View>: View {
         content
             .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
             .background(Color.white)
-            .overlay(RoundedRectangle(cornerRadius: 1).stroke(SE.line, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
-/// The Studio / 1 / 2 / 3 / 4+ strip: joined bordered cells, pale-blue when
-/// selected. Multi-select, like StreetEasy.
+/// The Studio / 1 / 2 / 3 / 4+ strip. Multi-select, like StreetEasy.
+/// Liquid Glass (2026-11-17): a grey track with a white pill on each
+/// selected size, as an iOS segmented control. Was joined bordered cells.
 struct SESegmentRow<T: Hashable>: View {
     let options: [(T, String)]
     @Binding var selection: Set<T>
@@ -118,18 +123,24 @@ struct SESegmentRow<T: Hashable>: View {
                     if on { selection.remove(opt.0) } else { selection.insert(opt.0) }
                 } label: {
                     Text(opt.1)
-                        .font(.se(18, on ? .semibold : .regular))
+                        .font(.system(size: 16, weight: on ? .semibold : .regular))
                         .foregroundStyle(SE.ink)
-                        .frame(maxWidth: .infinity).frame(height: 50)
-                        .background(on ? SE.paleBlue : Color.white)
+                        .frame(maxWidth: .infinity).frame(height: 40)
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.white)
+                                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                            }
+                        }
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("segment-\(opt.1)")
                 .accessibilityAddTraits(on ? .isSelected : [])
-                if i < options.count - 1 { Rectangle().fill(SE.line).frame(width: 1) }
             }
         }
-        .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+        .padding(3)
+        .background(Color(red: 118/255, green: 118/255, blue: 128/255).opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -137,31 +148,36 @@ struct SESegmentRow<T: Hashable>: View {
 struct SEUnderlineTabs<T: Hashable>: View {
     let options: [(T, String)]
     @Binding var selection: T
+    /// Liquid Glass (owner, 2026-11-17): an iOS segmented control, a white
+    /// pill sliding over a grey track. Was underlined 20 pt words. The name
+    /// and the "mode-<label>" identifiers stay, so callers and UI tests did
+    /// not change.
+    @Namespace private var pill
     var body: some View {
-        VStack(spacing: 0) {
-            // Each tab is exactly as wide as its word (underline included) and
-            // never wraps; the words spread out with spacers. A flexible
-            // underline used to split the row into equal thirds, and at larger
-            // text sizes "Stabilized" broke onto two lines.
-            HStack(spacing: 0) {
-                ForEach(Array(options.enumerated()), id: \.offset) { i, opt in
-                    let on = selection == opt.0
-                    if i > 0 { Spacer(minLength: 12) }
-                    Button { withAnimation(.easeInOut(duration: 0.15)) { selection = opt.0 } } label: {
-                        VStack(spacing: 8) {
-                            Text(opt.1).font(.se(20, .bold)).foregroundStyle(on ? SE.ink : SE.ink3)
-                                .lineLimit(1).minimumScaleFactor(0.6)
-                            Rectangle().fill(on ? SE.royal : .clear).frame(height: 3)
+        HStack(spacing: 0) {
+            ForEach(Array(options.enumerated()), id: \.offset) { _, opt in
+                let on = selection == opt.0
+                Button { withAnimation(.snappy(duration: 0.22)) { selection = opt.0 } } label: {
+                    Text(opt.1).font(.system(size: 15, weight: on ? .semibold : .medium))
+                        .foregroundStyle(on ? SE.ink : SE.ink2)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity).frame(height: 34)
+                        .background {
+                            if on {
+                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.white)
+                                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                                    .matchedGeometryEffect(id: "pill", in: pill)
+                            }
                         }
-                        .fixedSize(horizontal: true, vertical: false)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("mode-\(opt.1)")
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mode-\(opt.1)")
+                .accessibilityAddTraits(on ? .isSelected : [])
             }
-            .padding(.horizontal, 8)
-            Rectangle().fill(SE.lineSoft).frame(height: 1)
         }
+        .padding(2)
+        .background(Color(red: 118/255, green: 118/255, blue: 128/255).opacity(0.12), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 }
 
@@ -225,6 +241,9 @@ struct InfoDot: View {
 
 // MARK: - Navy header chrome
 
+/// The screen header. Liquid Glass (owner, 2026-11-17): a large dark title
+/// on the grouped grey, reaching up behind the clock. Was a navy band with
+/// white type; the name stays so the callers did not churn.
 struct NavyHeader<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
@@ -232,7 +251,8 @@ struct NavyHeader<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity)
-        .background(SE.navy.ignoresSafeArea(edges: .top))
+        .padding(.top, 6)
+        .background(SE.canvas.ignoresSafeArea(edges: .top))
     }
 }
 
@@ -349,16 +369,19 @@ struct SERadioRow<T: Hashable>: View {
                         Spacer()
                     }
                     .padding(.horizontal, 14).frame(minHeight: 60)
-                    .background(on ? SE.paleBlue.opacity(0.55) : Color.white)
+                    .background(Color.white)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("radio-\(opt.1)")
                 .accessibilityAddTraits(on ? .isSelected : [])
-                if i < options.count - 1 { Rectangle().fill(SE.line).frame(height: 1) }
+                if i < options.count - 1 { Rectangle().fill(SE.lineSoft).frame(height: 1).padding(.leading, 50) }
             }
         }
-        .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+        // Liquid Glass grouped list (2026-11-17): one white rounded block on
+        // the grey, inset separators. Was bordered rows.
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -374,19 +397,23 @@ struct SECheckList: View {
                 let on = r.isOn.wrappedValue
                 Button { if !r.locked { r.isOn.wrappedValue.toggle() } } label: {
                     HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 4).stroke(on ? SE.royal : SE.line, lineWidth: 2).frame(width: 22, height: 22)
-                            if on { RoundedRectangle(cornerRadius: 4).fill(SE.royal).frame(width: 22, height: 22)
-                                Image(systemName: "checkmark").font(.system(size: 13, weight: .black)).foregroundStyle(.white) }
-                        }
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(r.title).font(.se(18, on ? .bold : .semibold)).foregroundStyle(SE.ink)
+                            Text(r.title).font(.se(18, .semibold)).foregroundStyle(SE.ink)
                             Text(r.subtitle).font(.se(13)).foregroundStyle(SE.ink3).lineLimit(1).minimumScaleFactor(0.85)
                         }
                         Spacer()
+                        // An iOS switch (Liquid Glass, 2026-11-17). Was a checkbox.
+                        Capsule().fill(on ? SE.royal : Color(hex: 0xE3E3E8))
+                            .frame(width: 51, height: 31)
+                            .overlay(alignment: on ? .trailing : .leading) {
+                                Circle().fill(.white).frame(width: 27, height: 27).padding(2)
+                                    .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
+                            }
+                            .animation(.snappy(duration: 0.2), value: on)
+                            .accessibilityHidden(true)
                     }
                     .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
-                    .background(on && !r.locked ? SE.paleBlue.opacity(0.55) : Color.white)
+                    .background(Color.white)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -394,10 +421,11 @@ struct SECheckList: View {
                 // .disabled would grey the baseline out as if it were unavailable
                 .accessibilityIdentifier("check-\(r.title)")
                 .accessibilityAddTraits(on ? .isSelected : [])
-                if i < rows.count - 1 { Rectangle().fill(SE.line).frame(height: 1) }
+                if i < rows.count - 1 { Rectangle().fill(SE.lineSoft).frame(height: 1).padding(.leading, 14) }
             }
         }
-        .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -556,7 +584,7 @@ struct CollapsingHeader<Content: View>: View {
             // under it, as does the list. A background on a zero-height row
             // at the top reaches up into the status bar (NavyHeader's trick).
             .overlay(alignment: .top) {
-                Color.clear.frame(height: 0).background(SE.navy.ignoresSafeArea(edges: .top))
+                Color.clear.frame(height: 0).background(SE.canvas.ignoresSafeArea(edges: .top))
             }
     }
 }

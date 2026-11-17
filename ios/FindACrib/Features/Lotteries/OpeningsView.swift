@@ -59,8 +59,8 @@ struct OpeningsView: View {
         VStack(spacing: 0) {
             NavyHeader {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                    Text(city.name).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                    Text("Lotteries").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
+                    Text(city.name).font(.se(16)).foregroundStyle(SE.ink2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
@@ -68,7 +68,7 @@ struct OpeningsView: View {
                 SEUnderlineTabs(options: [(Tenure.rent, String(localized: "Rent")), (.buy, String(localized: "Buy"))], selection: $tenure)
                 filterBar
             }
-            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10).background(Color.white)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10).background(SE.canvas)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     HStack {

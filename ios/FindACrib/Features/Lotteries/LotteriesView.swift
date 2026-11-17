@@ -99,7 +99,7 @@ struct LotteriesView: View {
     private var checking: some View {
         VStack(spacing: 0) {
             NavyHeader {
-                Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                Text("Lotteries").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
             ProgressView().tint(SE.royal).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -216,8 +216,8 @@ struct LotteriesView: View {
                 VStack(spacing: 0) {
                     NavyHeader {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                            Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                            Text("Lotteries").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
+                            Text(boroughLine).font(.se(16)).foregroundStyle(SE.ink2)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
                     }
@@ -228,7 +228,7 @@ struct LotteriesView: View {
                                                   (.newJersey, String(localized: "NJ (\(feed.njOpen.count))"))], selection: $pane)
                             .padding(.bottom, 10)
                     }
-                    .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+                    .padding(.horizontal, 16).padding(.top, 8).background(SE.canvas)
                 }
             }
         }

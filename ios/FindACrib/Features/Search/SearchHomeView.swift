@@ -19,7 +19,9 @@ struct SearchHomeView: View {
     /// Only while Search's own page is what sits under the status bar: not
     /// under another tab, and not under a building page pushed on top.
     private var lightStatusBar: Bool {
-        bannerBehindStatusBar && nav.tab == .search && nav.searchPath.isEmpty
+        // Only a holiday's dark banner needs a white clock; an ordinary day's
+        // Liquid Glass header is grey with dark type (2026-11-17).
+        HolidayCalendar.today != nil && bannerBehindStatusBar && nav.tab == .search && nav.searchPath.isEmpty
     }
 
     var body: some View {
@@ -186,13 +188,13 @@ struct SearchHomeView: View {
                     Color.clear.frame(height: 110)
                 }
             }
-            .background(Color.white)
+            .background(SE.canvas)
             .ignoresSafeArea(.container, edges: .top)
             // Once the banner has scrolled away the form would run under the
             // clock with nothing behind it, so the status bar gets the white
             // backing it had before.
             .overlay(alignment: .top) {
-                Color.white
+                SE.canvas
                     .frame(height: outer.safeAreaInsets.top)
                     .opacity(bannerBehindStatusBar ? 0 : 1)
                     .animation(.easeOut(duration: 0.15), value: bannerBehindStatusBar)
@@ -645,6 +647,33 @@ struct HeroBanner: View {
     }
 
     var body: some View {
+        if holiday != nil { holidayBody } else { glassBody }
+    }
+
+    /// An ordinary day (Liquid Glass, owner 2026-11-17): a large title and
+    /// the city line, left-aligned on the grouped grey, as Apple's own apps
+    /// open. The teal gradient banner is kept for holidays only.
+    private var glassBody: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Find A Crib")
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(SE.ink)
+            Text(Self.line(for: store.city))
+                .font(.system(size: 17))
+                .foregroundStyle(SE.ink2)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, topInset + 18)
+        .padding(.bottom, 6)
+        .background(alignment: .bottom) { SE.canvas.frame(height: 900) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Find A Crib. \(Self.line(for: store.city))")
+        .accessibilityIdentifier("hero-banner")
+    }
+
+    private var holidayBody: some View {
         GeometryReader { g in
             let w = g.size.width, h = g.size.height
             ZStack {

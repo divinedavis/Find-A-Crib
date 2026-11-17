@@ -8,7 +8,9 @@ import SwiftUI
 enum SE {
     static let navy      = Color(hex: 0x163C47)
     static let navyDeep  = Color(hex: 0x0F2B33)
-    static let royal     = Color(hex: 0x266676)   // was 2F7A8A: 4.0:1 as the selected-tab label on badge grey; Apple's contrast audit (2026-10-02)
+    /// Liquid Glass tint (2026-11-17, owner picked direction 1 of 5). Was
+    /// 266676; 2A7889 still clears 4.5:1 on white and on F2F2F7.
+    static let royal     = Color(hex: 0x2A7889)
     static let royalDark = Color(hex: 0x255F6C)
     /// The "Rent stabilized" card label — green reads as a good thing.
     static let green     = Color(hex: 0x1E8E3E)
@@ -19,11 +21,12 @@ enum SE {
     static let ink3      = Color(hex: 0x595959)   // was 6F6F6F; Apple's contrast audit failed it on white and canvas (2026-10-02)
     static let line      = Color(hex: 0xBDBDBD)
     static let lineSoft  = Color(hex: 0xE4E4E4)
-    static let canvas    = Color(hex: 0xF2F2F2)
+    /// iOS grouped background (Liquid Glass, 2026-11-17). Was F2F2F2.
+    static let canvas    = Color(hex: 0xF2F2F7)
     static let badge     = Color(hex: 0xE8E8E8)
     static let facts     = Color(hex: 0x1F2937)
-    static let good      = Color(hex: 0x1E7B34)
-    static let warn      = Color(hex: 0xB45309)
+    static let good      = Color(hex: 0x248A3D)
+    static let warn      = Color(hex: 0xB25000)
     static let bad       = Color(hex: 0xB91C1C)
     /// The app icon's teal (scripts/make_icon.py MID/RIM), for the mark in the hero card.
     static let brand     = Color(hex: 0x3C7E8C)
@@ -55,13 +58,12 @@ enum SEWeight { case regular, semibold, bold, black
 }
 
 extension Font {
-    /// Source Sans 3 at a fixed size; falls back to the system face if the
-    /// bundle ever ships without the font rather than rendering nothing.
+    /// SF Pro, the system face (Liquid Glass redesign, owner 2026-11-17: was
+    /// Source Sans 3). Every text style in the app goes through here, so the
+    /// whole app changed face in one place. SF runs wider than Source Sans,
+    /// so sizes step down a little to keep lines that fit still fitting.
     static func se(_ size: CGFloat, _ weight: SEWeight = .regular) -> Font {
-        if UIFont(name: weight.postScript, size: size) != nil {
-            return .custom(weight.postScript, size: size)
-        }
-        return .system(size: size, weight: weight.fallback)
+        .system(size: (size * 0.94).rounded(), weight: weight.fallback)
     }
 }
 
@@ -69,11 +71,11 @@ extension View {
     func seText(_ size: CGFloat, _ weight: SEWeight = .regular, _ color: Color = SE.ink) -> some View {
         self.font(.se(size, weight)).foregroundStyle(color)
     }
-    /// StreetEasy's cards: white, 1pt hairline, 2pt corner — flat, no shadow.
+    /// Liquid Glass cards (2026-11-17): white on the grouped grey, 22 pt
+    /// continuous corners, no hairline. Was StreetEasy's flat 2 pt card.
     func seCard() -> some View {
         self.background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 2))
-            .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 

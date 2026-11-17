@@ -10,11 +10,11 @@ struct MyActivityView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavyHeader {
-                Text("My Activity").font(.se(24, .bold)).foregroundStyle(.white)
+                Text("My Activity").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
             SEUnderlineTabs(options: [(Pane.saved, String(localized: "Saved")), (.searches, String(localized: "Searches")), (.recent, String(localized: "Recent"))], selection: $pane)
-                .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+                .padding(.horizontal, 16).padding(.top, 8).background(SE.canvas)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     switch pane {

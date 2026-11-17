@@ -59,8 +59,8 @@ struct CasaView: View {
             NavyHeader {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Your Crib").font(.se(24, .bold)).foregroundStyle(.white)
-                        Text("311 calls on your building, and crime nearby").font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                        Text("Your Crib").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
+                        Text("311 calls on your building, and crime nearby").font(.se(16)).foregroundStyle(SE.ink2)
                     }
                     searchField
                 }

@@ -33,7 +33,7 @@ struct ProfileView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavyHeader {
-                Text("Profile").font(.se(24, .bold)).foregroundStyle(.white)
+                Text("Profile").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.bottom, 12)
             }

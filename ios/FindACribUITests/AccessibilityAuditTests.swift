@@ -72,7 +72,11 @@ final class AccessibilityAuditTests: XCTestCase {
         // the HUD rent note scrolled under it and was measured against the bar's pixels).
         let comments = app.buttons["detail-comments"]
         let window = app.windows.firstMatch.frame
-        let actionBar = comments.exists ? CGRect(x: window.minX, y: comments.frame.minY, width: window.width, height: comments.frame.height) : .null
+        // The bar's white panel is the button plus its 16 pt padding; the
+        // 20 pt below covers its shadow. Measured from the button alone, a
+        // pest tile's sub-line resting on the panel's shadow read as low
+        // contrast (2026-11-17, after Liquid Glass shortened the header).
+        let actionBar = comments.exists ? CGRect(x: window.minX, y: comments.frame.minY - 16, width: window.width, height: comments.frame.height + 32) : .null
         return ([bar, actionBar] + (0..<pills.count).map { pills.element(boundBy: $0).frame })
             .filter { !$0.isNull && !$0.isEmpty }.map { $0.insetBy(dx: -20, dy: -20) }
     }

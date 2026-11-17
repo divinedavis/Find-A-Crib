@@ -27,8 +27,8 @@ Semantics kept from the old job: only a CHANGE alerts — saving a building
 that already has a voucher listing says nothing; the first run seeds a snapshot and
 sends nothing; one announcement per (user, building, kind) per cooldown.
 
-New: one email a day per person, across every job (growth/mailcap.py). A
-change found on a day the person already got mail is held in `pending` and
+At most five emails a day per person, across every job (growth/mailcap.py,
+five since 2026-11-17). A change found once the day's five are used is held in `pending` and
 leads tomorrow's email. Tuesdays the morning email is the weekly digest
 instead — the same pending changes, plus the state of everything they saved
 and what opened or is closing in the boroughs they save and browse in.
@@ -453,7 +453,7 @@ def render_changes(user, items, buildings, emailkit):
         blocks=blocks, cta=cta,
         link=("Open your saved buildings", f"{SITE}/?src=saved#list") if one else None,
         footer_note="You get these because you saved buildings on Find A Crib. "
-                    "Never more than one email a day.",
+                    "Never more than five emails a day.",
         unsub_url=unsub)
     return subject, html, text, unsub
 
@@ -588,7 +588,7 @@ def render_digest(user, pending, buildings, s8, feeds, seen, emailkit, now,
         tag=("Weekly" if not day3 else "Saved buildings", "info"),
         cta=("Open the map", f"{SITE}/?src=digest"),
         footer_note="You get this because you have a Find A Crib account and saved buildings. "
-                    "Never more than one email a day.",
+                    "Never more than five emails a day.",
         unsub_url=unsub, unsub_label="Stop the round-up")
     return subject, html, text, unsub
 

@@ -23,19 +23,19 @@ One email per subscriber per run, however many items there are, and the run
 itself is capped (MAX_SENDS_PER_RUN, HOURLY_CAP) under the mailbox's 500/hour
 domain ceiling at Namecheap.
 
-Nobody gets more than ONE Find A Crib email a day, from any job (owner rule,
-2026-09-05; growth/mailcap.py is the shared ledger). The first new item of
-the day goes out the minute it appears; anything after that is HELD per
-subscriber (state["held"]) and rides the next day's first email, so nothing
-is dropped and nothing arrives twice.
+Nobody gets more than FIVE Find A Crib emails a day, from any job (owner rule:
+one a day from 2026-09-05, five from 2026-11-17, db/0078; growth/mailcap.py is
+the shared ledger). Each new item goes out the minute it appears; once the
+day's five are used it is HELD per subscriber (state["held"]) and rides the
+next email, so nothing is dropped and nothing arrives twice.
 
 Since 2026-10-06 that minute-it-appears send is Find A Crib Plus only (owner:
 "users who pay 4.99 can get real time alerts ... otherwise once a day at
 8AM"). Without Plus every match is held and goes out in the 8 AM digest
 (`--digest`), whose email and push both carry a "get real-time alerts" call.
-Plus is the one exception to the one-a-day rule (owner, 2026-11-17: "i
-should've gotten an email at the same time as the push notification"): every
-real-time alert is emailed with its push, up to PLUS_EMAILS_PER_DAY.
+For Plus the email goes with the push (owner, 2026-11-17: "emails should come
+in real time for plus users"); past the day's five, the push still goes and
+the email waits.
 
 Two more entry points share the list, the sender and the opt-out:
 
@@ -93,10 +93,9 @@ GONE_GRACE_DAYS = 3
 HELD_MAX = 30             # per subscriber; older held items fall off the front
 # Real-time is Plus (owner, 2026-10-06). Everyone else hears once a day, in the
 # 8 AM digest (`--digest`, cron 0 8 * * * New York). A Plus subscriber is
-# pushed the moment an item appears and emailed at the same moment, even after
-# the day's one email (owner, 2026-11-17), up to PLUS_EMAILS_PER_DAY; past that
-# the push still goes and tomorrow's first email carries the items.
-PLUS_EMAILS_PER_DAY = 6
+# pushed and emailed the moment an item appears, while they have one of the
+# day's five emails left; past that the push still goes and the next email
+# carries the items.
 UPSELL_URL = SITE + "/?plus=realtime&src=digest"
 NUDGE_MIN_DAYS, NUDGE_MAX_DAYS = 2, 8
 WEEK_DAYS = 7
@@ -409,17 +408,6 @@ def load_state():
         return None
 
 
-def plus_emails_today(st, sid, now):
-    """Real-time alert emails this Plus subscriber has had today (New York day)."""
-    rec = st.get("plus_mail", {}).get(sid) or {}
-    return rec.get("n", 0) if rec.get("day") == now.astimezone(NY).date().isoformat() else 0
-
-
-def count_plus_email(st, sid, now):
-    day = now.astimezone(NY).date().isoformat()
-    st.setdefault("plus_mail", {})[sid] = {"day": day, "n": plus_emails_today(st, sid, now) + 1}
-
-
 def save_state(st):
     tmp = STATE + ".tmp"
     json.dump(st, open(tmp, "w"), indent=0)
@@ -433,8 +421,7 @@ def prune(st, now):
     hour_ago = (now - datetime.timedelta(hours=1)).isoformat()
     st["sends"] = [t for t in st.get("sends", []) if t >= hour_ago]
     st.pop("per_sub", None)          # pre-ledger daily counter, superseded
-    today = now.astimezone(NY).date().isoformat()
-    st["plus_mail"] = {k: v for k, v in st.get("plus_mail", {}).items() if v.get("day") == today}
+    st.pop("plus_mail", None)        # 2026-11-17 Plus counter, superseded by db/0078
     st.setdefault("held", {})
 
 
@@ -743,7 +730,7 @@ def render_welcome(sub, emailkit):
     page_unsub, post_unsub = unsub_urls(sub["token"])
     html, text = emailkit.render(
         title=f"You're on the list for {where}",
-        intro="Quiet until something opens — and never more than one email a day. "
+        intro="Quiet until something opens — and never more than five emails a day. "
               "A short Tuesday round-up of the week, which you can switch off on its own.",
         blocks=blocks,
         cta=("Open the map", f"{SITE}/?src=alert"),
@@ -869,7 +856,7 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
         cta=(cta_label, f"{SITE}/?src={'digest' if digest else 'nudge'}"),
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"{footer_extra}Change boroughs or filters at {SITE}/alerts/. "
-                    "Never more than one email a day.",
+                    "Never more than five emails a day.",
         unsub_url=page_unsub)
     return track_links(html, sub, "weekly" if digest else "nudge"), text, post_unsub
 
@@ -1224,7 +1211,8 @@ def main():
         if not args.dry_run:
             save_state(st)
         return
-    if not new and not (args.digest and st["held"]):
+    owed = any(h.get("pushed") for v in st["held"].values() for h in v)
+    if not new and not (args.digest and st["held"]) and not owed:
         print("nothing new")
         if not args.dry_run:
             save_state(st)
@@ -1305,30 +1293,24 @@ def main():
         if sent >= MAX_SENDS_PER_RUN or len(st["sends"]) >= HOURLY_CAP:
             hold("send budget exhausted — next run")
             continue
-        # The day's one email. A claim that fails means another job (the
-        # morning saved-building mail, the weekly digest, a welcome) already
-        # wrote to this address today; the items wait for tomorrow's first send.
+        # One of the day's five emails. A claim that fails means the address
+        # already had five today (alerts, the saved-building mail, the weekly
+        # digest, a welcome); the items wait for the next send.
         try:
             ok = mailcap.claim(sub["email"], "alert", dry=args.dry_run)
         except Exception as e:
             hold(f"ledger unreachable ({type(e).__name__})")
             continue
-        # One Find A Crib email a day, from any job (owner rule, 2026-09-05).
-        # The 8 AM digest runs before the other morning mails (moved after it),
-        # so it normally holds the day's slot.
         email_it = True
         # Held items a push-only run already put on the phone. They still ride
         # tomorrow's email but never buzz the phone again: the 2026-10-07 bug
         # re-pushed one held re-rental on every later run that found anything
         # new for anyone (owner got 570 Nostrand Ave. three times).
         to_push = [i for i in mine if not i.get("pushed")]
-        # Plus: the email goes out WITH the push, even after the day's one
-        # email (owner, 2026-11-17: 180 W. 20th St. was pushed at 10 AM but
-        # its email was held because 984 Madison St. had used the slot at
-        # 2 AM). PLUS_EMAILS_PER_DAY is the backstop against a flapping feed;
-        # past it the old push-now, email-tomorrow behaviour takes over.
-        plus_room = is_plus and to_push and plus_emails_today(st, sid, now) < PLUS_EMAILS_PER_DAY
-        if not ok and not plus_room:
+        # Anything held is unemailed by definition, so an item pushed earlier
+        # while the day's emails were used up is emailed as soon as a claim
+        # succeeds, without a second push (to_push leaves it out).
+        if not ok:
             if is_plus and (phones or screens) and to_push:
                 email_it = False
                 # tomorrow's first email carries them; copies, because `new`
@@ -1347,19 +1329,16 @@ def main():
                 emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
             except Exception as e:
                 print(f"     FAILED {type(e).__name__}: {str(e)[:80]}")
-                if ok:   # only give back a slot this run claimed
-                    mailcap.release(sub["email"])
+                mailcap.release(sub["email"])
                 hold("send failed")
                 continue
             sent += 1
-            if is_plus:
-                count_plus_email(st, sid, now)
             st["sends"].append(now.isoformat())
             st["held"].pop(sid, None)
         sent_ids.append(sub["id"])
         # The same alert on the phone, to every device on the account. Rides
         # with the email deliberately: one moment, both channels, and the
-        # email's one-a-day cap already decided this was the moment.
+        # email ledger already decided this was the moment.
         if not to_push:
             continue
         title, text_body = push_text(to_push, sub)

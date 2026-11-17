@@ -7181,11 +7181,16 @@ function favActive() {
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
     if (left) bits.unshift(left);        // first, so a narrow tile never cuts it off
+    // The one photo Housing Connect publishes for the lottery (usually the
+    // developer's rendering) beats the street view, which for a building
+    // under construction is scaffolding (owner, 2026-11-17). Only the city's
+    // own API host; anything else falls back to the street.
+    const hcImg = /^https:\/\/a806-housingconnectapi\.nyc\.gov\//.test(h.image || '') ? h.image : '';
     return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}"
          data-inc-min="${esc(String(h.income_min || ''))}" data-inc-max="${esc(String(h.income_max || ''))}" data-hh-min="${esc(String(h.household_min || ''))}" data-hh-max="${esc(String(h.household_max || ''))}">
       <span class="hc-flag">Housing Connect</span>
-      <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
-        ${PHOTO_PREVIEW?.html(h) || ''}
+      <div class="photo${!hcImg && PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
+        ${hcImg ? `<img class="listing-photo" loading="lazy" src="${esc(hcImg)}" alt="" onerror="this.remove()">` : (PHOTO_PREVIEW?.html(h) || '')}
         <div class="photo-shade"></div>
         <div class="badge-row"><span></span><span class="listed-pill">Lottery</span></div>
         <div class="addr-overlay">${esc(h.name || h.address || 'Housing Connect lottery')}</div>

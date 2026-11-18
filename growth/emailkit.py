@@ -804,6 +804,98 @@ def render_alert(title, blocks=None, intro=None, cta=None, link=None, tag=None,
     return html, "\n\n".join(p for p in parts if p) + "\n"
 
 
+SERIF = "Georgia,'Times New Roman',serif"
+
+
+def render_listing(title, heading, eyebrow=None, photo=None, facts=None, cta=None, note=None,
+                   blocks=None, footer_note=None, unsub_url=None, unsub_label="Unsubscribe"):
+    """(html, text) for ONE listing, the "editorial" look (owner, 2026-11-18,
+    design 2 of 5): the logo over a hairline, a spaced-out eyebrow, the
+    address in a serif, the building's photo edge to edge, the facts as a
+    two-column table, a dark pill button, the note, and a grey footer.
+
+    `title` is the subject (text part only). `photo` is an https URL on our
+    own site or None (then no picture, never a placeholder). `facts` is
+    [(label, value, tone?)], rows without a value are skipped. `blocks` (an
+    upsell, say) go between the note and the footer."""
+    rows, text_rows = [], []
+    for f in facts or []:
+        label, value = f[0], f[1]
+        tone = f[2] if len(f) > 2 else None
+        if not value:
+            continue
+        colour = TONES.get(tone, (INK, None))[0] if tone else INK
+        rule = f"border-top:1px solid {LINE};" if rows else ""
+        rows.append(f'<tr><td valign="top" style="{rule}padding:12px 12px 12px 0;font-size:15px;color:{INK2}">'
+                    f'{esc(label)}</td><td align="right" valign="top" style="{rule}padding:12px 0;font-size:15px;'
+                    f'font-weight:600;color:{colour}">{esc(value)}</td></tr>')
+        text_rows.append(f"{label}: {value}")
+    extra_html, extra_text = [], []
+    for b in blocks or []:
+        fn = ALERT_RENDERERS.get(b.get("type"))
+        if fn:
+            h, t = fn(b)
+            extra_html.append(h.replace(f"background:{PAGE}", f"background:{PAPER}"))
+            if t:
+                extra_text.append(t)
+    pad = "padding-left:24px;padding-right:24px"
+    photo_html = ""
+    if photo:
+        img = (f'<img src="{esc(safe_url(photo))}" width="600" alt="{esc(heading)}" '
+               f'style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none">')
+        if cta:
+            img = f'<a href="{esc(safe_url(cta[1]))}" style="display:block;text-decoration:none">{img}</a>'
+        photo_html = f'<tr><td style="padding:22px 0 0;background:{PAPER}">{img}</td></tr>'
+    cta_html = ""
+    if cta:
+        label, url = cta
+        cta_html = (f'<a href="{esc(safe_url(url))}" style="display:block;text-align:center;background:{INK};'
+                    f'color:#ffffff;text-decoration:none;font-weight:700;font-size:17px;padding:16px 20px;'
+                    f'border-radius:999px;margin:22px 0 0">{esc(label)} &rarr;</a>')
+    foot = []
+    if footer_note:
+        foot.append(esc(footer_note))
+    if unsub_url:
+        foot.append(f'<a href="{esc(safe_url(unsub_url))}" style="color:{INK2}">{esc(unsub_label)}</a>')
+    foot.append(_postal_html())
+    html = (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;background:{PAPER};margin:0;-webkit-text-size-adjust:100%"><tr>'
+        f'<td align="center" style="padding:0;background:{PAPER}">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;max-width:600px;margin:0 auto;font-family:{FONT};color:{INK}">'
+        f'<tr><td style="padding:20px 24px 18px;border-bottom:1px solid {LINE};background:{PAPER}">'
+        + _tbl(f'<tr><td width="30" valign="middle" style="width:30px;padding:0 10px 0 0">'
+               f'<div style="width:30px;height:30px;line-height:30px;border-radius:9px;background:{BLUE};'
+               f'color:#ffffff;font-size:12px;font-weight:800;text-align:center">FAC</div></td>'
+               f'<td valign="middle" style="font-size:15px;font-weight:700;color:{INK}">{BRAND}</td></tr>')
+        + '</td></tr>'
+        f'<tr><td style="padding:28px 24px 0;background:{PAPER}">'
+        + (f'<div style="font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;'
+           f'color:{INK2};line-height:1.5">{esc(eyebrow)}</div>' if eyebrow else "")
+        + f'<h1 style="font-family:{SERIF};font-size:34px;line-height:1.12;font-weight:400;'
+          f'letter-spacing:-.3px;color:{INK};margin:10px 0 0">{esc(heading)}</h1></td></tr>'
+        + photo_html
+        + f'<tr><td style="{pad};padding-top:{14 if photo else 18}px;padding-bottom:8px;background:{PAPER}">'
+        + (_tbl("".join(rows)) if rows else "") + cta_html
+        + (f'<p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:{INK2}">{esc(note)}</p>' if note else "")
+        + (f'<div style="margin:20px 0 0">{"".join(extra_html)}</div>' if extra_html else "")
+        + f'</td></tr><tr><td style="padding:20px 24px 28px;background:{SOFT};color:{INK3};font-size:12px;'
+          f'line-height:1.7;font-family:{FONT}">' + "<br>".join(foot)
+        + '</td></tr></table></td></tr></table>')
+    parts = [f"{eyebrow} — {heading}" if eyebrow else heading, "\n".join(text_rows)]
+    if cta:
+        parts.append(f"{cta[0]}: {cta[1]}")
+    if note:
+        parts.append(note)
+    parts += extra_text
+    parts.append(f"—\n{BRAND} · {SITE}" + (f"\n{footer_note}" if footer_note else ""))
+    if unsub_url:
+        parts.append(f"{unsub_label}: {unsub_url}")
+    parts.append(POSTAL)
+    return html, "\n\n".join(p for p in parts if p) + "\n"
+
+
 # ------------------------------------------------------------------- render
 
 def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url=None,

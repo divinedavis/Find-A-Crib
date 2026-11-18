@@ -50,7 +50,7 @@ Two more entry points share the list, the sender and the opt-out:
     python3 pipeline/lottery_alerts.py               # normal run
     python3 pipeline/lottery_alerts.py --dry-run     # print who would get what
     python3 pipeline/lottery_alerts.py --seed        # (re)build state, send nothing
-    python3 pipeline/lottery_alerts.py --test-email you@x.com
+    python3 pipeline/lottery_alerts.py --test-email you@x.com [--test-match "Ocean Ave"]
                                             # one sample from today's feeds
     python3 pipeline/lottery_alerts.py --nudge [--dry-run]
     python3 pipeline/lottery_alerts.py --weekly [--dry-run] [--test-email you@x.com]
@@ -68,6 +68,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # growth/ lives at the repo root
 from growth.emailkit import mask_email   # addresses never reach the cron log in full
 import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
+import alert_photos  # the building photo in a one-listing email (2026-11-18)
 import webpush  # the browser side (Web Push, 2026-11-10); no-op until webpush.env names the key
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -181,6 +182,7 @@ def hc_items(d):
                                                    (f"closes {l['closes']}" if l.get("closes") else None)) if b),
                     "price": rent.replace("/mo", "") if rent else None, "beds": " / ".join(l.get("beds") or []) or None,
                     "closes": iso_date(l.get("closes")),
+                    "hood": l.get("neighborhood"), "image_src": l.get("image") or None,
                     "rent_low": l.get("rent_low"),
                     "income_min": l.get("income_min"), "income_max": l.get("income_max"),
                     "household_min": l.get("household_min"), "household_max": l.get("household_max")})
@@ -225,6 +227,7 @@ def hcr_items(d):
                     "sub": " · ".join(bits), "url": l.get("url"),
                     "meta": " · ".join(bits), "price": None, "beds": None,
                     "closes": iso_date(l.get("due")),
+                    "hood": None, "image_src": l.get("image") or None,
                     "rent_low": None,
                     "income_min": l.get("min_income"), "income_max": l.get("max_income")})
     return out
@@ -264,6 +267,7 @@ def rerental_items(d):
                                                    posted_words(e.get("posted"))) if b),
                     "posted": e.get("posted") if valid_date(e.get("posted")) else None,
                     "board_change": bool(e.get("board_change")),
+                    "hood": e.get("hood"), "agent": e.get("agent"),
                     "price": money(e["rent_low"]) if e.get("rent_low") else None, "beds": None,
                     "url": (board_fragment(e["url"], e.get("label") or e["key"]) if shared.get(e.get("url"), 0) > 1
                             else e.get("url")) or f"{SITE}/marketing-agents/",
@@ -409,6 +413,7 @@ def load_state():
 
 
 def save_state(st):
+    alert_photos.prune(st.get("photos") or {})
     tmp = STATE + ".tmp"
     json.dump(st, open(tmp, "w"), indent=0)
     os.replace(tmp, STATE)
@@ -549,7 +554,72 @@ def counts_block(items, total_label):
     return {"type": "counts", "items": tiles}
 
 
-def render_alert(items, sub, emailkit, upsell=False, now=None):
+def render_listing_alert(it, subject, sub, emailkit, upsell=False, still_open=False, photo=None):
+    """One listing: the editorial email (owner, 2026-11-18: "use this one",
+    design 2 of 5). The address in a serif, the building's photo when we
+    have one, the facts as a table, a dark button to the listing."""
+    boro = BORO_NAME.get(it.get("boro"), "").replace("the ", "")
+    what = {"lottery": "housing lottery" if it.get("label", "").endswith("lottery") else (it.get("label") or "lottery"),
+            "voucher": "voucher listing"}.get(it["kind"], "re-rental")
+    eyebrow = " · ".join(x for x in (("Still open: " if still_open else "New ") + what, boro) if x)
+    name = email_row(it)["text"]
+    closes = None
+    if it.get("closes"):
+        try:
+            closes = datetime.date.fromisoformat(it["closes"]).strftime("%b %-d, %Y")
+        except ValueError:
+            closes = None
+    income = None
+    if it.get("income_min") and it.get("income_max"):
+        income = f"{money(it['income_min'])}–{money(it['income_max'])} a year"
+    elif it.get("income_max"):
+        income = f"up to {money(it['income_max'])} a year"
+    first_come = it["kind"] in ("rerental", "voucher")
+    facts = [
+        ("Neighbourhood" if it["kind"] != "lottery" or it.get("hood") else "Borough",
+         it.get("hood") or (boro if it["kind"] == "lottery" else None)),
+        ("Listed by", it.get("agent")),
+        ("Rent" if it["kind"] != "lottery" or "–" in (it.get("price") or "") else "Rent from",
+         f"{it['price']} / mo" if it.get("price") else None),
+        ("Bedrooms", it.get("beds")),
+        ("Household income", income),
+        ("Posted", (posted_words(it.get("posted")) or "").replace("posted ", "") or None),
+        ("Apply by", closes, "bad"),
+        ("Lottery", "Not needed" if first_come else
+         ("Housing Connect" if "housingconnect" in (it.get("url") or "") else "NY State HCR")),
+        ("Vouchers", "Welcome" if it["kind"] == "voucher" else None, "voucher"),
+        ("How it's rented", "First come, first served" if first_come else "By lottery number",
+         "warn" if first_come else None),
+    ]
+    url = it.get("url")
+    cta = ((("Apply on Housing Connect" if it["kind"] == "lottery" and "housingconnect" in (url or "")
+             else "Open the listing"), url) if url else ("See it on the map", f"{SITE}/?src=alert"))
+    note = ("A re-rental is a vacated affordable apartment the agent rents directly, often to the "
+            "first eligible applicant. Details come from the agent's own page; always check there "
+            "before acting." if first_come else
+            "A lottery is applied for by the deadline and picked by log number. Details come from "
+            "the source's own page; always check there before acting.")
+    blocks = []
+    if upsell:
+        blocks.append({"type": "upsell",
+                       "heading": "Re-rentals go first come, first served",
+                       "text": "Get alerts the minute one opens — not the next morning at 8. First month on us.",
+                       "button": ("Get real-time alerts", UPSELL_URL)})
+    where = boro_phrase(sub["boroughs"])
+    page_unsub, post_unsub = unsub_urls(sub["token"])
+    html, text = emailkit.render_listing(
+        title=subject, heading=name, eyebrow=eyebrow,
+        photo=photo(it) if photo else None, facts=facts, cta=cta, note=note, blocks=blocks,
+        footer_note=f"You're subscribed at {sub['email']} for {where}{filter_words(sub)}. "
+                    f"Change boroughs or filters at {SITE}/alerts/. "
+                    + ("One email a day, at 8 AM." if upsell else "Real-time with Find A Crib Plus."),
+        unsub_url=page_unsub)
+    return subject, track_links(html, sub, "alert"), text, post_unsub
+
+
+def render_alert(items, sub, emailkit, upsell=False, now=None, photo=None):
+    """`photo` is an alert_photos.Resolver (item -> URL or None); without
+    one a single listing's email has no picture."""
     fresh, older = split_new(items, sub, now)
     items = fresh + older                     # new first, still-open after
     lot = [i for i in items if i["kind"] == "lottery"]
@@ -584,6 +654,10 @@ def render_alert(items, sub, emailkit, upsell=False, now=None):
             subject = f"{len(older)} re-rental{'' if len(older) == 1 else 's'} still open"
         subject += f" in {where}"
 
+    if len(items) == 1:
+        return render_listing_alert(items[0], subject, sub, emailkit, upsell=upsell,
+                                    still_open=bool(older), photo=photo)
+
     blocks = []
     if upsell:
         # The 8 AM digest (owner, 2026-10-06): say what Plus changes, first.
@@ -599,55 +673,32 @@ def render_alert(items, sub, emailkit, upsell=False, now=None):
     tag = (("Housing lottery", "lottery") if kinds == {"lottery"} else
            ("Re-rental", "info") if kinds == {"rerental"} else
            ("Vouchers", "voucher") if kinds == {"voucher"} else ("Borough alert", "info"))
-    if len(items) == 1:
-        # One thing opened: the building, its rent large, the facts as pills.
-        it = items[0]
-        row = email_row(it)
-        blocks.append({"type": "building", "heading": row["text"], "meta": row.get("sub"),
-                       "tone": tag[1]})
-        if it.get("price"):
-            blocks.append({"type": "big", "value": it["price"], "sub": "/ mo"
-                           + (" rent from" if it["kind"] == "lottery" else "")})
-        closes = None
-        if it.get("closes"):
-            try:
-                closes = "Closes " + datetime.date.fromisoformat(it["closes"]).strftime("%b %-d")
-            except ValueError:
-                closes = None
-        blocks.append({"type": "pills", "items": [
-            (closes, "bad"),
-            (("No lottery needed", "info") if it["kind"] == "rerental" else
-             ("Voucher holders welcome", "voucher") if it["kind"] == "voucher" else
-             (it.get("label"), "lottery")),
-            (("First come, first served", "warn") if it["kind"] in ("rerental", "voucher") else None),
-            (it.get("beds"), None)]})
-    else:
-        counts = counts_block(items, "new" if not older else "open")
-        if counts:
-            blocks.append(counts)
-        lot_shown = [i for i in shown if i["kind"] == "lottery"]
-        rr_shown = [i for i in shown if i["kind"] == "rerental" and i in fresh]
-        old_shown = [i for i in shown if i in older]
-        vo_shown = [i for i in shown if i["kind"] == "voucher"]
-        if lot_shown:
-            blocks.append({"type": "callout", "tone": "lottery",
-                           "heading": f"{len(lot)} new lotter{'y' if len(lot) == 1 else 'ies'} — apply by the deadline",
-                           "items": rows(lot_shown)})
-        if rr_shown:
-            blocks.append({"type": "callout", "tone": "info",
-                           "heading": f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'} — usually first-come, first-served",
-                           "items": rows(rr_shown)})
-        if old_shown:
-            blocks.append({"type": "callout", "tone": "mute",
-                           "heading": f"{len(older)}{' more' if fresh else ''} re-rental{'' if len(older) == 1 else 's'} still open"
-                                      " — first spotted today, posted earlier",
-                           "items": rows(old_shown)})
-        if vo_shown:
-            blocks.append({"type": "callout", "tone": "voucher",
-                           "heading": f"{len(vo)} landlord{'' if len(vo) == 1 else 's'} now accepting vouchers — first come, first served",
-                           "items": rows(vo_shown)})
-        if more > 0:
-            blocks.append({"type": "note", "text": f"…and {more} more. Everything open is on the map."})
+    counts = counts_block(items, "new" if not older else "open")
+    if counts:
+        blocks.append(counts)
+    lot_shown = [i for i in shown if i["kind"] == "lottery"]
+    rr_shown = [i for i in shown if i["kind"] == "rerental" and i in fresh]
+    old_shown = [i for i in shown if i in older]
+    vo_shown = [i for i in shown if i["kind"] == "voucher"]
+    if lot_shown:
+        blocks.append({"type": "callout", "tone": "lottery",
+                       "heading": f"{len(lot)} new lotter{'y' if len(lot) == 1 else 'ies'} — apply by the deadline",
+                       "items": rows(lot_shown)})
+    if rr_shown:
+        blocks.append({"type": "callout", "tone": "info",
+                       "heading": f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'} — usually first-come, first-served",
+                       "items": rows(rr_shown)})
+    if old_shown:
+        blocks.append({"type": "callout", "tone": "mute",
+                       "heading": f"{len(older)}{' more' if fresh else ''} re-rental{'' if len(older) == 1 else 's'} still open"
+                                  " — first spotted today, posted earlier",
+                       "items": rows(old_shown)})
+    if vo_shown:
+        blocks.append({"type": "callout", "tone": "voucher",
+                       "heading": f"{len(vo)} landlord{'' if len(vo) == 1 else 's'} now accepting vouchers — first come, first served",
+                       "items": rows(vo_shown)})
+    if more > 0:
+        blocks.append({"type": "note", "text": f"…and {more} more. Everything open is on the map."})
     blocks.append({"type": "note",
                    "text": "A lottery is applied for on Housing Connect (or HCR) by a "
                            "deadline and picked by log number. A re-rental is a vacated "
@@ -656,17 +707,13 @@ def render_alert(items, sub, emailkit, upsell=False, now=None):
                            "come from each source's own page; always check there before "
                            "acting."})
     page_unsub, post_unsub = unsub_urls(sub["token"])
-    one = items[0] if len(items) == 1 else None
-    cta = ((("Apply on Housing Connect" if one["kind"] == "lottery" and "housingconnect" in (one.get("url") or "")
-             else "Open the listing"), one["url"]) if one and one.get("url")
-           else ("See every open lottery and re-rental", f"{SITE}/?src=alert"))
+    cta = ("See every open lottery and re-rental", f"{SITE}/?src=alert")
     html, text = emailkit.render_alert(
         title=subject, eyebrow="Borough alert", tag=tag,
         intro=(f"Your daily 8 AM round-up of what opened in {where}." if upsell
                else f"You asked to hear the minute something opens in {where}."),
         blocks=blocks, cta=cta,
-        link=(("See everything open on the map", f"{SITE}/?src=alert") if one
-              else ("Change boroughs or filters", f"{SITE}/alerts/")),
+        link=("Change boroughs or filters", f"{SITE}/alerts/"),
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"Change boroughs or filters at {SITE}/alerts/. "
                     + ("One email a day, at 8 AM." if upsell else "Real-time with Find A Crib Plus."),
@@ -1141,6 +1188,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--seed", action="store_true", help="rebuild state, send nothing")
     ap.add_argument("--test-email", help="send one sample built from today's feeds")
+    ap.add_argument("--test-match", help="with --test-email: just the listing whose name contains this")
     ap.add_argument("--welcome", action="store_true",
                     help="only send welcome emails to new sign-ups")
     ap.add_argument("--nudge", action="store_true",
@@ -1165,12 +1213,16 @@ def main():
     from growth import emailkit, mailcap
 
     if args.test_email:
-        items = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])][:6]
+        items = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])]
+        if args.test_match:          # one listing: the editorial email (2026-11-18)
+            items = [i for i in items if args.test_match.lower() in (i.get("text") or "").lower()][:1]
+        items = items[:6]
         if not items:
             sys.exit("no items in any feed to build a sample from")
         sub = {"email": args.test_email, "boroughs": ["M", "Bk", "Q", "Bx", "SI"],
                "kinds": ["lottery", "rerental", "voucher"], "token": "00000000-0000-0000-0000-000000000000"}
-        subject, html, text, post_unsub = render_alert(items, sub, emailkit)
+        photos = alert_photos.Resolver(DATA_DIR, {}, featured=load_json("featured.json"))
+        subject, html, text, post_unsub = render_alert(items, sub, emailkit, photo=photos)
         emailkit.send(args.test_email, "[TEST] " + subject, html, text, unsub_url=post_unsub)
         print(f"sent sample ({len(items)} items) to {mask_email(args.test_email)}")
         return
@@ -1181,6 +1233,10 @@ def main():
         st = {"seen": {}, "sends": [], "held": {}, "gone": {}}
     st.setdefault("seen", {}); st.setdefault("sends", []); st.setdefault("held", {})
     st.setdefault("gone", {})
+    # One listing's email shows the building's photo (2026-11-18). The
+    # answers are kept in the state, so a listing page is read once.
+    photos = alert_photos.Resolver(DATA_DIR, st.setdefault("photos", {}),
+                                   featured=load_json("featured.json"), fetch=not args.dry_run)
     prune(st, now)
     prune_held(st, feeds)
 
@@ -1320,7 +1376,7 @@ def main():
                 hold("already emailed today")
                 continue
         digest = args.digest and not is_plus
-        subject, html, text, post_unsub = render_alert(mine, sub, emailkit, upsell=digest)
+        subject, html, text, post_unsub = render_alert(mine, sub, emailkit, upsell=digest, photo=photos)
         print(f"  -> {mask_email(sub['email'])}{' [plus]' if is_plus else ' [digest]'}: {subject}{'' if email_it else ' (push only)'}")
         if args.dry_run:
             continue

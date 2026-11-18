@@ -43,12 +43,28 @@ def test_alert_renders_group_and_tiles_inline():
     assert "2171 Frederick Douglass Blvd — $4,176" in text           # the text part keeps the price
 
 
-def test_single_item_is_a_building_card():
+def test_single_item_is_the_editorial_listing():
+    # One listing (owner, 2026-11-18, design 2 of 5): eyebrow, the address in
+    # a serif, the photo, the facts as a table, a dark pill to the listing.
     import lottery_alerts as la
     from growth import emailkit
     sub = {"email": "d@x.com", "boroughs": ["M"], "kinds": ["rerental"], "token": "0" * 8}
-    _, html, text, _ = la.render_alert(_items()[1:], sub, emailkit)
-    assert "No lottery needed" in html and "First come, first served" in html
-    assert "$4,176" in html and "/ mo" in html
-    assert "Open the listing" in html                                # the button goes to the listing
+    photo = lambda it: "https://findacrib.com/alert-img/abc.jpg"
+    _, html, text, _ = la.render_alert(_items()[1:], sub, emailkit, photo=photo)
+    assert "New re-rental · Manhattan" in html and "Georgia" in html
+    assert ">2171 Frederick Douglass Blvd</h1>" in html
+    assert 'src="https://findacrib.com/alert-img/abc.jpg"' in html
+    for label, value in (("Neighbourhood", "Central Harlem"), ("Listed by", "B Co"), ("Rent", "$4,176 / mo"),
+                         ("Lottery", "Not needed"), ("How it's rented", "First come, first served")):
+        assert f">{label}</td>" in html and value in html and f"{label}: {value}" in text
+    assert "Open the listing &rarr;" in html and "border-radius:999px" in html
     assert "<style" not in html
+
+
+def test_single_item_without_a_photo_has_no_picture():
+    import lottery_alerts as la
+    from growth import emailkit
+    sub = {"email": "d@x.com", "boroughs": ["Bk"], "kinds": ["rerental"], "token": "0" * 8}
+    _, html, _, _ = la.render_alert(_items()[:1], sub, emailkit, photo=lambda it: None)
+    assert "<img" not in html and ">445 Grand Avenue</h1>" in html
+    assert ">Rent</td>" not in html                                   # no figure, no row

@@ -227,6 +227,37 @@ class WebsiteHalf(unittest.TestCase):
         self.assertIn("static/platform/monitor.js", deploy)
 
 
+    def test_a_failed_fetch_names_its_caller_not_the_wrapper(self):
+        """monitor.js wraps window.fetch, so a failed request's stack starts in
+        the wrapper. The page reports the first frame outside it (2026-11-17:
+        an ad script's "Failed to fetch" read as ours, at monitor.js:52)."""
+        import re
+        import shutil
+        import subprocess
+        node = shutil.which("node")
+        for page in ("web/index.html", "web/dc/index.html", "web/la/index.html",
+                     "web/sf/index.html", "web/westchester/index.html"):
+            html = open(os.path.join(self.ROOT, page)).read()
+            m = re.search(r"\n\s*(const frames = .*?\n\s*const where = .*?;)\n", html)
+            self.assertIsNotNone(m, f"{page}: the rejection handler must skip monitor.js frames")
+            if not node:
+                continue
+            js = ("const r = {stack: 'TypeError: Failed to fetch\\n"
+                  "    at window.fetch (https://findacrib.com/static/platform/monitor.js?v=1:52:30)\\n"
+                  "    at x (https://c.amazon-adsystem.com/aax2/apstag.js:2:1)'};\n"
+                  + m.group(1) + "\nconsole.log(where);\n"
+                  "const alone = {stack: 'TypeError: Failed to fetch\\n    at window.fetch (https://findacrib.com/static/platform/monitor.js?v=1:52:30)'};\n"
+                  + m.group(1).replace("r && r.stack", "alone && alone.stack").replace("(r.stack)", "(alone.stack)")
+                              .replace("const frames", "const frames2").replace("const where", "const where2")
+                              .replace("frames.find", "frames2.find").replace("frames[0]", "frames2[0]")
+                  + "\nconsole.log(where2);\n")
+            out = subprocess.run([node, "-e", js], capture_output=True, text=True, timeout=20)
+            self.assertEqual(out.returncode, 0, out.stderr)
+            caller, alone = out.stdout.strip().splitlines()
+            self.assertIn("amazon-adsystem.com", caller, page)
+            self.assertIn("monitor.js", alone, f"{page}: with no other frame, keep the wrapper's")
+
+
 class ApiGate(unittest.TestCase):
     def test_the_developer_key_gate_lets_the_monitor_routes_through(self):
         src = open(os.path.join(os.path.dirname(__file__), "..", "api", "api_server.py")).read()

@@ -2532,7 +2532,12 @@ function favActive() {
       // the head script catches its promises, this keeps any it misses quiet.
       if (r && r.name === 'AbortError' && /view transition/i.test(String(r.message || ''))) return;
       const name = (r && (r.name || r.constructor && r.constructor.name)) || typeof r;
-      const where = (r && r.stack ? String(r.stack).split('\n')[1] || '' : '').trim().slice(0, 80);
+      // static/platform/monitor.js wraps window.fetch, so every failed fetch,
+      // an ad script's included, named that wrapper as the place it failed
+      // (2026-11-17: an Android "Failed to fetch" at monitor.js:52, the
+      // pass-through for other sites' requests). Report the caller instead.
+      const frames = r && r.stack ? String(r.stack).split('\n').slice(1) : [];
+      const where = (frames.find(f => f.indexOf('/static/platform/monitor.js') < 0) || frames[0] || '').trim().slice(0, 80);
       track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200), name: String(name).slice(0, 40), at: where });
     } catch (_) {}
   });

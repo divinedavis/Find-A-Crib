@@ -183,51 +183,31 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": """"Ayúdame a solicitar", para miembros Plus: guarda tu identificación, W-2, talones de pago, declaración de impuestos, estados de cuenta y carta de empleo en un solo lugar, escanéalos o súbelos, y envíate el paquete completo por correo como un solo PDF. Tus documentos se quedan en tu teléfono. Cualquiera puede prepararlos en Perfil > Mis documentos.
+    "es-MX": """Un nuevo diseño al estilo del iPhone más reciente: títulos grandes, un fondo gris suave, tarjetas e interruptores redondeados, y selectores al estilo del iPhone para recámaras y pestañas. Los botones también son más fáciles de tocar.
 
-Tu Crib ahora muestra cada reporte del NYPD cerca de tu edificio, no solo la gráfica, y una alerta de delitos abre directamente esos reportes.
+Las tarjetas de loterías de NYC ahora muestran la foto del edificio de NYC Housing Connect cuando la ciudad ha publicado una.
 
-Las tarjetas de re-alquileres muestran ofertas de mudanza cuando el anuncio del agente las menciona, como meses gratis o un depósito menor, y ofrecen alertas de re-alquileres en ese condado. Los re-alquileres sin foto muestran la vista de la calle.
+Además, otras mejoras.""",
+    "zh-Hans": """全新外观，契合最新的 iPhone 风格：大标题、柔和的灰色背景、圆角卡片和开关，以及 iPhone 风格的卧室和标签选择器。按钮也更容易点按。
 
-Los registros de plagas (chinches, ratas y violaciones por plagas) se abren sin cuenta.
+纽约市抽签卡片现在会显示该楼宇在 NYC Housing Connect 上的照片（如果市政府已发布）。
 
-El encabezado se oculta al desplazarte por los resultados y las loterías, y la barra de pestañas se hace más pequeña. Además, otras mejoras.""",
-    "zh-Hans": """“帮我申请”（Plus 会员）：把身份证件、W-2、工资单、报税表、银行对账单和在职证明集中保存，可扫描或上传，并把整套材料合成一个 PDF 发到你自己的邮箱。你的文件只保存在你的手机上。所有人都可以在“个人资料 > 我的文件”中准备材料。
+另有其他改进。""",
+    "zh-Hant": """全新外觀，契合最新的 iPhone 風格：大標題、柔和的灰色背景、圓角卡片和開關，以及 iPhone 風格的臥室和標籤選擇器。按鈕也更容易點按。
 
-“你的住处”现在会列出楼宇附近的每一条 NYPD 报告，而不只是图表；点开犯罪提醒会直接看到这些报告。
+紐約市抽籤卡片現在會顯示該大樓在 NYC Housing Connect 上的照片（如果市政府已發布）。
 
-再出租卡片会在中介房源注明优惠时显示入住优惠，例如免租月份或较低押金，并提供该区的再出租提醒。没有照片的再出租房源会显示街景。
+另有其他改進。""",
+    "ru": """Новый облик в стиле последних iPhone: крупные заголовки, мягкий серый фон, скруглённые карточки и переключатели, а также переключатели в стиле iPhone для числа спален и вкладок. Кнопки стало проще нажимать.
 
-虫害记录（臭虫、老鼠和虫害违规）无需账号即可查看。
+Карточки лотерей Нью-Йорка теперь показывают фото здания из NYC Housing Connect, если город его опубликовал.
 
-浏览搜索结果和抽签时，页头会随滚动隐藏，标签栏也会缩小。另有其他改进。""",
-    "zh-Hant": """「幫我申請」（Plus 會員）：把身分證件、W-2、薪資單、報稅表、銀行對帳單和在職證明集中保存，可掃描或上傳，並把整套資料合成一個 PDF 寄到你自己的信箱。你的文件只保存在你的手機上。所有人都可以在「個人檔案 > 我的文件」中準備資料。
+А также другие улучшения.""",
+    "ko": """최신 iPhone 스타일에 맞춘 새로운 디자인: 큰 제목, 부드러운 회색 배경, 둥근 카드와 스위치, iPhone 스타일의 침실 수 및 탭 선택기. 버튼도 더 누르기 쉬워졌습니다.
 
-「你的住處」現在會列出大樓附近的每一筆 NYPD 報告，而不只是圖表；點開犯罪提醒會直接看到這些報告。
+뉴욕시 추첨 카드에 시가 NYC Housing Connect에 게시한 건물 사진이 있으면 표시됩니다.
 
-再出租卡片會在仲介刊登內容註明優惠時顯示入住優惠，例如免租月份或較低押金，並提供該區的再出租提醒。沒有照片的再出租物件會顯示街景。
-
-蟲害紀錄（臭蟲、老鼠和蟲害違規）不需帳號即可查看。
-
-瀏覽搜尋結果和抽籤時，頁首會隨捲動隱藏，標籤列也會縮小。另有其他改進。""",
-    "ru": """«Помогите подать заявку» для участников Plus: храните удостоверение личности, W-2, расчётные листки, налоговую декларацию, банковские выписки и справку с работы в одном месте, сканируйте или загружайте их и отправляйте весь пакет себе на почту одним PDF. Документы остаются на вашем телефоне. Подготовить их может каждый: Профиль > Мои документы.
-
-«Ваш дом» теперь показывает каждое сообщение NYPD рядом с вашим домом, а не только график, и уведомление о преступлении открывается прямо на этих сообщениях.
-
-Карточки повторной аренды показывают условия при въезде, если агент указал их в объявлении, например бесплатные месяцы или меньший залог, и предлагают уведомления о повторной аренде в этом районе. Если у объявления нет фото, показывается вид улицы.
-
-Записи о вредителях (клопы, крысы и нарушения по вредителям) открываются без аккаунта.
-
-Заголовок скрывается при прокрутке результатов и лотерей, а панель вкладок становится меньше. И другие улучшения.""",
-    "ko": """Plus 회원을 위한 "신청 도와줘요": 신분증, W-2, 급여 명세서, 세금 신고서, 은행 거래 내역서, 재직 증명서를 한곳에 보관하고, 스캔하거나 업로드한 뒤 전체 서류를 PDF 하나로 내 이메일에 보낼 수 있습니다. 서류는 내 휴대폰에만 저장됩니다. 누구나 프로필 > 내 서류에서 준비할 수 있습니다.
-
-내 집 탭에서 이제 차트뿐 아니라 건물 근처의 NYPD 신고를 하나하나 볼 수 있고, 범죄 알림을 누르면 바로 그 신고 목록이 열립니다.
-
-재임대 카드에 중개인 매물에 적힌 입주 혜택(무료 개월, 보증금 할인 등)이 표시되며, 해당 자치구의 재임대 알림을 받을 수 있습니다. 사진이 없는 재임대 매물은 거리 사진을 보여 줍니다.
-
-해충 기록(빈대, 쥐, 해충 위반)은 계정 없이도 볼 수 있습니다.
-
-검색 결과와 추첨 목록을 스크롤하면 헤더가 사라지고 탭 바가 작아집니다. 그 밖의 개선 사항도 있습니다.""",
+그 밖의 개선 사항도 있습니다.""",
 }
 
 

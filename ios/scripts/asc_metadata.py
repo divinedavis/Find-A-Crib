@@ -90,21 +90,16 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Help me apply, for Plus members: keep your ID, W-2, pay stubs, tax return, bank statements and employment letter in one place, scan or upload them, and email the whole packet to yourself as one PDF. Your documents stay on your phone. Everyone can set them up under Profile > My documents.
+WHATS_NEW = """A fresh look that matches the newest iPhone style: large titles, a soft grey background, rounded cards and switches, and iPhone-style pickers for bedrooms and tabs. Buttons are easier to tap, too.
 
-Your Crib now lists each NYPD report near your building, not just the chart, and a crime alert opens straight onto those reports.
+NYC lottery cards now show the building's photo from NYC Housing Connect when the city has posted one.
 
-Re-rental cards show move-in deals when the agent's listing names one, such as free months or a smaller deposit, and offer re-rental alerts for that borough. Re-rentals without a photo show the street view instead.
+Plus smaller fixes."""
 
-Pest records (bedbugs, rats and pest violations) open without an account.
-
-The header slides away as you scroll results and lotteries, and the tab bar shrinks to stay out of the way. Plus smaller fixes.
-"""
-
-REVIEW_NOTES = """VERSION 1.3.7 (build __BUILD__)
-New since 1.3.6:
-- My documents / Help me apply: the renter scans (camera) or picks (Photos/Files) application documents. Stored ONLY on the device (complete file protection, excluded from backup); never uploaded, never sent to a landlord or agent. "Email them to me" opens Apple's Mail composer to the user's own address with one PDF. Profile > "My documents" (no subscription); Plus adds "Help me apply" on re-rental cards.
-- Your Crib lists each NYPD report (NYC Open Data); pest records open signed out; re-rental move-in deals; scroll-away header.
+REVIEW_NOTES = """VERSION 1.3.8 (build __BUILD__)
+New since 1.3.7:
+- Visual refresh: large titles, light grey background, rounded cards, segmented controls and switches, larger tap targets. No feature, permission or data-flow change.
+- NYC lottery cards show the building photo the city publishes on NYC Housing Connect (loaded from the city's own server); without one, Apple Look Around as before.
 No new SDKs or data collected.
 
 BUILDING CHAT (user-generated content, guideline 1.2; approved in 1.3.3)

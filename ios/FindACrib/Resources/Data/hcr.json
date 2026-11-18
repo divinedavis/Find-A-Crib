@@ -1,7 +1,7 @@
 {
-"updated": 1794143103,
-"updated_iso": "2026-11-08T13:05:03+00:00",
-"count": 54,
+"updated": 1794960302,
+"updated_iso": "2026-11-18T00:05:02+00:00",
+"count": 55,
 "listings": [
 {
 "id": "a0Ycs00002P4ldfEAB",
@@ -150,6 +150,36 @@
 "bbl": null,
 "lat": 40.65984,
 "lng": -73.93184
+}
+]
+},
+{
+"id": "a0Ycs00002MTUOVEA5",
+"name": "Jackson Avenue",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 25162,
+"max_income": 91600,
+"due": "12/10/2026",
+"fee": null,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002MTUOVEA5/detail",
+"info": "https://www.2614jackson.com/",
+"desc": "Modern living in the heart of Long Island City 26-14 Jackson Avenue stands as a contemporary addition to Long Island City's skyline. Completed in 2014, this 14-story condominium offers 98 units, ranging from studios to two-bedroom apartments. The building's simple, unadorned facade fits seamlessly into the neighborhood's evolving urban landscape. Situated in the vibrant Court Square section, 26-14",
+"image": "https://nyshcr.file.force.com/sfc/dist/version/download/?oid=00D8y0000008f2F&ids=068cs00001pGujX&d=%2Fa%2Fcs00000mrW1J%2FsMWOdhg2zcNILROGdqZnh0ttBS0Tsk3BpEzk7hZDN_o&asPdf=false",
+"senior": false,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "26-14 Jackson Avenue",
+"zip": "11101",
+"bbl": "4002680015",
+"lat": 40.747138,
+"lng": -73.941685
 }
 ]
 },

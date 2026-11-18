@@ -123,7 +123,7 @@ struct SESegmentRow<T: Hashable>: View {
                     if on { selection.remove(opt.0) } else { selection.insert(opt.0) }
                 } label: {
                     Text(opt.1)
-                        .font(.system(size: 16, weight: on ? .semibold : .regular))
+                        .font(.system(size: 16, weight: on ? .semibold : .medium))
                         .foregroundStyle(SE.ink)
                         .frame(maxWidth: .infinity).frame(height: 40)
                         .background {

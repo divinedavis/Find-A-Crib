@@ -40,7 +40,25 @@ def test_add_photos_sets_images_only_when_there_is_more_than_one():
     out = [{"id": 1, "image": U + "a.png"}, {"id": 2, "image": U + "b.png"}, {"id": 3, "image": None}]
     adverts = {1: {"photos": [{"item1": U + "a.png", "item3": 0}, {"item1": U + "a2.png", "item3": 1}]},
                2: None, 3: {"photos": [{"item1": U + "c.png", "item3": 0}, {"item1": U + "c2.png", "item3": 1}]}}
-    hc.add_photos(out, fetcher=adverts.get, pause=0)
+    hc.add_photos(out, fetcher=adverts.get, pause=0, now=1000)
     assert out[0]["images"] == [U + "a.png", U + "a2.png"]
     assert "images" not in out[1] and out[1]["image"] == U + "b.png"   # a failed call keeps the one photo
     assert out[2]["image"] == U + "c.png" and out[2]["images"] == [U + "c.png", U + "c2.png"]
+
+
+def test_photo_sets_are_cached_for_a_day_and_failures_retried_sooner():
+    calls = []
+    def fetch(i):
+        calls.append(i)
+        return None if i == 2 else {"photos": [{"item1": U + f"{i}a.png", "item3": 0}, {"item1": U + f"{i}b.png", "item3": 1}]}
+    lots = lambda: [{"id": 1, "image": U + "1a.png"}, {"id": 2, "image": U + "2a.png"}]
+    cache = hc.add_photos(lots(), fetcher=fetch, pause=0, now=0)
+    assert calls == [1, 2]
+    out = lots(); hc.add_photos(out, fetcher=fetch, pause=0, cache=cache, now=600)   # the next 10-minute run
+    assert calls == [1, 2] and out[0]["images"] == [U + "1a.png", U + "1b.png"]      # served from the cache
+    hc.add_photos(lots(), fetcher=fetch, pause=0, cache=cache, now=hc.PHOTO_RETRY + 1)
+    assert calls == [1, 2, 2]                                                        # only the failure retried
+    hc.add_photos(lots(), fetcher=fetch, pause=0, cache=cache, now=hc.PHOTO_TTL + 1)
+    assert calls == [1, 2, 2, 1, 2]
+    hc.add_photos([{"id": 1, "image": None}], fetcher=fetch, pause=0, cache=cache, now=hc.PHOTO_TTL + 2)
+    assert "2" not in cache                                                          # closed lottery forgotten

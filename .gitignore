@@ -84,6 +84,7 @@ rerental_places.json
 supabase/.temp/
 founding_sent.json
 housing_connect.json
+housing_connect_photos.json
 
 # Council-office contact list (public office addresses; rebuilt by build_council.py,
 # deliberately not published — see growth/council_outreach.md)

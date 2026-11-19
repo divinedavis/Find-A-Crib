@@ -153,20 +153,60 @@ def fetch_photos(lottery_id):
         return None
 
 
-def add_photos(out, fetcher=fetch_photos, pause=0.3):
+PHOTO_CACHE = os.path.join(HERE, "housing_connect_photos.json")
+PHOTO_TTL = 24 * 3600      # a lottery's photos rarely change once it opens
+PHOTO_RETRY = 2 * 3600     # a failed read is tried again after this
+
+
+def add_photos(out, fetcher=fetch_photos, pause=0.3, cache=None, now=None):
     """`images` (lead first) on each lottery with more than one photo, as
-    featured.json does; one call per open lottery, so ~35 a day."""
+    featured.json does. The refresh runs every 10 minutes (lottery_alerts.sh),
+    so each lottery's set is cached for a day (`cache`, {id: {at, images}}):
+    about one call per open lottery per day, not 35 every 10 minutes."""
     import time
+    now = time.time() if now is None else now
+    cache = {} if cache is None else cache
     for o in out:
         if o.get("id") is None:
             continue
-        imgs = photo_set(fetcher(o["id"]), o.get("image"))
+        key = str(o["id"])
+        hit = cache.get(key) or {}
+        fresh = "at" in hit and now - hit["at"] < (PHOTO_TTL if hit.get("images") is not None else PHOTO_RETRY)
+        if not fresh:
+            advert = fetcher(o["id"])
+            hit = {"at": now, "images": photo_set(advert) if advert is not None else None}
+            cache[key] = hit
+            if pause:
+                time.sleep(pause)
+        imgs = [u for u in ([o.get("image")] if o.get("image") else []) + (hit.get("images") or [])]
+        imgs = list(dict.fromkeys(imgs))[:MAX_PHOTOS]
         if len(imgs) > 1:
             o["images"] = imgs
             o["image"] = o.get("image") or imgs[0]
-        if pause:
-            time.sleep(pause)
-    return out
+    # Forget lotteries that have closed.
+    open_ids = {str(o.get("id")) for o in out}
+    for k in [k for k in cache if k not in open_ids]:
+        del cache[k]
+    return cache
+
+
+def load_photo_cache(path=None):
+    try:
+        with open(path or PHOTO_CACHE) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_photo_cache(cache, path=None):
+    path = path or PHOTO_CACHE
+    try:
+        with open(path + ".tmp", "w") as f:
+            json.dump(cache, f)
+        os.replace(path + ".tmp", path)
+    except OSError as e:
+        print(f"housing_connect: photo cache not saved: {type(e).__name__}")
 
 
 def one(rec):
@@ -233,7 +273,9 @@ def main():
     # is a call to action and the urgent one should lead.
     out = [o for o in out if (o["days_left"] or 0) > 0]
     out.sort(key=lambda o: (o["days_left"], -(o["rent_low"] or 0)))
-    add_photos(out)
+    cache = add_photos(out, cache=load_photo_cache())
+    if args.apply:
+        save_photo_cache(cache)
 
     payload = {"generated": __import__("datetime").date.today().isoformat(),
                "source": "NYC Housing Connect (HPD public API)",

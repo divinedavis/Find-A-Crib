@@ -31,9 +31,13 @@ final class LotteryFeed {
         let beds: [String]?
         let closes: String?
         let href: String?
-        /// The one photo Housing Connect publishes for the lottery (usually
-        /// the developer's rendering), shown instead of the street (2026-11-17).
+        /// The lottery's lead photo from Housing Connect (usually the
+        /// developer's rendering), shown instead of the street (2026-11-17).
         var image: String? = nil
+        /// Its whole photo set, lead first; nil when it has only the one
+        /// (housing_connect.py add_photos, 2026-11-18).
+        var images: [String]? = nil
+        var imageURLs: [URL] { (images ?? []).compactMap(URL.init(string:)) }
     }
     private struct Payload: Decodable { let lotteries: [Lottery] }
 

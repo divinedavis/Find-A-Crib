@@ -16,6 +16,7 @@ struct RerentalCard: View {
     var photoLabels = true
     @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var auth
+    @Environment(AppNav.self) private var nav
     @State private var photo = 0
     @State private var showAlerts = false
     @State private var showSignIn = false
@@ -75,6 +76,9 @@ struct RerentalCard: View {
                                     }
                                 }
                                 .tabViewStyle(.page(indexDisplayMode: .always))
+                                // The other photos load with the card, so a
+                                // swipe finds them ready (2026-11-18).
+                                .task(id: urls) { RemotePhotos.shared.prefetch(Array(urls.dropFirst())) }
                                 .onChange(of: photo) { _, i in
                                     if i == 1 { Analytics.shared.track("rerental_photos_swipe", ["agent": f.agent, "photos": urls.count]) }
                                 }
@@ -97,6 +101,9 @@ struct RerentalCard: View {
                         photo = dir == .increment ? min(photo + 1, n - 1) : max(photo - 1, 0)
                     }
                     .accessibilityIdentifier("rerental-photos")
+                    // The photo opens the re-rental's own page (2026-11-19).
+                    .onTapGesture { open("photo") }
+                    .accessibilityAction(named: Text("Open details")) { open("photo") }
                 if photoLabels {
                     SEBadge(text: String(localized: "Rerental"), icon: "key.fill", fill: SE.navy, ink: .white)
                         .padding(12)
@@ -126,6 +133,10 @@ struct RerentalCard: View {
                     Text(f.address).font(.se(compact ? 21 : 27, .bold)).foregroundStyle(SE.royal).lineLimit(3).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("card-address")
+                        .contentShape(Rectangle())
+                        .onTapGesture { open("address") }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHint(Text("Opens the details"))
 
                     // Every card in the MGNY format (owner, 2026-10-22): the
                     // labelled household income first, from the feed when the
@@ -231,6 +242,13 @@ struct RerentalCard: View {
         .accessibilityIdentifier("rerental-card")
         .onAppear { Analytics.shared.tileSeen(f, slot: slot) }
         .task { await Qualify.shared.loadUnits() }
+    }
+
+    /// Push the re-rental's own page onto the tab on screen.
+    private func open(_ from: String) {
+        var p = Analytics.tileProps(listing, slot: slot); p["from"] = from
+        Analytics.shared.track("rerental_open", p)
+        nav.push(.rerental(listing))
     }
 
     /// A card with a move-in deal is set smaller all over, so the card and its

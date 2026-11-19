@@ -69,6 +69,7 @@
 		6CE136038F9CEFACA5F58F6C /* hcr.json in Resources */ = {isa = PBXBuildFile; fileRef = 91590C5C68756FD6803793E5 /* hcr.json */; };
 		6DE31757CEBB12EC458D69FC /* SwipeBack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855488736B82051BFCB10DF5 /* SwipeBack.swift */; };
 		6EE4B0ACFD4CD09B8E068ADA /* LotteryPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5595BBBCAE0CDD15F07661D8 /* LotteryPhoto.swift */; };
+		71865D80EAEF0CF9E78D9B23 /* RerentalDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F346026387193D18E91D09E /* RerentalDetailView.swift */; };
 		71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD73F478D420E114F0C82CB /* FiltersSheet.swift */; };
 		73005658DC83B19886E1D9F1 /* HolidayTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED3695645A28565A7CA3193C /* HolidayTheme.swift */; };
 		77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */; };
@@ -220,6 +221,7 @@
 		861B0FD916FC3EBCD2667F13 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriIntents.swift; sourceTree = "<group>"; };
 		8E2FF0F6AD4785CDBCA33D8F /* NearbyPlacesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyPlacesTests.swift; sourceTree = "<group>"; };
+		8F346026387193D18E91D09E /* RerentalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RerentalDetailView.swift; sourceTree = "<group>"; };
 		91590C5C68756FD6803793E5 /* hcr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hcr.json; sourceTree = "<group>"; };
 		931CABD212D720368F3692CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		951051D711DA793228F1970A /* OpeningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningsView.swift; sourceTree = "<group>"; };
@@ -278,7 +280,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_1666ABC0-EE43-499E-841E-76635079B0F8" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_F7461D0D-4704-4A49-8B84-2E73B80AF0C3" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -348,6 +350,7 @@
 				EFD73F478D420E114F0C82CB /* FiltersSheet.swift */,
 				ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */,
 				65301E425C2A38F09A1C9C87 /* RerentalCard.swift */,
+				8F346026387193D18E91D09E /* RerentalDetailView.swift */,
 				2BF31F5CBC53724752881713 /* ResultsView.swift */,
 			);
 			path = Results;
@@ -608,10 +611,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_BAA4DFAF-2640-4D39-B870-ECE6FB8394EE" /* ios */ = {
+		"TEMP_93353F46-156E-47D3-A07D-C3DF292AC3D6" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_1666ABC0-EE43-499E-841E-76635079B0F8" /* Secrets.xcconfig */,
+				"TEMP_F7461D0D-4704-4A49-8B84-2E73B80AF0C3" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -862,6 +865,7 @@
 				A2CBF624BC11E59F25C5E1A7 /* RatingPreview.swift in Sources */,
 				4E4AAB3E52DFA41900C2AF65 /* RenterTools.swift in Sources */,
 				912D4908F1D4876F89FA2785 /* RerentalCard.swift in Sources */,
+				71865D80EAEF0CF9E78D9B23 /* RerentalDetailView.swift in Sources */,
 				EE8FB6404DECF616C6331A7C /* ResultsView.swift in Sources */,
 				20B66B92F929BB687315AB48 /* ReviewPrompt.swift in Sources */,
 				1488C890724AD279E0177491 /* RootView.swift in Sources */,
@@ -1028,7 +1032,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1666ABC0-EE43-499E-841E-76635079B0F8" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_F7461D0D-4704-4A49-8B84-2E73B80AF0C3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1070,7 +1074,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1666ABC0-EE43-499E-841E-76635079B0F8" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_F7461D0D-4704-4A49-8B84-2E73B80AF0C3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

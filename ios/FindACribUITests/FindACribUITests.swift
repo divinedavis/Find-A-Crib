@@ -351,6 +351,45 @@ final class FindACribUITests: XCTestCase {
         }
     }
 
+    /// A re-rental card opens its own page in the app (owner picked mock #1,
+    /// 2026-11-19): tap the address, see the page with the tab bar gone and
+    /// the agent one tap away, then come back to the same results.
+    func testTappingARerentalOpensItsPage() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let card = app.descendants(matching: .any)["rerental-card"].firstMatch
+        for _ in 0..<8 where !card.isHittable { app.swipeUp() }
+        XCTAssertTrue(card.isHittable, "no re-rental tile within the first screens of results")
+        let address = card.descendants(matching: .any)["card-address"].firstMatch
+        for _ in 0..<3 where !address.isHittable { app.swipeUp() }
+        address.tap()
+        let page = app.descendants(matching: .any)["rerental-page"].firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 10), "tapping a re-rental's address did not open its page")
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-page-apply"].firstMatch.exists, "the page has no way to the agent")
+        XCTAssertFalse(app.descendants(matching: .any)["tab-Search"].firstMatch.isHittable, "the tab bar should hide on the page")
+        app.descendants(matching: .any)["rerental-page-back"].firstMatch.tap()
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "back did not return to the results")
+        XCTAssertFalse(page.exists)
+    }
+
+    /// The page itself: photo set, address, rent / income tiles, the floating
+    /// Apply bar. Screenshot kept for the record.
+    func testRerentalPageShowsTheListing() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "rerental"]
+        app.launch()
+        let page = app.descendants(matching: .any)["rerental-page"].firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 60))
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-page-photos"].firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-page-address"].firstMatch.exists)
+        let tiles = app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN {'rerental-page-rent', 'rerental-page-earn'}"))
+        XCTAssertGreaterThan(tiles.count, 0, "neither the rent nor the income tile is shown")
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-page-apply"].firstMatch.isHittable, "Apply is not reachable")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-page"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// Search keeps its place (owner, 2026-10-20): scroll the results, visit
     /// My Activity, come back, and the same building is on screen, not the top.
     func testSearchTabKeepsItsScrollAfterAnotherTab() throws {
@@ -1791,6 +1830,22 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["pill-Alerts"].firstMatch.exists, "a subscriber is not offered alerts again")
         let w = app.windows.firstMatch.frame
         XCTAssertLessThan(abs(map.frame.midX - w.midX), 12, "Map is centred when it is alone")
+    }
+
+    /// The whole Map pill opens the map, not just its icon and word: a tap
+    /// near its end used to fall through the glass to the card underneath
+    /// (owner, 2026-11-18). Taps 8 pt in from the pill's right edge.
+    func testMapPillEdgeOpensTheMap() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--lotteries-demo"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let map = app.descendants(matching: .any)["pill-Map"].firstMatch
+        XCTAssertTrue(map.waitForExistence(timeout: 10))
+        let f = map.frame
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: f.maxX - 8, dy: f.midY)).tap()
+        let count = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'map-count'")).firstMatch
+        XCTAssertTrue(count.waitForExistence(timeout: 15), "tapping the edge of the Map pill did not open the map")
     }
 
     /// The Alerts sheet carries the web form's filters: rent cap and

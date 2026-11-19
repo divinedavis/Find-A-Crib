@@ -156,6 +156,7 @@ enum Route: Hashable {
     case map(SearchQuery)
     case building(String)
     case hpdRecords(String, HPDRecordsView.Kind)   // bbl + violations|complaints
+    case rerental(FeaturedListing)                 // the re-rental's own page (2026-11-19)
 }
 
 @Observable @MainActor
@@ -176,6 +177,18 @@ final class AppNav {
     var activityPath: [Route] = []
     var profilePath: [Route] = []
     var casaPath: [Route] = []
+    var lotteriesPath: [Route] = []
+    /// Push onto the stack of the tab on screen (a re-rental card is on
+    /// Search and on Lotteries).
+    func push(_ r: Route) {
+        switch tab {
+        case .search: searchPath.append(r)
+        case .lotteries: lotteriesPath.append(r)
+        case .activity: activityPath.append(r)
+        case .casa: casaPath.append(r)
+        case .profile: profilePath.append(r)
+        }
+    }
     /// Opened by the Profile screen; set by the --paywall launch argument.
     var showPaywall = false
     /// Opened by the Profile screen (after sign-in if needed); set by the
@@ -236,6 +249,17 @@ enum LaunchArgs {
         if r == "results" { nav.searchPath = [.results(q)] }
         else if r == "hcr" { var h = SearchQuery(); h.hcrOnly = true; nav.searchPath = [.results(h)] }
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
+        else if r.hasPrefix("rerental") {
+            // rerental[:text] — a re-rental's own page, for screenshots and
+            // tests: the first listing whose address contains `text`, else
+            // the first with a photo set.
+            let want = r.split(separator: ":", maxSplits: 1).dropFirst().first.map { String($0).lowercased() }
+            let all = store.featured.listings
+            if let f = all.first(where: { want != nil && $0.address.lowercased().contains(want!) })
+                ?? all.first(where: { $0.imageURLs.count > 1 }) ?? all.first {
+                nav.searchPath = [.results(q), .rerental(f)]
+            }
+        }
         else if r == "mapall" { let a = SearchQuery(); nav.searchPath = [.results(a), .map(a)] }
         else if r.hasPrefix("hpd") {
             // hpd[:bbl] — the violations screen, for screenshots; hpdc[:bbl]

@@ -35,7 +35,9 @@ struct RootView: View {
                         MyActivityView().navigationDestination(for: Route.self) { RouteView(route: $0) }
                     }
                 case .lotteries:
-                    NavigationStack { LotteriesView() }
+                    NavigationStack(path: $nav.lotteriesPath) {
+                        LotteriesView().navigationDestination(for: Route.self) { RouteView(route: $0) }
+                    }
                 case .casa:
                     NavigationStack(path: $nav.casaPath) {
                         CasaView().navigationDestination(for: Route.self) { RouteView(route: $0) }
@@ -62,7 +64,10 @@ struct RootView: View {
         .onChange(of: nav.tab) { _, t in
             nav.chromeProgress = 0
             nav.tabBarCompact = false
-            if t == .search, case .building? = nav.searchPath.last { nav.hideTabBar = true } else { nav.hideTabBar = false }
+            switch (t, nav.searchPath.last, nav.lotteriesPath.last) {
+            case (.search, .building?, _), (.search, .rerental?, _), (.lotteries, _, .rerental?): nav.hideTabBar = true
+            default: nav.hideTabBar = false
+            }
         }
         // A tapped alert notification opens here, on all of its items.
         .sheet(item: Binding(get: { PushService.shared.incoming }, set: { PushService.shared.incoming = $0 })) { push in
@@ -120,6 +125,7 @@ struct RouteView: View {
         case .hpdRecords(let bbl, let kind):
             if let b = store.byBBL[bbl] { HPDRecordsView(building: b, kind: kind) }
             else { Text("Building not found").font(.se(18)) }
+        case .rerental(let f): RerentalDetailView(listing: f)
         }
     }
 }
@@ -173,6 +179,9 @@ struct PillTabBar: View {
         }
         .padding(4)
         .lightGlass(in: Capsule())
+        // The 4 pt rim between and round the tabs belongs to the bar, so a
+        // near-miss never falls through to the card under it (2026-11-18).
+        .contentShape(Capsule())
     }
 
     /// Frosted white every day; on a holiday the day's colours fill the

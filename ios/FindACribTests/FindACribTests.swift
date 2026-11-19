@@ -1083,6 +1083,14 @@ final class LotteryFeedTests: XCTestCase {
         let b = try JSONDecoder().decode(LotteryFeed.Lottery.self, from: Data(without.utf8))
         XCTAssertEqual(a.image, "https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/1.png")
         XCTAssertNil(b.image)
+        XCTAssertEqual(b.imageURLs, [], "no photo set: the card keeps its one photo")
+    }
+
+    /// The whole photo set rides as `images`, lead first (2026-11-18).
+    func testLotteryPhotoSetDecodes() throws {
+        let j = #"{"id":3,"name":"C","borough":"Brooklyn","image":"https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/1.png","images":["https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/1.png","https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/2.png"]}"#
+        let l = try JSONDecoder().decode(LotteryFeed.Lottery.self, from: Data(j.utf8))
+        XCTAssertEqual(l.imageURLs.map(\.lastPathComponent), ["1.png", "2.png"])
     }
 
     func testOnlyTheirBoroughsStillOpenSoonestFirst() {
@@ -2403,5 +2411,20 @@ final class CasaReportTests: XCTestCase {
     func testListWindowIsTheNewestRelease() {
         let newest = Casa.parseMonth("2026-09-30")!
         XCTAssertEqual(Casa.soql(Casa.reportWindowStart(endingWith: newest)).prefix(10), "2026-07-01", "Jul 1 – Sep 30, as the alert says")
+    }
+}
+
+
+final class RerentalPageTests: XCTestCase {
+    private func row(_ beds: Int, _ rent: Int, _ hh: Int, _ n: Int?) -> Qualify.Row {
+        Qualify.Row(beds: beds, rent: rent, household_size_min: hh, household_size_max: hh, income_min: 100_000, income_max: 150_000, units_available: n)
+    }
+
+    /// One apartment listed once per household size is one apartment, not
+    /// three (The MC, 2026-11-19); different sizes add up.
+    func testUnitsLeftCountsEachApartmentOnce() {
+        XCTAssertEqual(RerentalDetailView.unitsLeft([row(1, 2900, 1, 1), row(1, 2900, 2, 1), row(1, 2900, 3, 1)]), 1)
+        XCTAssertEqual(RerentalDetailView.unitsLeft([row(0, 2500, 1, 2), row(1, 2900, 1, 1), row(1, 2900, 2, 1)]), 3)
+        XCTAssertNil(RerentalDetailView.unitsLeft([row(1, 2900, 1, nil)]), "no count printed: no chip")
     }
 }

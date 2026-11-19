@@ -273,6 +273,12 @@ struct FloatingPill: View {
             .foregroundStyle(ink)
             .padding(.horizontal, 22).frame(height: 56)
             .modifier(PillFill(fill: fill))
+            // The whole pill is the button. The glass behind it takes no
+            // touches (lightGlass), so without this only the icon and the
+            // word answered, and a tap on the rest of the pill opened the
+            // card under it (owner, 2026-11-18: "when I click on map it
+            // takes me to an apartment card").
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("pill-\(title)")

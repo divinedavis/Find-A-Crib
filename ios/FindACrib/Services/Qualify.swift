@@ -22,6 +22,8 @@ final class Qualify {
         let household_size_max: Int?
         let income_min: Int?
         let income_max: Int?
+        /// How many apartments of this row are open, when the listing says.
+        var units_available: Int? = nil
     }
     struct Flag: Decodable { let code: String; let why: String }
     struct Table: Decodable {
@@ -29,6 +31,9 @@ final class Qualify {
         let first_come_first_served: Bool?
         let deadline: String?
         let flags: [Flag]?
+        /// The listing's own "how to apply" sentence (mail-in address etc.),
+        /// shown on the re-rental page (2026-11-19).
+        var how_to_apply: String? = nil
     }
 
     enum Verdict: String { case yes, high, low, unknown }

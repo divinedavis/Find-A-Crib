@@ -59,9 +59,9 @@ def test_past_the_limit_the_old_reading_stays_up():
 
 
 def test_printed_cents_become_whole_dollars_for_the_app():
-    out = fr.whole_dollars({"units": [{"rent": 3249.65, "income_min": 115771, "income_max": 198510.4, "beds": 1}]})
+    out = fr.whole_dollars({"units": [{"rent": 3249.65, "rent_max": 3299.65, "income_min": 115771, "income_max": 198510.4, "beds": 1}]})
     u = out["units"][0]
-    assert (u["rent"], u["income_min"], u["income_max"]) == (3250, 115771, 198510), u
+    assert (u["rent"], u["rent_max"], u["income_min"], u["income_max"]) == (3250, 3300, 115771, 198510), u
     assert all(isinstance(u[k], int) for k in fr.MONEY)
     nums = fr.source_numbers({"address": "2180 Arthur Avenue"}, "1 Bedroom $3,249.65 1 1-3 people $115,771 – $198,510")
     assert not cf.ungrounded("3249.65", nums) and cf.ungrounded("3299.65", nums)

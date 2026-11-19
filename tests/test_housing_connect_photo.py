@@ -22,3 +22,25 @@ def test_no_photo_or_a_foreign_url_is_dropped():
                 "https://a806-housingconnectapi.nyc.gov.evil.example/x.png"):
         out = hc.one({"lotteryId": 1, "borough": "Brooklyn", "markers": PIN, "defaultPhotoStream": bad})
         assert out["image"] is None, bad
+
+
+U = "https://a806-housingconnectapi.nyc.gov/MailTemplates/photos/"
+
+
+def test_photo_set_keeps_the_city_order_lead_first_and_drops_foreign_urls():
+    advert = {"photos": [{"item1": U + "3.png", "item3": 2}, {"item1": U + "1.png", "item3": 0},
+                         {"item1": "https://evil.example/x.png", "item3": 1}, {"item1": U + "2.png", "item3": 1},
+                         {"item1": U + "1.png", "item3": 5}, "junk"]}
+    assert hc.photo_set(advert, U + "1.png") == [U + "1.png", U + "2.png", U + "3.png"]
+    assert hc.photo_set(None, U + "1.png") == [U + "1.png"]
+    assert len(hc.photo_set({"photos": [{"item1": U + f"{i}.png", "item3": i} for i in range(30)]})) == hc.MAX_PHOTOS
+
+
+def test_add_photos_sets_images_only_when_there_is_more_than_one():
+    out = [{"id": 1, "image": U + "a.png"}, {"id": 2, "image": U + "b.png"}, {"id": 3, "image": None}]
+    adverts = {1: {"photos": [{"item1": U + "a.png", "item3": 0}, {"item1": U + "a2.png", "item3": 1}]},
+               2: None, 3: {"photos": [{"item1": U + "c.png", "item3": 0}, {"item1": U + "c2.png", "item3": 1}]}}
+    hc.add_photos(out, fetcher=adverts.get, pause=0)
+    assert out[0]["images"] == [U + "a.png", U + "a2.png"]
+    assert "images" not in out[1] and out[1]["image"] == U + "b.png"   # a failed call keeps the one photo
+    assert out[2]["image"] == U + "c.png" and out[2]["images"] == [U + "c.png", U + "c2.png"]

@@ -117,6 +117,58 @@ def hc_photo(url):
     return u if u.startswith("https://a806-housingconnectapi.nyc.gov/") and len(u) < 300 else None
 
 
+ADVERT = "https://a806-housingconnectapi.nyc.gov/HPDPublicAPI/api/Lottery/GetLotteryAdvertisement?lotteryId="
+MAX_PHOTOS = 12
+
+
+def photo_set(advert, lead=None):
+    """Every photo the lottery's advertisement lists, in the city's order,
+    lead first. `advert` is GetLotteryAdvertisement's JSON: photos come as
+    {"item1": url, "item2": caption, "item3": order}. Foreign URLs are
+    dropped (they land in an <img src>), repeats too."""
+    rows = [p for p in (advert or {}).get("photos") or [] if isinstance(p, dict)]
+    rows.sort(key=lambda p: p.get("item3") if isinstance(p.get("item3"), int) else 999)
+    out = [lead] if lead else []
+    for p in rows:
+        u = hc_photo(p.get("item1"))
+        if u and u not in out:
+            out.append(u)
+    return out[:MAX_PHOTOS]
+
+
+def fetch_photos(lottery_id):
+    """The lottery's photo set from the advertisement the city's own details
+    page shows (owner, 2026-11-18: "doesn't housing connect have multiple
+    photos for these?"; it does, 30 of 34 open lotteries had 2-13). The
+    search feed carries only the first. [] when the call fails: the card
+    keeps its one photo, never loses it."""
+    try:
+        req = urllib.request.Request(ADVERT + str(int(lottery_id)), headers={
+            "User-Agent": UA, "Origin": "https://housingconnect.nyc.gov",
+            "Referer": "https://housingconnect.nyc.gov/"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except Exception as e:
+        print(f"housing_connect: photos for {lottery_id} failed: {type(e).__name__}")
+        return None
+
+
+def add_photos(out, fetcher=fetch_photos, pause=0.3):
+    """`images` (lead first) on each lottery with more than one photo, as
+    featured.json does; one call per open lottery, so ~35 a day."""
+    import time
+    for o in out:
+        if o.get("id") is None:
+            continue
+        imgs = photo_set(fetcher(o["id"]), o.get("image"))
+        if len(imgs) > 1:
+            o["images"] = imgs
+            o["image"] = o.get("image") or imgs[0]
+        if pause:
+            time.sleep(pause)
+    return out
+
+
 def one(rec):
     lo, hi = parse_rents(rec.get("rents"))
     marks = rec.get("markers") or []
@@ -152,8 +204,8 @@ def one(rec):
         "days_left": rec.get("endIn"),
         "closes": (rec.get("lotteryEndDate") or "")[:10] or None,
         "href": DETAILS + str(rec.get("lotteryId")),
-        # The one photo Housing Connect publishes per lottery (usually the
-        # developer's rendering; the city's own site shows only this one).
+        # The lottery's lead photo (usually the developer's rendering); the
+        # rest of the set is added by add_photos as `images`.
         # Cards used the Look Around street view before, which for a building
         # under construction was a wall of scaffolding (owner, 2026-11-17).
         "image": hc_photo(rec.get("defaultPhotoStream")),
@@ -181,6 +233,7 @@ def main():
     # is a call to action and the urgent one should lead.
     out = [o for o in out if (o["days_left"] or 0) > 0]
     out.sort(key=lambda o: (o["days_left"], -(o["rent_low"] or 0)))
+    add_photos(out)
 
     payload = {"generated": __import__("datetime").date.today().isoformat(),
                "source": "NYC Housing Connect (HPD public API)",

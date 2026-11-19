@@ -17,7 +17,10 @@
   // is the costly part: 2026-10-21 a phone in the Google app died at
   // "la:mount 2/1", a third WebGL document starting while two were loading.
   const TOUCH = (navigator.maxTouchPoints || 0) > 0 || matchMedia('(pointer: coarse)').matches;
-  const MAX_LOADING = TOUCH ? 1 : 5;
+  // Desktop loaded five at once until 2026-11-19: both Mac Safari pages that
+  // died that week (11/17, 11/18) went within 70 ms of a batch of four
+  // finishing together, 6-8 previews started in their last 2-3 s.
+  const MAX_LOADING = TOUCH ? 1 : 3;
   const MAX_MOUNTED = TOUCH ? 3 : 12;
   let loading = 0;
   // Circuit breaker (2026-10-13). An iPhone page died after one photo mounted
@@ -27,12 +30,27 @@
   // mounts MAX_REMOUNTS times inside REMOUNT_WINDOW sits out PARK_MS, then
   // gets a fresh try.
   const MAX_REMOUNTS = 4, REMOUNT_WINDOW = 10000, PARK_MS = 15000;
+  // Counted per place, not per element (2026-11-19): every list rebuild makes
+  // new tiles, so a photo the list kept rebuilding was a "new" photo each time
+  // and the breaker never saw it. The 11/17 Mac page rebuilt the same eleven
+  // cards every ~1.3 s while its filters changed, four fresh previews a time.
+  const mountsAt = new Map();
+  const placeOf = record => record.el.dataset.appleLat + ',' + record.el.dataset.appleLng;
   // The same loop spread over several photos (2026-10-23): a phone scrolling
   // its results mounted five different previews in 3.3 s, each torn down the
   // moment it was ready, and died on the fifth. Per-photo counting never saw
   // it. A touch device starts at most TOUCH_BUDGET previews per window,
   // whichever photos they are; the rest wait for the window to roll.
-  const TOUCH_BUDGET = 3, TOUCH_WINDOW = 10000;
+  // Desktop gets a budget too (2026-11-19, the two Mac Safari deaths above).
+  const TOUCH_BUDGET = TOUCH ? 3 : 8, TOUCH_WINDOW = 10000;
+  // A list tile waits until it has been on screen this long before it starts
+  // a preview (2026-11-19). The boot feeds rebuild the list ~0.3 s after the
+  // first paint, and a filter being changed rebuilds it on every step: the
+  // 11/18 Mac page started four previews 10 ms after boot's first build and
+  // threw all four away 250 ms later. The detail sheet's one photo, which
+  // someone asked for, does not wait.
+  const SETTLE_MS = 500;
+  let settleTimer = null;
   let touchMounts = [], budgetTimer = null;
   const observers = new Map();
   // Steps for index.html's crash trace: how many previews were live when a
@@ -171,30 +189,36 @@
       if (prefetch && (record.needsVisible
           || [...records.values()].filter(r => r.loading && !onScreen(r)).length >= 2)) break;
       const now = Date.now();
-      if (TOUCH) {
-        touchMounts = touchMounts.filter(t => now - t < TOUCH_WINDOW);
-        if (touchMounts.length >= TOUCH_BUDGET) {
-          if (!budgetTimer) {
-            trace('la:budget ' + live());
-            budgetTimer = setTimeout(() => { budgetTimer = null; drain(); }, TOUCH_WINDOW - (now - touchMounts[0]) + 50);
-          }
-          break;
+      if (record.root && now - (record.shownAt || 0) < SETTLE_MS) {
+        if (!settleTimer) settleTimer = setTimeout(() => { settleTimer = null; drain(); },
+          SETTLE_MS - (now - record.shownAt) + 20);
+        break;
+      }
+      touchMounts = touchMounts.filter(t => now - t < TOUCH_WINDOW);
+      if (touchMounts.length >= TOUCH_BUDGET) {
+        if (!budgetTimer) {
+          trace('la:budget ' + live());
+          budgetTimer = setTimeout(() => { budgetTimer = null; drain(); }, TOUCH_WINDOW - (now - touchMounts[0]) + 50);
         }
+        break;
       }
       queue.shift(); record.queued = false;
-      record.mounts = (record.mounts || []).filter(t => now - t < REMOUNT_WINDOW);
+      const place = placeOf(record);
+      record.mounts = (mountsAt.get(place) || []).filter(t => now - t < REMOUNT_WINDOW);
+      mountsAt.set(place, record.mounts);
       if (record.mounts.length >= MAX_REMOUNTS) {
         record.parked = true;
         trace('la:park ' + live());
         setTimeout(() => {
-          record.parked = false; record.mounts = [];
+          record.parked = false; mountsAt.delete(place);
           if (record.visible && record.el.isConnected) enqueue(record);
           drain();
         }, PARK_MS);
         continue;
       }
       record.mounts.push(now);
-      if (TOUCH) touchMounts.push(now);
+      if (mountsAt.size > 500) mountsAt.clear();
+      touchMounts.push(now);
       loading++;
       // Safari does not run an iframe that is off screen: a preview started
       // below the fold never reports back, held its slot until the 45 s
@@ -227,6 +251,7 @@
         entries.forEach(entry => {
           const record = records.get(entry.target);
           if (!record) return;
+          if (entry.isIntersecting && !record.visible) record.shownAt = Date.now();
           record.visible = entry.isIntersecting;
           if (record.visible) enqueue(record);
           // A quick scroll must not leave the new row waiting on old requests.

@@ -109,6 +109,28 @@ def main():
    mounts=page.evaluate("steps.filter(s=>s.startsWith('la:mount')).length")
    assert mounts<=4, f'a flapping photo should stop at 4 mounts, got {mounts}: {page.evaluate("steps")}'
    assert page.evaluate("steps.some(s=>s.startsWith('la:park'))"), page.evaluate('steps')
+   # A list that keeps rebuilding starts no previews until it holds still
+   # (2026-11-19: a Mac Safari page started four 10 ms after boot's first
+   # build and threw them away 250 ms later when the feeds rebuilt the list).
+   grid_js='''([lats])=>{const host=document.getElementById('tiles');let grid=document.getElementById('grid');
+    if(!grid){host.innerHTML='<div id="grid" style="height:400px;overflow:auto"></div>';grid=document.getElementById('grid');}
+    grid.innerHTML=lats.map(lat=>'<div class="tile">'+AppleStreetPreview.html({lat,lng:-73})+'</div>').join('');AppleStreetPreview.watch(grid);}'''
+   page.reload()
+   page.evaluate("()=>{window.steps=[];window.facTrace=s=>steps.push(s);}")
+   for _ in range(6):
+    page.evaluate(grid_js,[[40.5,40.51]]);page.wait_for_timeout(150)
+   assert page.evaluate('parent.testCreated')==0, f'previews started while the list was still rebuilding: {page.evaluate("steps")}'
+   page.wait_for_function('parent.testCreated===2 && parent.testLoading===0')
+   # The same building rebuilt into a new tile again and again is one photo
+   # remounting: parked after four mounts in 10 s, like a flapping tile
+   # (2026-11-17: a Mac page rebuilt the same eleven cards every ~1.3 s).
+   page.reload()
+   page.evaluate("()=>{window.steps=[];window.facTrace=s=>steps.push(s);}")
+   for _ in range(6):
+    page.evaluate(grid_js,[[40.7]]);page.wait_for_timeout(800)
+   mounts=page.evaluate("steps.filter(s=>s.startsWith('la:mount')).length")
+   assert mounts<=4, f'one building rebuilt six times should stop at 4 mounts, got {mounts}: {page.evaluate("steps")}'
+   assert page.evaluate("steps.some(s=>s.startsWith('la:park'))"), page.evaluate('steps')
    # Default local and production pages use Apple; Mapillary stays opt-in locally.
    page.goto('http://localhost/')
    assert page.evaluate('AppleStreetPreview.enabled')
@@ -152,6 +174,6 @@ def main():
     assert mounts<=3, f'a phone should start at most 3 previews in 10 s, got {mounts}: {tp.evaluate("steps")}'
     assert tp.evaluate("steps.some(s=>s.startsWith('la:budget'))"), tp.evaluate('steps')
     phone.close()
-   print(f'PASS {name}: token setup, isolated frames, lazy initialization, concurrency, cleanup, coverage errors, hostname gating{", phone mount budget" if phone else ""}',flush=True)
+   print(f'PASS {name}: token setup, isolated frames, lazy initialization, concurrency, settle + per-building remounts, cleanup, coverage errors, hostname gating{", phone mount budget" if phone else ""}',flush=True)
    browser.close()
 if __name__=='__main__':main()

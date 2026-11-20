@@ -1618,7 +1618,13 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
         let row = app.buttons["check-No pests"]
-        for _ in 0..<6 where !(row.exists && row.isHittable) { app.swipeUp() }
+        // Clear of the floating tab bar, not just "hittable": since 796e009
+        // the whole bar takes taps (it used to pass them through between its
+        // icons), and the 2026-11-19 nightly's full run left this row under it,
+        // so the tap landed on the bar. isHittable doesn't see the overlap.
+        let tab = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab-'")).firstMatch
+        let bottom = tab.exists ? tab.frame.minY - 16 : app.windows.firstMatch.frame.maxY - 140
+        for _ in 0..<6 where !(row.exists && row.isHittable && row.frame.maxY < bottom) { app.swipeUp() }
         XCTAssertTrue(row.waitForExistence(timeout: 20), "Search's Show list offers No pests")
         XCTAssertFalse(row.isSelected, "off by default")
         row.tap()

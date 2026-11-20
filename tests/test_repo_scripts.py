@@ -31,6 +31,15 @@ def _age(path: Path, hours: float) -> None:
         os.utime(q, (t, t))
 
 
+def real_build_running():
+    """clean_builds.sh's build_running(), read from the script itself so the
+    two can't drift: True when a build or ship is running on this Mac."""
+    src = CLEAN.read_text()
+    body = src[src.index("build_running() {"):]
+    body = body[:body.index("\n}\n") + 3]
+    return subprocess.run(["bash", "-c", body + "build_running"], env=CLEAN_ENV).returncode == 0
+
+
 @unittest.skipUnless(HAVE_TOOLS, "needs bash, git, curl and gzip")
 class CleanBuilds(unittest.TestCase):
     def setUp(self):
@@ -80,6 +89,12 @@ class CleanBuilds(unittest.TestCase):
         # A sibling session's `while pgrep -f xcodebuild ...; do sleep; done`
         # waiter is not a build. The guard used to treat it as one and held
         # the cleanup off for three hours on 2026-11-10.
+        # A real build on this Mac (another session's ship) makes the guard
+        # refuse whatever the waiter does, so the answer would say nothing
+        # about the waiter: the pre-push run failed here twice on 2026-11-19
+        # during a Marracat ship. Skip rather than pass or fail on it.
+        if real_build_running():
+            self.skipTest("a real build or ship is running on this Mac")
         waiter = subprocess.Popen(["/bin/sh", "-c", "while :; do sleep 1; done # xcodebuild ship.sh"],
                                   env=CLEAN_ENV)
         self.addCleanup(waiter.kill)

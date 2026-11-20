@@ -8,6 +8,9 @@ final class FindACribUITests: XCTestCase {
     /// tap in the suite.
     override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     var app: XCUIApplication!
+    /// "Free" as a word, for the never-say-free checks. A substring match
+    /// failed the 2026-11-19 build on a lottery at "919 Freeman Street".
+    static let freeWord = ".*\\bfree\\b.*"
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -1041,7 +1044,7 @@ final class FindACribUITests: XCTestCase {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")
-        XCTAssertFalse(sheet.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
+        XCTAssertFalse(sheet.staticTexts.matching(NSPredicate(format: "label MATCHES[c] %@", Self.freeWord)).firstMatch.exists,
                        "no 'free' wording on the paywall")
     }
 
@@ -1292,7 +1295,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(anyCard.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "not subscribed: the tab still lists lotteries (or says none are open)")
         XCTAssertTrue(app.staticTexts["All five boroughs"].exists, "a non-subscriber sees all five boroughs")
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label MATCHES[c] %@", Self.freeWord)).firstMatch.exists,
                        "nothing on the tab may call alerts free (owner, 2026-09-30)")
         signup.tap()
         let cancel = app.buttons["Cancel"]

@@ -2126,9 +2126,15 @@ class Runner:
         time.sleep(max(0, 11 - (time.time() - t0)))
         self.ok(not seen, 'a phone loaded Mediavine while a text field had focus', j)
         page.evaluate("document.activeElement && document.activeElement.blur()")
-        time.sleep(3)
+        # The page still working is not a pause (2026-11-20: an iPhone died
+        # 0.9 s after the tag went in, 1.2 s after a search's keyboard closed
+        # and half a second before the list sheet opened on top of it).
+        for _ in range(8):
+            page.evaluate("window.facTrace('test:work')"); time.sleep(0.5)
+        self.ok(not seen, 'a phone loaded Mediavine while the page was still working', j)
+        self.wait_until(page, "(window.__mvLoaded || {}).why === 'idle'", 8000)
         why = page.evaluate("(window.__mvLoaded || {}).why")
-        self.ok(why == 'idle' and seen, f'once the visitor paused, the phone should load Mediavine, got {why!r}', j)
+        self.ok(why == 'idle' and seen, f'once the visitor and the page paused, the phone should load Mediavine, got {why!r}', j)
         traced = page.evaluate("(JSON.parse(localStorage.getItem(window.facTraceKey) || '{}').s || []).some(x => String(x[1]).startsWith('ads:load'))")
         self.ok(traced, 'the trace should record when ads loaded', j)
         j.notes.append(f"loaded at {page.evaluate('(window.__mvLoaded||{}).at')} ms")

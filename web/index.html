@@ -94,10 +94,16 @@
    phone the tag now waits until the page has been open 8 s AND the visitor
    has paused 1.5 s, never while the keyboard is up (a text field focused),
    and goes by 30 s at the latest (still not mid-typing). Desktop and iPad
-   load it at once, as before. window.__mvLoaded says when and why. */
+   load it at once, as before. window.__mvLoaded says when and why.
+   A pause also means the PAGE has been quiet 3 s (2026-11-20): an iPhone
+   died 0.9 s after "ads:load idle". The visitor had searched a zip, the tag
+   went in 1.2 s after the keyboard closed, and they opened the list half a
+   second later, so the ad stack booted on top of the list sheet sliding in.
+   The crash trace's steps (window.__facBusyAt, set by tr) are the page's
+   work: a search, a list build, a resize, the sheet. */
 (function () {
   try { if (localStorage.getItem('fac.noads') === '1') return; } catch (e) {}
-  var MIN_MS = 8000, IDLE_MS = 1500, MAX_MS = 30000;
+  var MIN_MS = 8000, IDLE_MS = 1500, QUIET_MS = 3000, MAX_MS = 30000;
   function load(why) {
     if (window.__mvLoaded) return;
     window.__mvLoaded = { why: why, at: Date.now() - start };
@@ -119,7 +125,7 @@
     var now = Date.now();
     if (document.visibilityState === 'visible' && !typing()) {
       if (now - start >= MAX_MS) return load('max');
-      if (now - start >= MIN_MS && now - last >= IDLE_MS) return load('idle');
+      if (now - start >= MIN_MS && now - last >= IDLE_MS && now - (window.__facBusyAt || 0) >= QUIET_MS) return load('idle');
     }
     setTimeout(check, 500);
   })();
@@ -2570,6 +2576,9 @@ function favActive() {
   function tr(step) {
     try {
       TR.push([Date.now() % 10000000, step]);
+      // Anything but the once-a-second tick is the page working; the phone
+      // ad loader in <head> waits for that to stop.
+      if (step !== 'tick') window.__facBusyAt = Date.now();
       if (TR.length > 80) TR.shift();
       localStorage.setItem(TRACE_KEY, JSON.stringify({ at: TRACE_AT, s: TR }));
     } catch (_) {}

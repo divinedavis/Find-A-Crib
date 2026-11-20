@@ -14,6 +14,13 @@ struct RerentalCard: View {
     /// the previews on the lotteries"); on in the Search feed, where the
     /// Rerental flag keeps a listing from passing for a register building.
     var photoLabels = true
+    /// Set like a Housing Connect lottery card: the same type sizes, colours,
+    /// photo height, edge-to-edge white card and rounded Apply button. On for
+    /// the Lotteries tab's Re-rentals pane, so its cards match the NYC pane
+    /// beside it (owner, 2026-11-20: "the rerental cards should have same
+    /// font size, etc as nyc housing lottery cards"). The Search feed keeps
+    /// the building card's layout.
+    var lotteryStyle = false
     @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var auth
     @Environment(AppNav.self) private var nav
@@ -92,7 +99,7 @@ struct RerentalCard: View {
                             }
                         }
                     }
-                    .frame(height: compact ? 140 : 226).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
+                    .frame(height: lotteryStyle ? 190 : compact ? 140 : 226).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(f.imageURLs.count > 1 ? String(localized: "Photo \(photo + 1) of \(f.imageURLs.count)") : String(localized: "Photo of the building"))
                     .accessibilityAdjustableAction { dir in
@@ -124,6 +131,7 @@ struct RerentalCard: View {
                 }
             }
 
+            if lotteryStyle { lotteryInfo } else {
             // The building card's spacing (owner, 2026-10-20): one 8pt gap for
             // every row and button, the borough / address / price block 30%
             // tighter.
@@ -185,14 +193,7 @@ struct RerentalCard: View {
                         .frame(maxWidth: .infinity)
                     }
                     if let out = f.outboundURL {
-                        Button {
-                            // Both rows the site writes for a hand-off: the funnel's
-                            // click and the generic outbound.
-                            var p = Analytics.tileProps(f, slot: slot); p["href"] = out.absoluteString
-                            Analytics.shared.track("featured_click", p)
-                            Analytics.shared.track("outbound", ["kind": "rerental", "agent": f.agent, "href": out.absoluteString])
-                            openURL(out)
-                        } label: {
+                        Button { handOff(out) } label: {
                             Text(f.actionTitle).font(.se(compact ? 15 : 18, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
                                 .padding(.horizontal, 8).frame(maxWidth: .infinity).frame(height: compact ? 40 : 50).background(SE.royal)
                         }
@@ -206,42 +207,148 @@ struct RerentalCard: View {
                 // next re-rental in this borough, signed in first; real-time
                 // alerts for someone who already gets them (10/29).
                 if case let action = cardAction {
-                    Button {
-                        Analytics.shared.track("rerental_card_action", ["action": action.id, "signed_in": auth.isSignedIn])
-                        switch action {
-                        case .alerts: if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
-                        case .realtime: sheet = .realtime
-                        case .applyHelp: sheet = .applyHelp
-                        }
-                    } label: {
+                    actionSheets(Button { run(action) } label: {
                         HStack(spacing: 8) {
                             Image(systemName: action.icon).font(.system(size: 15, weight: .bold))
                             Text(action.title).font(.se(compact ? 15 : 17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
                         }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
                             .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                     }
-                    .buttonStyle(.plain).accessibilityIdentifier("rerental-\(action.id)")
-                    // Saved: re-read the prefs, so this card stops offering alerts.
-                    .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet(rerentalBorough: f.boroughCode) }
-                    .sheet(isPresented: $showSignIn, onDismiss: { if auth.isSignedIn { showAlerts = true } }) {
-                        EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for re-rental alerts"), forAlerts: true)
-                    }
-                    .sheet(item: $sheet) { which in
-                        switch which {
-                        case .realtime: PaywallView(source: "realtime")
-                        case .applyHelp: PacketView(listing: f)
-                        case .alerts: EmptyView()   // its own sheets above
-                        }
-                    }
+                    .buttonStyle(.plain).accessibilityIdentifier("rerental-\(action.id)"))
                 }
             }
             .padding(compact ? 14 : 18)
+            }
         }
-        .seCard()
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: lotteryStyle ? 0 : 22, style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("rerental-card")
         .onAppear { Analytics.shared.tileSeen(f, slot: slot) }
         .task { await Qualify.shared.loadUnits() }
+    }
+
+    /// The card under the photo, line for line a Housing Connect lottery
+    /// card (LotteriesView.card): name 19 bold, where 15 semibold, rent 16,
+    /// income 15 beside the qualify badge, the rounded Apply button, then
+    /// the centred links.
+    @ViewBuilder private var lotteryInfo: some View {
+        let f = listing
+        let table = Qualify.shared.units[f.href]
+        VStack(alignment: .leading, spacing: 6) {
+            Text(f.address).font(.se(19, .bold)).foregroundStyle(SE.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("card-address")
+                .contentShape(Rectangle())
+                .onTapGesture { open("address") }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text("Opens the details"))
+            let place = [kicker, table?.deadline.map { String(localized: "Apply by \($0)") }].compactMap { $0 }
+            if !place.isEmpty { Text(place.joined(separator: " · ")).font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
+            if let rent = lotteryRent { Text(rent).font(.se(16)).foregroundStyle(SE.ink) }
+            let verdict = Qualify.shared.verdict(for: f)
+            if lotteryIncome != nil || verdict != nil {
+                HStack(spacing: 8) {
+                    if let income = lotteryIncome {
+                        Text(income).font(.se(15)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.8)
+                            .accessibilityIdentifier("rerental-income")
+                    }
+                    if let verdict { QualifyBadge(verdict: verdict) }
+                }
+            }
+            ForEach(table?.flags ?? [], id: \.code) { fl in
+                Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
+            }
+            if let deal = f.deal { DealBox(listing: f, deal: deal).padding(.top, 2) } else {
+                (Text("Listed by ").font(.se(15)) + Text(f.agent).font(.se(15, .bold))).foregroundStyle(SE.ink2)
+            }
+            if let out = f.outboundURL {
+                // The arrow is the button's icon here, as on Apply on Housing Connect.
+                SEPrimaryButton(title: f.actionTitle.replacingOccurrences(of: " ↗", with: ""), icon: "arrow.up.right") { handOff(out) }
+                    .padding(.top, 6)
+                    .accessibilityIdentifier("rerental-apply")
+            }
+            // Centred under Apply, where a lottery has Add deadline to Calendar.
+            HStack(spacing: 24) {
+                if let url = URL(string: f.href) {
+                    ShareLink(item: url) {
+                        Label("Share", systemImage: "square.and.arrow.up").font(.se(16, .semibold)).frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                }
+                if case let action = cardAction {
+                    actionSheets(Button { run(action) } label: {
+                        Label(action.title, systemImage: action.icon).font(.se(16, .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                    .accessibilityIdentifier("rerental-\(action.id)"))
+                }
+            }
+            .foregroundStyle(SE.royal).frame(maxWidth: .infinity).padding(.top, 4)
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// "$3,661/mo · 1-bed", the lottery card's rent line.
+    private var lotteryRent: String? {
+        let rent = listing.moneyKind == "rent" ? listing.moneyLine?.text : nil
+        let parts = [rent].compactMap { $0 } + bits
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// "Income $131k–$198k", in the lottery card's short thousands: the
+    /// agent's own figure when the feed carries one, else the range across
+    /// the listing's unit table. The re-rental's page has it to the dollar.
+    private var lotteryIncome: String? {
+        let f = listing
+        let k = { (n: Int) in n >= 1000 ? "$\(n / 1000)k" : "$\(n)" }
+        if let cap = f.income1pMax { return String(localized: "Income up to \(k(cap)) · 1 person") }
+        if f.moneyKind == "income", let lo = f.moneyLow, let hi = f.moneyHigh { return String(localized: "Income \(k(lo))–\(k(hi))") }
+        guard let rows = Qualify.shared.units[f.href]?.units, let r = Qualify.incomeRange(rows: rows) else { return nil }
+        switch (r.low, r.high) {
+        case let (lo?, hi?) where lo != hi: return String(localized: "Income \(k(lo))–\(k(hi))")
+        case let (lo?, nil): return String(localized: "Income from \(k(lo))")
+        case let (lo?, _): return String(localized: "Income \(k(lo))")
+        case let (nil, hi?): return String(localized: "Income up to \(k(hi))")
+        default: return nil
+        }
+    }
+
+    /// Both rows the site writes for a hand-off: the funnel's click and the
+    /// generic outbound.
+    private func handOff(_ out: URL) {
+        var p = Analytics.tileProps(listing, slot: slot); p["href"] = out.absoluteString
+        Analytics.shared.track("featured_click", p)
+        Analytics.shared.track("outbound", ["kind": "rerental", "agent": listing.agent, "href": out.absoluteString])
+        openURL(out)
+    }
+
+    /// Help me apply for Plus (owner, 2026-11-06); alerts for the next
+    /// re-rental in this borough, signed in first; real-time alerts for
+    /// someone who already gets them (10/29).
+    private func run(_ action: CardAction) {
+        Analytics.shared.track("rerental_card_action", ["action": action.id, "signed_in": auth.isSignedIn])
+        switch action {
+        case .alerts: if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+        case .realtime: sheet = .realtime
+        case .applyHelp: sheet = .applyHelp
+        }
+    }
+
+    /// The sheets the action button opens, on whichever layout draws it.
+    private func actionSheets(_ button: some View) -> some View {
+        button
+            // Saved: re-read the prefs, so this card stops offering alerts.
+            .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet(rerentalBorough: listing.boroughCode) }
+            .sheet(isPresented: $showSignIn, onDismiss: { if auth.isSignedIn { showAlerts = true } }) {
+                EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for re-rental alerts"), forAlerts: true)
+            }
+            .sheet(item: $sheet) { which in
+                switch which {
+                case .realtime: PaywallView(source: "realtime")
+                case .applyHelp: PacketView(listing: listing)
+                case .alerts: EmptyView()   // its own sheets above
+                }
+            }
     }
 
     /// Push the re-rental's own page onto the tab on screen.

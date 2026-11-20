@@ -309,6 +309,61 @@ final class FindACribUITests: XCTestCase {
         let free = XCTAttachment(screenshot: app.screenshot()); free.name = "rerental-card-free"; free.lifetime = .keepAlways; add(free)
     }
 
+    /// On the Lotteries tab a re-rental card is set like the Housing Connect
+    /// lottery cards in the pane beside it (owner, 2026-11-20: "the rerental
+    /// cards should have same font size, etc as nyc housing lottery cards"):
+    /// edge to edge, the same photo height, the same rounded Apply button.
+    /// It was the Search feed's card there: inset, with 27 pt addresses.
+    func testRerentalCardsMatchLotteryCards() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launch()
+        let lottery = app.descendants(matching: .any)["lottery-card"].firstMatch
+        XCTAssertTrue(lottery.waitForExistence(timeout: 30), "the NYC pane lists lotteries")
+        let hcApply = app.buttons["Apply on Housing Connect"].firstMatch
+        bringClearOfTabBar(hcApply)
+        let lotteryCard = lottery.frame, lotteryApply = hcApply.frame
+        let lotteryPhoto = app.descendants(matching: .any)["lottery-photo"].firstMatch.frame
+
+        // The pane picker slides away as the list scrolls: back to the top for it.
+        let pane = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        for _ in 0..<6 where !(pane.exists && pane.isHittable) { app.swipeDown() }
+        pane.tap()
+        let card = app.descendants(matching: .any)["rerental-card"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        let apply = app.buttons["rerental-apply"].firstMatch
+        bringClearOfTabBar(apply)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-card-lottery-style"; shot.lifetime = .keepAlways; add(shot)
+        XCTAssertEqual(card.frame.minX, lotteryCard.minX, accuracy: 1, "a re-rental card starts where a lottery card does")
+        XCTAssertEqual(card.frame.width, lotteryCard.width, accuracy: 1, "and is as wide")
+        XCTAssertEqual(apply.frame.minX, lotteryApply.minX, accuracy: 1, "its Apply button lines up with Apply on Housing Connect")
+        XCTAssertEqual(apply.frame.width, lotteryApply.width, accuracy: 1)
+        XCTAssertEqual(apply.frame.height, lotteryApply.height, accuracy: 1)
+        XCTAssertFalse(apply.label.contains("↗"), "the arrow is the button's icon, as on the lottery card: \(apply.label)")
+        let photo = app.descendants(matching: .any)["rerental-photos"].firstMatch
+        if photo.exists, lotteryPhoto.height > 0 {
+            XCTAssertEqual(photo.frame.height, lotteryPhoto.height, accuracy: 1, "the photos are one height")
+        }
+
+        // Not signed up, the links under Apply carry the longest label, "Get
+        // alerts on new re-rentals", beside Share: both stay inside the card.
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries"]
+        app.launch()
+        XCTAssertTrue(pane.waitForExistence(timeout: 30))
+        pane.tap()
+        let alerts = app.buttons["rerental-alerts"].firstMatch
+        XCTAssertTrue(alerts.waitForExistence(timeout: 20), "signed out, a re-rental card offers alerts")
+        bringClearOfTabBar(alerts)
+        let links = XCTAttachment(screenshot: app.screenshot()); links.name = "rerental-card-lottery-style-alerts"; links.lifetime = .keepAlways; add(links)
+        let width = app.windows.firstMatch.frame.width
+        XCTAssertLessThanOrEqual(alerts.frame.maxX, width - 8, "the alerts link runs off the card")
+        let share = app.buttons.matching(NSPredicate(format: "label == 'Share'")).firstMatch
+        XCTAssertTrue(share.exists, "Share sits beside it")
+        XCTAssertGreaterThanOrEqual(share.frame.minX, 8, "Share runs off the card")
+        XCTAssertGreaterThanOrEqual(alerts.frame.height, 44, "a link under Apply is 44 pt tall to tap")
+    }
+
     /// Scroll in short drags until the element sits in the middle band: the
     /// floating tab bar covers the bottom of the screen while still counting
     /// as "hittable", and a tap there lands on the tab instead.

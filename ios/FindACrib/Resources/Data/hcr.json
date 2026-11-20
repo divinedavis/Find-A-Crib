@@ -1,38 +1,8 @@
 {
-"updated": 1794960302,
-"updated_iso": "2026-11-18T00:05:02+00:00",
-"count": 55,
+"updated": 1795143903,
+"updated_iso": "2026-11-20T03:05:03+00:00",
+"count": 56,
 "listings": [
-{
-"id": "a0Ycs00002P4ldfEAB",
-"name": "1919 Cornaga Avenue",
-"kind": "Lottery",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Q",
-"county": "Queens",
-"min_income": 49714,
-"max_income": 128240,
-"due": "11/29/2026",
-"fee": null,
-"phone": null,
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002P4ldfEAB/detail",
-"info": "https://housingsearch.hcr.ny.gov/housing/s/",
-"desc": "19-19 Cornaga Avenue is a newly constructed 9-story affordable and supportive housing development located in Downtown Far Rockaway, Queens, New York. The building is offering 31 new units of affordable housing. Units are available in studio, one-bedroom, and two-bedroom units ranging from 331 to 652 square feet. Apartments come equipped with EnergyStar appliances, high-efficiency LED lights, and e",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002OEcpvAAD?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": false,
-"buildings": [
-{
-"street": "19-19 Cornaga Avenue",
-"zip": "11691",
-"bbl": null,
-"lat": 40.60203,
-"lng": -73.75223
-}
-]
-},
 {
 "id": "a0Ycs000028W6CjEAK",
 "name": "Luna Green",
@@ -60,6 +30,36 @@
 "bbl": null,
 "lat": 40.57303,
 "lng": -73.9868
+}
+]
+},
+{
+"id": "a0Ycs00002P4ldfEAB",
+"name": "1919 Cornaga Avenue",
+"kind": "Lottery",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 49714,
+"max_income": 128240,
+"due": "12/14/2026",
+"fee": null,
+"phone": null,
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002P4ldfEAB/detail",
+"info": "https://housingsearch.hcr.ny.gov/housing/s/",
+"desc": "19-19 Cornaga Avenue is a newly constructed 9-story affordable and supportive housing development located in Downtown Far Rockaway, Queens, New York. The building is offering 31 new units of affordable housing. Units are available in studio, one-bedroom, and two-bedroom units ranging from 331 to 652 square feet. Apartments come equipped with EnergyStar appliances, high-efficiency LED lights, and e",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002OEcpvAAD?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "19-19 Cornaga Avenue",
+"zip": "11691",
+"bbl": null,
+"lat": 40.60203,
+"lng": -73.75223
 }
 ]
 },
@@ -367,13 +367,13 @@
 "id": "a0Ycs00001nyK1CEAU",
 "name": "Brookdale Village - Senior Only",
 "kind": "Mitchell-Lama Waitlist",
-"status": "Open",
+"status": "Closed",
 "ptype": "Rental",
 "boro": "Q",
 "county": "Queens",
 "min_income": 26750,
 "max_income": 89124,
-"due": "Ongoing",
+"due": "Check Listing",
 "fee": null,
 "phone": "212-273-5342",
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1CEAU/detail",
@@ -721,7 +721,7 @@
 "county": "New York (Manhattan)",
 "min_income": 28686,
 "max_income": 188000,
-"due": "Ongoing",
+"due": "Check Listing",
 "fee": 75,
 "phone": "212-942-5240",
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK10EAE/detail",
@@ -1033,7 +1033,7 @@
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK18EAE/detail",
 "info": null,
 "desc": "Mutual Apartments is an HCR Supervised Mitchell Lama Cooperative located in Brooklyn, NY. PLEASE NOTE: By applying to this listing, you are applying to have your application added to an existing waitlist for this Mitchell-Lama property. This waitlist is used to fill vacant units as they become available. You may be required to pay an application fee to have your application added to the waitlist; ",
-"image": null,
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002kAC1BAAW?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
 "approx": true,
@@ -1254,6 +1254,36 @@
 "bbl": "2028780083",
 "lat": 40.848667,
 "lng": -73.918833
+}
+]
+},
+{
+"id": "a0Ycs00002WASPOEA5",
+"name": "Pitkin Avenue Residence",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Bk",
+"county": "Kings (Brooklyn)",
+"min_income": 46560,
+"max_income": 81420,
+"due": "Ongoing",
+"fee": null,
+"phone": "6319106205",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002WASPOEA5/detail",
+"info": "No pets are allowed (this does not apply to Service or Support Animals).\r\nIncome guidelines and permitted household size are subject to change.\r\nMinimum incomes listed may not apply to applicants with Section 8 or other qualifying rental subsidies.",
+"desc": "Pitkin Avenue Residences will deliver high-quality, service-enriched housing designed to promote long-term stability and health, a rooftop garden with a solar canopy, and convenient access to healthcare across the street. Currently accepting applications for 17 studio units available at 50% and 60% AMI. The building includes spacious backyard, rooftop terrace, laundry room, community room with sha",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs000022F22ZAAS?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": true,
+"approx": false,
+"buildings": [
+{
+"street": "2611 Pitkin Avenue",
+"zip": "11208",
+"bbl": null,
+"lat": 40.67504,
+"lng": -73.87589
 }
 ]
 },

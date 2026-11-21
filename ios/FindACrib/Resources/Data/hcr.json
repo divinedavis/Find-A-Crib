@@ -1,7 +1,7 @@
 {
-"updated": 1795219502,
-"updated_iso": "2026-11-21T00:05:02+00:00",
-"count": 56,
+"updated": 1795251904,
+"updated_iso": "2026-11-21T09:05:04+00:00",
+"count": 55,
 "listings": [
 {
 "id": "a0Ycs000028W6CjEAK",
@@ -60,36 +60,6 @@
 "bbl": null,
 "lat": 40.60203,
 "lng": -73.75223
-}
-]
-},
-{
-"id": "a0Ycs00002Lif0lEAB",
-"name": "Webster",
-"kind": "Waitlist",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Bx",
-"county": "Bronx",
-"min_income": 26092,
-"max_income": 81420,
-"due": "11/20/2026",
-"fee": null,
-"phone": "646-870-8340",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002Lif0lEAB/detail",
-"info": "Breaking Ground’s mission is to strengthen individuals, families and communities by developing and sustaining exceptional supportive and affordable housing as well as programs for homeless and other vulnerable New Yorkers. \r\n\r\nFor more information and to download a pdf application, please go to https://www.breakingground.org/our-housing/webster-avenue    Please Apply Now! Click here to view a Virtual Open House video of the units and the building.   https://youtube.com/shorts/y53GowO1tvo",
-"desc": "Webster Avenue residence is accepting applications for current and future vacancies. Webster Avenue residence provides 80 studio apartments for low-income working adults in the Tremont section of the Bronx. The ground floor houses building common areas, offices for supportive services, and a medical suite. The building also features recreational space including an exercise room, computer lab, and ",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002UZAAHAA5?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": false,
-"buildings": [
-{
-"street": "411 East 178th Street",
-"zip": "10457",
-"bbl": "2030280003",
-"lat": 40.849463,
-"lng": -73.899626
 }
 ]
 },
@@ -282,7 +252,7 @@
 "boro": "Bx",
 "county": "Bronx",
 "min_income": 50709,
-"max_income": 103680,
+"max_income": 108560,
 "due": "Ongoing",
 "fee": null,
 "phone": "3473414693",

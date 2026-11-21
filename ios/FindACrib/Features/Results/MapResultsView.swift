@@ -16,7 +16,6 @@ struct MapResultsView: View {
     @State private var showFilters = false
     @State private var showLocation = false
     @State private var initialFit = true
-    @State private var calloutDrag: CGFloat = 0
     /// Computed with the results, not in `body`: as a computed property it
     /// rebuilt up to 47k entries on every frame of the callout drag.
     @State private var pricesByBBL: [String: Int] = [:]
@@ -50,25 +49,14 @@ struct MapResultsView: View {
         .overlay(alignment: .bottom) {
             VStack(spacing: 12) {
                 if let sel = selected {
-                    MapCalloutCard(building: sel) { nav.searchPath.append(.building(sel.bbl)) }
-                        .padding(.horizontal, 16)
-                        .offset(y: max(0, calloutDrag))
-                        .opacity(1 - Double(max(0, calloutDrag)) / 220)
-                        .gesture(
-                            DragGesture(minimumDistance: 8)
-                                .onChanged { v in if v.translation.height > 0 { calloutDrag = v.translation.height } }
-                                .onEnded { v in
-                                    if v.translation.height > 60 || v.predictedEndTranslation.height > 140 {
-                                        withAnimation(.easeIn(duration: 0.18)) { calloutDrag = 260 }
-                                        // deselect after the slide so the pin unhighlights with it
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { selected = nil; calloutDrag = 0 }
-                                    } else {
-                                        withAnimation(.spring(duration: 0.3)) { calloutDrag = 0 }
-                                    }
-                                }
-                        )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .accessibilityAction(named: "Dismiss") { selected = nil }
+                    SwipeAwayCallout(onGone: { selected = nil }) {
+                        MapCalloutCard(building: sel) { nav.searchPath.append(.building(sel.bbl)) }
+                    }
+                    .padding(.horizontal, 16)
+                    // Over the List pill on its way down, not behind it.
+                    .zIndex(1)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .accessibilityAction(named: "Dismiss") { selected = nil }
                 }
                 FloatingPill(title: String(localized: "List"), icon: "list.bullet") { backToList() }
             }
@@ -95,6 +83,9 @@ struct MapResultsView: View {
             searched = true
             inView = nil
             pricesByBBL = prices
+            // `--map-select`: open on the first building's card, for the UI
+            // test of the swipe (a pin is not something a test can find).
+            if CommandLine.arguments.contains("--map-select") { selected = r.first }
             // A custom map area IS the viewport the user was looking at, so
             // reopening the map lands exactly there instead of on all of NYC.
             if case .mapArea(let box)? = query.locations.first(where: { if case .mapArea = $0 { return true }; return false }) {
@@ -120,6 +111,59 @@ struct MapResultsView: View {
         if !path.isEmpty { path.removeLast() }
         if case .results? = path.last { path[path.count - 1] = .results(q) } else { path.append(.results(q)) }
         nav.searchPath = path
+    }
+}
+
+/// The map's building card, held under the thumb: it moves down exactly as
+/// far as the finger does, and let go past a short pull (or flicked) it
+/// carries on off the bottom of the screen at the finger's speed, then the
+/// pin is deselected. Let go early and it springs back (owner, 2026-11-20:
+/// "it should animate off the screen and follow my thumb down off the
+/// screen"). It used to fade as it was dragged and stop 260 pt down, still
+/// on screen, so it read as dissolving in place.
+///
+/// The pull lives here, not in the map view: a card that has left takes its
+/// offset with it, and the next pin's card starts at rest.
+struct SwipeAwayCallout<Card: View>: View {
+    let onGone: () -> Void
+    @ViewBuilder let card: Card
+    @State private var pull: CGFloat = 0
+    @State private var leaving = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Farther than any card sits from the bottom edge: the card is about
+    /// 340 pt above it on a phone, shadow included.
+    static var exit: CGFloat { 560 }
+
+    var body: some View {
+        card
+            // Down follows the thumb; up only gives a little, so the card
+            // feels held rather than stuck.
+            .offset(y: pull > 0 ? pull : max(pull / 6, -14))
+            // High priority: the card is a button, and its press must not
+            // swallow the pull. A tap (under 8 pt of travel) still opens it.
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { v in if !leaving { pull = v.translation.height } }
+                    .onEnded { v in release(v) }
+            )
+            .accessibilityValue(leaving ? Text("Dismissed") : Text(""))
+    }
+
+    private func release(_ v: DragGesture.Value) {
+        guard !leaving else { return }
+        let down = v.translation.height
+        guard down > 60 || v.predictedEndTranslation.height > 140 else {
+            withAnimation(.spring(duration: 0.3)) { pull = 0 }
+            return
+        }
+        leaving = true
+        Analytics.shared.track("map_callout_swipe", ["pulled": Int(down)])
+        if reduceMotion { onGone(); return }
+        // Carry on at the finger's speed, never slower than a brisk slide.
+        let target = max(Self.exit, down + 120)
+        let speed = max(v.velocity.height, 1100)
+        let seconds = min(0.34, max(0.16, Double((target - down) / speed)))
+        withAnimation(.easeOut(duration: seconds)) { pull = target } completion: { onGone() }
     }
 }
 

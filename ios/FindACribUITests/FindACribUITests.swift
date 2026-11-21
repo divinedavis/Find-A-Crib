@@ -491,6 +491,43 @@ final class FindACribUITests: XCTestCase {
         XCTAssertGreaterThan(app.descendants(matching: .any).matching(identifier: "cluster-bubble").count, 3)
     }
 
+    /// The map's building card follows a pull down and leaves the screen
+    /// (owner, 2026-11-20: "it should animate off the screen and follow my
+    /// thumb down off the screen"). A short pull lets go back to where it
+    /// was, and a tap still opens the building: the card is a button under
+    /// the drag.
+    func testMapCardSwipesAwayDownward() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "map", "--map-select"]
+        app.launch()
+        let card = app.descendants(matching: .any)["map-callout"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 30), "the map opens on a building's card")
+        sleep(2)   // the card's slide-in and the map's first fit
+        let rest = card.frame
+        let grab = card.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.5))
+
+        // A short pull: back to where it was.
+        grab.press(forDuration: 0.05, thenDragTo: grab.withOffset(CGVector(dx: 0, dy: 30)), withVelocity: .slow, thenHoldForDuration: 0.1)
+        sleep(1)
+        XCTAssertTrue(card.exists, "a short pull must not dismiss the card")
+        XCTAssertEqual(card.frame.minY, rest.minY, accuracy: 2, "the card springs back after a short pull")
+
+        // A tap still opens the building, then back to the map.
+        card.tap()
+        XCTAssertTrue(app.otherElements["detail-hero"].waitForExistence(timeout: 15) || app.staticTexts["About"].waitForExistence(timeout: 15),
+                      "tapping the card opens the building")
+        app.navigationBars.buttons.element(boundBy: 0).tap()   // the system chevron is the back control
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        sleep(1)
+
+        // A real pull down: the card goes with it, off the screen, and is gone.
+        let again = card.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.5))
+        again.press(forDuration: 0.05, thenDragTo: again.withOffset(CGVector(dx: 0, dy: 150)), withVelocity: .slow, thenHoldForDuration: 0)
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: card)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, "a pull down must take the card off the screen")
+        XCTAssertTrue(app.buttons["pill-List"].isHittable, "List stays where it was")
+    }
+
     func testMapViewportCarriesToList() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "map"]

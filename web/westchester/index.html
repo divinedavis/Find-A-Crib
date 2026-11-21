@@ -9015,6 +9015,8 @@ function favActive() {
   const PROMISE_COMMENT = { rows: [['💬', 'Comment on buildings you know'], ['↩️', 'Reply to your neighbors'], ['👍', 'Like the comments that help']] };
   const AUTH_PROMISES = {
     header: PROMISE_ACCOUNT, deep_link: PROMISE_ACCOUNT,
+    // The Sign up button on landlord, building, voucher and ZIP pages (2026-11-21).
+    page: PROMISE_ACCOUNT,
     save: PROMISE_SAVE('Save this building to your list'),
     nudge: PROMISE_SAVE('Save the buildings you like'),
     saved_search: { rows: [['🔁', 'Save this search and rerun it in one tap'],
@@ -9099,8 +9101,9 @@ function favActive() {
     track('outbound', { kind: 'auth_promise_plus', wall: authWall, source: b.dataset.plusSrc });
     closeAuthModal(); openPaywall(null, b.dataset.plusSrc);
   });
-  function openAuthModal(reminder, wall) {
-    if (authModal.hidden) track('signin_wall', { for: wall || 'other' });
+  // `extra` rides on the signin_wall row (the content-page button's `from`).
+  function openAuthModal(reminder, wall, extra) {
+    if (authModal.hidden) track('signin_wall', Object.assign({ for: wall || 'other' }, extra || {}));
     authWall = wall || 'other';
     const promise = AUTH_PROMISES[wall] || {};
     authLazyConfirm = !!promise.lazyConfirm;
@@ -9413,6 +9416,7 @@ function favActive() {
   // returning from Stripe Checkout
   let plusPurchasePending = false;   // fires the Ads purchase conversion once the session loads
   let authGatePending = false, authGateNext = null;   // ?auth= deep link + where to go after sign-in
+  let authGateFrom = null;   // ?from=landlord: the content-page section whose Sign up button sent them
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
@@ -9435,7 +9439,12 @@ function favActive() {
       authGatePending = true;
       const n = p.get('next') || '';
       authGateNext = /^\/[^\/\\][^\s]*$/.test(n) ? n : null;
-      p.delete('auth'); p.delete('next');
+      // ?auth=signup&from=landlord — the Sign up button in the header of every
+      // content page (2026-11-21). Only a short section name is kept, since it
+      // is logged as-is.
+      const f = p.get('from') || '';
+      authGateFrom = /^[a-z0-9-]{1,24}$/.test(f) ? f : null;
+      p.delete('auth'); p.delete('next'); p.delete('from');
       history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
     }
   })();
@@ -9443,6 +9452,7 @@ function favActive() {
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
   const ALERTS_GATE_MSG = 'Create an account to set up alerts — a daily 8 AM email when a lottery or re-rental opens in your borough.';
+  const PAGE_GATE_MSG = 'Create an account to save buildings and get alerts when a lottery or re-rental opens.';
   // Alerts are open to every account again (owner, 2026-10-01; they were Plus
   // 2026-09-30 to 10-01). Signed out: the sign-up modal, then on to the
   // alerts page they clicked once the session lands. Signed in: straight there.
@@ -10159,7 +10169,11 @@ function favActive() {
       else if (!authUser) {
         // ?auth=signup&next=… now also comes from /directory/ and /marketing-agents/.
         const toAlerts = !authGateNext || /^\/alerts\//.test(authGateNext);
-        openAuthModal(toAlerts ? ALERTS_GATE_MSG : 'Create an account or sign in to continue.', toAlerts ? 'alerts' : 'deep_link');
+        // From a content page's Sign up button: its own wall, so the dashboard
+        // can say whether the button earns its place, and which section's did.
+        if (authGateFrom && !authGateNext) openAuthModal(PAGE_GATE_MSG, 'page', { from: authGateFrom });
+        else openAuthModal(toAlerts ? ALERTS_GATE_MSG : 'Create an account or sign in to continue.', toAlerts ? 'alerts' : 'deep_link');
+        authGateFrom = null;
         setAuthMode('signup');
       }
     }

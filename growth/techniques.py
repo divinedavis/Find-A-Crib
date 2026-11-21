@@ -328,6 +328,9 @@ header.site,footer.site{max-width:960px;margin:0 auto;padding:16px 20px}
 header.site{border-bottom:1px solid var(--line);font-size:14px}
 header.site a{color:var(--accent);text-decoration:none}
 .brand{font-weight:700;color:var(--ink)!important}
+header.site a.signup{float:right;margin:-5px 0 4px 12px;background:#2a6f7e;color:#fff;padding:7px 15px;border-radius:999px;font-weight:600;font-size:14px;line-height:1.3;white-space:nowrap}
+header.site a.signup:hover{opacity:.92}
+header.site a.signup[hidden]{display:none}
 main{max-width:960px;margin:0 auto;padding:20px}
 h1{font-size:28px;line-height:1.25;margin:.2em 0 .3em}
 h2{font-size:20px;margin:1.4em 0 .4em}
@@ -378,6 +381,24 @@ TRACK = """<script src="/config.js"></script>
 </script>"""
 
 
+# The header sign-up button, byte for byte the one build_seo.py puts on its own
+# pages (SIGNUP_BUTTON there has the why; tests/test_content_signup.py keeps the
+# two equal). Copied rather than imported for the reason this module never
+# imports build_seo: that would pull a whole build script, and its module-level
+# file reads, into the growth run.
+#
+# write_page() hashes the whole document, so the night this ships every page
+# this module writes is honestly "changed" once: each gained a visible button.
+SIGNUP_BUTTON = (
+    '<a class="signup" id="fac-signup" href="/?auth=signup&amp;from=page">Sign up</a>'
+    "<script>(function(){try{var a=document.getElementById('fac-signup');"
+    "var s=(location.pathname.split('/')[1]||'').toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24);"
+    "if(s)a.href='/?auth=signup&from='+s;"
+    "for(var i=0;i<localStorage.length;i++){"
+    "if(/^sb-.+-auth-token$/.test(localStorage.key(i))){a.hidden=true;break}}"
+    "}catch(e){}})();</script>")
+
+
 def _page(title, desc, canonical, body, jsonld=None):
     ld = ""
     if jsonld:
@@ -394,7 +415,7 @@ def _page(title, desc, canonical, body, jsonld=None):
 <meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>{CSS}</style>{ld}</head><body>
-<header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
+<header class="site">{SIGNUP_BUTTON}<a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/section8/">Voucher listings</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
 <a href="/guide/">Guides</a></header>

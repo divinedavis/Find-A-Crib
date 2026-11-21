@@ -2232,6 +2232,16 @@ class Runner:
         self.ok(page.evaluate("!!document.querySelector('#auth-google')"), 'sign-in modal lacks Google', j)
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
+        # The Sign up button on content pages (landlord, building, voucher, ZIP)
+        # links here with the section it was clicked on (2026-11-21). The map
+        # opens sign-up, says what an account gets, and cleans its address.
+        self.boot(page, '/?auth=signup&from=landlord', wait_pins=False)
+        self.wait_until(page, "!document.getElementById('auth-modal').hidden", 30000)
+        self.ok(page.evaluate("document.getElementById('auth-title').textContent") == 'Create account', 'the content-page button should open sign-up, not sign-in', j)
+        self.ok(page.evaluate("!document.getElementById('auth-promise').hidden && document.querySelectorAll('#auth-promise .ap-row').length >= 3"),
+                'the wall should list what an account gets', j)
+        self.ok(page.evaluate("!/[?&](auth|from)=/.test(location.search)"), f'the map should strip auth/from from its address: {page.url}', j)
+        j.notes.append('header button + content-page sign-up link')
 
     def j_consent_mode(self, page, j, device):
         """Google Consent Mode v2 + Global Privacy Control (privacy audit

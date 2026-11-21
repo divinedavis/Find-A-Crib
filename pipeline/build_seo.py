@@ -1714,6 +1714,9 @@ header.site{background:#fff;border-bottom:1px solid var(--line);padding:14px 20p
 @font-face{font-family:'Oxanium';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/oxanium-800.woff2') format('woff2')}
 header.site a.brand{font-weight:800;color:var(--ink);font-size:18px;font-family:'Oxanium',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 header.site .cities{display:block;margin-top:5px;font-size:13px;color:var(--ink2)}
+header.site a.signup{float:right;margin:-5px 0 4px 12px;background:var(--blue);color:#fff;padding:7px 15px;border-radius:999px;font-weight:600;font-size:14px;line-height:1.3;white-space:nowrap}
+header.site a.signup:hover{text-decoration:none;opacity:.92}
+header.site a.signup[hidden]{display:none}
 main{max-width:880px;margin:0 auto;padding:28px 20px 60px}
 h1{font-size:28px;line-height:1.2;margin:.2em 0 .4em}
 h2{font-size:20px;margin:1.6em 0 .5em}
@@ -2097,6 +2100,33 @@ generally treated as covered rather than exempt.""",
 # The coverage caveats — LA derived and "likely RSO", SF anonymized to the
 # block — live on the hub pages themselves, which is where a caveat belongs;
 # naming a destination is not asserting a claim about its contents.
+# The sign-up button in the header of every content page (owner, 2026-11-21).
+# A quarter of November's web visitors landed on a landlord, building, voucher
+# or ZIP page, and 2 of 1,059 such visitors in three months made an account:
+# the only "Sign in" on the site was on the map, which they never reached.
+#
+# It is a plain link to the map's sign-up modal (?auth=signup, the same door
+# /alerts/ and /directory/ use). `from` names the section the click came from,
+# so the wall is logged as signin_wall{for: page, from: landlord}. The script
+# beside it does two things and fails quiet: it fills `from` in from the path,
+# and it hides the button from someone already signed in on this browser (a
+# Supabase session in localStorage), who has nothing to sign up for.
+#
+# WHERE IT LIVES MATTERS. It sits inside <header class="site">, which
+# _lastmod_body() removes by pattern before hashing, so adding it changes the
+# bytes of every page and the lastmod of none. Moved outside the header it
+# would restamp the whole corpus (tests/test_content_signup.py pins this).
+# growth/techniques.py carries the same string for its own pages;
+# tests/test_content_signup.py keeps the two equal.
+SIGNUP_BUTTON = (
+    '<a class="signup" id="fac-signup" href="/?auth=signup&amp;from=page">Sign up</a>'
+    "<script>(function(){try{var a=document.getElementById('fac-signup');"
+    "var s=(location.pathname.split('/')[1]||'').toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24);"
+    "if(s)a.href='/?auth=signup&from='+s;"
+    "for(var i=0;i<localStorage.length;i++){"
+    "if(/^sb-.+-auth-token$/.test(localStorage.key(i))){a.hidden=true;break}}"
+    "}catch(e){}})();</script>")
+
 CITY_NAV = (
     '<span class="cities">Also mapped: '
     '<a href="/sf/">rent-controlled San Francisco</a> &nbsp;·&nbsp; '
@@ -2171,7 +2201,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
 <meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canonical}">{OG_IMAGE_CARD}
 <style>{CSS}</style>{ld}{MEDIAVINE_TAG}</head><body>
-<header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
+<header class="site">{SIGNUP_BUTTON}<a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
 <a href="/guide/">Guides</a>{CITY_NAV}</header>
 <main>{body}</main>

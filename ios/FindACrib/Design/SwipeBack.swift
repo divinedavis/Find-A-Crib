@@ -22,3 +22,45 @@ extension View {
             .toolbarColorScheme(.light, for: .navigationBar)
     }
 }
+
+/// For a screen that cannot keep the system bar (the results list draws its
+/// own collapsing header): hands UIKit's edge-swipe recognizer a delegate
+/// that says yes whenever there is a screen to go back to. SwiftUI turns the
+/// recognizer off when it hides the bar; this turns it back on for the stack
+/// the screen sits in. The delegate lives as long as the app, because the
+/// recognizer keeps only a weak reference and, left with none, would start
+/// a pop on the first screen and hang the stack.
+extension View {
+    func edgeSwipeBackKept() -> some View {
+        background(EdgeSwipeKeeper().frame(width: 0, height: 0).accessibilityHidden(true))
+    }
+}
+
+private struct EdgeSwipeKeeper: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Probe { Probe() }
+    func updateUIViewController(_ vc: Probe, context: Context) {}
+
+    final class Probe: UIViewController {
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            guard let swipe = navigationController?.interactivePopGestureRecognizer else { return }
+            swipe.delegate = EdgeSwipeDelegate.shared
+            swipe.isEnabled = true
+        }
+    }
+}
+
+private final class EdgeSwipeDelegate: NSObject, UIGestureRecognizerDelegate {
+    static let shared = EdgeSwipeDelegate()
+
+    func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+        // Each tab has its own stack and its own recognizer; the stack is
+        // read off the recognizer, whose view is the stack's own.
+        var next = g.view?.next
+        while let r = next, !(r is UINavigationController) { next = r.next }
+        guard let nav = next as? UINavigationController, nav.viewControllers.count > 1 else { return false }
+        // Not while a push or pop is still running: a second one started
+        // inside it leaves the stack half-moved.
+        return nav.transitionCoordinator == nil
+    }
+}

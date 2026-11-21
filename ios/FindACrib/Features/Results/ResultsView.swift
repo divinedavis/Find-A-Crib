@@ -310,6 +310,7 @@ struct ResultsView: View {
         .task(id: query) { Ads.shared.beginFeed(query, context: Ads.context(for: query, city: store.city)); await run() }
         .onChange(of: store.loaded) { _, _ in Task { await run() } }
         .swipeBackEnabled()
+        .edgeSwipeBackKept()
     }
 
     /// The re-rentals that belong in this feed: New York only, and only in

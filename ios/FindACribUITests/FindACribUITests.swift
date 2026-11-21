@@ -427,9 +427,89 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(page.waitForExistence(timeout: 10), "tapping a re-rental's address did not open its page")
         XCTAssertTrue(app.descendants(matching: .any)["rerental-page-apply"].firstMatch.exists, "the page has no way to the agent")
         XCTAssertFalse(app.descendants(matching: .any)["tab-Search"].firstMatch.isHittable, "the tab bar should hide on the page")
-        app.descendants(matching: .any)["rerental-page-back"].firstMatch.tap()
+        // Out by a thumb-drag from the left edge (owner, 2026-11-21: "I'm
+        // not able to swipe back to the previous screen": the page hid the
+        // system bar, which switches the gesture off). Rest first: a swipe
+        // that lands mid-push is swallowed.
+        Thread.sleep(forTimeInterval: 1.0)
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.55))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.55))
+        from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        // The results list is scrolled, so its count line is folded away:
+        // the page being gone is the proof.
+        XCTAssertTrue(page.waitForNonExistence(timeout: 8), "an edge swipe did not leave the re-rental's page")
+        XCTAssertTrue(app.descendants(matching: .any)["tab-Search"].firstMatch.waitForExistence(timeout: 5), "the tab bar did not come back")
+        // And out by the bar's own back button.
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "the swipe did not return to the same results")
+        address.tap()
+        XCTAssertTrue(page.waitForExistence(timeout: 10))
+        let share = app.descendants(matching: .any)["rerental-page-share"].firstMatch
+        XCTAssertTrue(share.waitForExistence(timeout: 5) && share.isHittable, "Share is missing from the page's bar")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(card.waitForExistence(timeout: 10), "back did not return to the results")
         XCTAssertFalse(page.exists)
+    }
+
+    /// Tapping the page's photo opens the photos full screen (owner,
+    /// 2026-11-21): double-tap zooms in and back out, a pinch zooms, a
+    /// sideways swipe turns to the next photo at fit size, and both the X
+    /// and a pull down close it onto the page.
+    func testRerentalPhotosOpenFullScreenAndZoom() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "rerental"]
+        app.launch()
+        let page = app.descendants(matching: .any)["rerental-page"].firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 60))
+        let hero = app.descendants(matching: .any)["rerental-page-photos"].firstMatch
+        XCTAssertTrue(hero.waitForExistence(timeout: 10))
+        hero.tap()
+        let close = app.buttons["gallery-close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10), "tapping the photo did not open the gallery")
+        let photo = app.descendants(matching: .any).matching(identifier: "gallery-photo").firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 10))
+        func value() -> String { (app.descendants(matching: .any).matching(identifier: "gallery-photo").firstMatch.value as? String) ?? "" }
+        func wait(_ want: String, _ why: String) {
+            let until = Date().addingTimeInterval(6)
+            while value() != want && Date() < until { Thread.sleep(forTimeInterval: 0.2) }
+            XCTAssertEqual(value(), want, why)
+        }
+        wait("Fits the screen", "the photo should open whole")
+        let first = photo.label
+
+        let middle = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        middle.doubleTap()
+        wait("Zoomed in", "a double-tap did not zoom in")
+        let zoomed = XCTAttachment(screenshot: app.screenshot()); zoomed.name = "gallery-zoomed"; zoomed.lifetime = .keepAlways; add(zoomed)
+        middle.doubleTap()
+        wait("Fits the screen", "a second double-tap did not zoom back out")
+
+        app.pinch(withScale: 2.5, velocity: 2)
+        wait("Zoomed in", "a pinch did not zoom in")
+        // One synthesized pinch out can overshoot to the 5x limit, which a
+        // single pinch in does not undo.
+        for _ in 0..<3 where value() != "Fits the screen" { app.pinch(withScale: 0.3, velocity: -2); Thread.sleep(forTimeInterval: 0.6) }
+        wait("Fits the screen", "pinching in did not bring the whole photo back")
+        let whole = XCTAttachment(screenshot: app.screenshot()); whole.name = "gallery-whole"; whole.lifetime = .keepAlways; add(whole)
+
+        // The next photo, and it arrives whole.
+        if first.contains(" of ") {
+            app.swipeLeft()
+            let next = NSPredicate(format: "identifier == 'gallery-photo' AND label BEGINSWITH 'Photo 2'")
+            XCTAssertTrue(app.descendants(matching: .any).matching(next).firstMatch.waitForExistence(timeout: 6), "a swipe did not turn to the second photo")
+        }
+
+        // Pull down: the gallery leaves and the page is still there.
+        let top = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
+        top.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85)), withVelocity: .fast, thenHoldForDuration: 0)
+        XCTAssertTrue(close.waitForNonExistence(timeout: 6), "pulling the photo down did not close the gallery")
+        XCTAssertTrue(page.exists, "closing the gallery lost the page")
+
+        // And the X.
+        hero.tap()
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        close.tap()
+        XCTAssertTrue(close.waitForNonExistence(timeout: 6), "the X did not close the gallery")
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-page-apply"].firstMatch.isHittable, "Apply is not reachable after the gallery")
     }
 
     /// The page itself: photo set, address, rent / income tiles, the floating
@@ -1985,6 +2065,29 @@ final class FindACribUITests: XCTestCase {
             from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
         }
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 8), "edge swipe did not pop back to the results list")
+    }
+
+    /// The results list draws its own header, so the system bar is hidden
+    /// there and SwiftUI switched the edge swipe off with it (found
+    /// 2026-11-21, with the owner's "I'm not able to swipe back" on the
+    /// re-rental's page). edgeSwipeBackKept() turns it back on.
+    func testEdgeSwipePopsResults() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        Thread.sleep(forTimeInterval: 1.5)
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.55))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.55))
+        from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        if !app.buttons["search-button"].waitForExistence(timeout: 8) {
+            from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        }
+        XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 8), "an edge swipe did not go back from the results to Search")
+        // And Search, the first screen, has nowhere to go back to: a swipe
+        // there must leave it standing and usable.
+        from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 5) && app.buttons["search-button"].isHittable, "a swipe on the first screen broke it")
     }
 
     /// `adjust(toPickerWheelValue:)` is a momentum scroll, not a seek: on an

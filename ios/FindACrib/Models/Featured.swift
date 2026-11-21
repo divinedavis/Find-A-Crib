@@ -34,6 +34,12 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     var image: String?
     /// The listing's photos, lead first; nil when it has only the one.
     var images: [String]?
+    /// A 1600 px copy of each photo in `images`, in the same order, nil where
+    /// the agent's original was no wider than the 800 px one (2026-11-21).
+    /// The full-screen gallery zooms into these.
+    var imagesLarge: [String?]?
+    /// The lead photo's 1600 px copy, for a listing with only the one photo.
+    var imageLarge: String?
     /// The photo is the OUTSIDE of the building, measured by photo_kind.py in
     /// the sweep — the agents also post empty living rooms and their own logos.
     /// Nothing reads it since the photo banner came back out (2026-09-23); it
@@ -67,7 +73,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case agent, title, address, borough, zip, units, beds, href, image, images, deal, lat, lng
-        case imageExterior = "image_exterior"
+        case imageExterior = "image_exterior", imagesLarge = "images_large", imageLarge = "image_large"
         case agentPage = "agent_page", moneyKind = "money_kind", moneyLow = "money_low", moneyHigh = "money_high"
         case income1pMax = "income_1p_max", hrefKind = "href_kind"
     }
@@ -91,6 +97,8 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         hrefKind = try c.decodeIfPresent(String.self, forKey: .hrefKind)
         image = try c.decodeIfPresent(String.self, forKey: .image)
         images = try? c.decodeIfPresent([String].self, forKey: .images)
+        imagesLarge = try? c.decodeIfPresent([String?].self, forKey: .imagesLarge)
+        imageLarge = try? c.decodeIfPresent(String.self, forKey: .imageLarge)
         imageExterior = try c.decodeIfPresent(Bool.self, forKey: .imageExterior) ?? false
         lat = try? c.decodeIfPresent(Double.self, forKey: .lat)
         lng = try? c.decodeIfPresent(Double.self, forKey: .lng)
@@ -123,6 +131,19 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// 2026-10-04); just the lead when there's no gallery.
     var imageURLs: [URL] {
         (images ?? [image].compactMap { $0 }).compactMap { URL(string: $0, relativeTo: DataStore.host)?.absoluteURL }
+    }
+
+    /// The sharper copy of each of `imageURLs`, same order; nil where there
+    /// is none. Lists of a different length (an old feed) are not trusted.
+    var largeImageURLs: [URL?] {
+        let small = images ?? [image].compactMap { $0 }
+        let large: [String?] = images == nil ? [imageLarge] : (imagesLarge ?? [imageLarge])
+        // imageURLs drops a photo whose address doesn't parse; keep step with it.
+        return small.enumerated().compactMap { i, s -> URL?? in
+            guard URL(string: s, relativeTo: DataStore.host) != nil else { return nil }
+            let l = i < large.count ? large[i] : nil
+            return .some(l.flatMap { URL(string: $0, relativeTo: DataStore.host)?.absoluteURL })
+        }
     }
 
     /// The money line, with what it IS: "$3,423–$4,376/mo", or the income

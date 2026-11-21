@@ -1125,10 +1125,19 @@ def same_photo(h, hashes):
 
 
 def save_gallery(rec, on_disk, meta, apply_changes):
-    """Re-host the extra photos; rec["images"] = lead photo first, then these."""
+    """Re-host the extra photos; rec["images"] = lead photo first, then these.
+
+    Since 2026-11-21 each gallery photo also keeps its 1600 px copy, as the
+    lead photo does, and rec["images_large"] lists them beside rec["images"]
+    (None where the original was no wider than the tile copy): the app's
+    full-screen gallery zooms in, and an 800 px photo is soft before it is
+    even enlarged. A photo saved before that is fetched once more for its
+    large copy (meta "lv"), never daily.
+    """
     srcs = rec.pop("gallery_src", None) or []
     lead_src = rec.pop("_lead_src", None)
     images = [rec["image"]] if rec.get("image") else []
+    larges = [rec.get("image_large")] if rec.get("image") else []
     hashes = [ahash(os.path.join(IMGDIR, os.path.basename(rec["image"])))] if rec.get("image") and apply_changes else []
     for src in srcs:
         if len(images) >= GALLERY_MAX:
@@ -1140,19 +1149,33 @@ def save_gallery(rec, on_disk, meta, apply_changes):
         if name not in on_disk:
             if not apply_changes:
                 continue
-            data, ext, w, _large = fetch_best_image(src)
+            data, ext, w, large = fetch_best_image(src)
             if not data or (w and w < GALLERY_MIN_W):
                 continue
             with open(os.path.join(IMGDIR, name + ext), "wb") as f:
                 f.write(data)
+            if large:
+                with open(os.path.join(IMGDIR, name + "_l.jpg"), "wb") as f:
+                    f.write(large)
             on_disk[name] = name + ext
-            meta[name] = {"w": w, "large": False, "v": 2}
+            meta[name] = {"w": w, "large": bool(large), "v": 2, "lv": 1}
+        elif apply_changes and not (meta.get(name) or {}).get("lv"):
+            _data, _ext, _w, large = fetch_best_image(src)
+            if large:
+                with open(os.path.join(IMGDIR, name + "_l.jpg"), "wb") as f:
+                    f.write(large)
+            m = meta.setdefault(name, {})
+            m["large"] = bool(large) or bool(m.get("large"))
+            m["lv"] = 1                             # asked once, whatever came back
         url = "/featured/img/" + on_disk[name]
         h = ahash(os.path.join(IMGDIR, on_disk[name])) if apply_changes else None
         if url not in images and not same_photo(h, hashes):
             images.append(url); hashes.append(h)
+            larges.append("/featured/img/" + name + "_l.jpg" if (meta.get(name) or {}).get("large") else None)
     if len(images) > 1:
         rec["images"] = images
+        if any(larges):
+            rec["images_large"] = larges
 
 
 def exterior(filename, cache):
@@ -1178,6 +1201,7 @@ def prune_images(records, apply_changes):
     live = {os.path.basename(r["image"]) for r in records if r.get("image")}
     live |= {os.path.basename(r["image_large"]) for r in records if r.get("image_large")}
     live |= {os.path.basename(u) for r in records for u in (r.get("images") or [])}
+    live |= {os.path.basename(u) for r in records for u in (r.get("images_large") or []) if u}
     live.add("meta.json")
     gone = 0
     for f in os.listdir(IMGDIR):

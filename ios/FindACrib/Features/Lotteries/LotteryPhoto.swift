@@ -130,6 +130,23 @@ final class RemotePhotos: @unchecked Sendable {
         return img
     }
 
+    /// A photo sharp enough to zoom into, for the full-screen gallery. Read
+    /// from the disk cache the card's copy came from, so nothing downloads
+    /// twice; only the gallery's last few stay decoded (a 1600 px photo is
+    /// ~6 MB in memory, against ~2 MB for a card's).
+    private let sharpCache: NSCache<NSURL, UIImage> = {
+        let c = NSCache<NSURL, UIImage>()
+        c.countLimit = 4
+        return c
+    }()
+
+    func sharp(_ url: URL) async -> UIImage? {
+        if let hit = sharpCache.object(forKey: url as NSURL) { return hit }
+        let img = await Self.load(url, maxPixels: 2400, session: session)
+        if let img { sharpCache.setObject(img, forKey: url as NSURL) }
+        return img
+    }
+
     /// Start loading a card's other photos as soon as the card is built, so
     /// swiping to them finds them ready instead of blank.
     func prefetch(_ urls: [URL]) {

@@ -7,7 +7,7 @@ import SwiftUI
 /// floating bar.
 ///
 /// Top to bottom: the photo set (swipe, "1 / 8" counter) fading into the
-/// page, round glass back / share buttons over it; the building name and
+/// page, the bar's round glass back / share buttons over it; the building name and
 /// address; chips (first come first served, bedrooms, how many left, apply-by
 /// date); rent and the income you must earn; your verdict; who can apply
 /// (household size → income band, from the listing's own table); the move-in
@@ -18,10 +18,10 @@ struct RerentalDetailView: View {
     let listing: FeaturedListing
     @Environment(AppNav.self) private var nav
     @Environment(AuthService.self) private var auth
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var photo = 0
     @State private var showPacket = false
+    @State private var showGallery = false
     private var qualify: Qualify { Qualify.shared }
     private var table: Qualify.Table? { qualify.units[listing.href] }
     private var rows: [Qualify.Row] { table?.units ?? [] }
@@ -55,10 +55,26 @@ struct RerentalDetailView: View {
         }
         .ignoresSafeArea(edges: .top)
         .background(SE.canvas)
-        .overlay(alignment: .top) { topButtons }
         .overlay(alignment: .bottom) { applyBar }
-        .toolbar(.hidden, for: .navigationBar)
+        // The system bar stays, see-through, so the thumb-drag back works
+        // (owner, 2026-11-21: "I'm not able to swipe back to the previous
+        // screen"). Hiding the bar and drawing our own back arrow, as this
+        // page did, switches that gesture off; see SwipeBack.swift.
+        .swipeBackEnabled()
+        .toolbar {
+            if let url = URL(string: listing.href) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: url) { barIcon("square.and.arrow.up") }
+                        .accessibilityLabel(Text("Share"))
+                        .accessibilityIdentifier("rerental-page-share")
+                }
+            }
+        }
         .sheet(isPresented: $showPacket) { PacketView(listing: listing) }
+        // The gallery fades itself in and out, so the cover's own slide is off.
+        .fullScreenCover(isPresented: $showGallery) {
+            PhotoGalleryView(urls: listing.imageURLs, sharp: listing.largeImageURLs, index: $photo) { setGallery(false) }
+        }
         .task { await qualify.loadUnits() }
         .onAppear {
             nav.hideTabBar = true
@@ -93,6 +109,14 @@ struct RerentalDetailView: View {
                 }
             }
             .frame(height: Self.heroHeight).frame(maxWidth: .infinity).clipped()
+            // Before iOS 26 the bar's back chevron has no glass of its own;
+            // a pale wash keeps it readable on a bright photo.
+            .overlay(alignment: .top) {
+                if #unavailable(iOS 26.0) {
+                    LinearGradient(colors: [.white.opacity(0.7), .white.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 120).allowsHitTesting(false)
+                }
+            }
             // The photo fades into the page, as the mock does.
             .overlay(alignment: .bottom) {
                 LinearGradient(colors: [SE.canvas.opacity(0), SE.canvas], startPoint: .top, endPoint: .bottom)
@@ -107,8 +131,14 @@ struct RerentalDetailView: View {
                         .accessibilityHidden(true)
                 }
             }
+            // A tap opens the photos full screen, to zoom into.
+            .contentShape(Rectangle())
+            .onTapGesture { if !urls.isEmpty { setGallery(true) } }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(urls.count > 1 ? String(localized: "Photo \(photo + 1) of \(urls.count)") : String(localized: "Photo of the building"))
+            .accessibilityHint(urls.isEmpty ? Text("") : Text("Opens the photos full screen"))
+            .accessibilityAddTraits(urls.isEmpty ? [] : .isButton)
+            .accessibilityAction { if !urls.isEmpty { setGallery(true) } }
             .accessibilityAdjustableAction { dir in
                 guard urls.count > 1 else { return }
                 photo = dir == .increment ? min(photo + 1, urls.count - 1) : max(photo - 1, 0)
@@ -116,28 +146,21 @@ struct RerentalDetailView: View {
             .accessibilityIdentifier("rerental-page-photos")
     }
 
-    private var topButtons: some View {
-        HStack {
-            glassButton("chevron.left", label: String(localized: "Back"), id: "rerental-page-back") { dismiss() }
-            Spacer()
-            if let url = URL(string: listing.href) {
-                ShareLink(item: url) { glassIcon("square.and.arrow.up") }
-                    .accessibilityLabel(Text("Share"))
-                    .accessibilityIdentifier("rerental-page-share")
-            }
+    private func setGallery(_ on: Bool) {
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) { showGallery = on }
+    }
+
+    /// The share button in the bar. iOS 26 sets every bar button on its own
+    /// round glass; before that the bar draws a bare icon, which is lost on
+    /// a bright photo, so the circle is drawn here.
+    @ViewBuilder private func barIcon(_ name: String) -> some View {
+        if #available(iOS 26.0, *) {
+            Image(systemName: name).foregroundStyle(SE.ink)
+        } else {
+            Image(systemName: name).font(.system(size: 15, weight: .semibold)).foregroundStyle(SE.ink)
+                .frame(width: 36, height: 36).lightGlass(in: Circle()).contentShape(Circle())
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-    }
-
-    private func glassIcon(_ name: String) -> some View {
-        Image(systemName: name).font(.system(size: 17, weight: .semibold)).foregroundStyle(SE.ink)
-            .frame(width: 44, height: 44).lightGlass(in: Circle()).contentShape(Circle())
-    }
-
-    private func glassButton(_ name: String, label: String, id: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { glassIcon(name) }
-            .buttonStyle(.plain).accessibilityLabel(Text(label)).accessibilityIdentifier(id)
     }
 
     // MARK: Heading, chips, tiles

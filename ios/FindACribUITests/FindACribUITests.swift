@@ -2072,12 +2072,6 @@ final class FindACribUITests: XCTestCase {
     /// 2026-11-21, with the owner's "I'm not able to swipe back" on the
     /// re-rental's page). edgeSwipeBackKept() turns it back on.
     func testEdgeSwipePopsResults() throws {
-        // iPhone only for now. On iPad the swipe is still dead on this one
-        // screen (the ship's iPad pass, 2026-11-21: the list stayed put, 4
-        // runs in 4), as it was on both before edgeSwipeBackKept(); the same
-        // swipe does pop the building and re-rental pages there. Remove this
-        // line with the iPad fix.
-        try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "the results list's edge swipe is not fixed on iPad yet")
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
@@ -2094,6 +2088,41 @@ final class FindACribUITests: XCTestCase {
         // there must leave it standing and usable.
         from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
         XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 5) && app.buttons["search-button"].isHittable, "a swipe on the first screen broke it")
+    }
+
+    /// On iPad it is iOS 26's content swipe that goes back, and
+    /// edgeSwipeBackKept() holds it to the strip beside the edge. A card's
+    /// photos reach into that strip: a sideways swipe there is for the
+    /// photos, and must not leave the list.
+    func testSwipingACardsPhotosBesideTheEdgeStaysOnTheResults() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--rerental-galleries"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let several = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'rerental-photos' AND label BEGINSWITH 'Photo 1 of'"))
+        // The card in the leading column, whose photos start beside the edge.
+        func beside() -> XCUIElement? {
+            several.allElementsBoundByIndex.first { $0.isHittable && $0.frame.minX < 40 && $0.frame.minY > 150 && $0.frame.maxY < app.frame.height - 160 }
+        }
+        var photos = beside()
+        for _ in 0..<10 where photos == nil {
+            let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.7))
+            mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: -300)), withVelocity: .slow, thenHoldForDuration: 0.3)
+            photos = beside()
+        }
+        let strip = try XCTUnwrap(photos, "no re-rental with several photos within the first screens of results")
+        let total = strip.label
+        strip.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: strip.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)), withVelocity: .fast, thenHoldForDuration: 0.05)
+        let second = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'rerental-photos' AND label BEGINSWITH 'Photo 2 of'")).firstMatch
+        XCTAssertTrue(second.waitForExistence(timeout: 5), "a swipe on the photos did not show the next one (was \(total))")
+        // Back again, starting a thumb's width from the edge.
+        second.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5)).withOffset(CGVector(dx: 8, dy: 0))
+            .press(forDuration: 0.05, thenDragTo: second.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)), withVelocity: .fast, thenHoldForDuration: 0.05)
+        Thread.sleep(forTimeInterval: 1.5)
+        XCTAssertFalse(app.buttons["search-button"].exists, "a swipe on a card's photos left the results")
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-photos"].firstMatch.exists, "the results list is gone")
+        XCTAssertFalse(second.exists, "the swipe back did not show the first photo again")
     }
 
     /// `adjust(toPickerWheelValue:)` is a momentum scroll, not a seek: on an

@@ -41,17 +41,51 @@ private struct EdgeSwipeKeeper: UIViewControllerRepresentable {
     func updateUIViewController(_ vc: Probe, context: Context) {}
 
     final class Probe: UIViewController {
+        /// The system's own delegate for the content recognizer, put back
+        /// when this screen leaves so the screens that keep their bar swipe
+        /// the way the system has it.
+        private weak var systemContentDelegate: UIGestureRecognizerDelegate?
+
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            guard let swipe = navigationController?.interactivePopGestureRecognizer else { return }
+            guard let nav = navigationController, let swipe = nav.interactivePopGestureRecognizer else { return }
             swipe.delegate = EdgeSwipeDelegate.shared
             swipe.isEnabled = true
+            // iOS 26 has a second recognizer, for a swipe that starts in the
+            // content. On iPad it is the one that pops: the edge recognizer
+            // never asks to begin there (2026-11-21, iPad Pro 11, iOS 26.5),
+            // so without this the swipe stayed dead on iPad.
+            if #available(iOS 26.0, *), let content = nav.interactiveContentPopGestureRecognizer {
+                if !(content.delegate is EdgeSwipeDelegate) { systemContentDelegate = content.delegate }
+                content.delegate = EdgeSwipeDelegate.shared
+                content.isEnabled = true
+            }
+        }
+
+        override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            if #available(iOS 26.0, *), let content = navigationController?.interactiveContentPopGestureRecognizer,
+               content.delegate is EdgeSwipeDelegate, let system = systemContentDelegate {
+                content.delegate = system
+            }
         }
     }
 }
 
 private final class EdgeSwipeDelegate: NSObject, UIGestureRecognizerDelegate {
     static let shared = EdgeSwipeDelegate()
+    /// How far in from the leading edge a swipe may start. The system lets
+    /// its content swipe start anywhere, but it also settles that against
+    /// the sideways scrollers on the screen (the filter row, a card's
+    /// photos); this delegate replaces that judgement, so it keeps to the
+    /// strip beside the edge where nothing scrolls sideways.
+    /// Measured from where the recognizer reports the swipe, which is
+    /// about 30 pt after the finger first touched (its own run-up).
+    private static let strip: CGFloat = 80
+    /// The recognizer last allowed to begin, and when: the two recognizers
+    /// can both ask about one touch, and two pops at once hang the stack.
+    private weak var granted: UIGestureRecognizer?
+    private var grantedAt: TimeInterval = 0
 
     func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
         // Each tab has its own stack and its own recognizer; the stack is
@@ -61,6 +95,27 @@ private final class EdgeSwipeDelegate: NSObject, UIGestureRecognizerDelegate {
         guard let nav = next as? UINavigationController, nav.viewControllers.count > 1 else { return false }
         // Not while a push or pop is still running: a second one started
         // inside it leaves the stack half-moved.
-        return nav.transitionCoordinator == nil
+        guard nav.transitionCoordinator == nil else { return false }
+        let now = ProcessInfo.processInfo.systemUptime
+        if let granted, granted !== g, now - grantedAt < 0.6 { return false }
+        if g !== nav.interactivePopGestureRecognizer {
+            guard let view = g.view, let pan = g as? UIPanGestureRecognizer else { return false }
+            let rtl = view.effectiveUserInterfaceLayoutDirection == .rightToLeft
+            let startX = pan.location(in: view).x - pan.translation(in: view).x
+            let fromEdge = rtl ? view.bounds.width - startX : startX
+            let v = pan.velocity(in: view)
+            let along = rtl ? -v.x : v.x
+            guard fromEdge <= Self.strip, along > abs(v.y) else { return false }
+            // A card's photos reach into the strip: a sideways scroller
+            // under the finger keeps the swipe.
+            var under: UIView? = view.hitTest(CGPoint(x: startX, y: pan.location(in: view).y), with: nil)
+            while let u = under, u !== view {
+                if let scroller = u as? UIScrollView, scroller.isScrollEnabled, scroller.contentSize.width > scroller.bounds.width + 1 { return false }
+                under = u.superview
+            }
+        }
+        granted = g
+        grantedAt = now
+        return true
     }
 }

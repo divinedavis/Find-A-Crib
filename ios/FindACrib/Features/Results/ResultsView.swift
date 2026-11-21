@@ -345,6 +345,9 @@ struct ResultsView: View {
         }
         // Outside the income range on file: not in the feed (2026-10-04).
         rerentalPool = rerentalPool.filter { !Qualify.shared.outOfRange($0) }
+        // UI tests: only re-rentals with several photos, so a card with
+        // photos to swipe is always the first one in the feed.
+        if CommandLine.arguments.contains("--rerental-galleries") { rerentalPool = rerentalPool.filter { $0.imageURLs.count > 1 } }
         // The list itself: how many matched, how the search was shaped, and
         // whether re-rentals were in the mix — the denominator for the funnel.
         var p = Analytics.shape(query); p["results"] = results.count; p["rerental_pool"] = rerentalPool.count

@@ -191,3 +191,10 @@ def test_feeds_redraw_without_adopt_home_still_reports():
     steps = ["boot", "grid:done", "grid:feeds", "grid 12", "grid:build 200", "grid:done"]
     out = er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
     assert out["grid:done"]["n"] == 1
+
+
+def test_shadow_page_ending_on_a_waiting_feeds_redraw_is_dropped():
+    # Since 2026-11-22 a phone with the list sheet shut does not redraw the
+    # list when the boot feeds land; the same shadow now ends on grid:later.
+    steps = SHADOW + ["win-resize 430x699", "grid:feeds", "grid 12", "grid:later"]
+    assert not er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)

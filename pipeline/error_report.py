@@ -294,7 +294,9 @@ _RESIZE_STEP = re.compile(r"(vv-resize|win-resize|map-resize) ")
 # boot, adoptHome, toolbar resizes, grid:feeds, grid:build 200, grid:done at
 # 0.55 s, no tick, the visitor back 45 min later). That redraw is part of
 # every boot, not something the visitor did; anything else still reports.
-_BOOT_FEED_STEP = re.compile(r"grid:feeds$|grid \d+$|grid:build \d+$|grid:done$|grid:same$")
+# grid:later (2026-11-22): on a phone with the list sheet shut the redraw now
+# waits for the sheet, so the same boot ends "grid:feeds, grid 12, grid:later".
+_BOOT_FEED_STEP = re.compile(r"grid:feeds$|grid \d+$|grid:build \d+$|grid:done$|grid:same$|grid:later$")
 
 
 def _shadow_tail(labels):

@@ -1655,6 +1655,24 @@ class Runner:
         self.ok(0 < builds <= 2, f'boot should build the list at most twice (first paint + feeds), built {builds}', j)
         j.notes.append(f'{builds} list builds on boot')
         if device == 'phone':
+            # The list sheet is shut while the map shows, so moving the map
+            # must not rebuild it (2026-11-22: an iPhone died mid pinch-zoom
+            # after four hidden rebuilds in six seconds). It waits, then
+            # catches up when the sheet opens.
+            trace = "(() => { try { return ((JSON.parse(localStorage.getItem(window.facTraceKey)) || {}).s || []).map(s => String(s[1])); } catch (e) { return []; } })()"
+            page.evaluate("__facMap.setView(__facMap.getCenter(), __facMap.getZoom() + 2, {animate:false})"); time.sleep(1.5)
+            steps = page.evaluate(trace)
+            self.ok(sum(1 for s in steps if s.startswith('grid:build')) == builds,
+                    f'moving the map with the list shut should not rebuild the list: {steps[-8:]}', j)
+            self.ok('grid:later' in steps, f'the rebuild should be noted as waiting (grid:later): {steps[-8:]}', j)
+            page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(1.2)
+            steps = page.evaluate(trace)
+            self.ok(sum(1 for s in steps if s.startswith('grid:build')) == builds + 1,
+                    f'opening the list should rebuild it once for where the map is now: {steps[-8:]}', j)
+            self.ok(page.evaluate("document.querySelectorAll('#grid .card').length") > 0, 'the opened list should have cards', j)
+            page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(0.8)
+            page.evaluate("__facMap.setView(__facMap.getCenter(), __facMap.getZoom() - 2, {animate:false})"); time.sleep(1.2)
+            j.notes.append('hidden list waits for the sheet')
             # Street photos on a phone: at most three mounted while scrolling.
             # Twelve at once was what every iPhone death on 9/22 had running.
             page.evaluate("document.getElementById('fab')?.click()"); time.sleep(1.5)
@@ -2099,6 +2117,11 @@ class Runner:
         before = page.evaluate(first)
         for _ in range(4):
             page.evaluate("document.querySelector('.leaflet-control-zoom-in')?.click()"); time.sleep(0.9)
+        # A phone's list is a sheet that is shut while the map shows, and it
+        # no longer rebuilds while shut (2026-11-22). It has to be right when
+        # it opens, which is the owner's case: zoom in, open the list.
+        if page.evaluate("matchMedia('(max-width: 900px)').matches && !document.body.classList.contains('list-open')"):
+            page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(1.2)
         after = page.evaluate(first)
         held = page.evaluate("(JSON.parse(localStorage.getItem(window.facTraceKey) || '{}').s || []).some(x => x[1] === 'grid:hover-hold')")
         self.ok(not held, 'a tap left the list holding (grid:hover-hold) on a touch device', j)

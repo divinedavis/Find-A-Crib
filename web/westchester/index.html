@@ -6717,6 +6717,16 @@ function favActive() {
   let selectedBbl = null;
   // Bumped by anything that changes what a card shows; part of the render signature below.
   let gridGen = 0, lastGridSig = '';
+  // On a phone the list is a sheet parked just under the screen while the map
+  // shows. It used to be rebuilt on every pan and zoom anyway: 40 cards, their
+  // photos and street previews, for a list nobody could see. One iPhone died
+  // 22 s after its first visit, mid pinch-zoom, four rebuilds in its last six
+  // seconds (digest 2026-11-22). While the sheet is closed a rebuild now waits
+  // (gridLater) and runs when the sheet opens or the layout stops being a phone.
+  const PHONE_LIST = window.matchMedia('(max-width: 900px)');
+  let gridLater = false;
+  const listHidden = () => PHONE_LIST.matches && !document.body.classList.contains('list-open');
+  PHONE_LIST.addEventListener?.('change', () => { if (gridLater && !listHidden()) refreshGrid(); });
   // The lottery and featured feeds land a few ms apart right after the first
   // paint, and each used to rebuild the whole list: three 200-card builds in
   // under 200 ms, every tile photo started and thrown away twice. The phones
@@ -7421,7 +7431,7 @@ function favActive() {
     if (!visible.length) {
       grid.classList.add('empty-state');
       grid.innerHTML = '<div class="empty">No buildings in view. Pan or zoom out, or change filters.</div>';
-      lastGridSig = '';
+      lastGridSig = ''; gridLater = false;
       return;
     }
     grid.classList.remove('empty-state');
@@ -7435,8 +7445,14 @@ function favActive() {
     const favMode = favActive();
     const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
                  shown.length, shown.map(r => r.bbl).join(',')].join('|');
-    if (sig === lastGridSig && grid.childElementCount) { tr('grid:same'); return; }
+    if (sig === lastGridSig && grid.childElementCount) { gridLater = false; tr('grid:same'); return; }
     if (tileHover && grid.childElementCount) { tr('grid:hover-hold'); return; }   // rebuilt on mouseleave
+    // The first build always runs, so the sheet never opens on an empty
+    // list; later ones wait for the sheet. That includes the boot feeds'
+    // redraw: the featured and lottery tiles join the list (and are counted
+    // as served) when someone opens it, not while it sits off screen.
+    if (listHidden() && grid.querySelector('.card')) { gridLater = true; tr('grid:later'); return; }
+    gridLater = false;
     lastGridSig = sig;
     tr('grid:build ' + shown.length);
     // pinned is visible[0] at this point, so it survives the cap; take it out
@@ -7716,6 +7732,7 @@ function favActive() {
   function setListOpen(open) {
     tr('setListOpen ' + open);
     document.body.classList.toggle('list-open', open);
+    if (open && gridLater) refreshGrid();   // the map moved while the sheet was shut
     document.getElementById('fab-label').textContent = open ? 'Map' : 'List';
     document.getElementById('fab-ico').textContent = open ? '▤' : '≣';
     sortBtn.hidden = !open;   // sorting only applies to the list, so show Sort with the list (Zillow-style Map | Sort)

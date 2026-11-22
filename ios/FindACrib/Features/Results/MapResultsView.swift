@@ -39,7 +39,7 @@ struct MapResultsView: View {
                      : moved ? String(localized: "\((inView ?? results.count).formatted()) \(query.noun) in view")
                      : "\(results.count.formatted()) \(query.noun)")
                     .font(.se(15, .bold)).foregroundStyle(SE.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
+                    .padding(.horizontal, 12).padding(.vertical, 6).background(SE.surface.opacity(0.95)).clipShape(Capsule())
                     // Tests wait for "map-count" and read its number; it only
                     // carries that id once there is a number to read.
                     .accessibilityIdentifier(searched ? "map-count" : "map-count-pending")
@@ -178,7 +178,7 @@ struct MapCalloutCard: View {
                 BuildingImage(building: building, size: CGSize(width: 300, height: 300)).frame(width: 110, height: 110)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(building.neighborhood).font(.se(15, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
-                    Text(building.address).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
+                    Text(building.address).font(.se(20, .bold)).foregroundStyle(SE.royalInk).lineLimit(1)
                     if let e = store.estimate(building), e.count >= 3 {
                         Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2)
                     }
@@ -188,7 +188,7 @@ struct MapCalloutCard: View {
                 HeartButton(on: activity.isSaved(building.bbl)) { activity.toggleSaved(building.bbl) }
             }
             .padding(.trailing, 8)
-            .background(Color.white)
+            .background(SE.surface)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .shadow(color: .black.opacity(0.18), radius: 10, y: 3)
         }

@@ -29,7 +29,7 @@ struct CommentsSheet: View {
             Group {
                 if auth.isSignedIn { thread } else { signedOut }
             }
-            .background(Color.white)
+            .background(SE.surface)
             .navigationTitle(titleText)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -95,7 +95,7 @@ struct CommentsSheet: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
                     if store.loading && store.comments.isEmpty {
-                        ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.top, 40)
+                        ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity).padding(.top, 40)
                     } else if store.failed {
                         message(String(localized: "Couldn't load comments"), String(localized: "Check your connection and pull to refresh."))
                     } else if store.comments.isEmpty {
@@ -125,7 +125,7 @@ struct CommentsSheet: View {
     private func row(_ c: CommentsStore.Comment, indented: Bool = false, thread top: CommentsStore.Comment) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Circle().fill(SE.paleBlue).frame(width: indented ? 26 : 34, height: indented ? 26 : 34)
-                .overlay(Text(initials(c.author)).font(.se(indented ? 12 : 14, .bold)).foregroundStyle(SE.navy))
+                .overlay(Text(initials(c.author)).font(.se(indented ? 12 : 14, .bold)).foregroundStyle(SE.navyInk))
             VStack(alignment: .leading, spacing: 4) {
                 Text(c.author).font(.se(14, .bold)).foregroundStyle(SE.ink2)
                 Text(c.body).font(.se(16)).foregroundStyle(SE.ink).fixedSize(horizontal: false, vertical: true)
@@ -150,7 +150,7 @@ struct CommentsSheet: View {
                         HStack(spacing: 4) {
                             Image(systemName: c.isLiked(by: uid) ? "heart.fill" : "heart")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(c.isLiked(by: uid) ? SE.bad : SE.ink3)
+                                .foregroundStyle(c.isLiked(by: uid) ? SE.badInk : SE.ink3)
                             if c.likes > 0 {
                                 Text("\(c.likes)").font(.se(13)).foregroundStyle(SE.ink3).monospacedDigit()
                             }
@@ -217,17 +217,17 @@ struct CommentsSheet: View {
                     }
                 } label: {
                     Text(store.posting ? "…" : String(localized: "Post")).font(.se(16, .bold))
-                        .foregroundStyle(canPost ? SE.royal : SE.ink3)
+                        .foregroundStyle(canPost ? SE.royalInk : SE.ink3)
                 }
                 .buttonStyle(.plain).disabled(!canPost || store.posting)
                 .accessibilityIdentifier("comment-post")
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
             if let e = store.error {
-                Text(e).font(.se(13)).foregroundStyle(SE.bad).padding(.horizontal, 16).padding(.bottom, 8)
+                Text(e).font(.se(13)).foregroundStyle(SE.badInk).padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
-        .background(Color.white)
+        .background(SE.surface)
     }
 
     private var canPost: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

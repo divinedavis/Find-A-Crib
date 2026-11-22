@@ -25,7 +25,7 @@ struct ResultsHeader: View {
         HStack(spacing: 8) {
             Button(action: onLocation) {
                 HStack(spacing: 8) {
-                    Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royal)
+                    Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royalInk)
                     // Two lines inside the 40pt pill: the place, then the filter
                     // summary ("Up to $3k, 2 bd") small underneath. Side by side
                     // the summary was cut to "Up to…" on a phone (2026-09-08).
@@ -37,7 +37,7 @@ struct ResultsHeader: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 10).frame(height: 40)
-                .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
+                .background(SE.surface).clipShape(RoundedRectangle(cornerRadius: 2))
             }
             .buttonStyle(.plain)
             .frame(minWidth: quick ? 180 : nil, maxWidth: quick ? 340 : .infinity)
@@ -50,9 +50,9 @@ struct ResultsHeader: View {
                     Image(systemName: "slider.horizontal.3").font(.system(size: 13, weight: .bold))
                     Text("Filter" + (query.activeFilterCount > 0 ? " (\(query.activeFilterCount))" : "")).font(.se(16, .bold))
                 }
-                .foregroundStyle(SE.royal)
+                .foregroundStyle(SE.royalInk)
                 .padding(.horizontal, 10).frame(height: 40)
-                .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
+                .background(SE.surface).clipShape(RoundedRectangle(cornerRadius: 2))
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("results-filter")
@@ -111,9 +111,9 @@ struct ResultsHeader: View {
             Text(text).font(.se(15, .semibold)).lineLimit(1)
             if chevron { Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)) }
         }
-        .foregroundStyle(on ? Color.white : SE.royal)
+        .foregroundStyle(on ? Color.white : SE.royalInk)
         .padding(.horizontal, 12).frame(height: 40)
-        .background(on ? SE.royal : Color.white)
+        .background(on ? SE.royal : SE.surface)
         .overlay(RoundedRectangle(cornerRadius: 2).stroke(on ? Color.white.opacity(0.8) : .clear, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 2))
         .fixedSize()
@@ -242,7 +242,7 @@ struct ResultsView: View {
                     HStack(spacing: 10) {
                         Button { dismiss() } label: {
                             Image(systemName: "chevron.left").font(.system(size: 19, weight: .semibold)).foregroundStyle(SE.ink)
-                                .frame(width: 44, height: 44).background(Color.white, in: Circle())
+                                .frame(width: 44, height: 44).background(SE.surface, in: Circle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text("Back"))

@@ -117,7 +117,11 @@ struct FindACribApp: App {
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { a in
                     if let u = a.webpageURL, let link = DeepLink(u) { route(link) }
                 }
-                .preferredColorScheme(.light)   // StreetEasy ships light-only; the palette is tuned for it
+                // The app follows the phone's Light / Dark setting (owner,
+                // 2026-11-22); it was pinned .light until every colour in
+                // Theme.swift had a dark half. forcedScheme is nil unless a test
+                // or the screenshot script launched with --dark / --light.
+                .preferredColorScheme(SE.forcedScheme)
             }
         }
     }

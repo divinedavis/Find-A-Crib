@@ -7,12 +7,14 @@ import XCTest
 ///
 /// What is excused, and why, lives in `excused(_:)` — never excuse an issue on
 /// one of our own controls to make the gate pass; fix the view instead.
-final class AccessibilityAuditTests: XCTestCase {
+class AccessibilityAuditTests: XCTestCase {
     /// Portrait first: a simulator left in landscape by an earlier run
     /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
     /// tap in the suite.
     override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     var app: XCUIApplication!
+    /// Added to the launch by a subclass (AccessibilityAuditDarkTests: --dark).
+    var extraLaunchArguments: [String] { [] }
 
     override func setUpWithError() throws {
         continueAfterFailure = true   // one screen's issues must not hide the next screen's
@@ -22,7 +24,7 @@ final class AccessibilityAuditTests: XCTestCase {
         // up to 10 minutes).
         executionTimeAllowance = 420
         app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--lotteries-demo", "--events-demo"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--lotteries-demo", "--events-demo"] + extraLaunchArguments
         app.launch()
     }
 

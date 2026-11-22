@@ -343,7 +343,7 @@ private struct FeedAdCard: View {
                 .frame(maxWidth: .infinity)
         }
         .padding(14)
-        .background(Color.white)
+        .background(SE.surface)
         .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("feed-ad")

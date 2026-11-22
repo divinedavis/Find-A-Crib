@@ -103,7 +103,7 @@ struct RootView: View {
                 VStack(spacing: 12) {
                     Text("Couldn't load building data").font(.se(20, .bold))
                     Text(err).font(.se(15)).foregroundStyle(SE.ink3).multilineTextAlignment(.center)
-                }.padding(24).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 8)).padding()
+                }.padding(24).background(SE.surface).clipShape(RoundedRectangle(cornerRadius: 8)).padding()
             }
         }
     }
@@ -162,7 +162,7 @@ struct PillTabBar: View {
                         Image(systemName: tab.icon).font(.system(size: 19, weight: on ? .semibold : .regular))
                         Text(tab.title).font(.se(10.5, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(on ? (holiday?.onFill ?? SE.royal) : SE.ink)
+                    .foregroundStyle(on ? (holiday?.onFill ?? SE.royalInk) : SE.ink)
                     .frame(width: itemWidth, height: Self.height - 8)
                     .background { if on { selectedFill } }
                     .clipShape(Capsule())
@@ -191,7 +191,7 @@ struct PillTabBar: View {
         if let holiday {
             LinearGradient(colors: holiday.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
         } else {
-            Color.white.opacity(0.7)
+            SE.tabOn
         }
     }
 }

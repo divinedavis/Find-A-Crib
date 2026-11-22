@@ -48,7 +48,7 @@ struct BuildingCard: View {
                         .allowsHitTesting(false)
                 }
                 if store.voucherAvail(b) != nil {
-                    SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: .white, ink: SE.ink)
+                    SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: SE.surface, ink: SE.ink)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                         .padding(12)
                         .allowsHitTesting(false)
@@ -75,7 +75,7 @@ struct BuildingCard: View {
                     Button(action: open) {
                         // two lines, like the re-rental card: HCR addresses carry the
                         // neighborhood and ZIP and clipped in an iPad column
-                        Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(2).minimumScaleFactor(0.8)
+                        Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royalInk).lineLimit(2).minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.buttonStyle(.plain).accessibilityIdentifier("card-address")
 
@@ -121,8 +121,8 @@ struct BuildingCard: View {
                                 Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
                                 Text("Share").font(.se(18, .bold))
                             }
-                            .foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 50)
-                            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                            .foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).frame(height: 50)
+                            .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -289,7 +289,7 @@ struct CardRecordsButton: View {
                     }
                 }
             } else {
-                frame { ProgressView().tint(SE.royal) }.accessibilityIdentifier("card-records-loading")
+                frame { ProgressView().tint(SE.royalInk) }.accessibilityIdentifier("card-records-loading")
             }
         }
         .frame(maxWidth: .infinity)
@@ -329,8 +329,8 @@ struct CardRecordsButton: View {
     }
 
     private func frame<C: View>(@ViewBuilder _ c: () -> C) -> some View {
-        c().foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 50)
-            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+        c().foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).frame(height: 50)
+            .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
             .contentShape(Rectangle())
     }
 

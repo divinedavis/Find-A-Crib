@@ -31,7 +31,7 @@ struct CityPickerView: View {
                         }
                         Spacer()
                         if c == store.city {
-                            Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royal)
+                            Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royalInk)
                         }
                     }
                     .contentShape(Rectangle())

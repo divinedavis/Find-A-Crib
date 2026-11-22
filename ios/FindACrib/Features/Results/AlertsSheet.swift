@@ -67,7 +67,7 @@ struct AlertsSheet: View {
                             .font(.se(16)).foregroundStyle(SE.ink2)
                         if editing { pushStateLine }
                         if loadingPrefs {
-                            HStack(spacing: 8) { ProgressView().tint(SE.royal); Text("Loading what this email gets today…").font(.se(14)).foregroundStyle(SE.ink3) }
+                            HStack(spacing: 8) { ProgressView().tint(SE.royalInk); Text("Loading what this email gets today…").font(.se(14)).foregroundStyle(SE.ink3) }
                         } else if editing {
                             Text("These are the alerts this address gets today. Change anything and tap Save changes.")
                                 .font(.se(14)).foregroundStyle(SE.ink3).accessibilityIdentifier("alerts-editing-note")
@@ -105,7 +105,7 @@ struct AlertsSheet: View {
                         Text("A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
 
-                        if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
+                        if let error { Text(error).font(.se(15)).foregroundStyle(SE.badInk) }
                         SEPrimaryButton(title: busy ? "…" : (editing ? String(localized: "Save changes") : String(localized: "Turn on alerts"))) { Task { await subscribe() } }
                             .disabled(busy || boroughs.isEmpty || kinds.isEmpty)
                             .opacity((boroughs.isEmpty || kinds.isEmpty) ? 0.5 : 1)
@@ -117,7 +117,7 @@ struct AlertsSheet: View {
                 }
                 .padding(16)
             }
-            .background(Color.white)
+            .background(SE.surface)
             .navigationTitle(showsBeds ? String(localized: "Filter") : String(localized: "Alerts")).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .task { await PushService.shared.refreshStatus() }
@@ -216,7 +216,7 @@ struct AlertsSheet: View {
         Button(action: toggle) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: on ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 22)).foregroundStyle(on ? SE.royal : SE.line)
+                    .font(.system(size: 22)).foregroundStyle(on ? SE.royalInk : SE.line)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.se(18, .semibold)).foregroundStyle(SE.ink)
                     if let sub { Text(sub).font(.se(14)).foregroundStyle(SE.ink2) }
@@ -238,8 +238,8 @@ struct AlertsSheet: View {
         case .authorized, .provisional, .ephemeral:
             if line.ok {
                 HStack(spacing: 6) {
-                    Image(systemName: "bell.badge.fill").foregroundStyle(SE.good)
-                    Text(line.text).font(.se(15, .semibold)).foregroundStyle(SE.good)
+                    Image(systemName: "bell.badge.fill").foregroundStyle(SE.goodInk)
+                    Text(line.text).font(.se(15, .semibold)).foregroundStyle(SE.goodInk)
                 }.accessibilityIdentifier("alerts-push-on")
             } else {
                 // Allowed but not (yet) filed: retry the registration on tap.
@@ -247,7 +247,7 @@ struct AlertsSheet: View {
                     HStack(spacing: 6) {
                         Image(systemName: push.registration == .failed ? "exclamationmark.triangle.fill" : "bell.badge")
                         Text(line.text).font(.se(15, .semibold))
-                    }.foregroundStyle(push.registration == .failed ? SE.warn : SE.ink2)
+                    }.foregroundStyle(push.registration == .failed ? SE.warnInk : SE.ink2)
                 }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-pending")
             }
         case .denied:
@@ -256,14 +256,14 @@ struct AlertsSheet: View {
                     Image(systemName: "bell.slash.fill")
                     Text(line.text).font(.se(15, .semibold))
                     Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold))
-                }.foregroundStyle(SE.warn)
+                }.foregroundStyle(SE.warnInk)
             }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-settings")
         default:
             Button { Task { await push.requestAfterAlerts(); await push.refreshStatus() } } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "bell.badge")
                     Text(line.text).font(.se(15, .bold))
-                }.foregroundStyle(SE.royal)
+                }.foregroundStyle(SE.royalInk)
             }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-enable")
         }
     }

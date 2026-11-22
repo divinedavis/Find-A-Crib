@@ -60,7 +60,7 @@ struct LocationPickerView: View {
                         .accessibilityIdentifier("location-search")
                     if !text.isEmpty { Button { text = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(SE.ink3) } }
                 }
-                .padding(12).background(Color.white).overlay(RoundedRectangle(cornerRadius: 1).stroke(SE.line))
+                .padding(12).background(SE.surface).overlay(RoundedRectangle(cornerRadius: 1).stroke(SE.line))
                 .padding(16)
 
                 if !selected.isEmpty {
@@ -80,7 +80,7 @@ struct LocationPickerView: View {
                                 text = i.rest
                             } label: {
                                 Label(String(localized: "Turn on: \(i.summary)"), systemImage: "line.3.horizontal.decrease.circle.fill")
-                                    .font(.se(17, .semibold)).foregroundStyle(SE.royal)
+                                    .font(.se(17, .semibold)).foregroundStyle(SE.royalInk)
                             }
                             .accessibilityIdentifier("location-intent")
                         }
@@ -95,7 +95,7 @@ struct LocationPickerView: View {
                         case .westchester:
                             Link(destination: URL(string: "https://findacrib.com/westchester/?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")")!) {
                                 Label(String(localized: "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com"), systemImage: "safari")
-                                    .font(.se(16)).foregroundStyle(SE.royal)
+                                    .font(.se(16)).foregroundStyle(SE.royalInk)
                             }
                             .accessibilityIdentifier("location-westchester")
                         case .outside(let place):
@@ -144,12 +144,12 @@ struct LocationPickerView: View {
                 }
                 .listStyle(.plain)
             }
-            .background(Color.white)
+            .background(SE.surface)
             .navigationTitle(store.city.isNYC ? String(localized: "Location") : store.city.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.font(.se(18, .bold)).foregroundStyle(SE.royal).accessibilityIdentifier("location-done")
+                    Button("Done") { dismiss() }.font(.se(18, .bold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("location-done")
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     if !selected.isEmpty { Button("Clear") { selected = [] }.font(.se(17)).foregroundStyle(SE.ink2) }
@@ -174,7 +174,7 @@ struct LocationPickerView: View {
                     if let sub { Text(sub).font(.se(14)).foregroundStyle(SE.ink3) }
                 }
                 Spacer()
-                if on { Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royal) }
+                if on { Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royalInk) }
             }
             // A plain-style Button is only hittable on its opaque content, so a
             // tap in the gap between the name and the checkmark did nothing.

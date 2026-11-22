@@ -160,6 +160,14 @@ enum Skyline {
         return sunElevation(at: date, lat: c.lat, lng: c.lng) > -0.833
     }
 
+    /// What the banner draws: the day sky only when it is day there AND the
+    /// app is in light mode. Dark mode always gets the night skyline
+    /// (2026-11-22): a pale daytime sky is the one bright slab on an otherwise
+    /// dark screen. `isDaytime` stays about the sun alone.
+    static func showsDay(_ scene: Scene, at date: Date = Date()) -> Bool {
+        !SE.isDark && isDaytime(scene, at: date)
+    }
+
     /// The palette the drawing reads. Set by the views from `isDaytime` before
     /// each draw; every landmark reads the colours below, so none of the
     /// landmark code knows about day or night.
@@ -821,7 +829,7 @@ struct SkylineBand: View {
     var body: some View {
         let animated = onScreen && !reduceMotion && scenePhase == .active
         TimelineView(.periodic(from: .now, by: animated ? 0.5 : 600)) { tl in
-            let day = Skyline.isDaytime(scene, at: tl.date)
+            let day = Skyline.showsDay(scene, at: tl.date)
             Canvas(rendersAsynchronously: true) { ctx, size in
                 Skyline.daytime = day
                 let u = size.height / 100
@@ -851,7 +859,7 @@ struct SkylineBand: View {
         .frame(height: Skyline.bandHeight)
         .background {
             TimelineView(.periodic(from: .now, by: 600)) { tl in
-                let day = Skyline.isDaytime(scene, at: tl.date)
+                let day = Skyline.showsDay(scene, at: tl.date)
                 LinearGradient(colors: day ? [Color(hex: 0x5AA6D1), Color(hex: 0xB4DDEE)] : [SE.navyDeep, SE.navy],
                                startPoint: .top, endPoint: .bottom)
             }
@@ -874,7 +882,7 @@ struct NightSky: View {
     var body: some View {
         let animated = revealed && !reduceMotion && scenePhase == .active
         TimelineView(.animation(minimumInterval: 1 / 20, paused: !animated)) { tl in
-            let day = Skyline.isDaytime(scene, at: tl.date)
+            let day = Skyline.showsDay(scene, at: tl.date)
             Canvas(rendersAsynchronously: true) { ctx, size in
                 Skyline.daytime = day
                 let t = tl.date.timeIntervalSinceReferenceDate

@@ -50,9 +50,9 @@ struct MyActivityView: View {
             ForEach(activity.savedSearches) { s in
                 Button { nav.activityPath.append(.results(s.query)) } label: {
                     HStack(spacing: 12) {
-                        Image(systemName: "bell.fill").font(.system(size: 18)).foregroundStyle(SE.royal).frame(width: 40, height: 40).background(SE.paleBlue).clipShape(Circle())
+                        Image(systemName: "bell.fill").font(.system(size: 18)).foregroundStyle(SE.royalInk).frame(width: 40, height: 40).background(SE.paleBlue).clipShape(Circle())
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(s.name).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
+                            Text(s.name).font(.se(20, .bold)).foregroundStyle(SE.royalInk).lineLimit(1)
                             Text(s.query.summary).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1)
                             Text("\(s.resultCount.formatted()) \(s.query.noun) · saved \(Formatters.long.string(from: s.createdAt))").font(.se(14)).foregroundStyle(SE.ink3)
                         }
@@ -74,7 +74,7 @@ struct MyActivityView: View {
             HStack {
                 Text("Recently viewed").font(.se(22, .bold))
                 Spacer()
-                Button("Clear") { activity.clearRecents() }.font(.se(17, .semibold)).foregroundStyle(SE.royal)
+                Button("Clear") { activity.clearRecents() }.font(.se(17, .semibold)).foregroundStyle(SE.royalInk)
             }.padding(.horizontal, 16)
             ForEach(recentBuildings) { b in
                 Button { nav.activityPath.append(.building(b.bbl)) } label: {
@@ -82,7 +82,7 @@ struct MyActivityView: View {
                         BuildingImage(building: b, size: CGSize(width: 300, height: 300)).frame(width: 96, height: 96)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(b.neighborhood).font(.se(15, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
-                            Text(b.address).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
+                            Text(b.address).font(.se(20, .bold)).foregroundStyle(SE.royalInk).lineLimit(1)
                             if let e = store.estimate(b), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
 
                             Text("\(b.u.map { "\($0) units" } ?? "") · \(b.openViolations) open violations").font(.se(14)).foregroundStyle(SE.ink3)

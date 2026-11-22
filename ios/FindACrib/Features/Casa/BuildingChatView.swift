@@ -40,7 +40,7 @@ struct BuildingChatView: View {
             Group {
                 if BuildingChat.isDemo && chat.joined { room }
                 else if !auth.isSignedIn { signedOut }
-                else if chat.loading && !chat.joined { ProgressView().tint(SE.royal).frame(maxWidth: .infinity, maxHeight: .infinity) }
+                else if chat.loading && !chat.joined { ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity, maxHeight: .infinity) }
                 else if !chat.joined { joinCard }
                 else { room }
             }
@@ -131,14 +131,14 @@ struct BuildingChatView: View {
                     Text("I'll be respectful. No harassment, hate, threats, spam or sharing people's private details. Find A Crib removes anyone who breaks these rules.")
                         .font(.se(15)).foregroundStyle(SE.ink2)
                 }
-                .tint(SE.royal).accessibilityIdentifier("chat-terms")
+                .tint(SE.royalInk).accessibilityIdentifier("chat-terms")
                 SEPrimaryButton(title: String(localized: "Join the chat"), icon: "bubble.left.and.bubble.right.fill") {
                     Task { await chat.join() }
                 }
                 .disabled(!agreed || name.trimmingCharacters(in: .whitespaces).isEmpty)
                 .opacity(agreed && !name.trimmingCharacters(in: .whitespaces).isEmpty ? 1 : 0.5)
                 .accessibilityIdentifier("chat-join")
-                if let e = chat.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
+                if let e = chat.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk) }
             }
             .padding(16)
         }
@@ -146,7 +146,7 @@ struct BuildingChatView: View {
 
     private var lockLine: some View {
         Label(String(localized: "End-to-end encrypted"), systemImage: "lock.fill")
-            .font(.se(14, .semibold)).foregroundStyle(SE.good)
+            .font(.se(14, .semibold)).foregroundStyle(SE.goodInk)
     }
 
     // MARK: - The room
@@ -171,7 +171,7 @@ struct BuildingChatView: View {
                 Text(chat.memberCount == 1 ? String(localized: "Just you so far") : String(localized: "\(chat.memberCount) neighbors"))
                     .font(.se(14)).foregroundStyle(SE.ink3)
             }
-            .padding(.horizontal, 16).padding(.vertical, 8).background(Color.white)
+            .padding(.horizontal, 16).padding(.vertical, 8).background(SE.surface)
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -208,7 +208,7 @@ struct BuildingChatView: View {
                         Button { withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } } label: {
                             Image(systemName: "arrow.down").font(.system(size: 17, weight: .bold)).foregroundStyle(SE.ink)
                                 .frame(width: 40, height: 40)
-                                .background(Circle().fill(Color.white).shadow(color: .black.opacity(0.18), radius: 6, y: 2))
+                                .background(Circle().fill(SE.surface).shadow(color: .black.opacity(0.18), radius: 6, y: 2))
                         }
                         .buttonStyle(.plain).padding(16)
                         .transition(.scale.combined(with: .opacity))
@@ -217,7 +217,7 @@ struct BuildingChatView: View {
                     }
                 }
             }
-            if let e = chat.error { Text(e).font(.se(14)).foregroundStyle(SE.bad).padding(.horizontal, 16).padding(.top, 6) }
+            if let e = chat.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk).padding(.horizontal, 16).padding(.top, 6) }
             if let r = replyingTo { replyBar(r) }
             composer
         }
@@ -321,7 +321,7 @@ struct BuildingChatView: View {
             .foregroundStyle(!readable ? SE.ink3 : (m.mine ? .white : SE.ink))
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 14).padding(.vertical, 9)
-            .background(m.mine && readable ? SE.royal : Color.white, in: shape)
+            .background(m.mine && readable ? SE.royal : SE.surface, in: shape)
             .overlay { GeometryReader { g in
                 Color.clear.contentShape(shape)
                     .onTapGesture(count: 2) { if readable { heart(m) } }
@@ -380,7 +380,7 @@ struct BuildingChatView: View {
                 if rs.count > 1 { Text("\(rs.count)").font(.se(12, .semibold)).foregroundStyle(SE.ink2) }
             }
             .padding(.horizontal, 6).padding(.vertical, 3)
-            .background(Capsule().fill(Color.white))
+            .background(Capsule().fill(SE.surface))
             .overlay(Capsule().stroke(SE.canvas, lineWidth: 2))
         }
         .buttonStyle(.plain)
@@ -395,7 +395,7 @@ struct BuildingChatView: View {
             VStack(alignment: .leading, spacing: 4) {
                 TypingDots()
                     .padding(.horizontal, 14).padding(.vertical, 12)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 20))
+                    .background(SE.surface, in: RoundedRectangle(cornerRadius: 20))
                 Text(ChatLayout.typingLine(chat.typing)).font(.se(12.5)).foregroundStyle(SE.ink3)
             }
             Spacer(minLength: 0)
@@ -455,7 +455,7 @@ struct BuildingChatView: View {
             .accessibilityIdentifier("chat-reply-cancel")
         }
         .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(Color.white)
+        .background(SE.surface)
         .overlay(alignment: .top) { Rectangle().fill(SE.line.opacity(0.5)).frame(height: 0.5) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("chat-replying")
@@ -488,7 +488,7 @@ struct BuildingChatView: View {
             }
         }
         .frame(minHeight: 44)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 22))
+        .background(SE.surface, in: RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).stroke(SE.line.opacity(0.6)))
         .animation(.easeOut(duration: 0.15), value: empty)
         .padding(.horizontal, 12).padding(.vertical, 8).background(SE.canvas)
@@ -519,9 +519,9 @@ struct Avatar: View {
     let name: String
     var body: some View {
         Text(ChatLayout.initials(name))
-            .font(.se(11, .bold)).foregroundStyle(SE.royal)
+            .font(.se(11, .bold)).foregroundStyle(SE.royalInk)
             .frame(width: 28, height: 28)
-            .background(Circle().fill(SE.royal.opacity(0.13)))
+            .background(Circle().fill(SE.royalInk.opacity(0.13)))
             .accessibilityHidden(true)
     }
 }
@@ -565,7 +565,7 @@ struct MessageMenu: View {
                     Text(m.text ?? String(localized: "Sent before this phone joined, so it can't be read here"))
                         .font(.se(17)).foregroundStyle(m.mine && m.text != nil ? .white : SE.ink).lineLimit(8)
                         .padding(.horizontal, 14).padding(.vertical, 9)
-                        .background(m.mine && m.text != nil ? SE.royal : Color.white, in: RoundedRectangle(cornerRadius: 20))
+                        .background(m.mine && m.text != nil ? SE.royal : SE.surface, in: RoundedRectangle(cornerRadius: 20))
                         .frame(maxWidth: 300, alignment: m.mine ? .trailing : .leading)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(m.at.formatted(.dateTime.weekday(.abbreviated).hour().minute()).uppercased())
@@ -573,7 +573,7 @@ struct MessageMenu: View {
                         ForEach(actions) { a in
                             Button(role: a.role) { close(); a.run() } label: {
                                 Label(a.title, systemImage: a.icon).font(.se(16))
-                                    .foregroundStyle(a.role == .destructive ? SE.bad : SE.ink)
+                                    .foregroundStyle(a.role == .destructive ? SE.badInk : SE.ink)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 16).frame(height: 44).contentShape(Rectangle())
                             }
@@ -583,7 +583,7 @@ struct MessageMenu: View {
                     }
                     .padding(.bottom, 6)
                     .frame(width: 240)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(color: .black.opacity(0.15), radius: 14, y: 4))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(SE.surface).shadow(color: .black.opacity(0.15), radius: 14, y: 4))
                 }
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity, alignment: m.mine ? .trailing : .leading)
@@ -613,7 +613,7 @@ struct MessageMenu: View {
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(RoundedRectangle(cornerRadius: 26).fill(Color.white).shadow(color: .black.opacity(0.15), radius: 12, y: 4))
+        .background(RoundedRectangle(cornerRadius: 26).fill(SE.surface).shadow(color: .black.opacity(0.15), radius: 12, y: 4))
         .opacity(m.text == nil ? 0 : 1)
     }
 
@@ -624,7 +624,7 @@ struct MessageMenu: View {
             Task { await chat.react(m, emoji: e, name: name) }
         } label: {
             Text(e).font(.system(size: 26)).frame(width: 40, height: 40)
-                .background(Circle().fill(current == e ? SE.royal.opacity(0.18) : .clear))
+                .background(Circle().fill(current == e ? SE.royalInk.opacity(0.18) : .clear))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(current == e ? String(localized: "Remove \(e)") : String(localized: "React \(e)"))
@@ -763,7 +763,7 @@ struct MessageDetail: View {
             }
             if let t = message.text {
                 Button { UIPasteboard.general.string = t } label: { Label(String(localized: "Copy"), systemImage: "doc.on.doc") }
-                    .font(.se(16, .semibold)).foregroundStyle(SE.royal)
+                    .font(.se(16, .semibold)).foregroundStyle(SE.royalInk)
             }
             if !message.mine {
                 HStack(spacing: 18) {

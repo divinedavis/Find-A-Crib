@@ -14,7 +14,7 @@ struct RealtimeUpsell: View {
     let open: () -> Void
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "bolt.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: 0x5B21B6))
+            Image(systemName: "bolt.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.plusInk)
             VStack(alignment: .leading, spacing: 6) {
                 // Concise (owner, 2026-10-12): real-time vs once a day, and the
                 // free first month, highlighted.
@@ -40,7 +40,7 @@ struct RealtimeUpsell: View {
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: 0xF3EEFF)).clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(SE.plusWash).clipShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
     }
 }
@@ -50,9 +50,9 @@ struct RealtimeUpsell: View {
 struct FreeMonthTag: View {
     var body: some View {
         Label("First month free", systemImage: "gift.fill")
-            .font(.se(14, .bold)).foregroundStyle(Color(hex: 0x14532D))
+            .font(.se(14, .bold)).foregroundStyle(SE.mintInk)
             .padding(.horizontal, 10).padding(.vertical, 4)
-            .background(Capsule().fill(Color(hex: 0xDCFCE7)))
+            .background(Capsule().fill(SE.mintWash))
             .accessibilityIdentifier("free-month-tag")
     }
 }
@@ -80,7 +80,7 @@ private struct AIButton: View {
                 Spacer(minLength: 0)
             }
             .foregroundStyle(SE.ink).padding(.horizontal, 14).frame(height: 48).frame(maxWidth: .infinity)
-            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
+            .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
         }
         .buttonStyle(.plain).accessibilityIdentifier(id)
     }
@@ -111,10 +111,10 @@ struct AISearchSheet: View {
                 Text("Describe the apartment you want").font(.se(22, .bold))
                 Text("Neighborhood, price, bedrooms, anything — e.g. “2 bed under $2,500 near Prospect Park, no violations”.").font(.se(16)).foregroundStyle(SE.ink2)
                 TextField("What are you looking for?", text: $text, axis: .vertical)
-                    .font(.se(18)).lineLimit(2...4).padding(12).background(Color.white)
+                    .font(.se(18)).lineLimit(2...4).padding(12).background(SE.surface)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
                     .accessibilityIdentifier("ai-search-field")
-                if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
+                if let error { Text(error).font(.se(15)).foregroundStyle(SE.badInk) }
                 SEPrimaryButton(title: busy ? String(localized: "Reading…") : String(localized: "Search"), icon: "sparkles") { Task { await go() } }
                     .disabled(busy || text.trimmingCharacters(in: .whitespaces).count < 4)
                 Spacer()
@@ -151,8 +151,8 @@ struct QualifyBadge: View {
     let verdict: Qualify.Verdict
     var body: some View {
         let (icon, ink, fill): (String, Color, Color) = switch verdict {
-        case .yes: ("checkmark.circle.fill", SE.good, Color(hex: 0xE6F4EA))
-        case .high, .low: ("exclamationmark.circle.fill", SE.warn, Color(hex: 0xFDF0E1))
+        case .yes: ("checkmark.circle.fill", SE.goodInk, SE.goodWash)
+        case .high, .low: ("exclamationmark.circle.fill", SE.warnInk, SE.warnWash)
         case .unknown: ("questionmark.circle", SE.ink3, SE.badge)
         }
         return Label(Qualify.words(verdict), systemImage: icon).font(.se(14, .bold)).foregroundStyle(ink)

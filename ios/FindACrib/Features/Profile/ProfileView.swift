@@ -56,7 +56,7 @@ struct ProfileView: View {
                                         // The audit calls a bare address "not human-readable" (2026-11-17).
                                         .accessibilityLabel(Text("Signed in as \((auth.email ?? "").replacingOccurrences(of: "@", with: " at ").replacingOccurrences(of: ".", with: " dot "))"))
                                     if auth.hasPlus {
-                                        SEBadge(text: String(localized: "Find A Crib Plus"), icon: "star.fill", fill: SE.paleBlue, ink: SE.royal)
+                                        SEBadge(text: String(localized: "Find A Crib Plus"), icon: "star.fill", fill: SE.paleBlue, ink: SE.royalInk)
                                     }
                                 } else {
                                     Text("Guest").font(.se(30, .bold))
@@ -67,16 +67,16 @@ struct ProfileView: View {
                         if auth.isSignedIn {
                             HStack(spacing: 14) {
                                 Button { Task { await auth.signOut() } } label: {
-                                    Text("Sign out").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                                    Text("Sign out").font(.se(18, .bold)).foregroundStyle(SE.royalInk)
                                 }.buttonStyle(.plain).accessibilityIdentifier("sign-out")
                                 Spacer()
                                 Button(role: .destructive) { confirmDelete = true } label: {
-                                    Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.bad).frame(minHeight: 44).contentShape(Rectangle())
+                                    Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.badInk).frame(minHeight: 44).contentShape(Rectangle())
                                 }.buttonStyle(.plain).accessibilityIdentifier("delete-account")
                             }
                             if auth.hasPlus {
                                 Button { Task { await plus.manage() } } label: {
-                                    Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royal)
+                                    Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royalInk)
                                 }.buttonStyle(.plain)
                             } else {   // Plus = the AI features (2026-10-03)
                                 SEPrimaryButton(title: String(localized: "Get Find A Crib Plus · \(plus.priceText)/mo"), icon: "star.fill", fill: SE.navy) { showPaywall = true }
@@ -89,15 +89,15 @@ struct ProfileView: View {
                                 SocialSignInButtons()
                                 Button { emailSheet = .plain } label: {
                                     HStack(spacing: 10) {
-                                        Image(systemName: "envelope.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royal)
+                                        Image(systemName: "envelope.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royalInk)
                                         Text("Continue with email").font(.se(18, .semibold)).foregroundStyle(SE.ink)
                                     }
                                     .frame(maxWidth: .infinity).frame(height: 50)
-                                    .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
+                                    .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("sign-in-email").disabled(auth.busy)
-                                if auth.busy { ProgressView().tint(SE.royal) }
-                                if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
+                                if auth.busy { ProgressView().tint(SE.royalInk) }
+                                if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk) }
                             }
                             Text("Your saves on this phone merge into the account.")
                                 .font(.se(14)).foregroundStyle(SE.ink3)
@@ -155,7 +155,7 @@ struct ProfileView: View {
                     }
                     settingRow(String(localized: "Home borough")) {
                         Picker("", selection: $homeBorough) { ForEach(Borough.all.map(\.name), id: \.self) { Text($0) } }
-                            .pickerStyle(.menu).tint(SE.royal).font(.se(18))
+                            .pickerStyle(.menu).tint(SE.royalInk).font(.se(18))
                     }
                     settingRow(String(localized: "Saved buildings")) { Text("\(activity.saved.count)" + (auth.isSignedIn ? String(localized: " · synced") : "")).font(.se(18, .bold)) }
                     settingRow(String(localized: "Saved searches")) { Text("\(activity.savedSearches.count)").font(.se(18, .bold)) }
@@ -166,14 +166,14 @@ struct ProfileView: View {
                         if auth.isSignedIn {
                             Button { showAlerts = true } label: {
                                 HStack(spacing: 4) { Text("Set up or change").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                    .foregroundStyle(SE.royal)
+                                    .foregroundStyle(SE.royalInk)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts")
                         } else {
                             // A link like its neighbours, not grey text (owner, 2026-10-15:
                             // "alerts sign in to set up is grey"): opens the alerts sign-in.
                             Button { emailSheet = .alerts } label: {
                                 HStack(spacing: 4) { Text("Sign in to set up").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                    .foregroundStyle(SE.royal)
+                                    .foregroundStyle(SE.royalInk)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-signin")
                         }
                     }
@@ -186,7 +186,7 @@ struct ProfileView: View {
                         settingRow(String(localized: "Alerts are on")) {
                             Button { confirmTurnOff = true } label: {
                                 HStack(spacing: 4) { Text(turnOffFailed ? String(localized: "Try again") : String(localized: "Turn off alerts")).font(.se(17, .semibold)).layoutPriority(1); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
-                                    .foregroundStyle(turnOffFailed ? SE.bad : SE.royal)
+                                    .foregroundStyle(turnOffFailed ? SE.badInk : SE.royalInk)
                                     .frame(minHeight: 44).contentShape(Rectangle())
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-off")
                         }
@@ -196,13 +196,13 @@ struct ProfileView: View {
                     settingRow(String(localized: "Broker fee check")) {
                         Button { showBrokerFee = true } label: {
                             HStack(spacing: 4) { Text("Check a fee").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                .foregroundStyle(SE.royal)
+                                .foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-broker-fee")
                     }
                     settingRow(String(localized: "Lease review")) {
                         Button { showLeaseReview = true } label: {
                             HStack(spacing: 4) { Text("Review a lease").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                .foregroundStyle(SE.royal)
+                                .foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-lease-review")
                     }
                     // Already have a place? (owner, 2026-10-13): repairs and rent
@@ -214,7 +214,7 @@ struct ProfileView: View {
                         settingRow(t.title) {
                             Button { homeTool = t } label: {
                                 HStack(spacing: 4) { Text(t.action).font(.se(18, .semibold)).layoutPriority(1); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                    .foregroundStyle(SE.royal)
+                                    .foregroundStyle(SE.royalInk)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-\(t.rawValue)")
                         }
                     }
@@ -223,7 +223,7 @@ struct ProfileView: View {
                     settingRow(String(localized: "My documents")) {
                         Button { showPacket = true } label: {
                             HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? String(localized: "Set up") : String(localized: "\(Packet.shared.readyCount) ready")).font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
-                                .foregroundStyle(SE.royal)
+                                .foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-packet")
                     }
                     // Where alerts land besides email. Denied in Settings can only be
@@ -232,11 +232,11 @@ struct ProfileView: View {
                         switch PushService.shared.status {
                         case .authorized, .provisional, .ephemeral:
                             let ok = PushService.stateLine(status: PushService.shared.status, registration: PushService.shared.registration).ok
-                            Text(ok ? String(localized: "On") : String(localized: "Allowed · not connected")).font(.se(18, .bold)).foregroundStyle(ok ? SE.good : SE.warn)
+                            Text(ok ? String(localized: "On") : String(localized: "Allowed · not connected")).font(.se(18, .bold)).foregroundStyle(ok ? SE.goodInk : SE.warnInk)
                         case .denied:
                             Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
                                 HStack(spacing: 4) { Text("Off · turn on in Settings").font(.se(16, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold)) }
-                                    .foregroundStyle(SE.royal)
+                                    .foregroundStyle(SE.royalInk)
                             }.buttonStyle(.plain)
                         default:
                             Text(auth.isSignedIn ? String(localized: "Asked when you turn on alerts") : String(localized: "Sign in and turn on alerts")).font(.se(16)).foregroundStyle(SE.ink3)
@@ -259,13 +259,13 @@ struct ProfileView: View {
                             }
                         } label: {
                             HStack(spacing: 4) { Text(AppLanguage.name(AppLanguage.shared.current)).font(.se(18, .semibold)); Image(systemName: "chevron.up.chevron.down").font(.system(size: 13, weight: .bold)) }
-                                .foregroundStyle(SE.royal)
+                                .foregroundStyle(SE.royalInk)
                         }.accessibilityIdentifier("profile-language")
                     }
                     settingRow(String(localized: "Rate Find A Crib")) {
                         Button { ReviewPrompt.shared.openWriteReview() } label: {
                             HStack(spacing: 4) { Text("On the App Store").font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }
-                                .foregroundStyle(SE.royal)
+                                .foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-rate")
                     }
 
@@ -281,8 +281,8 @@ struct ProfileView: View {
                             Task { await store.refresh(); refreshing = false }
                         } label: {
                             HStack(spacing: 8) {
-                                if refreshing { ProgressView().tint(SE.royal) }
-                                Text(refreshing ? String(localized: "Checking findacrib.com…") : String(localized: "Refresh data")).font(.se(18, .bold)).foregroundStyle(SE.royal)
+                                if refreshing { ProgressView().tint(SE.royalInk) }
+                                Text(refreshing ? String(localized: "Checking findacrib.com…") : String(localized: "Refresh data")).font(.se(18, .bold)).foregroundStyle(SE.royalInk)
                             }
                         }.buttonStyle(.plain).disabled(refreshing)
                     }
@@ -299,7 +299,7 @@ struct ProfileView: View {
                                     .font(.se(14)).foregroundStyle(SE.ink3)
                             }
                         }
-                        .tint(SE.royal)
+                        .tint(SE.royalInk)
                         .accessibilityIdentifier("profile-share-usage")
                         .onChange(of: shareUsage) { _, on in
                             if !on { Analytics.shared.track("usage_optout") }
@@ -320,7 +320,7 @@ struct ProfileView: View {
                                     .font(.se(14)).foregroundStyle(SE.ink3)
                             }
                         }
-                        .tint(SE.royal)
+                        .tint(SE.royalInk)
                         .accessibilityIdentifier("profile-holiday-icons")
                         .onChange(of: holidayIcons) { _, _ in HolidayIcon.apply() }
                     }
@@ -341,9 +341,9 @@ struct ProfileView: View {
                 }
                 .readableColumn()
             }
-            .background(Color.white)
+            .background(SE.surface)
         }
-        .background(Color.white)
+        .background(SE.surface)
     }
 
     private func settingRow<C: View>(_ k: String, @ViewBuilder _ v: () -> C) -> some View {

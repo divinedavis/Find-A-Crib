@@ -48,7 +48,7 @@ struct SearchHomeView: View {
                             SEFieldLabel(text: String(localized: "City"))
                             SEFieldBox {
                                 HStack(spacing: 10) {
-                                    Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
+                                    Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royalInk).accessibilityHidden(true)
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(store.city.name).font(.se(19)).foregroundStyle(SE.ink)
                                         Text(store.loaded ? String(localized: "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings")
@@ -76,7 +76,7 @@ struct SearchHomeView: View {
                             // for VoiceOver and XCUITest. The box takes the tap instead.
                             SEFieldBox {
                                 HStack(spacing: 10) {
-                                    Image(systemName: "mappin").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
+                                    Image(systemName: "mappin").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royalInk).accessibilityHidden(true)
                                     if query.locations.isEmpty {
                                         Text(store.city.searchPlaceholder).font(.se(19)).foregroundStyle(SE.ink3)
                                         Spacer(minLength: 0)
@@ -129,7 +129,7 @@ struct SearchHomeView: View {
                                 HStack(spacing: 6) {
                                     Image(systemName: "bell.badge.fill")
                                     Text("Sign up for lottery alerts").font(.se(17, .semibold))
-                                }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
+                                }.foregroundStyle(SE.royalInk).frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.plain).padding(.top, 4)
                             .accessibilityIdentifier("search-lottery-alerts")
@@ -389,7 +389,7 @@ struct PricePickerSheet: View {
             Divider().overlay(SE.lineSoft)
             if custom { customEntry } else { wheels }
         }
-        .background(Color.white)
+        .background(SE.surface)
         .presentationDetents([.height(300)])
         .presentationDragIndicator(.hidden)
         // The map and the live result count behind the sheet are half the
@@ -429,7 +429,7 @@ struct PricePickerSheet: View {
             }
             Button("Done") { commit(); dismiss() }
                 .font(.se(18, .bold))
-                .foregroundStyle(SE.royal)
+                .foregroundStyle(SE.royalInk)
                 .accessibilityIdentifier("price-done")
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
@@ -466,12 +466,12 @@ struct PricePickerSheet: View {
             HStack {
                 Button("Use the wheel") { custom = false }
                     .font(.se(17, .semibold))
-                    .foregroundStyle(SE.royal)
+                    .foregroundStyle(SE.royalInk)
                     .accessibilityIdentifier("price-use-wheel")
                 Spacer()
                 Button("Done") { commit(); dismiss() }
                     .font(.se(17, .bold))
-                    .foregroundStyle(SE.royal)
+                    .foregroundStyle(SE.royalInk)
                     .accessibilityIdentifier("price-custom-done")
             }
         }
@@ -534,10 +534,10 @@ struct RecentSearchCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
                         Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized")) in")
-                            .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.7)   // "Voucher homes in" clipped at 176 pt
+                            .font(.se(22, .bold)).foregroundStyle(SE.royalInk).lineLimit(1).minimumScaleFactor(0.7)   // "Voucher homes in" clipped at 176 pt
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
-                            .font(.system(size: 20)).foregroundStyle(SE.royal)
+                            .font(.system(size: 20)).foregroundStyle(SE.royalInk)
                     }
                     Text(query.locationLabel(city: store.city.short)).font(.se(17)).foregroundStyle(SE.ink2).lineLimit(1)
                     Text(query.summary).font(.se(16)).foregroundStyle(SE.ink3).lineLimit(2)
@@ -694,7 +694,7 @@ struct HeroBanner: View {
                 // scatter to sit in, so it stacks with the words: one centred
                 // lockup, mark over wordmark over city line.
                 VStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 10).fill(.white)
+                    RoundedRectangle(cornerRadius: 10).fill(SE.surface)
                         .frame(width: 46, height: 46)
                         .overlay(BrandMark().frame(width: 30, height: 30))
                         .rotationEffect(.degrees(-9))
@@ -755,7 +755,7 @@ struct BrandMark: View {
                         p.closeSubpath()
                     }
                 }
-                .fill(Color.white)
+                .fill(SE.surface)
                 // the door, cut back to the field
                 Path { p in
                     p.addRoundedRect(in: CGRect(x: 480 * u, y: 632 * u, width: 64 * u, height: 128 * u), cornerRadii: RectangleCornerRadii(topLeading: 32 * u, bottomLeading: 0, bottomTrailing: 0, topTrailing: 32 * u))

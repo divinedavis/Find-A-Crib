@@ -39,7 +39,7 @@ struct RerentalDetailView: View {
                     if let v = qualify.verdict(for: listing), v != .unknown { verdictCard(v).padding(.top, 10) }
                     ForEach(table?.flags ?? [], id: \.code) { fl in
                         Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill")
-                            .font(.se(15, .semibold)).foregroundStyle(SE.warn).padding(.top, 10)
+                            .font(.se(15, .semibold)).foregroundStyle(SE.warnInk).padding(.top, 10)
                     }
                     if !whoCanApply.isEmpty { whoCanApplySection.padding(.top, 22) }
                     if let deal = listing.deal { section("Move-in deal") { DealBox(listing: listing, deal: deal) }.padding(.top, 22) }
@@ -214,12 +214,12 @@ struct RerentalDetailView: View {
     private var chips: some View {
         RerentalChipFlow {
             if table?.first_come_first_served == true {
-                chip(String(localized: "First come, first served"), icon: "bolt", tint: SE.warn, fill: Color(hex: 0xFFF0E0))
+                chip(String(localized: "First come, first served"), icon: "bolt", tint: SE.warnInk, fill: SE.warnWash)
                     .accessibilityIdentifier("rerental-page-fcfs")
             }
             if let b = bedsText { chip(b, icon: "bed.double", tint: SE.ink2, fill: Color(.tertiarySystemFill)) }
             if let n = unitsLeft, n > 0 { chip(String(localized: "\(n) left"), icon: nil, tint: SE.ink2, fill: Color(.tertiarySystemFill)) }
-            if let d = table?.deadline { chip(String(localized: "Apply by \(d)"), icon: "calendar", tint: SE.warn, fill: Color(hex: 0xFFF0E0)) }
+            if let d = table?.deadline { chip(String(localized: "Apply by \(d)"), icon: "calendar", tint: SE.warnInk, fill: SE.warnWash) }
         }
     }
 
@@ -276,7 +276,7 @@ struct RerentalDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14).padding(.vertical, 13)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(SE.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
@@ -289,13 +289,13 @@ struct RerentalDetailView: View {
                 .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
                 .frame(width: 32, height: 32).background(good ? SE.good : SE.warn, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text(Qualify.words(v)).font(.se(17, .bold)).foregroundStyle(good ? SE.good : SE.warn)
+                Text(Qualify.words(v)).font(.se(17, .bold)).foregroundStyle(good ? SE.goodInk : SE.warnInk)
                 if let why = verdictReason(v) { Text(why).font(.se(14)).foregroundStyle(SE.ink2) }
             }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14).padding(.vertical, 13)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(SE.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("rerental-page-verdict")
     }
@@ -367,7 +367,7 @@ struct RerentalDetailView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(SE.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .accessibilityIdentifier("rerental-page-who")
         }
     }
@@ -377,7 +377,7 @@ struct RerentalDetailView: View {
             Text(text).font(.se(16)).foregroundStyle(SE.ink).fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(SE.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .textSelection(.enabled)
                 .accessibilityIdentifier("rerental-page-how")
         }
@@ -388,9 +388,9 @@ struct RerentalDetailView: View {
             Analytics.shared.track("rerental_card_action", ["action": "apply_help", "signed_in": auth.isSignedIn, "src": "page"])
             showPacket = true
         } label: {
-            Label("Help me apply", systemImage: "doc.badge.plus").font(.se(17, .bold)).foregroundStyle(SE.royal)
+            Label("Help me apply", systemImage: "doc.badge.plus").font(.se(17, .bold)).foregroundStyle(SE.royalInk)
                 .frame(maxWidth: .infinity).frame(height: 50)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(SE.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("rerental-page-apply-help")

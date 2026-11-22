@@ -138,7 +138,7 @@ struct AlertPushSheet: View {
                         fill: SE.navy, ink: .white)
                 if let boro = Self.boroughName(item.borough) { Text(boro).font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
             }
-            Text(item.text).font(.se(20, .bold)).foregroundStyle(SE.royal).fixedSize(horizontal: false, vertical: true)
+            Text(item.text).font(.se(20, .bold)).foregroundStyle(SE.royalInk).fixedSize(horizontal: false, vertical: true)
             if !item.detail.isEmpty {
                 Text(item.detail).font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
             }

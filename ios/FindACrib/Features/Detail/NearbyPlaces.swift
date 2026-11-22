@@ -90,8 +90,8 @@ struct NearbyPlacesRail: View {
                         ForEach(places) { p in
                             Button { p.item.openInMaps() } label: {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Image(systemName: icon).font(.system(size: 20, weight: .semibold)).foregroundStyle(SE.royal)
-                                    Text(p.name).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2).multilineTextAlignment(.leading)
+                                    Image(systemName: icon).font(.system(size: 20, weight: .semibold)).foregroundStyle(SE.royalInk)
+                                    Text(p.name).font(.se(17, .bold)).foregroundStyle(SE.royalInk).lineLimit(2).multilineTextAlignment(.leading)
                                     if !p.street.isEmpty { Text(p.street).font(.se(14)).foregroundStyle(SE.ink2).lineLimit(1) }
                                     Text(NearbyPlaces.distance(p.meters)).font(.se(14)).foregroundStyle(SE.ink3)
                                 }
@@ -102,7 +102,7 @@ struct NearbyPlacesRail: View {
                 }
                 if let note { Text(note).font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16) }
             }
-            .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
+            .padding(.vertical, 16).background(SE.surface).padding(.bottom, 10)
             .accessibilityIdentifier(testID)
         }
     }
@@ -181,8 +181,8 @@ struct HousingLawFirmsRail: View {
                                 if let u = URL(string: f.website) { openURL(u) }
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Image(systemName: "building.columns").font(.system(size: 20, weight: .semibold)).foregroundStyle(SE.royal)
-                                    Text(f.name).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2).multilineTextAlignment(.leading)
+                                    Image(systemName: "building.columns").font(.system(size: 20, weight: .semibold)).foregroundStyle(SE.royalInk)
+                                    Text(f.name).font(.se(17, .bold)).foregroundStyle(SE.royalInk).lineLimit(2).multilineTextAlignment(.leading)
                                     Text(f.handles).font(.se(14)).foregroundStyle(SE.ink2).lineLimit(2).multilineTextAlignment(.leading)
                                     Text(f.sideLabel).font(.se(14, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
                                     Text(f.officeBorough == borough ? f.street : String(localized: "Office in \(f.officeBorough)"))
@@ -196,7 +196,7 @@ struct HousingLawFirmsRail: View {
                 Text("Private firms whose own websites say they take tenant and Housing Court cases in \(borough)" + (firms.contains { $0.officeBorough != borough } ? String(localized: "; some have their office elsewhere in the city") : "") + String(localized: ". We don't endorse them and haven't checked their record, licence or fees, so look into anyone before you hire them. This isn't legal advice. Free help: call 311 and ask for the Tenant Helpline."))
                     .font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16)
             }
-            .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
+            .padding(.vertical, 16).background(SE.surface).padding(.bottom, 10)
             .accessibilityIdentifier("housing-law-firms")
         }
     }

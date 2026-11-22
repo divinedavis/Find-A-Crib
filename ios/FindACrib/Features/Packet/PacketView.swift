@@ -54,7 +54,7 @@ struct PacketView: View {
                           systemImage: listing == nil ? "lock.fill" : "person.crop.circle")
                         .font(.se(14)).foregroundStyle(SE.ink2)
                         .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
+                        .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
                     Button("Delete my documents", role: .destructive) { confirmErase = true }
                         .font(.se(15, .semibold)).padding(.top, 4)
                         .opacity(packet.isEmpty ? 0 : 1)
@@ -113,13 +113,13 @@ struct PacketView: View {
                 RemoteImage(url: u).frame(width: 64, height: 64).clipped()
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(f.title.map { "\(f.address), \($0)" } ?? f.address).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2)
+                Text(f.title.map { "\(f.address), \($0)" } ?? f.address).font(.se(17, .bold)).foregroundStyle(SE.royalInk).lineLimit(2)
                 if let m = f.moneyLine { Text(m.text).font(.se(14)).foregroundStyle(SE.ink2) }
                 Text("Listed by \(f.agent)").font(.se(14)).foregroundStyle(SE.ink2)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
+        .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
         .accessibilityElement(children: .combine)
     }
 
@@ -134,7 +134,7 @@ struct PacketView: View {
                 Text("\(Int((Double(ready) / Double(total) * 100).rounded()))%").font(.se(14, .semibold)).foregroundStyle(SE.ink3)
             }
             .accessibilityElement(children: .combine).accessibilityIdentifier("packet-progress")
-            ProgressView(value: Double(ready), total: Double(total)).tint(SE.good)
+            ProgressView(value: Double(ready), total: Double(total)).tint(SE.goodInk)
             ForEach(Packet.Kind.core) { k in kindRow(k) }
         }
     }
@@ -151,7 +151,7 @@ struct PacketView: View {
         let pages = packet.pages(k)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Image(systemName: k.icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(SE.royal)
+                Image(systemName: k.icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(SE.royalInk)
                     .frame(width: 34, height: 34).background(SE.paleBlue).clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(k.title).font(.se(16, .bold)).foregroundStyle(SE.ink)
@@ -160,9 +160,9 @@ struct PacketView: View {
                 }
                 Spacer(minLength: 6)
                 if k == .payStubs && pages > 0 && pages < Packet.payStubsWanted {
-                    Text("\(pages) of \(Packet.payStubsWanted)").font(.se(14, .bold)).foregroundStyle(SE.warn)
+                    Text("\(pages) of \(Packet.payStubsWanted)").font(.se(14, .bold)).foregroundStyle(SE.warnInk)
                 } else if packet.isReady(k) {
-                    Label("Added", systemImage: "checkmark").font(.se(14, .bold)).foregroundStyle(SE.good)
+                    Label("Added", systemImage: "checkmark").font(.se(14, .bold)).foregroundStyle(SE.goodInk)
                 }
                 if !packet.isReady(k) || (k == .payStubs && pages < Packet.payStubsWanted) || k == .other {
                     addButtons(k)
@@ -172,7 +172,7 @@ struct PacketView: View {
             .accessibilityIdentifier("packet-kind-\(k.rawValue)")
             if k == .payStubs && packet.payStubsStale {
                 Label("Your newest pay stub is over 60 days old. Most agents want the latest ones.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.se(13, .semibold)).foregroundStyle(SE.warn).padding(.leading, 44)
+                    .font(.se(13, .semibold)).foregroundStyle(SE.warnInk).padding(.leading, 44)
             }
             ForEach(mine) { d in docRow(d) }
         }
@@ -190,7 +190,7 @@ struct PacketView: View {
 
     private func smallButton(_ title: String, id: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.se(14, .bold)).foregroundStyle(SE.royal)
+            Text(title).font(.se(14, .bold)).foregroundStyle(SE.royalInk)
                 .padding(.horizontal, 10).frame(minHeight: 44)
                 .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line).padding(.vertical, 6))
         }
@@ -204,7 +204,7 @@ struct PacketView: View {
                     .font(.se(14)).foregroundStyle(SE.ink2)
             }.buttonStyle(.plain)
             Spacer()
-            Button(role: .destructive) { packet.remove(d) } label: { Image(systemName: "trash").foregroundStyle(SE.bad) }
+            Button(role: .destructive) { packet.remove(d) } label: { Image(systemName: "trash").foregroundStyle(SE.badInk) }
                 .buttonStyle(.plain).frame(width: 44, height: 44).accessibilityLabel("Delete \(d.title)")
         }
         .padding(.leading, 44)
@@ -305,7 +305,7 @@ struct PacketView: View {
             content()
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
+        .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.lineSoft))
     }
 }
 

@@ -92,7 +92,7 @@ struct BuildingDetailView: View {
                             .font(.se(16)).foregroundStyle(SE.ink2).padding(.top, 12)
                         if store.city.isNYC {
                             Button { openURL(URL(string: "https://findacrib.com/guide/what-is-rent-stabilization/")!) } label: {
-                                Text("What rent stabilization means for you").font(.se(19, .bold)).foregroundStyle(SE.royal)
+                                Text("What rent stabilization means for you").font(.se(19, .bold)).foregroundStyle(SE.royalInk)
                             }.buttonStyle(.plain).padding(.top, 12)
                         }
                     }
@@ -123,9 +123,9 @@ struct BuildingDetailView: View {
                         Text(comments.count(for: b.bbl) > 0 ? String(localized: "Comments \(comments.count(for: b.bbl))") : String(localized: "Comments"))
                             .font(.se(18, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(SE.royal)
-                    .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
+                    .foregroundStyle(SE.royalInk)
+                    .frame(maxWidth: .infinity).frame(height: 50).background(SE.surface)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royalInk, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("detail-comments")
@@ -140,7 +140,7 @@ struct BuildingDetailView: View {
                 .accessibilityIdentifier("detail-outbound")
             }
             .padding(16)
-            .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
+            .background(SE.surface.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
         .perfFirstMovement("detail")
         .swipeBackEnabled()
@@ -244,7 +244,7 @@ struct BuildingDetailView: View {
             SEOutlineButton(title: String(localized: "Sign in to see who runs this building"), icon: "person.crop.circle") { showAgentSignIn = true }
                 .accessibilityIdentifier("agent-sign-in")
         } else if contactsLoading && contacts == nil {
-            HStack(spacing: 10) { ProgressView().tint(SE.royal); Text("Looking up HPD registration…").font(.se(17)).foregroundStyle(SE.ink2) }
+            HStack(spacing: 10) { ProgressView().tint(SE.royalInk); Text("Looking up HPD registration…").font(.se(17)).foregroundStyle(SE.ink2) }
         } else if let c = contacts {
             if let m = c.manager, let name = m.name {
                 party(String(localized: "Managing agent"), name, m.type, m.address)
@@ -266,7 +266,7 @@ struct BuildingDetailView: View {
                             Text(auth.hasPlus ? String(localized: "Phone number temporarily unavailable") : String(localized: "Phone number — unlock with Find A Crib Plus"))
                                 .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
                             Spacer()
-                            if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
+                            if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royalInk) }
                         }
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
                         .contentShape(Rectangle())
@@ -302,7 +302,7 @@ struct BuildingDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     SEBadge(text: l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
-                    SEBadge(text: l.isOpen ? String(localized: "Open") : String(localized: "Closed"), fill: l.isOpen ? Color(hex: 0xDCFCE7) : SE.badge, ink: l.isOpen ? SE.good : SE.ink2)
+                    SEBadge(text: l.isOpen ? String(localized: "Open") : String(localized: "Closed"), fill: l.isOpen ? SE.goodWash : SE.badge, ink: l.isOpen ? SE.goodInk : SE.ink2)
                     if l.senior == true { SEBadge(text: String(localized: "Seniors"), fill: SE.badge) }
                 }
                 Text(l.name ?? "").font(.se(24, .bold))
@@ -355,7 +355,7 @@ struct BuildingDetailView: View {
             // Save lives in the ··· menu; a heart over the photo covered the
             // Look Around imagery and the owner asked for it gone.
             if store.voucherAvail(b) != nil {
-                SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: .white).padding(12)
+                SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: SE.surface).padding(12)
             }
         }
         .accessibilityIdentifier("detail-hero")
@@ -390,7 +390,7 @@ struct BuildingDetailView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(SE.surface)
         .padding(.bottom, 10)
     }
 
@@ -480,11 +480,11 @@ struct BuildingDetailView: View {
                 let spec = ownerSpec(h)
                 if !spec.isEmpty { Text(spec).font(.se(17)).foregroundStyle(SE.ink2) }
                 if let v = h.vacreg {
-                    Text("On DC's vacant & blighted register — \(v)").font(.se(17, .bold)).foregroundStyle(SE.bad)
+                    Text("On DC's vacant & blighted register — \(v)").font(.se(17, .bold)).foregroundStyle(SE.badInk)
                 }
             }
             if let label = r.violationsLabel, let v = h?.violations {
-                recStat(label, [("\(v.open ?? 0)", String(localized: "open"), (v.open ?? 0) > 5 ? SE.bad : ((v.open ?? 0) > 0 ? SE.warn : SE.good)),
+                recStat(label, [("\(v.open ?? 0)", String(localized: "open"), (v.open ?? 0) > 5 ? SE.badInk : ((v.open ?? 0) > 0 ? SE.warnInk : SE.goodInk)),
                                 (v.total.map(String.init) ?? "—", String(localized: "cited"), SE.ink),
                                 (v.last_12mo.map(String.init) ?? "—", String(localized: "last 12mo"), SE.ink)])
                 let named = v.named
@@ -500,13 +500,13 @@ struct BuildingDetailView: View {
                 }
             }
             if let label = r.complaintsLabel, let c = h?.complaints {
-                recStat(label, [("\(c.open ?? 0)", String(localized: "open"), (c.open ?? 0) > 10 ? SE.bad : ((c.open ?? 0) > 0 ? SE.warn : SE.good)),
+                recStat(label, [("\(c.open ?? 0)", String(localized: "open"), (c.open ?? 0) > 10 ? SE.badInk : ((c.open ?? 0) > 0 ? SE.warnInk : SE.goodInk)),
                                 (c.total.map(String.init) ?? "—", String(localized: "all time"), SE.ink),
                                 ((h?.insp).map(String.init) ?? "—", String(localized: "inspections"), SE.ink)])
             }
             if let label = r.evictionsLabel, let e = h?.ev {
                 recStat(label, [("\(e.total ?? 0)", String(localized: "filed"), SE.ink),
-                                ("\(e.nofault ?? 0)", "no-fault", (e.nofault ?? 0) > 0 ? SE.warn : SE.ink),
+                                ("\(e.nofault ?? 0)", "no-fault", (e.nofault ?? 0) > 0 ? SE.warnInk : SE.ink),
                                 ("\(e.recent ?? e.last_12mo ?? 0)", String(localized: "last 5 yrs"), SE.ink)])
                 let named = e.named
                 if !named.isEmpty {
@@ -531,7 +531,7 @@ struct BuildingDetailView: View {
                     .font(.se(15)).foregroundStyle(SE.ink3)
             }
             if let label = r.casesLabel, let cs = h?.cases, (cs.total ?? 0) > 0 {
-                recStat(label, [("\(cs.open ?? 0)", String(localized: "open"), (cs.open ?? 0) > 0 ? SE.warn : SE.good),
+                recStat(label, [("\(cs.open ?? 0)", String(localized: "open"), (cs.open ?? 0) > 0 ? SE.warnInk : SE.goodInk),
                                 ("\(cs.total ?? 0)", String(localized: "all time"), SE.ink),
                                 ("", "", SE.ink)])
             }
@@ -545,7 +545,7 @@ struct BuildingDetailView: View {
                 Text(note).font(.se(16)).foregroundStyle(SE.ink2)
                 if let link = r.noViolationsLink, let url = URL(string: link) {
                     Button { openURL(url) } label: {
-                        Text(r.noViolationsLinkLabel ?? String(localized: "Look it up")).font(.se(18, .bold)).foregroundStyle(SE.royal)
+                        Text(r.noViolationsLinkLabel ?? String(localized: "Look it up")).font(.se(18, .bold)).foregroundStyle(SE.royalInk)
                     }.buttonStyle(.plain)
                 }
             }.padding(.top, 6)
@@ -561,7 +561,7 @@ struct BuildingDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             if h?.leasing == 1 {
                 Label("Leasing now — taking its first tenants", systemImage: "key.fill")
-                    .font(.se(17, .bold)).foregroundStyle(SE.good)
+                    .font(.se(17, .bold)).foregroundStyle(SE.goodInk)
             }
             if let name = h?.name, !name.isEmpty {
                 Text(name).font(.se(21, .bold)).foregroundStyle(SE.ink)
@@ -606,7 +606,7 @@ struct BuildingDetailView: View {
                             Analytics.shared.track("outbound", ["kind": "affordable_phone", "bbl": b.bbl, "city": store.city.id])
                             openURL(url)
                         } label: {
-                            Label(t, systemImage: "phone.fill").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                            Label(t, systemImage: "phone.fill").font(.se(18, .bold)).foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain).accessibilityIdentifier("affordable-phone")
                     }
                     if let w = h?.web, let url = URL(string: w) {
@@ -614,7 +614,7 @@ struct BuildingDetailView: View {
                             Analytics.shared.track("outbound", ["kind": "affordable_web", "bbl": b.bbl, "city": store.city.id])
                             openURL(url)
                         } label: {
-                            Label("Building website", systemImage: "globe").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                            Label("Building website", systemImage: "globe").font(.se(18, .bold)).foregroundStyle(SE.royalInk)
                         }.buttonStyle(.plain)
                     }
                 }.padding(.top, 2)
@@ -694,15 +694,15 @@ struct BuildingDetailView: View {
                 Button {
                     Analytics.shared.track("outbound", ["kind": "voucher", "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
                 } label: {
-                    Text("See the voucher listing ↗").font(.se(19, .bold)).foregroundStyle(SE.royal)
+                    Text("See the voucher listing ↗").font(.se(19, .bold)).foregroundStyle(SE.royalInk)
                 }.buttonStyle(.plain).accessibilityIdentifier("voucher-listing")
             }
             Button { openURL(URL(string: "https://findacrib.com/guide/rent-stabilized-tenant-rights/")!) } label: {
-                Text("See tips").font(.se(19, .bold)).foregroundStyle(SE.royal)
+                Text("See tips").font(.se(19, .bold)).foregroundStyle(SE.royalInk)
             }.buttonStyle(.plain)
 
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface).padding(.bottom, 10)
     }
 
     /// The open violations and complaints are signed-in only, like the website
@@ -727,10 +727,10 @@ struct BuildingDetailView: View {
                 // Each tile opens the full list on its own screen.
                 HStack(spacing: 12) {
                     NavigationLink(value: Route.hpdRecords(b.bbl, .violations)) {
-                        stat(String(localized: "Open violations"), v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
+                        stat(String(localized: "Open violations"), v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.goodInk : ((v?.oc ?? 0) > 0 ? SE.badInk : SE.warnInk))
                     }.buttonStyle(.plain).accessibilityIdentifier("open-violations")
                     NavigationLink(value: Route.hpdRecords(b.bbl, .complaints)) {
-                        stat(String(localized: "Open complaints"), c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
+                        stat(String(localized: "Open complaints"), c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.goodInk : SE.warnInk)
                     }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
                 }
             }
@@ -792,7 +792,7 @@ struct BuildingDetailView: View {
     /// so a building with more pest violations than a page fits still adds up.
     private var pestTile: some View {
         let s = pestSummary
-        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
+        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.goodInk : SE.badInk)
         let head: String = s == nil ? (inspectionsFailed ? "—" : "…")
             : (s!.clean ? String(localized: "None cited this year")
                         : String(localized: "\(s!.thisYear) cited this year") + (s!.openThisYear > 0 ? String(localized: " · \(s!.openThisYear) still open") : ""))
@@ -812,7 +812,7 @@ struct BuildingDetailView: View {
     /// found this year" in green, "2 with bedbugs" in red, with the number of
     /// records on file underneath.
     private func inspectionTile(_ k: String, _ s: HPDRecords.InspectionSummary?, found: String, clean: String) -> some View {
-        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
+        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.goodInk : SE.badInk)
         let head: String = s == nil ? (inspectionsFailed ? "—" : "…") : (s!.clean ? clean : "\(s!.problemsThisYear) \(found)")
         let sub: String = s == nil ? "" : (s!.total == 0 ? String(localized: "no record on file") : (s!.total >= HPDRecords.limit ? String(localized: "\(s!.total)+ on file") : String(localized: "\(s!.total) on file")))
         return VStack(alignment: .leading, spacing: 2) {
@@ -863,7 +863,7 @@ struct BuildingDetailView: View {
                                 VStack(alignment: .leading, spacing: 6) {
                                     BuildingImage(building: s, size: CGSize(width: 600, height: 400)).frame(width: 250, height: 150)
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(s.address).font(.se(19, .bold)).foregroundStyle(SE.royal).lineLimit(1)
+                                        Text(s.address).font(.se(19, .bold)).foregroundStyle(SE.royalInk).lineLimit(1)
                                         if let e = store.estimate(s), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
                                         Text((s.u.map { String(localized: "\($0) units") + " · " } ?? "") + String(localized: "\(s.openViolations) open violations")).font(.se(14)).foregroundStyle(SE.ink3)
                                     }.padding(10)
@@ -874,7 +874,7 @@ struct BuildingDetailView: View {
                     }.padding(.horizontal, 16)
                 }
             }
-            .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
+            .padding(.vertical, 16).background(SE.surface).padding(.bottom, 10)
         }
     }
     /// Similar-building taps come from whichever tab's stack we're on.

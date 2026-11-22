@@ -41,7 +41,7 @@ struct HPDRecordsView: View {
                     } else if failed {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Couldn't reach NYC Open Data just now.").font(.se(17)).foregroundStyle(SE.ink2)
-                            Button("Try again") { Task { await load() } }.font(.se(17, .bold)).foregroundStyle(SE.royal)
+                            Button("Try again") { Task { await load() } }.font(.se(17, .bold)).foregroundStyle(SE.royalInk)
                         }.padding(16)
                     } else {
                         rows
@@ -107,7 +107,7 @@ struct HPDRecordsView: View {
             case .pests:
                 if !loading, let p = pests {
                     Text(p.clean ? String(localized: "None cited this year") : String(localized: "\(p.thisYear) cited this year"))
-                        .font(.se(30, .black)).foregroundStyle(p.clean ? SE.good : SE.bad)
+                        .font(.se(30, .black)).foregroundStyle(p.clean ? SE.goodInk : SE.badInk)
                     if !p.kindLine.isEmpty { Text(p.kindLine).font(.se(17, .bold)).foregroundStyle(SE.ink2) }
                 }
                 Text("Roaches, mice, rats and bedbugs an HPD inspector confirmed inside an apartment here, newest first. This is the one record that is current: the bedbug filings are the landlord's own annual report about last year, and the Health Department only inspects for rats.")
@@ -116,7 +116,7 @@ struct HPDRecordsView: View {
                 let s = HPDRecords.summary(bedbugs: bedbugs)
                 if !loading {
                     Text(s.clean ? String(localized: "None found this year") : String(localized: "\(s.problemsThisYear) filings with bedbugs this year"))
-                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
+                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.goodInk : SE.badInk)
                 }
                 Text("Every multiple dwelling must report its bedbug history to HPD once a year — how many units had bedbugs, how many were re-infested, how many were treated. Newest filing first.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
@@ -124,13 +124,13 @@ struct HPDRecordsView: View {
                 let s = HPDRecords.summary(rodents: rodents)
                 if !loading {
                     Text(s.clean ? String(localized: "None failed this year") : String(localized: "\(s.problemsThisYear) failed this year"))
-                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
+                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.goodInk : SE.badInk)
                 }
                 Text("Health Department rodent inspections, newest first. \"Rat activity\" or \"failed\" means the inspector found signs of rats; a passed compliance visit means the problem was fixed.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface).padding(.bottom, 10)
     }
 
     // MARK: - rows
@@ -145,7 +145,7 @@ struct HPDRecordsView: View {
                     note(String(localized: "The \(HPDRecords.limit) most recent violations HPD still has open here — most serious first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
-                    .background(Color.white)
+                    .background(SE.surface)
             }
         case .pests:
             if violations.isEmpty {
@@ -155,7 +155,7 @@ struct HPDRecordsView: View {
                     note(String(localized: "The \(HPDRecords.limit) most recent pest violations, newest first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
-                    .background(Color.white)
+                    .background(SE.surface)
             }
         case .complaints:
             if complaints.isEmpty {
@@ -165,7 +165,7 @@ struct HPDRecordsView: View {
                     note(String(localized: "The \(HPDRecords.limit) most recent problems reported, newest first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(complaints) { complaintRow($0) } }
-                    .background(Color.white)
+                    .background(SE.surface)
             }
         case .bedbugs:
             if bedbugs.isEmpty {
@@ -173,7 +173,7 @@ struct HPDRecordsView: View {
             } else {
                 if bedbugs.count >= HPDRecords.limit { note(String(localized: "The \(HPDRecords.limit) most recent annual filings, newest first.")) }
                 LazyVStack(spacing: 0) { ForEach(bedbugs) { bedbugRow($0) } }
-                    .background(Color.white)
+                    .background(SE.surface)
             }
         case .rodents:
             if rodents.isEmpty {
@@ -181,13 +181,13 @@ struct HPDRecordsView: View {
             } else {
                 if rodents.count >= HPDRecords.limit { note(String(localized: "The \(HPDRecords.limit) most recent inspections, newest first.")) }
                 LazyVStack(spacing: 0) { ForEach(rodents) { rodentRow($0) } }
-                    .background(Color.white)
+                    .background(SE.surface)
             }
         }
     }
 
     private func bedbugRow(_ r: HPDRecords.BedbugFiling) -> some View {
-        let tone: Color = r.hadBedbugs ? SE.bad : SE.good
+        let tone: Color = r.hadBedbugs ? SE.badInk : SE.goodInk
         let extras = [r.reinfested > 0 ? String(localized: "\(r.reinfested) re-infested") : "", r.treated > 0 ? String(localized: "\(r.treated) treated") : ""].filter { !$0.isEmpty }
         return VStack(alignment: .leading, spacing: 5) {
             Text(r.hadBedbugs ? String(localized: "Bedbugs reported") : String(localized: "None reported")).font(.se(13, .bold)).foregroundStyle(tone)
@@ -202,7 +202,7 @@ struct HPDRecordsView: View {
     }
 
     private func rodentRow(_ r: HPDRecords.RodentInspection) -> some View {
-        let tone: Color = r.failed ? SE.bad : SE.good
+        let tone: Color = r.failed ? SE.badInk : SE.goodInk
         return VStack(alignment: .leading, spacing: 5) {
             Text(r.result ?? String(localized: "Inspection")).font(.se(13, .bold)).foregroundStyle(tone)
                 .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
@@ -214,12 +214,12 @@ struct HPDRecordsView: View {
     }
 
     private func note(_ s: String) -> some View {
-        Text(s).font(.se(15)).foregroundStyle(SE.ink2).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        Text(s).font(.se(15)).foregroundStyle(SE.ink2).padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     private func violationRow(_ r: HPDRecords.Violation) -> some View {
         let (cite, body) = HPDRecords.trimNotice(r.novdescription)
-        let tone: Color = r.cls == "C" ? SE.bad : (r.cls == "B" ? SE.warn : SE.ink2)
+        let tone: Color = r.cls == "C" ? SE.badInk : (r.cls == "B" ? SE.warnInk : SE.ink2)
         let meta = [r.issued.isEmpty ? "" : String(localized: "Issued \(r.issued)"),
                     (r.apartment ?? "").isEmpty ? "" : String(localized: "Apt \(r.apartment!)"),
                     HPDRecords.floorLabel(r.story), cite].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -238,7 +238,7 @@ struct HPDRecordsView: View {
             if !raw.isEmpty {
                 if stale, let years {
                     Text("Open on record, never certified. Last HPD action: \(word.lowercased()), \(r.statusDate) — nothing since, \(years) years.")
-                        .font(.se(14)).foregroundStyle(SE.warn)
+                        .font(.se(14)).foregroundStyle(SE.warnInk)
                 } else {
                     Text("Last HPD action: \(word)" + (r.statusDate.isEmpty ? "" : " · \(r.statusDate)")).font(.se(14)).foregroundStyle(SE.ink2)
                 }
@@ -259,8 +259,8 @@ struct HPDRecordsView: View {
             .trimmingCharacters(in: .whitespaces)
             .components(separatedBy: ". ").first ?? ""
         return VStack(alignment: .leading, spacing: 5) {
-            Text(r.isOpen ? String(localized: "Open") : String(localized: "Closed")).font(.se(13, .bold)).foregroundStyle(r.isOpen ? SE.warn : SE.ink2)
-                .padding(.horizontal, 8).padding(.vertical, 3).background((r.isOpen ? SE.warn : SE.ink2).opacity(0.1))
+            Text(r.isOpen ? String(localized: "Open") : String(localized: "Closed")).font(.se(13, .bold)).foregroundStyle(r.isOpen ? SE.warnInk : SE.ink2)
+                .padding(.horizontal, 8).padding(.vertical, 3).background((r.isOpen ? SE.warnInk : SE.ink2).opacity(0.1))
             Text((what.isEmpty ? String(localized: "Complaint") : what) + (code.isEmpty || code == what ? "" : " · \(code)")).font(.se(17)).foregroundStyle(SE.ink)
             if !meta.isEmpty { Text(meta).font(.se(14)).foregroundStyle(SE.ink2) }
             if !note.isEmpty {

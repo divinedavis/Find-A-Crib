@@ -78,7 +78,7 @@ struct OpeningsView: View {
                         Spacer()
                         if filtering {
                             Button("Clear filters") { bedsRaw = ""; kinds = []; area = nil; unitsNow = false }
-                                .font(.se(16, .bold)).foregroundStyle(SE.royal)
+                                .font(.se(16, .bold)).foregroundStyle(SE.royalInk)
                                 .accessibilityIdentifier("openings-clear")
                         }
                     }
@@ -169,8 +169,8 @@ struct OpeningsView: View {
         }
         .foregroundStyle(on ? .white : SE.ink)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(on ? SE.royal : Color.white)
-        .overlay(Capsule().stroke(on ? SE.royal : SE.lineSoft, lineWidth: 1))
+        .background(on ? SE.royal : SE.surface)
+        .overlay(Capsule().stroke(on ? SE.royalInk : SE.lineSoft, lineWidth: 1))
         .clipShape(Capsule())
     }
 
@@ -197,7 +197,7 @@ struct OpeningsView: View {
                                     : String(localized: "No homes for sale are taking applications in \(city.name) today. Pull down to check again.")))
                 .font(.se(16)).foregroundStyle(SE.ink2)
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
         .accessibilityIdentifier("lotteries-empty")
     }
 
@@ -213,7 +213,7 @@ struct OpeningsView: View {
             if o.kind == "leasing", let addr = o.address { Text(addr).font(.se(15)).foregroundStyle(SE.ink2) }
             if let c = o.closes, let d = days {
                 Text("Apply by \(Self.date(c))" + (d == 0 ? String(localized: " (today)") : d == 1 ? String(localized: " (tomorrow)") : " (\(d)d)"))
-                    .font(.se(15, .semibold)).foregroundStyle(d <= 3 ? SE.warn : SE.ink2)
+                    .font(.se(15, .semibold)).foregroundStyle(d <= 3 ? SE.warnInk : SE.ink2)
             }
             if let line = rentLine(o) { Text(line).font(.se(16)).foregroundStyle(SE.ink) }
             if let line = incomeLine(o) { Text(line).font(.se(15)).foregroundStyle(SE.ink2) }
@@ -223,7 +223,7 @@ struct OpeningsView: View {
                     Analytics.shared.track("outbound", ["kind": "opening_phone", "src": o.src, "from": "lotteries_tab"])
                     openURL(url)
                 } label: {
-                    Label(ph, systemImage: "phone.fill").font(.se(17, .bold)).foregroundStyle(SE.royal)
+                    Label(ph, systemImage: "phone.fill").font(.se(17, .bold)).foregroundStyle(SE.royalInk)
                 }.buttonStyle(.plain)
             }
             if let href = o.href, let url = URL(string: href) {
@@ -240,7 +240,7 @@ struct OpeningsView: View {
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color.white)
+        .background(SE.surface)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("opening-card")
     }

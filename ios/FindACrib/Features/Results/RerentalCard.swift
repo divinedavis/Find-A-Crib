@@ -115,7 +115,7 @@ struct RerentalCard: View {
                     SEBadge(text: String(localized: "Rerental"), icon: "key.fill", fill: SE.navy, ink: .white)
                         .padding(12)
                         .accessibilityIdentifier("badge-rerental")
-                    SEBadge(text: String(localized: "Income-restricted"), fill: .white, ink: SE.ink)
+                    SEBadge(text: String(localized: "Income-restricted"), fill: SE.surface, ink: SE.ink)
                         .frame(maxWidth: .infinity, alignment: .topTrailing)
                         .padding(12)
                 }
@@ -138,7 +138,7 @@ struct RerentalCard: View {
             VStack(alignment: .leading, spacing: compact ? 6 : BuildingCard.rowGap) {
                 VStack(alignment: .leading, spacing: compact ? 3 : BuildingCard.headGap) {
                     if let kicker { Text(kicker).font(.se(compact ? 14 : 18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85) }
-                    Text(f.address).font(.se(compact ? 21 : 27, .bold)).foregroundStyle(SE.royal).lineLimit(3).minimumScaleFactor(0.8)
+                    Text(f.address).font(.se(compact ? 21 : 27, .bold)).foregroundStyle(SE.royalInk).lineLimit(3).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityIdentifier("card-address")
                         .contentShape(Rectangle())
@@ -171,7 +171,7 @@ struct RerentalCard: View {
                 if let t = Qualify.shared.units[f.href] {
                     if let d = t.deadline { Text("Apply by \(d)").font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
                     ForEach(t.flags ?? [], id: \.code) { fl in
-                        Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
+                        Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warnInk)
                     }
                 }
                 // A deal box's header names the agent already (owner, 2026-10-27).
@@ -187,8 +187,8 @@ struct RerentalCard: View {
                                 Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
                                 Text("Share").font(.se(compact ? 15 : 18, .bold))
                             }
-                            .foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 40 : 50)
-                            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                            .foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).frame(height: compact ? 40 : 50)
+                            .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -211,7 +211,7 @@ struct RerentalCard: View {
                         HStack(spacing: 8) {
                             Image(systemName: action.icon).font(.system(size: 15, weight: .bold))
                             Text(action.title).font(.se(compact ? 15 : 17, .bold)).lineLimit(1).minimumScaleFactor(0.8)
-                        }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
+                        }.foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).frame(height: compact ? 36 : 44)
                             .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                     }
                     .buttonStyle(.plain).accessibilityIdentifier("rerental-\(action.id)"))
@@ -220,7 +220,7 @@ struct RerentalCard: View {
             .padding(compact ? 14 : 18)
             }
         }
-        .background(Color.white)
+        .background(SE.surface)
         .clipShape(RoundedRectangle(cornerRadius: lotteryStyle ? 0 : 22, style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("rerental-card")
@@ -257,7 +257,7 @@ struct RerentalCard: View {
                 }
             }
             ForEach(table?.flags ?? [], id: \.code) { fl in
-                Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
+                Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warnInk)
             }
             if let deal = f.deal { DealBox(listing: f, deal: deal).padding(.top, 2) } else {
                 (Text("Listed by ").font(.se(15)) + Text(f.agent).font(.se(15, .bold))).foregroundStyle(SE.ink2)
@@ -283,7 +283,7 @@ struct RerentalCard: View {
                     .accessibilityIdentifier("rerental-\(action.id)"))
                 }
             }
-            .foregroundStyle(SE.royal).frame(maxWidth: .infinity).padding(.top, 4)
+            .foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).padding(.top, 4)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -412,8 +412,8 @@ struct DealBox: View {
             ForEach(Array(deal.perks.enumerated()), id: \.offset) { i, p in
                 if i > 0 { Divider() }
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: Self.icon(p.kind)).font(.system(size: 11, weight: .bold)).foregroundStyle(SE.good)
-                        .frame(width: 20, height: 20).background(Circle().fill(SE.good.opacity(0.12)))
+                    Image(systemName: Self.icon(p.kind)).font(.system(size: 11, weight: .bold)).foregroundStyle(SE.goodInk)
+                        .frame(width: 20, height: 20).background(Circle().fill(SE.goodInk.opacity(0.12)))
                         .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
                     (Text(p.title).font(.se(13.5, .semibold)).foregroundStyle(SE.ink)
                      + Text(p.detail.map { " · " + $0 } ?? "").font(.se(12.5)).foregroundStyle(SE.ink3))
@@ -427,15 +427,15 @@ struct DealBox: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text(eff.label).font(.se(12)).foregroundStyle(SE.ink3).lineLimit(1).minimumScaleFactor(0.8)
                     Spacer(minLength: 6)
-                    Text("≈ \(eff.amount)/mo").font(.se(17, .bold)).foregroundStyle(SE.good)
+                    Text("≈ \(eff.amount)/mo").font(.se(17, .bold)).foregroundStyle(SE.goodInk)
                 }
-                .padding(.horizontal, 10).padding(.vertical, 6).background(SE.good.opacity(0.06))
+                .padding(.horizontal, 10).padding(.vertical, 6).background(SE.goodInk.opacity(0.06))
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("deal-effective")
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.good, lineWidth: 1.5))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.goodInk, lineWidth: 1.5))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("deal-box")
     }

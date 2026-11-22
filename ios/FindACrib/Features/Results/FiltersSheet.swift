@@ -31,7 +31,7 @@ struct FiltersSheet: View {
                                 Text("Accepting vouchers right now").font(.se(18, .semibold))
                                 Text("Live listings on AffordableHousing.com only").font(.se(14)).foregroundStyle(SE.ink3)
                             }
-                        }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                        }.tint(SE.royalInk).padding(14).overlay(Rectangle().stroke(SE.line))
                     }
                     // HPD violation counts ride on the New York building rows;
                     // the other cities publish their own records, not these.
@@ -43,13 +43,13 @@ struct FiltersSheet: View {
                                     Text("No open HPD violations").font(.se(18, .semibold))
                                     Text("Hide buildings with unresolved housing-code violations").font(.se(14)).foregroundStyle(SE.ink3)
                                 }
-                            }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                            }.tint(SE.royalInk).padding(14).overlay(Rectangle().stroke(SE.line))
                             Toggle(isOn: $draft.hidePests) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("No pests").font(.se(18, .semibold))
                                     Text("Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months").font(.se(14)).foregroundStyle(SE.ink3)
                                 }
-                            }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                            }.tint(SE.royalInk).padding(14).overlay(Rectangle().stroke(SE.line))
                             .accessibilityIdentifier("filter-no-pests")
                         }
                     }
@@ -57,13 +57,13 @@ struct FiltersSheet: View {
                         SEFieldLabel(text: String(localized: "Sort"))
                         Picker("Sort", selection: $draft.sort) {
                             ForEach(SortOrder.allCases, id: \.self) { Text($0.title).tag($0) }
-                        }.pickerStyle(.menu).tint(SE.royal).font(.se(18))
+                        }.pickerStyle(.menu).tint(SE.royalInk).font(.se(18))
                     }
                     Color.clear.frame(height: 80)
                 }
                 .padding(16)
             }
-            .background(Color.white)
+            .background(SE.surface)
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
@@ -80,7 +80,7 @@ struct FiltersSheet: View {
                     }
                         .accessibilityIdentifier("filters-apply")
                 }
-                .padding(16).background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
+                .padding(16).background(SE.surface.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)

@@ -102,7 +102,7 @@ struct LotteriesView: View {
                 Text("Lotteries").font(.system(size: 34, weight: .bold)).foregroundStyle(SE.ink)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
-            ProgressView().tint(SE.royal).frame(maxWidth: .infinity, maxHeight: .infinity)
+            ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("lotteries-checking")
         }
         .background(SE.canvas)
@@ -139,7 +139,7 @@ struct LotteriesView: View {
         } else if !feed.subscribed {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
-                    Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
+                    Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royalInk)
                     Text("Get alerts when a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
                 Text(auth.hasPlus
@@ -149,7 +149,7 @@ struct LotteriesView: View {
                 SEPrimaryButton(title: String(localized: "Turn on alerts"), icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")
             }
-            .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
             .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
             .padding(.horizontal, 16)
             .accessibilityElement(children: .contain).accessibilityIdentifier("lotteries-alerts-banner")
@@ -164,7 +164,7 @@ struct LotteriesView: View {
             Analytics.shared.track("lotteries_filter", ["subscribed": feed.subscribed])
             sheet = feed.subscribed ? .alerts : .beds
         }
-        .font(.se(16, .bold)).foregroundStyle(SE.royal)
+        .font(.se(16, .bold)).foregroundStyle(SE.royalInk)
         .frame(minHeight: 44).contentShape(Rectangle())
         .buttonStyle(.plain)
     }
@@ -341,8 +341,8 @@ struct LotteriesView: View {
         }
         .foregroundStyle(on ? .white : SE.ink)
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(on ? SE.royal : Color.white)
-        .overlay(Capsule().stroke(on ? SE.royal : SE.lineSoft, lineWidth: 1))
+        .background(on ? SE.royal : SE.surface)
+        .overlay(Capsule().stroke(on ? SE.royalInk : SE.lineSoft, lineWidth: 1))
         .clipShape(Capsule())
     }
 
@@ -356,7 +356,7 @@ struct LotteriesView: View {
             Spacer()
             if njFiltering {
                 Button("Clear") { njCounty = ""; njTenure = nil }
-                    .font(.se(16, .bold)).foregroundStyle(SE.royal)
+                    .font(.se(16, .bold)).foregroundStyle(SE.royalInk)
                     .accessibilityIdentifier("nj-clear")
             }
         }
@@ -395,7 +395,7 @@ struct LotteriesView: View {
             Text([l.development == nil ? nil : l.town, l.county.map { String(localized: "\($0) County, NJ") } ?? String(localized: "New Jersey"), l.isRental ? String(localized: "Rental") : "For sale"]
                     .compactMap { $0 }.joined(separator: " · "))
                 .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
-            Text(njWhen(l, days)).font(.se(16)).foregroundStyle((days ?? 99) <= 3 ? SE.warn : SE.ink)
+            Text(njWhen(l, days)).font(.se(16)).foregroundStyle((days ?? 99) <= 3 ? SE.warnInk : SE.ink)
             if let href = l.href, let url = URL(string: href) {
                 // Opens the listing itself on CGP&H (owner, 2026-09-24: the home
                 // page "is a generic website - i dont see the actual listing").
@@ -406,7 +406,7 @@ struct LotteriesView: View {
                 .padding(.top, 6)
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
         // A container, so the card's id is not stamped onto the photo and
         // buttons inside it (the Events cards had the same problem).
         .accessibilityElement(children: .contain)
@@ -437,7 +437,7 @@ struct LotteriesView: View {
         LotteryPhoto(key: "hc-\(l.id)", url: l.image.flatMap(URL.init(string:)), lat: l.lat, lng: l.lng, urls: l.imageURLs)
         VStack(alignment: .leading, spacing: 6) {
             Text(l.name).font(.se(19, .bold)).foregroundStyle(SE.ink)
-            Text(whereWhen(l)).font(.se(15, .semibold)).foregroundStyle(urgent(l) ? SE.warn : SE.ink2)
+            Text(whereWhen(l)).font(.se(15, .semibold)).foregroundStyle(urgent(l) ? SE.warnInk : SE.ink2)
             if let rent = rent(l) { Text(rent).font(.se(16)).foregroundStyle(SE.ink) }
             if let lo = l.income_min, let hi = l.income_max {
                 HStack(spacing: 8) {
@@ -447,7 +447,7 @@ struct LotteriesView: View {
                         QualifyBadge(verdict: v)
                     } else if LotteryFeed.incomeFits(feed.income, l) {
                         Label("Your income fits", systemImage: "checkmark.circle.fill")
-                            .font(.se(14, .bold)).foregroundStyle(SE.good)
+                            .font(.se(14, .bold)).foregroundStyle(SE.goodInk)
                     }
                 }
             }
@@ -463,12 +463,12 @@ struct LotteriesView: View {
                                                        notes: String(localized: "Apply on Housing Connect before the deadline."), url: l.href.flatMap(URL.init(string:))),
                                     label: String(localized: "Add deadline to Calendar"))
                     // Centred under Apply (owner, 2026-10-14).
-                    .foregroundStyle(SE.royal).frame(maxWidth: .infinity).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
+                    .foregroundStyle(SE.royalInk).frame(maxWidth: .infinity).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color.white)
+        .background(SE.surface)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("lottery-card")
     }
@@ -478,7 +478,7 @@ struct LotteriesView: View {
             Text(title).font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text(body).font(.se(16)).foregroundStyle(SE.ink2)
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
         .accessibilityIdentifier("lotteries-empty")
     }
 

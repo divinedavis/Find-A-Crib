@@ -103,8 +103,10 @@ struct PaywallView: View {
             // Apple 3.1.2: the billed amount stays the most prominent price;
             // the trial line is smaller, under it.
             Text("\(plus.priceText) / month · cancel anytime")
-                .font(.se(15, .bold)).foregroundStyle(SE.navy)
-                .padding(.horizontal, 12).padding(.vertical, 6).background(.white).clipShape(Capsule())
+                // Fixed colours, not theme ones: this chip sits on the hero's own
+                // gradient, which is the same in light and dark mode.
+                .font(.se(15, .bold)).foregroundStyle(Color(hex: 0x163C47))
+                .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white).clipShape(Capsule())
                 .padding(.top, 4)
             if let t = plus.trial {
                 Text("Your first \(t) is on us — then \(plus.priceText)/month.")
@@ -121,7 +123,7 @@ struct PaywallView: View {
         VStack(alignment: .leading, spacing: 10) {
             if lead {
                 Text(context.map { String(localized: "WHAT YOU TAPPED · \($0.uppercased())") } ?? String(localized: "WHAT YOU TAPPED"))
-                    .font(.se(12, .black)).tracking(0.8).foregroundStyle(SE.royal).lineLimit(1)
+                    .font(.se(12, .black)).tracking(0.8).foregroundStyle(SE.royalInk).lineLimit(1)
             }
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: p.icon).font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
@@ -139,16 +141,16 @@ struct PaywallView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(SE.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(lead ? SE.royal : SE.lineSoft, lineWidth: lead ? 2 : 1))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(lead ? SE.royalInk : SE.lineSoft, lineWidth: lead ? 2 : 1))
     }
 
     /// One button that does the next step.
     private var cta: some View {
         VStack(spacing: 8) {
             if auth.hasPlus {
-                SEBadge(text: String(localized: "You have Plus"), icon: "checkmark.seal.fill", fill: SE.paleBlue, ink: SE.royal)
+                SEBadge(text: String(localized: "You have Plus"), icon: "checkmark.seal.fill", fill: SE.paleBlue, ink: SE.royalInk)
                 SEPrimaryButton(title: String(localized: "Done")) { dismiss() }
             } else if !auth.isSignedIn {
                 SEPrimaryButton(title: String(localized: "Sign in or create an account"), icon: "person.crop.circle") {
@@ -165,13 +167,13 @@ struct PaywallView: View {
                 .disabled(plus.busy)
                 .accessibilityIdentifier("paywall-subscribe")
                 Button { Task { await plus.restore() } } label: {
-                    Text("Restore purchases").font(.se(15, .semibold)).foregroundStyle(SE.royal)
+                    Text("Restore purchases").font(.se(15, .semibold)).foregroundStyle(SE.royalInk)
                 }.buttonStyle(.plain)
             }
-            if let e = plus.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
+            if let e = plus.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk) }
         }
         .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
-        .background(Color.white.shadow(color: .black.opacity(0.08), radius: 8, y: -2).ignoresSafeArea(edges: .bottom))
+        .background(SE.surface.shadow(color: .black.opacity(0.08), radius: 8, y: -2).ignoresSafeArea(edges: .bottom))
     }
 
     private var disclosures: some View {
@@ -182,7 +184,7 @@ struct PaywallView: View {
             HStack(spacing: 18) {
                 Button("Terms of Use") { openURL(PlusStore.termsURL) }
                 Button("Privacy Policy") { openURL(PlusStore.privacyURL) }
-            }.font(.se(14, .semibold)).foregroundStyle(SE.royal)
+            }.font(.se(14, .semibold)).foregroundStyle(SE.royalInk)
         }
         .padding(.top, 6)
     }

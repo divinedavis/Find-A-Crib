@@ -118,7 +118,7 @@ private struct FindingsList: View {
     var body: some View {
         ForEach(findings, id: \.self) { f in
             VStack(alignment: .leading, spacing: 4) {
-                Text(f.title).font(.se(16, .bold)).foregroundStyle(f.level == "illegal" ? SE.bad : f.level == "warn" ? SE.warn : SE.ink)
+                Text(f.title).font(.se(16, .bold)).foregroundStyle(f.level == "illegal" ? SE.badInk : f.level == "warn" ? SE.warnInk : SE.ink)
                 Text(f.why).font(.se(15)).foregroundStyle(SE.ink2)
                 if let law = f.law { Text(law).font(.se(13)).foregroundStyle(SE.ink3) }
             }.padding(.vertical, 2)
@@ -212,7 +212,7 @@ struct RepairView: View {
                         HStack { Spacer(); Text("✨ Write it in my words").font(.se(16, .semibold)); Spacer() }
                     }.disabled(busy || details.trimmingCharacters(in: .whitespaces).count < 5).accessibilityIdentifier("repair-ai")
                 }
-                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
+                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.badInk) } }
                 if let r = result {
                     Section(r.urgent ? String(localized: "🚨 What the law requires") : String(localized: "What the law requires")) {
                         Text(r.rule).font(.se(15))
@@ -316,12 +316,12 @@ struct RentIncreaseView: View {
                         HStack { Spacer(); if busy { ProgressView() } else { Text("Check my increase").font(.se(17, .bold)) }; Spacer() }
                     }.disabled(busy || current.isEmpty || new.isEmpty).accessibilityIdentifier("rentup-run")
                 }
-                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
+                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.badInk) } }
                 if let r = result {
                     Section {
                         Text(Self.verdictText(r.verdict) + (r.increase_pct.map { " (\($0.formatted())%)" } ?? ""))
                             .font(.se(18, .bold))
-                            .foregroundStyle(r.verdict == "likely_illegal" ? SE.bad : r.verdict == "check" ? SE.warn : SE.good)
+                            .foregroundStyle(r.verdict == "likely_illegal" ? SE.badInk : r.verdict == "check" ? SE.warnInk : SE.goodInk)
                             .accessibilityIdentifier("rentup-verdict")
                         FindingsList(findings: r.findings)
                     }
@@ -397,7 +397,7 @@ struct RightsView: View {
                     Button { Task { await ask() } } label: {
                         HStack { Spacer(); if busy { ProgressView() } else { Text("Ask").font(.se(17, .bold)) }; Spacer() }
                     }.disabled(busy || question.trimmingCharacters(in: .whitespaces).count < 3).accessibilityIdentifier("rights-ask")
-                    if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
+                    if let error { Text(error).font(.se(15)).foregroundStyle(SE.badInk) }
                     if let a = answer {
                         Text(a.answer).font(.se(15)).accessibilityIdentifier("rights-answer")
                         ForEach(a.sources, id: \.self) { s in Text("\(s.title) — \(s.law)").font(.se(13)).foregroundStyle(SE.ink3) }
@@ -491,7 +491,7 @@ struct RenewalView: View {
                         HStack { Spacer(); if busy { ProgressView() } else { Text("Plan my renewal").font(.se(17, .bold)) }; Spacer() }
                     }.disabled(busy || current.isEmpty).accessibilityIdentifier("renewal-run")
                 }
-                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
+                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.badInk) } }
                 if let p = plan {
                     Section("Your key dates") {
                         ForEach(p.dates, id: \.self) { d in

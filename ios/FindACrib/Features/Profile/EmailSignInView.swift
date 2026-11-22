@@ -106,8 +106,8 @@ struct EmailSignInView: View {
                         }
                         .id(Field.confirm)
                     }
-                    if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
-                    if let n = notice { Text(n).font(.se(15, .semibold)).foregroundStyle(SE.good) }
+                    if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk) }
+                    if let n = notice { Text(n).font(.se(15, .semibold)).foregroundStyle(SE.goodInk) }
 
                     // While a field is focused, Sign in rides on the keyboard
                     // (the bar below) instead of sitting here under it.
@@ -138,7 +138,7 @@ struct EmailSignInView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if focus != nil {
                     submitButton.padding(.horizontal, 16).padding(.vertical, 10)
-                        .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
+                        .background(SE.surface.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
                 }
             }
             // And the field after the focused one comes into view: tapping
@@ -156,7 +156,7 @@ struct EmailSignInView: View {
                     }
                 }
             }
-            .background(Color.white)
+            .background(SE.surface)
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
             .onAppear { auth.error = nil; focus = offersSocialSignIn ? nil : .email }
@@ -175,14 +175,14 @@ struct EmailSignInView: View {
 
     private var createToggle: some View {
         Button(creating ? String(localized: "Have an account? Sign in") : String(localized: "No account? Create one")) { creating.toggle(); auth.error = nil; notice = nil }
-            .font(.se(15, .semibold)).foregroundStyle(SE.royal).fixedSize()
+            .font(.se(15, .semibold)).foregroundStyle(SE.royalInk).fixedSize()
             .accessibilityIdentifier("create-account-toggle")
     }
 
     @ViewBuilder private var forgotButton: some View {
         if !creating {
             Button("Forgot password?") { Task { await forgot() } }
-                .font(.se(15, .semibold)).foregroundStyle(SE.royal).fixedSize()
+                .font(.se(15, .semibold)).foregroundStyle(SE.royalInk).fixedSize()
                 .accessibilityIdentifier("forgot-password")
         }
     }
@@ -253,8 +253,8 @@ struct AlertsPromiseBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royalInk.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royalInk.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("alerts-promise-box")
     }
@@ -306,8 +306,8 @@ struct RecordsPromiseBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royalInk.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royalInk.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("records-promise-box")
     }
@@ -343,8 +343,8 @@ struct AgentPromiseBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royalInk.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royalInk.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("agent-promise-box")
     }
@@ -385,8 +385,8 @@ struct CasaPromiseBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royalInk.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royalInk.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("casa-promise-box")
     }
@@ -437,7 +437,7 @@ struct SocialSignInButtons: View {
                     Text("Continue with Google").font(.se(18, .semibold)).foregroundStyle(SE.ink)
                 }
                 .frame(maxWidth: .infinity).frame(height: 50)
-                .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
+                .background(SE.surface).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
             }
             .buttonStyle(.plain).accessibilityIdentifier("sign-in-google")
         }
@@ -560,8 +560,8 @@ struct PurposePromiseBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royalInk.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royalInk.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("purpose-promise-box")
     }

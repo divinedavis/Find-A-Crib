@@ -160,7 +160,7 @@ struct BrokerFeeView: View {
                     }
                     .disabled(busy).accessibilityIdentifier("broker-check")
                 }
-                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
+                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.badInk) } }
                 if let r = result { results(r) }
                 Section {
                     Text("General information about New York law, not legal advice.").font(.se(13)).foregroundStyle(SE.ink3)
@@ -185,11 +185,11 @@ struct BrokerFeeView: View {
     @ViewBuilder private func results(_ r: BrokerFeeResult) -> some View {
         Section {
             Text(Self.verdictText(r.verdict)).font(.se(18, .bold))
-                .foregroundStyle(r.verdict == "likely_illegal" ? SE.bad : r.verdict == "check" ? SE.warn : SE.good)
+                .foregroundStyle(r.verdict == "likely_illegal" ? SE.badInk : r.verdict == "check" ? SE.warnInk : SE.goodInk)
                 .accessibilityIdentifier("broker-verdict")
             ForEach(r.findings, id: \.self) { f in
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(f.title).font(.se(16, .bold)).foregroundStyle(f.level == "illegal" ? SE.bad : f.level == "warn" ? SE.warn : SE.ink)
+                    Text(f.title).font(.se(16, .bold)).foregroundStyle(f.level == "illegal" ? SE.badInk : f.level == "warn" ? SE.warnInk : SE.ink)
                     Text(f.why).font(.se(15)).foregroundStyle(SE.ink2)
                     if let law = f.law { Text(law).font(.se(13)).foregroundStyle(SE.ink3) }
                 }.padding(.vertical, 2)
@@ -280,7 +280,7 @@ struct LeaseReviewView: View {
                     .disabled(busy || (pdf == nil && text.trimmingCharacters(in: .whitespacesAndNewlines).count < 200))
                     .accessibilityIdentifier("lease-run")
                 }
-                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
+                if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.badInk) } }
                 if let r = review { results(r) }
                 Section {
                     Text("Written by AI from your lease, checked against New York law. General information, not legal advice.")
@@ -313,7 +313,7 @@ struct LeaseReviewView: View {
             }
             ForEach(r.flags, id: \.self) { f in
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(f.title).font(.se(16, .bold)).foregroundStyle(f.severity == "high" ? SE.bad : f.severity == "medium" ? SE.warn : SE.ink)
+                    Text(f.title).font(.se(16, .bold)).foregroundStyle(f.severity == "high" ? SE.badInk : f.severity == "medium" ? SE.warnInk : SE.ink)
                     Text("“\(f.quote)”").font(.se(14)).italic().foregroundStyle(SE.ink2)
                     Text(f.why).font(.se(15)).foregroundStyle(SE.ink)
                     Text(f.law).font(.se(13)).foregroundStyle(SE.ink3)

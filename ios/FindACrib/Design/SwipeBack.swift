@@ -19,7 +19,10 @@ extension View {
             .toolbarBackground(.hidden, for: .navigationBar)   // the grey header shows through
             // Dark chevron on the Liquid Glass grey (2026-11-17). Was a white
             // chevron over the navy header.
-            .toolbarColorScheme(.light, for: .navigationBar)
+            // No toolbarColorScheme: the bar follows the system, so the chevron
+            // is dark on the light header and light on the dark one. It was
+            // pinned .light until dark mode (2026-11-22), which also resolved
+            // every colour inside the bar as light: white fields on a dark map.
     }
 }
 

@@ -123,7 +123,7 @@ struct CasaView: View {
         .sheet(isPresented: $editAlerts) {
             NavigationStack {
                 ScrollView { if let p = place { alertCard(p) } }
-                    .background(Color.white)
+                    .background(SE.surface)
                     .navigationTitle("Alerts").navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { editAlerts = false } } }
             }
@@ -150,7 +150,7 @@ struct CasaView: View {
             }
         }
         .padding(.horizontal, 12).frame(height: 46)
-        .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(SE.surface).clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     private var suggestionList: some View {
@@ -161,7 +161,7 @@ struct CasaView: View {
             ForEach(suggestions) { p in
                 Button { Task { await open(p) } } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: "mappin.circle.fill").foregroundStyle(SE.royal)
+                        Image(systemName: "mappin.circle.fill").foregroundStyle(SE.royalInk)
                         Text(p.short).font(.se(17)).foregroundStyle(SE.ink).frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(.horizontal, 16).padding(.vertical, 12).contentShape(Rectangle())
@@ -171,7 +171,7 @@ struct CasaView: View {
                 Divider().padding(.leading, 16)
             }
         }
-        .background(Color.white)
+        .background(SE.surface)
     }
 
     private var intro: some View {
@@ -181,7 +181,7 @@ struct CasaView: View {
                 .font(.se(16)).foregroundStyle(SE.ink2)
             Text("From NYC Open Data: 311 Service Requests and NYPD complaint data.").font(.se(14)).foregroundStyle(SE.ink3)
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     // MARK: - Results
@@ -195,12 +195,12 @@ struct CasaView: View {
                 // 2026-10-17) instead of a card in the middle of the page.
                 if watch.watch?.bbl == p.bbl {
                     Button("Edit alerts") { editAlerts = true }
-                        .font(.se(16, .bold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-edit-alerts")
+                        .font(.se(16, .bold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("casa-edit-alerts")
                 }
             }
             if let b = store.byBBL[p.bbl] {
                 Button { nav.casaPath.append(.building(b.bbl)) } label: {
-                    Label("Rent stabilized · open the building page", systemImage: "building.2").font(.se(15, .semibold)).foregroundStyle(SE.royal)
+                    Label("Rent stabilized · open the building page", systemImage: "building.2").font(.se(15, .semibold)).foregroundStyle(SE.royalInk)
                 }
             }
             // Directly under the address (owner, 2026-10-17): the building's
@@ -214,7 +214,7 @@ struct CasaView: View {
                 .accessibilityIdentifier("casa-chat")
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
 
         if let since = offlineSince {
             HStack(alignment: .top, spacing: 8) {
@@ -231,10 +231,10 @@ struct CasaView: View {
             // Only the 311 part waits; the alert and crime cards don't (owner,
             // 2026-10-15: "this screen takes too long to load").
             HStack(spacing: 10) {
-                ProgressView().tint(SE.royal)
+                ProgressView().tint(SE.royalInk)
                 Text("Loading 311 calls from NYC…").font(.se(15)).foregroundStyle(SE.ink3)
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
             .accessibilityIdentifier("casa-loading")
             if alertsKnown && watch.watch?.bbl != p.bbl { alertCard(p) }
             crimeCard
@@ -261,7 +261,7 @@ struct CasaView: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: n == 0 ? "checkmark.seal.fill" : "ant.fill")
-                    .font(.system(size: 26)).foregroundStyle(n == 0 ? SE.good : SE.bad)
+                    .font(.system(size: 26)).foregroundStyle(n == 0 ? SE.goodInk : SE.badInk)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(n == 0 ? String(localized: "No pest calls in the past year") : String(localized: "\(n) pest calls in the past year"))
                         .font(.se(19, .bold)).foregroundStyle(SE.ink)
@@ -274,7 +274,7 @@ struct CasaView: View {
                 }
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("casa-pests")
     }
@@ -316,9 +316,9 @@ struct CasaView: View {
                 .disabled(watch.busy)
                 .accessibilityIdentifier("casa-alert")
             }
-            if let e = watch.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
+            if let e = watch.error { Text(e).font(.se(14)).foregroundStyle(SE.badInk) }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     /// Crime alerts (owner, 2026-10-15): pick the kinds; the server tells you
@@ -353,15 +353,15 @@ struct CasaView: View {
                 ForEach(calls.prefix(showAllCalls ? calls.count : 5)) { callRow($0) }
                 if calls.count > 5 && !showAllCalls {
                     Button("Show all \(calls.count) calls") { showAllCalls = true }
-                        .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-more")
+                        .font(.se(16, .semibold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("casa-calls-more")
                 } else if calls.count > 5 {
                     // Expanded, it folds back (owner, 2026-10-16).
                     Button("Show fewer") { withAnimation { showAllCalls = false } }
-                        .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-less")
+                        .font(.se(16, .semibold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("casa-calls-less")
                 }
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     private func callRow(_ c: Casa.Call) -> some View {
@@ -382,7 +382,7 @@ struct CasaView: View {
             if crimeFailed {
                 Text("Couldn't load NYPD data right now.").font(.se(15)).foregroundStyle(SE.ink3)
             } else if crime.isEmpty {
-                ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.vertical, 20)
+                ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity).padding(.vertical, 20)
             } else {
                 Chart {
                     ForEach(crime) { m in
@@ -394,7 +394,7 @@ struct CasaView: View {
                             .symbol(by: .value(String(localized: "Kind"), String(localized: "Felonies")))
                     }
                 }
-                .chartForegroundStyleScale(["All crime": SE.royal, "Felonies": SE.bad])
+                .chartForegroundStyleScale(["All crime": SE.royalInk, "Felonies": SE.badInk])
                 .chartXAxis { AxisMarks(values: .stride(by: .month)) { _ in AxisGridLine(); AxisValueLabel(format: .dateTime.month(.abbreviated)) } }
                 .frame(height: 200)
                 .accessibilityIdentifier("casa-crime-chart")
@@ -407,7 +407,7 @@ struct CasaView: View {
                 }
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
         .task(id: reportsKey) { await loadReports() }
     }
 
@@ -441,15 +441,15 @@ struct CasaView: View {
                         showAllReports = true
                         Analytics.shared.track("casa_crime_list_all", ["n": reports.count])
                     }
-                    .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-reports-more")
+                    .font(.se(16, .semibold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("casa-reports-more")
                 } else if reports.count > 5 {
                     Button("Show fewer") { withAnimation { showAllReports = false } }
-                        .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-reports-less")
+                        .font(.se(16, .semibold)).foregroundStyle(SE.royalInk).accessibilityIdentifier("casa-reports-less")
                 }
             } else if reportsFailed {
                 Text("Couldn't load the reports right now.").font(.se(14)).foregroundStyle(SE.ink3)
             } else {
-                ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.vertical, 8)
+                ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity).padding(.vertical, 8)
             }
         }
     }
@@ -516,7 +516,7 @@ struct CasaView: View {
                     if older.count >= Casa.listLimit { Text("Showing the newest \(Casa.listLimit).").font(.se(14)).foregroundStyle(SE.ink3) }
                 }
             } else if olderLoading {
-                ProgressView().tint(SE.royal).frame(maxWidth: .infinity)
+                ProgressView().tint(SE.royalInk).frame(maxWidth: .infinity)
             } else {
                 Text("Every 311 call on this building back to 2010. Part of Find A Crib Plus.").font(.se(15)).foregroundStyle(SE.ink2)
                 Button {
@@ -524,12 +524,12 @@ struct CasaView: View {
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "history"]); showPlus = true; return }
                     Task { await loadOlder() }
                 } label: {
-                    Label("See the full history", systemImage: auth.hasPlus ? "clock.arrow.circlepath" : "lock.fill").font(.se(16, .semibold)).foregroundStyle(SE.royal)
+                    Label("See the full history", systemImage: auth.hasPlus ? "clock.arrow.circlepath" : "lock.fill").font(.se(16, .semibold)).foregroundStyle(SE.royalInk)
                 }
                 .accessibilityIdentifier("casa-history")
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     private func note(_ title: String, _ body: String) -> some View {
@@ -537,7 +537,7 @@ struct CasaView: View {
             Text(title).font(.se(17, .bold)).foregroundStyle(SE.ink)
             Text(body).font(.se(15)).foregroundStyle(SE.ink3)
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.surface)
     }
 
     // MARK: - Loading

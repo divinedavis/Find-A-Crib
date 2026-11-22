@@ -37,10 +37,10 @@ struct SEOutlineButton: View {
                 if let icon { Image(systemName: icon).font(.system(size: 15, weight: .semibold)) }
                 Text(title).font(.se(18, .bold))
             }
-            .foregroundStyle(SE.royal)
+            .foregroundStyle(SE.royalInk)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(Color.white)
+            .background(SE.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(SE.line, lineWidth: 1))
         }
@@ -104,7 +104,7 @@ struct SEFieldBox<Content: View>: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-            .background(Color.white)
+            .background(SE.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
@@ -128,7 +128,7 @@ struct SESegmentRow<T: Hashable>: View {
                         .frame(maxWidth: .infinity).frame(height: 40)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.white)
+                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(SE.surface)
                                     .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
                             }
                         }
@@ -164,7 +164,7 @@ struct SEUnderlineTabs<T: Hashable>: View {
                         .frame(maxWidth: .infinity).frame(height: 34)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.white)
+                                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(SE.surface)
                                     .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
                                     .matchedGeometryEffect(id: "pill", in: pill)
                             }
@@ -206,7 +206,7 @@ struct HeartButton: View {
         Button(action: action) {
             Image(systemName: on ? "heart.fill" : "heart")
                 .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(SE.royal)
+                .foregroundStyle(SE.royalInk)
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
@@ -262,7 +262,7 @@ struct FloatingPill: View {
     let title: String
     let icon: String
     var fill: Color = .white
-    var ink: Color = SE.royal
+    var ink: Color = SE.royalInk
     let action: () -> Void
     var body: some View {
         Button(action: action) {
@@ -303,7 +303,7 @@ extension View {
             // A layer behind the content, so the glass never sits over a
             // button's hit area; not .interactive(), whose press wobble is
             // for the control itself, not a bar of them.
-            self.background { shape.fill(.clear).glassEffect(.regular.tint(.white.opacity(0.35)), in: shape).allowsHitTesting(false) }
+            self.background { shape.fill(.clear).glassEffect(.regular.tint(SE.glassTint), in: shape).allowsHitTesting(false) }
         } else {
             self.background(.ultraThinMaterial, in: shape)
                 .overlay(shape.stroke(.white.opacity(0.6), lineWidth: 0.5).allowsHitTesting(false))
@@ -365,7 +365,7 @@ struct SERadioRow<T: Hashable>: View {
                 Button { selection = opt.0 } label: {
                     HStack(spacing: 14) {
                         ZStack {
-                            Circle().stroke(on ? SE.royal : SE.line, lineWidth: 2).frame(width: 22, height: 22)
+                            Circle().stroke(on ? SE.royalInk : SE.line, lineWidth: 2).frame(width: 22, height: 22)
                             if on { Circle().fill(SE.royal).frame(width: 12, height: 12) }
                         }
                         VStack(alignment: .leading, spacing: 2) {
@@ -375,7 +375,7 @@ struct SERadioRow<T: Hashable>: View {
                         Spacer()
                     }
                     .padding(.horizontal, 14).frame(minHeight: 60)
-                    .background(Color.white)
+                    .background(SE.surface)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -386,7 +386,7 @@ struct SERadioRow<T: Hashable>: View {
         }
         // Liquid Glass grouped list (2026-11-17): one white rounded block on
         // the grey, inset separators. Was bordered rows.
-        .background(Color.white)
+        .background(SE.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
@@ -409,17 +409,17 @@ struct SECheckList: View {
                         }
                         Spacer()
                         // An iOS switch (Liquid Glass, 2026-11-17). Was a checkbox.
-                        Capsule().fill(on ? SE.royal : Color(hex: 0xE3E3E8))
+                        Capsule().fill(on ? SE.royal : SE.switchOff)
                             .frame(width: 51, height: 31)
                             .overlay(alignment: on ? .trailing : .leading) {
-                                Circle().fill(.white).frame(width: 27, height: 27).padding(2)
+                                Circle().fill(Color.white).frame(width: 27, height: 27).padding(2)
                                     .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
                             }
                             .animation(.snappy(duration: 0.2), value: on)
                             .accessibilityHidden(true)
                     }
                     .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
-                    .background(Color.white)
+                    .background(SE.surface)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -430,7 +430,7 @@ struct SECheckList: View {
                 if i < rows.count - 1 { Rectangle().fill(SE.lineSoft).frame(height: 1).padding(.leading, 14) }
             }
         }
-        .background(Color.white)
+        .background(SE.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

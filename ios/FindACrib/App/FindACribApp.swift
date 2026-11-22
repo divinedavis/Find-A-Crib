@@ -10,6 +10,7 @@ struct FindACribApp: App {
     @State private var auth = AuthService()
     @State private var plus = PlusStore()
     @State private var language = AppLanguage.shared
+    @State private var appearance = Appearance.shared
     init() {
         AppLanguage.install()
         FastAnimations.installIfTesting()
@@ -117,11 +118,11 @@ struct FindACribApp: App {
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { a in
                     if let u = a.webpageURL, let link = DeepLink(u) { route(link) }
                 }
-                // The app follows the phone's Light / Dark setting (owner,
-                // 2026-11-22); it was pinned .light until every colour in
-                // Theme.swift had a dark half. forcedScheme is nil unless a test
-                // or the screenshot script launched with --dark / --light.
-                .preferredColorScheme(SE.forcedScheme)
+                // The app follows the phone's Light / Dark setting unless one
+                // was picked in Profile › Appearance (owner, 2026-11-22); it was
+                // pinned .light until every colour in Theme.swift had a dark
+                // half. nil = follow the phone. See Appearance.
+                .preferredColorScheme(appearance.scheme)
             }
         }
     }

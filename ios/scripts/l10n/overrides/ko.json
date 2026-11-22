@@ -544,5 +544,8 @@
  "Your documents go with it: %@.": "서류도 함께 첨부됩니다: %@.",
  "Email with my documents": "내 서류와 함께 이메일 보내기",
  "Get alerts on new re-rentals": "새 재임대 알림 받기",
- "Sign in for re-rental alerts": "재임대 알림을 위해 로그인하세요"
+ "Sign in for re-rental alerts": "재임대 알림을 위해 로그인하세요",
+ "Appearance": "화면 스타일",
+ "Light": "라이트",
+ "Dark": "다크"
 }

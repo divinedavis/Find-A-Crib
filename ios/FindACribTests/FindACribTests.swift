@@ -2428,3 +2428,38 @@ final class RerentalPageTests: XCTestCase {
         XCTAssertNil(RerentalDetailView.unitsLeft([row(1, 2900, 1, nil)]), "no count printed: no chip")
     }
 }
+
+/// Profile › Appearance (owner, 2026-11-22): Light, Dark, or the phone's.
+final class AppearanceTests: XCTestCase {
+    /// A pick is stored, becomes the app's scheme, and "iPhone setting" clears
+    /// it back to nil (follow the phone) rather than freezing today's look.
+    func testAPickIsStoredAndFollowingThePhoneStoresNothing() throws {
+        let a = Appearance.shared, d = UserDefaults.standard
+        let before = a.choice
+        defer { a.choose(before) }
+
+        a.choose(.dark)
+        XCTAssertEqual(d.string(forKey: Appearance.key), "dark")
+        a.choose(.light)
+        XCTAssertEqual(d.string(forKey: Appearance.key), "light")
+        a.choose(.system)
+        XCTAssertNil(d.string(forKey: Appearance.key), "following the phone leaves nothing stored")
+
+        // --dark / --light (UI tests, screenshots) win over the pick, so the
+        // scheme itself is only checked when this run was not launched with one.
+        try XCTSkipIf(SE.forcedScheme != nil, "launched with a pinned appearance")
+        a.choose(.dark)
+        XCTAssertEqual(a.scheme, .dark)
+        XCTAssertTrue(SE.isDark, "the skyline's day/night question follows the pick")
+        a.choose(.light)
+        XCTAssertEqual(a.scheme, .light)
+        XCTAssertFalse(SE.isDark)
+        a.choose(.system)
+        XCTAssertNil(a.scheme, "nil is what lets SwiftUI follow the phone")
+    }
+
+    func testEveryChoiceHasAName() {
+        XCTAssertEqual(Appearance.Choice.allCases.map(\.rawValue), ["system", "light", "dark"])
+        for c in Appearance.Choice.allCases { XCTAssertFalse(c.title.isEmpty) }
+    }
+}

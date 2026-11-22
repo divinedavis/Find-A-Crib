@@ -7,8 +7,9 @@ teal text taken from the fill token is unreadable on a dark card. Nothing
 fails to compile when that happens, so these tests read the Swift sources.
 
 What they hold:
-  1. nothing pins the app or its navigation bar to light (the one switch is
-     --dark / --light at launch, for tests and screenshots);
+  1. nothing pins the app or its navigation bar to light: the one scheme is
+     set at the root from Profile › Appearance (Light, Dark, or follow the
+     phone), with --dark / --light at launch for tests and screenshots;
   2. no view paints a background or fill with plain white (SE.surface is the
      colour a card is drawn on), with a short, explained list of exceptions;
   3. text, icons and outlines use the ink tokens (royalInk, goodInk, warnInk,
@@ -84,19 +85,75 @@ WHITE_ALLOWED = {
 }
 
 
+class ProfileAppearanceSetting(unittest.TestCase):
+    """Profile › Appearance: Light, Dark, or the phone's setting (owner,
+    2026-11-22). DarkModeTests.testProfileAppearancePicksLightDarkOrThePhone
+    taps through it; these hold the wiring a simulator run cannot see."""
+
+    def setUp(self):
+        self.texts = dict(sources())
+        self.src = self.texts["Services/Appearance.swift"]
+
+    def test_three_choices_and_the_phone_is_the_default(self):
+        self.assertIn("case system, light, dark", self.src)
+        self.assertIn("?? .system", self.src, "with nothing stored the app follows the phone")
+
+    def test_following_the_phone_means_no_scheme_at_all(self):
+        """.system must hand SwiftUI nil, not today's appearance frozen in."""
+        self.assertRegex(self.src, r"case \.system: return nil")
+        self.assertRegex(self.src, r"case \.light: return \.light")
+        self.assertRegex(self.src, r"case \.dark: return \.dark")
+
+    def test_a_tests_flag_beats_the_pick(self):
+        body = self.src[self.src.index("var scheme: ColorScheme?"):]
+        self.assertLess(body.index("SE.forcedScheme"), body.index("switch choice"),
+                        "--dark / --light are checked before the stored pick")
+
+    def test_the_skyline_asks_the_same_place_as_the_colours(self):
+        """SE.isDark decides day or night skyline. If it read only the phone,
+        Dark picked on a light phone would draw a day skyline on a dark screen."""
+        theme = self.texts["Design/Theme.swift"]
+        body = theme[theme.index("static var isDark: Bool"):theme.index("static var isDark: Bool") + 400]
+        self.assertIn("Appearance.shared.scheme", body)
+
+    def test_profile_has_the_row(self):
+        profile = self.texts["Features/Profile/ProfileView.swift"]
+        self.assertIn('settingRow(String(localized: "Appearance"))', profile)
+        self.assertIn('.accessibilityIdentifier("profile-appearance")', profile)
+        self.assertIn("Appearance.shared.choose($0)", profile)
+        # The row is read out as "Appearance, Dark", not a bare "Dark": bare,
+        # "iPhone setting" was the same label as an item in the Language menu.
+        self.assertIn('.accessibilityLabel(Text(verbatim: "\\(String(localized: "Appearance")), \\(Appearance.shared.choice.title)"))', profile)
+        self.assertLess(profile.index('"profile-language"'), profile.index('"profile-appearance"'),
+                        "it sits under Language")
+
+    def test_the_words_are_translated(self):
+        import json
+        cat = json.load(open(os.path.join(ROOT, "ios", "Shared", "Localizable.xcstrings")))["strings"]
+        for key in ("Appearance", "Light", "Dark", "iPhone setting"):
+            self.assertIn(key, cat, f"{key!r} is in the string catalog")
+            for lang in ("es", "ko", "zh-Hans", "zh-Hant"):
+                unit = cat[key].get("localizations", {}).get(lang, {}).get("stringUnit", {})
+                self.assertTrue(unit.get("value"), f"{key!r} has a {lang} translation")
+                self.assertEqual(unit.get("state"), "translated", f"{key!r} in {lang} was reviewed, not machine output")
+
+
 class NothingPinsTheAppToLight(unittest.TestCase):
     def test_no_view_forces_a_colour_scheme(self):
         hits = [f"{n}:{i}" for n, i, code in code_lines()
                 if re.search(r"preferredColorScheme\(\s*\.(light|dark)\s*\)|toolbarColorScheme\(\s*\.(light|dark)", code)]
         self.assertEqual(hits, [], "these pin a screen or its bar to one appearance")
 
-    def test_the_only_pin_is_the_launch_switch_for_tests(self):
-        """--dark / --light exist for screenshots and for UI tests on iPad,
-        whose simulator cannot be switched from a test. Without either flag
-        the scheme is nil and the app follows the phone."""
+    def test_the_only_pin_is_the_appearance_setting(self):
+        """One preferredColorScheme in the whole app, at the root, fed by
+        Appearance: nil (follow the phone) unless someone picked Light or Dark
+        in Profile, or a test launched with --dark / --light. Those flags
+        exist for screenshots and for UI tests on iPad, whose simulator cannot
+        be switched from a test."""
         texts = dict(sources())
         self.assertEqual(sum(t.count("preferredColorScheme(") for t in texts.values()), 1)
-        self.assertIn(".preferredColorScheme(SE.forcedScheme)", texts["App/FindACribApp.swift"])
+        self.assertIn(".preferredColorScheme(appearance.scheme)", texts["App/FindACribApp.swift"])
+        self.assertIn("@State private var appearance = Appearance.shared", texts["App/FindACribApp.swift"])
         self.assertRegex(texts["Design/Theme.swift"],
                          r'static let forcedScheme: ColorScheme\? = CommandLine\.arguments\.contains\("--dark"\) \? \.dark\s*'
                          r': \(CommandLine\.arguments\.contains\("--light"\) \? \.light : nil\)')

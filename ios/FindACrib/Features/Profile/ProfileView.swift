@@ -262,6 +262,23 @@ struct ProfileView: View {
                                 .foregroundStyle(SE.royalInk)
                         }.accessibilityIdentifier("profile-language")
                     }
+                    // Light, Dark, or follow the phone (owner, 2026-11-22). Built
+                    // like the Language row above it, and it switches in place.
+                    settingRow(String(localized: "Appearance")) {
+                        Menu {
+                            Picker(String(localized: "Appearance"), selection: Binding(get: { Appearance.shared.choice }, set: { Appearance.shared.choose($0) })) {
+                                ForEach(Appearance.Choice.allCases, id: \.self) { Text($0.title).tag($0) }
+                            }
+                        } label: {
+                            HStack(spacing: 4) { Text(Appearance.shared.choice.title).font(.se(18, .semibold)); Image(systemName: "chevron.up.chevron.down").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royalInk)
+                        }.accessibilityIdentifier("profile-appearance")
+                        // Read out with its setting's name. Without it the row is
+                        // just "iPhone setting", the same words as an item in the
+                        // Language menu, which VoiceOver (and the Language UI
+                        // test, in Spanish) could not tell apart.
+                        .accessibilityLabel(Text(verbatim: "\(String(localized: "Appearance")), \(Appearance.shared.choice.title)"))
+                    }
                     settingRow(String(localized: "Rate Find A Crib")) {
                         Button { ReviewPrompt.shared.openWriteReview() } label: {
                             HStack(spacing: 4) { Text("On the App Store").font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }

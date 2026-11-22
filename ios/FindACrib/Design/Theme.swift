@@ -15,7 +15,9 @@ enum SE {
     /// Is the app drawing dark right now? For the few places that are not a
     /// colour (which skyline to draw).
     static var isDark: Bool {
-        if let forcedScheme { return forcedScheme == .dark }
+        // A pick in Profile › Appearance (or a test's --dark / --light) first;
+        // with neither, whatever the phone is set to.
+        if let scheme = Appearance.shared.scheme { return scheme == .dark }
         return UIScreen.main.traitCollection.userInterfaceStyle == .dark
     }
 

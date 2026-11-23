@@ -4,6 +4,34 @@
     "" : {
       "shouldTranslate" : false
     },
+    " (attempted)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " (tentativa)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " (미수)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "（未遂）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "（未遂）"
+          }
+        }
+      }
+    },
     " (today)" : {
       "localizations" : {
         "es" : {
@@ -991,6 +1019,102 @@
         }
       }
     },
+    "%@ is above the %@ limit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is above the %2$@ limit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ supera el límite para %2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@은(는) %2$@ 한도를 넘습니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 超过 %2$@限额"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 超過 %2$@限額"
+          }
+        }
+      }
+    },
+    "%@ is below the minimum" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ está por debajo del mínimo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@은(는) 최소 기준보다 낮습니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 低于最低要求"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 低於最低要求"
+          }
+        }
+      }
+    },
+    "%@ is inside the %@ limit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is inside the %2$@ limit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ está dentro del límite para %2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@은(는) %2$@ 한도 이내입니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 在 %2$@限额之内"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 在 %2$@限額之內"
+          }
+        }
+      }
+    },
     "%@ is typing…" : {
       "localizations" : {
         "es" : {
@@ -1019,6 +1143,34 @@
         }
       }
     },
+    "%@ tax return" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Declaración de impuestos de %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@년 세금 신고서"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 年报税表"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 年報稅表"
+          }
+        }
+      }
+    },
     "%@ · %@" : {
       "localizations" : {
         "en" : {
@@ -1029,6 +1181,40 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "%@ · %lld added" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld added"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld añadidas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld장 추가됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · 已添加 %2$lld 页"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · 已新增 %2$lld 頁"
+          }
+        }
+      }
     },
     "%@ · %lld open violations" : {
       "localizations" : {
@@ -1364,6 +1550,17 @@
       }
     },
     "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      },
       "shouldTranslate" : false
     },
     "%lld 311 calls on this building in all" : {
@@ -1904,88 +2101,6 @@
         }
       }
     },
-    "%lld documents" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld document"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld documents"
-                }
-              }
-            }
-          }
-        },
-        "es" : {
-          "variations" : {
-            "plural" : {
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld documentos"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld documento"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld documentos"
-                }
-              }
-            }
-          }
-        },
-        "ko" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "서류 %lld개"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld 份文件"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hant" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld 份文件"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "%lld drawings are open elsewhere in New Jersey. Pick another county or tap Clear." : {
       "localizations" : {
         "en" : {
@@ -2288,6 +2403,34 @@
         }
       }
     },
+    "%lld left" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedan %lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개 남음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩余 %lld 套"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩餘 %lld 間"
+          }
+        }
+      }
+    },
     "%lld months" : {
       "localizations" : {
         "en" : {
@@ -2426,6 +2569,40 @@
         }
       }
     },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld de %2$lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "%lld of %lld open" : {
       "localizations" : {
         "en" : {
@@ -2490,6 +2667,40 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "%2$lld的%1$lld在New Jersey中開啟"
+          }
+        }
+      }
+    },
+    "%lld of %lld ready" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld ready"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld de %2$lld listos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%2$lld개 중 %1$lld개 준비됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已备好 %1$lld/%2$lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已備妥 %1$lld/%2$lld"
           }
         }
       }
@@ -3160,6 +3371,34 @@
         }
       }
     },
+    "%lld people" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld personas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld명"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人"
+          }
+        }
+      }
+    },
     "%lld people in your household" : {
       "localizations" : {
         "en" : {
@@ -3494,6 +3733,34 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld ready" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld listos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개 준비됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已备好 %lld 份"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已備妥 %lld 份"
           }
         }
       }
@@ -4080,6 +4347,34 @@
         }
       }
     },
+    "%lld within half a mile: " : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld a menos de media milla: "
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "반 마일 이내 %lld건: "
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半英里内 %lld 起："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半英里內 %lld 起："
+          }
+        }
+      }
+    },
     "%lld years" : {
       "localizations" : {
         "en" : {
@@ -4173,6 +4468,9 @@
       },
       "shouldTranslate" : false
     },
+    "%lld%%" : {
+      "shouldTranslate" : false
+    },
     "%lld+ on file" : {
       "localizations" : {
         "es" : {
@@ -4201,6 +4499,62 @@
         }
       }
     },
+    "%lld+ people" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld o más personas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld명 이상"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人以上"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人以上"
+          }
+        }
+      }
+    },
+    "%lld-person" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld personas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人"
+          }
+        }
+      }
+    },
     "%lld. %@" : {
       "localizations" : {
         "en" : {
@@ -4211,6 +4565,74 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "%lld–%lld bed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld–%2$lld bed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld hab."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "침실 %1$lld–%2$lld개"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld 卧"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld 臥"
+          }
+        }
+      }
+    },
+    "%lld–%lld people" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld–%2$lld people"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld personas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld명"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld 人"
+          }
+        }
+      }
     },
     ", from %@/mo" : {
       "localizations" : {
@@ -4296,6 +4718,62 @@
         }
       }
     },
+    "/mo" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/mes"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/월"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/月"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/月"
+          }
+        }
+      }
+    },
+    "/yr" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "/año"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "/년"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "/年"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "/年"
+          }
+        }
+      }
+    },
     "1" : {
       "shouldTranslate" : false
     },
@@ -4358,6 +4836,34 @@
         }
       }
     },
+    "1 person" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 persona"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1명"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 人"
+          }
+        }
+      }
+    },
     "1 year" : {
       "localizations" : {
         "es" : {
@@ -4382,6 +4888,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "1年"
+          }
+        }
+      }
+    },
+    "1-person" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 persona"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 人"
           }
         }
       }
@@ -5398,34 +5932,6 @@
         }
       }
     },
-    "Add %@" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Añadir %@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%@ 추가"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "添加%@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新增%@"
-          }
-        }
-      }
-    },
     "Add a comment…" : {
       "localizations" : {
         "es" : {
@@ -5450,34 +5956,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "新增評論..."
-          }
-        }
-      }
-    },
-    "Add another document" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Agregar otro documento"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다른 문서를 추가하세요"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "添加另一个文件"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新增另一個文件"
           }
         }
       }
@@ -5510,30 +5988,30 @@
         }
       }
     },
-    "Add documents above, then email them in one go from your own Mail." : {
+    "Add from" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Añade documentos arriba, luego envíalos por correo electrónico de una sola vez desde tu propio correo."
+            "state" : "translated",
+            "value" : "Añadir desde"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "위의 문서를 추가한 다음, 자신의 메일에서 한 번에 이메일로 보내세요."
+            "state" : "translated",
+            "value" : "가져올 위치"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "添加上面的文件，然后从自己的邮件中一次性发送电子邮件。"
+            "state" : "translated",
+            "value" : "添加来源"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "新增上面的文件，然後從您自己的郵件中一次性傳送電子郵件。"
+            "state" : "translated",
+            "value" : "新增來源"
           }
         }
       }
@@ -5678,6 +6156,34 @@
         }
       }
     },
+    "Add your documents above. Then we'll put them in one PDF and email it to you." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade tus documentos arriba. Luego los juntamos en un solo PDF y te lo enviamos por correo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "위에서 서류를 추가하세요. 그러면 PDF 하나로 묶어 이메일로 보내 드립니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在上方添加你的文件。然后我们会把它们合并成一个 PDF，用邮件发给你。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請在上方新增你的文件。然後我們會把它們合併成一個 PDF，用電子郵件寄給你。"
+          }
+        }
+      }
+    },
     "Add your rent now and the new rent" : {
       "localizations" : {
         "es" : {
@@ -5702,6 +6208,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "立即新增您的租金和新租金"
+          }
+        }
+      }
+    },
+    "Added" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadido"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "추가됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已添加"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已新增"
           }
         }
       }
@@ -6350,6 +6884,34 @@
         }
       }
     },
+    "Any household" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cualquier hogar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 가구"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "任何家庭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "任何家庭"
+          }
+        }
+      }
+    },
     "Any price" : {
       "localizations" : {
         "es" : {
@@ -6402,6 +6964,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "任何尺寸"
+          }
+        }
+      }
+    },
+    "Anything else they asked for" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cualquier otra cosa que te hayan pedido"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그 밖에 요청받은 서류"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他们要求的其他材料"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他們要求的其他資料"
           }
         }
       }
@@ -6633,34 +7223,6 @@
         }
       }
     },
-    "Application packet" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paquete de solicitud"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "신청 서류 묶음"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "申请材料包"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "申請材料包"
-          }
-        }
-      }
-    },
     "Apply" : {
       "localizations" : {
         "es" : {
@@ -6773,6 +7335,40 @@
         }
       }
     },
+    "Apply on %@'s site: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Apply on %1$@'s site: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Solicita en el sitio de %1$@: %2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%1$@의 사이트에서 신청하세요: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在%1$@的网站上申请：%2$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在%1$@的網站上申請：%2$@"
+          }
+        }
+      }
+    },
     "Apply on Housing Connect" : {
       "localizations" : {
         "es" : {
@@ -6853,6 +7449,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在HousingSearch.ny.gov上申請"
+          }
+        }
+      }
+    },
+    "Apply on their site" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solicita en su sitio web"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "해당 사이트에서 신청하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在他们的网站上申请"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在他們的網站上申請"
           }
         }
       }
@@ -7161,6 +7785,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "襲擊"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atrás"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "뒤로"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
           }
         }
       }
@@ -9044,6 +9696,34 @@
         }
       }
     },
+    "Close photos" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar fotos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진 닫기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭照片"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉照片"
+          }
+        }
+      }
+    },
     "Closed" : {
       "localizations" : {
         "es" : {
@@ -9822,6 +10502,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法加載空房信息"
+          }
+        }
+      }
+    },
+    "Couldn't load the reports right now." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudieron cargar los informes en este momento."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "지금 보고서를 로드할 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "现在无法加载报告。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "現在無法載入報告。"
           }
         }
       }
@@ -10785,30 +11493,30 @@
         }
       }
     },
-    "Delete my packet" : {
+    "Delete my documents" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Borrar mi paquete"
+            "value" : "Borrar mis documentos"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 서류 묶음 삭제"
+            "value" : "내 서류 삭제"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除我的申请材料"
+            "value" : "删除我的文件"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "刪除我的申請材料"
+            "value" : "刪除我的文件"
           }
         }
       }
@@ -10897,30 +11605,30 @@
         }
       }
     },
-    "Delete your profile and every document in the packet from this phone?" : {
+    "Delete your details and every document from this phone?" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "¿Borrar tu perfil y todos los documentos del paquete de este teléfono?"
+            "state" : "translated",
+            "value" : "¿Borrar tus datos y todos los documentos de este teléfono?"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 전화기에서 당신의 프로필과 패키지의 모든 문서를 삭제할래?"
+            "state" : "translated",
+            "value" : "이 휴대폰에서 내 정보와 모든 서류를 삭제할까요?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "从这台手机上删除您的个人资料和该包中的所有文件吗？"
+            "state" : "translated",
+            "value" : "要从这部手机上删除你的资料和所有文件吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "從這部手機刪除您的個人資料和資料包中的所有文件嗎？"
+            "state" : "translated",
+            "value" : "要從這部手機上刪除你的資料和所有文件嗎？"
           }
         }
       }
@@ -11121,30 +11829,30 @@
         }
       }
     },
-    "Documents" : {
+    "Dismissed" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Documentos"
+            "state" : "translated",
+            "value" : "Descartado"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "서류"
+            "value" : "닫힘"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "文件"
+            "state" : "translated",
+            "value" : "已关闭"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "檔案"
+            "state" : "translated",
+            "value" : "已關閉"
           }
         }
       }
@@ -11229,6 +11937,90 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "好"
+          }
+        }
+      }
+    },
+    "Double-tap to zoom" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca dos veces para ampliar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "두 번 탭하여 확대"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轻点两下放大"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點兩下放大"
+          }
+        }
+      }
+    },
+    "Driver's license, passport or IDNYC" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Licencia de conducir, pasaporte o IDNYC"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "운전면허증, 여권 또는 IDNYC"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "驾驶执照、护照或IDNYC"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "駕照、護照或IDNYC"
+          }
+        }
+      }
+    },
+    "Drug offense" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delito de drogas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마약 범죄"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毒品犯罪"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毒品犯罪"
           }
         }
       }
@@ -11373,30 +12165,30 @@
         }
       }
     },
-    "Email my packet" : {
+    "Email them to me" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enviar mi paquete por correo"
+            "value" : "Enviármelos por correo"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 서류 묶음 이메일로 보내기"
+            "value" : "내 이메일로 보내기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "邮件发送我的申请材料"
+            "value" : "用邮件发给我"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "郵件發送我的申請材料"
+            "value" : "用電子郵件寄給我"
           }
         }
       }
@@ -11425,88 +12217,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "電子郵件：%@"
-          }
-        }
-      }
-    },
-    "Emails your %lld documents from your own Mail. Only send what the agent asked for." : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Emails your %lld document from your own Mail. Only send what the agent asked for."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Emails your %lld documents from your own Mail. Only send what the agent asked for."
-                }
-              }
-            }
-          }
-        },
-        "es" : {
-          "variations" : {
-            "plural" : {
-              "many" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "Envía por correo electrónico tus documentos %lld desde tu propio correo. Solo envía lo que el agente pidió."
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "Envía por correo electrónico tu documento %lld desde tu propio correo. Solo envía lo que el agente pidió."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "Envía por correo electrónico tus documentos %lld desde tu propio correo. Solo envía lo que el agente pidió."
-                }
-              }
-            }
-          }
-        },
-        "ko" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "당신의 자신의 메일에서 당신의 %lld 문서를 이메일로 보내세요. 에이전트가 요청한 것만 보내세요."
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "从您自己的邮件中将您的%lld文件通过电子邮件发送。只发送代理要求的东西。"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hant" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "從您自己的郵件中將您的%lld文件透過電子郵件傳送。只傳送代理要求的內容。"
-                }
-              }
-            }
           }
         }
       }
@@ -12021,34 +12731,6 @@
         }
       }
     },
-    "Everything an agent asks for, in one place" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Todo lo que un agente pide, en un solo lugar"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "대리사가 요구하는 모든 것이 한 곳에 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "代理人要求的一切，都在一个地方"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "代理人要求的一切，都在一個地方。"
-          }
-        }
-      }
-    },
     "Eviction notices" : {
       "localizations" : {
         "es" : {
@@ -12269,6 +12951,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "提交給舊金山租金委員會。與租金數字一樣，這些資料是對整個街區進行匿名的，因此它們涵蓋了整個街區的每棟建築，而不是單個地址。"
+          }
+        }
+      }
+    },
+    "Files" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archivos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "파일"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "檔案"
           }
         }
       }
@@ -12515,6 +13225,9 @@
         }
       }
     },
+    "Find A Crib. %@" : {
+      "shouldTranslate" : false
+    },
     "Find A Crib. %@%@" : {
       "localizations" : {
         "en" : {
@@ -12690,6 +13403,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "西方人名的第一個字"
+          }
+        }
+      }
+    },
+    "Fits the screen" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustada a la pantalla"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화면에 맞춤"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "适应屏幕"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "符合螢幕大小"
           }
         }
       }
@@ -13002,6 +13743,34 @@
         }
       }
     },
+    "From %@'s listing. Check the details with them before you apply." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del anuncio de %@. Confirma los detalles con ellos antes de solicitar."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@의 매물 정보입니다. 신청하기 전에 세부 사항을 직접 확인하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自 %@ 的房源信息。申请前请向他们核实详情。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "來自 %@ 的房源資訊。申請前請向他們核實詳情。"
+          }
+        }
+      }
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "localizations" : {
         "es" : {
@@ -13086,6 +13855,34 @@
         }
       }
     },
+    "From every job you had last year" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De cada empleo que tuviste el año pasado"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작년에 일한 모든 직장의 것"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去年做过的每份工作各一份"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去年做過的每份工作各一份"
+          }
+        }
+      }
+    },
     "From the DC Office of Tax and Revenue — the owner on the tax roll and the assessor's record of the building, matched to this registration through its address." : {
       "localizations" : {
         "es" : {
@@ -13138,34 +13935,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "從Los Angeles住房部門的物業查詢中可以看出，洛杉磯不像New York那樣按危險類別對違規行為進行分級。"
-          }
-        }
-      }
-    },
-    "From the agent — not something the packet holds" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Del agente, no algo que el paquete contenga"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "에이전트에서 - 패킷이 포함하는 것이 아니라"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "来自代理——不是数据包所包含的内容"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "來自代理——不是資料包所包含的內容"
           }
         }
       }
@@ -14010,6 +14779,34 @@
         }
       }
     },
+    "Harassment report" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reporte de acoso"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "괴롭힘 신고"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "骚扰报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "騷擾通報"
+          }
+        }
+      }
+    },
     "Have an account? Sign in" : {
       "localizations" : {
         "es" : {
@@ -14174,6 +14971,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "聽聽下一個NYC住房抽籤將何時結束。"
+          }
+        }
+      }
+    },
+    "Help me apply" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayúdame a solicitar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "신청 도와줘요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮我申请"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "幫我申請"
           }
         }
       }
@@ -14626,6 +15451,34 @@
         }
       }
     },
+    "How to apply" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cómo solicitar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "신청 방법"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如何申请"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如何申請"
+          }
+        }
+      }
+    },
     "How you found the apartment" : {
       "localizations" : {
         "es" : {
@@ -14850,6 +15703,34 @@
         }
       }
     },
+    "If they apply to you" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si te corresponden"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "해당되는 경우"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果适用于你"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果適用於你"
+          }
+        }
+      }
+    },
     "Immediately hazardous" : {
       "localizations" : {
         "es" : {
@@ -14962,6 +15843,34 @@
         }
       }
     },
+    "Income %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresos %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소득 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入 %@"
+          }
+        }
+      }
+    },
     "Income %@–%@" : {
       "localizations" : {
         "en" : {
@@ -15052,6 +15961,34 @@
         }
       }
     },
+    "Income from %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresos desde %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소득 %@ 이상"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入 %@ 起"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入 %@ 起"
+          }
+        }
+      }
+    },
     "Income limit · 1 person" : {
       "localizations" : {
         "es" : {
@@ -15132,6 +16069,62 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "收入應該是每年幾美元，在1000到2000000美元之間。"
+          }
+        }
+      }
+    },
+    "Income up to %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresos hasta %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소득 %@ 이하"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入不超过 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入不超過 %@"
+          }
+        }
+      }
+    },
+    "Income up to %@ · 1 person" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresos hasta %@ · 1 persona"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소득 %@ 이하 · 1인"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入不超过 %@ · 1 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入不超過 %@ · 1 人"
           }
         }
       }
@@ -15830,30 +16823,30 @@
         }
       }
     },
-    "Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself." : {
+    "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Se mantuvo solo en este teléfono, nunca se subió a Find A Crib. Lo envías tú mismo al agente."
+            "state" : "translated",
+            "value" : "Solo se guarda en este teléfono. Find A Crib nunca sube tus documentos ni se los envía a nadie."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 전화만 계속 사용했고 - 절대 Find A Crib에 업로드하지 않았습니다. 당신은 그것을 에이전트에게 직접 보내세요."
+            "state" : "translated",
+            "value" : "이 휴대폰에만 보관됩니다. Find A Crib는 서류를 업로드하거나 누구에게도 보내지 않습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "只保留在手机上——从不上传到Find A Crib。你自己把它发给代理。"
+            "state" : "translated",
+            "value" : "仅保存在这部手机上。Find A Crib 绝不会上传你的文件，也不会发给任何人。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "只保留在這個手機上——從未上傳到Find A Crib。你自己把它發給代理人。"
+            "state" : "translated",
+            "value" : "僅儲存在這部手機上。Find A Crib 絕不會上傳你的文件，也不會傳給任何人。"
           }
         }
       }
@@ -15998,6 +16991,34 @@
         }
       }
     },
+    "Landlord reference, a letter" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referencia del arrendador, una carta"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "집주인 추천서, 편지"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "房东推荐信等信函"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "房東推薦信等信函"
+          }
+        }
+      }
+    },
     "Landlord soliciting voucher tenants on AffordableHousing.com" : {
       "localizations" : {
         "es" : {
@@ -16078,34 +17099,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "姓氏"
-          }
-        }
-      }
-    },
-    "Last year's tax return" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La declaración de impuestos del año pasado"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "작년의 세금 신고서"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "去年的纳税申报表"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "去年的納稅申報表"
           }
         }
       }
@@ -16665,6 +17658,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "發佈者 "
+          }
+        }
+      }
+    },
+    "Listed by %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publicado por %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "게시자 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发布者 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發佈者 %@"
           }
         }
       }
@@ -18096,6 +19117,118 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "我的活動"
+          }
+        }
+      }
+    },
+    "My application documents" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mis documentos de solicitud"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 신청 서류"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的申请文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的申請文件"
+          }
+        }
+      }
+    },
+    "My application documents — %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mis documentos de solicitud — %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 신청 서류 — %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的申请文件 — %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的申請文件 — %@"
+          }
+        }
+      }
+    },
+    "My documents" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mis documentos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 서류"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的文件"
+          }
+        }
+      }
+    },
+    "My documents for apartment applications, in one PDF:" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mis documentos para solicitudes de apartamento, en un solo PDF:"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아파트 신청용 내 서류를 PDF 하나로 보냅니다:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的公寓申请文件，合并为一个 PDF："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的公寓申請文件，合併為一個 PDF："
           }
         }
       }
@@ -20352,6 +21485,34 @@
         }
       }
     },
+    "None reported within half a mile." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguno reportado a menos de media milla."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "반 마일 이내에 신고된 건이 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半英里内没有报告。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半英里內沒有通報。"
+          }
+        }
+      }
+    },
     "None with %@" : {
       "localizations" : {
         "es" : {
@@ -20404,34 +21565,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "現在不行"
-          }
-        }
-      }
-    },
-    "Not added" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "No añadido"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "추가되지 않음"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "未添加"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "未新增"
           }
         }
       }
@@ -21024,6 +22157,34 @@
         }
       }
     },
+    "On letterhead, with your salary" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En papel membretado, con tu salario"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "회사 레터헤드에 급여가 적힌 것"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "印有公司抬头并写明薪资"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "印有公司抬頭並寫明薪資"
+          }
+        }
+      }
+    },
     "On the App Store" : {
       "localizations" : {
         "es" : {
@@ -21048,6 +22209,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "前往 App Store"
+          }
+        }
+      }
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach to any application." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un PDF con todos los documentos, enviado a tu propio correo, listo para adjuntar a cualquier solicitud."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 서류를 PDF 하나로 묶어 내 이메일로 보내 드립니다. 어떤 신청서에든 바로 첨부할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有文件合并为一个 PDF，发送到你自己的邮箱，随时可以附在任何申请中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有文件合併為一個 PDF，寄到你自己的電子郵件，隨時可以附在任何申請中。"
+          }
+        }
+      }
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach when you apply on %@'s site." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un PDF con todos los documentos, enviado a tu propio correo, listo para adjuntar cuando solicites en el sitio de %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 서류를 PDF 하나로 묶어 내 이메일로 보내 드립니다. %@ 사이트에서 신청할 때 바로 첨부할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有文件合并为一个 PDF，发送到你自己的邮箱，在 %@ 的网站上申请时即可附上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有文件合併為一個 PDF，寄到你自己的電子郵件，在 %@ 的網站上申請時即可附上。"
           }
         }
       }
@@ -21216,6 +22433,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "未解決的投訴"
+          }
+        }
+      }
+    },
+    "Open details" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abrir detalles"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상세 정보 열기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开详细信息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "開啟詳細資訊"
           }
         }
       }
@@ -21394,30 +22639,58 @@
         }
       }
     },
-    "Other document" : {
+    "Opens the details" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Otro documento"
+            "state" : "translated",
+            "value" : "Abre los detalles"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "다른 문서"
+            "state" : "translated",
+            "value" : "세부 정보를 엽니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "其他文件"
+            "state" : "translated",
+            "value" : "打开详细信息"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "其他文件"
+            "state" : "translated",
+            "value" : "開啟詳細資訊"
+          }
+        }
+      }
+    },
+    "Opens the photos full screen" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre las fotos en pantalla completa"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진을 전체 화면으로 엽니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全屏打开照片"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "以全螢幕開啟照片"
           }
         }
       }
@@ -21782,6 +23055,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "粘貼房源文字"
+          }
+        }
+      }
+    },
+    "Pay stubs" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recibos de pago"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "급여 명세서"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工资单"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "薪資單"
           }
         }
       }
@@ -22236,6 +23537,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "大樓的照片"
+          }
+        }
+      }
+    },
+    "Photos" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "照片"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "照片"
           }
         }
       }
@@ -23237,19 +24566,19 @@
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "복권이나 재임대 오픈 시 실시간 알림"
+            "value" : "추첨이나 재임대 오픈 시 실시간 알림"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "彩票或重新出租一开即发出实时警报"
+            "value" : "抽签或重新出租一开即发出实时警报"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "彩票或重新出租一開啟，就會立即發出實時警報。"
+            "value" : "抽籤或重新出租一開啟，就會立即發出實時警報。"
           }
         }
       }
@@ -23278,34 +24607,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最近"
-          }
-        }
-      }
-    },
-    "Recent pay stubs" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Talones de pago recientes"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "최근 급여 명세서"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "最近的工资单"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "最近的工資單"
           }
         }
       }
@@ -24906,6 +26207,34 @@
         }
       }
     },
+    "SNAP, SSI, unemployment, support orders" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SNAP, SSI, desempleo, órdenes de manutención"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SNAP, SSI, 실업 급여, 양육비 명령서"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SNAP、SSI、失业金、抚养费判令"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SNAP、SSI、失業金、扶養費判令"
+          }
+        }
+      }
+    },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "localizations" : {
         "es" : {
@@ -24986,6 +26315,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保存"
+          }
+        }
+      }
+    },
+    "Save PDF" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Guardar PDF"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "PDF 저장"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "保存PDF"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "儲存PDF"
           }
         }
       }
@@ -25126,6 +26483,62 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "已儲存的搜尋"
+          }
+        }
+      }
+    },
+    "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en tu Perfil › Mis documentos. Ahí estarán también para el próximo apartamento, y puedes borrarlos cuando quieras."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로필 › 내 서류에 저장되었습니다. 다음 아파트를 신청할 때도 쓸 수 있고, 언제든지 삭제할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存到“个人资料”›“我的文件”。下次申请公寓时还能用，也可以随时删除。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已儲存到「個人資料」›「我的文件」。下次申請公寓時還能用，也可以隨時刪除。"
+          }
+        }
+      }
+    },
+    "Scan" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escanear"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스캔"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "扫描"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "掃描"
           }
         }
       }
@@ -25615,34 +27028,6 @@
         }
       }
     },
-    "Send to the agent" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enviar al agente"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "대리인에게 보내기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发送给代理"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "發送給代理"
-          }
-        }
-      }
-    },
     "Send…" : {
       "localizations" : {
         "es" : {
@@ -25867,6 +27252,34 @@
         }
       }
     },
+    "Shooting" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiroteo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "총격"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "枪击"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "槍擊"
+          }
+        }
+      }
+    },
     "Shootings" : {
       "localizations" : {
         "es" : {
@@ -25891,6 +27304,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "槍擊事件"
+          }
+        }
+      }
+    },
+    "Shootings, robberies and burglaries. Turn on crime alerts to choose." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiroteos, robos y robos con allanamiento. Activa las alertas de delitos para elegir."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "총격, 강도, 주거 침입. 범죄 알림을 켜면 직접 고를 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "枪击、抢劫和入室盗窃。开启犯罪提醒即可自行选择。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "槍擊、搶劫和入室盜竊。開啟犯罪提醒即可自行選擇。"
           }
         }
       }
@@ -25981,6 +27422,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示全部 %lld 條投訴"
+          }
+        }
+      }
+    },
+    "Show all %lld reports" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar los %lld reportes"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "신고 %lld건 모두 보기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示全部 %lld 条报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示全部 %lld 則通報"
           }
         }
       }
@@ -27021,6 +28490,34 @@
         }
       }
     },
+    "Signed in as %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión iniciada como %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 로그인됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已以 %@ 的身份登录"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已以 %@ 的身分登入"
+          }
+        }
+      }
+    },
     "Since" : {
       "localizations" : {
         "es" : {
@@ -27782,6 +29279,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開間"
+          }
+        }
+      }
+    },
+    "Studio–%lld bed" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estudio–%lld hab."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스튜디오–침실 %lld개"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开间–%lld 卧"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開間–%lld 臥"
           }
         }
       }
@@ -28660,6 +30185,34 @@
         }
       }
     },
+    "The full return, all pages" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La declaración completa, todas las páginas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "신고서 전체, 모든 페이지"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完整的报税表，所有页面"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完整的報稅表，所有頁面"
+          }
+        }
+      }
+    },
     "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
       "localizations" : {
         "es" : {
@@ -28716,6 +30269,62 @@
         }
       }
     },
+    "The kinds your alerts watch." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los tipos que vigilan tus alertas."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알림이 지켜보는 유형입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的提醒所关注的类型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的提醒所關注的類型。"
+          }
+        }
+      }
+    },
+    "The last 2 months" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Los últimos 2 meses"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "지난 2개월"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "过去2个月"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "過去的2個月"
+          }
+        }
+      }
+    },
     "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent." : {
       "localizations" : {
         "es" : {
@@ -28740,6 +30349,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "DC DHCD記錄的該物業租金受控單位的合法租金——不是要求的租金。"
+          }
+        }
+      }
+    },
+    "The listing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El anuncio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매물 정보"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "房源信息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "房源資訊"
           }
         }
       }
@@ -28884,6 +30521,34 @@
         }
       }
     },
+    "The reports, %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los reportes, %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "신고 내역, %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "报告，%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通報，%@"
+          }
+        }
+      }
+    },
     "The subscription renews automatically each month at %@ unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions." : {
       "localizations" : {
         "ko" : {
@@ -28930,6 +30595,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "盜竊"
+          }
+        }
+      }
+    },
+    "Their listings" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sus anuncios"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "해당 중개인의 매물"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他们的房源"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "他們的房源"
           }
         }
       }
@@ -30192,6 +31885,34 @@
         }
       }
     },
+    "Up to %lld people" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hasta %lld personas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최대 %lld명"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最多 %lld 人"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最多 %lld 人"
+          }
+        }
+      }
+    },
     "Up to %lld%% of area median income" : {
       "localizations" : {
         "es" : {
@@ -30244,6 +31965,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "升級到Plus以獲得即時通知和電子郵件"
+          }
+        }
+      }
+    },
+    "Upload" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subir"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업로드"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上传"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上傳"
           }
         }
       }
@@ -30412,6 +32161,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "故意破壞公物的行為"
+          }
+        }
+      }
+    },
+    "Vandalism report" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reporte de vandalismo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기물 파손 신고"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "破坏公物报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "破壞公物通報"
           }
         }
       }
@@ -30834,6 +32611,34 @@
         }
       }
     },
+    "W-2 for %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "W-2 para %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@의 W-2"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@的W-2"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@的W-2"
+          }
+        }
+      }
+    },
     "WHAT YOU TAPPED" : {
       "localizations" : {
         "es" : {
@@ -31030,6 +32835,34 @@
         }
       }
     },
+    "Weapons offense" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delito de armas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무기 관련 범죄"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "武器犯罪"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "武器犯罪"
+          }
+        }
+      }
+    },
     "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
       "localizations" : {
         "es" : {
@@ -31054,6 +32887,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Westchester尚未收錄在App中——請在findacrib.com查看揚克斯和Westchester地圖"
+          }
+        }
+      }
+    },
+    "What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que piden los agentes para un apartamento con límite de ingresos. Escanea con tu cámara o elige una foto o un archivo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소득 제한 아파트에 대해 중개인이 요구하는 서류입니다. 카메라로 스캔하거나 사진 또는 파일을 선택하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代理对收入限制公寓通常要求的材料。用相机扫描，或选择照片或文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代理對收入限制公寓通常要求的資料。用相機掃描，或選擇照片或檔案。"
           }
         }
       }
@@ -31166,34 +33027,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "法律要求什麼"
-          }
-        }
-      }
-    },
-    "What this listing asks for" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Lo que esta lista pide"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 목록이 요구하는 것"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "此列表要求什么"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "此列表要求什麼"
           }
         }
       }
@@ -31446,6 +33279,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "哪些螢幕被使用，以便可以改進該應用程式。永遠不會顯示您輸入的內容，永遠不會出售，也不會進行廣告。"
+          }
+        }
+      }
+    },
+    "Who can apply" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quién puede solicitar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "신청 자격"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "谁可以申请"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "誰可以申請"
           }
         }
       }
@@ -31898,6 +33759,34 @@
         }
       }
     },
+    "You must earn" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debes ganar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필요 소득"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入须达到"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收入須達到"
+          }
+        }
+      }
+    },
     "You qualify" : {
       "localizations" : {
         "es" : {
@@ -32094,6 +33983,34 @@
         }
       }
     },
+    "Your 2 to 4 most recent" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los 2 a 4 más recientes"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가장 최근 것 2~4장"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近的 2 到 4 份"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近的 2 到 4 份"
+          }
+        }
+      }
+    },
     "Your Crib" : {
       "shouldTranslate" : false
     },
@@ -32261,6 +34178,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "您的詳細資訊"
+          }
+        }
+      }
+    },
+    "Your documents" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus documentos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 서류"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的文件"
           }
         }
       }
@@ -32641,30 +34586,58 @@
         }
       }
     },
-    "Your name, contact, address, job and household — typed once, used in every email and form." : {
+    "Your name, contact, address, job and household — typed once, used in every form." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tu nombre, contacto, dirección, trabajo y domicilio, digitados una vez, utilizados en cada correo electrónico y formulario."
+            "state" : "translated",
+            "value" : "Tu nombre, contacto, dirección, empleo y hogar: se escriben una vez y se usan en cada formulario."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이름, 연락처, 주소, 직업 및 가족 구성원은 한 번 입력한 후 모든 이메일 및 양식에 사용됩니다."
+            "state" : "translated",
+            "value" : "이름, 연락처, 주소, 직장, 가구 정보는 한 번만 입력하면 모든 양식에 사용됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "您的姓名、联系方式、地址、工作和家庭——输入一次，用于每封电子邮件和表格。"
+            "state" : "translated",
+            "value" : "你的姓名、联系方式、地址、工作和家庭情况：只需输入一次，所有表格都会用到。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "您的姓名、聯絡方式、地址、工作和家庭——輸入一次，在每封電子郵件和表格中都使用。"
+            "state" : "translated",
+            "value" : "你的姓名、聯絡方式、地址、工作和家庭情況：只需輸入一次，所有表格都會用到。"
+          }
+        }
+      }
+    },
+    "Your newest pay stub is over 60 days old. Most agents want the latest ones." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu recibo de pago más reciente tiene más de 60 días. La mayoría de los agentes quieren los últimos."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가장 최근 급여 명세서가 60일이 넘었습니다. 대부분의 중개인은 최신 명세서를 원합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你最新的工资单已超过 60 天。大多数代理要最新的。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你最新的薪資單已超過 60 天。大多數代理要最新的。"
           }
         }
       }
@@ -32861,6 +34834,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "郵政編碼"
+          }
+        }
+      }
+    },
+    "Zoomed in" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ampliada"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확대됨"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已放大"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已放大"
           }
         }
       }
@@ -33402,7 +35403,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Desde %@ · como se indica"
+            "value" : "desde %@ · como se indica"
           }
         },
         "ko" : {

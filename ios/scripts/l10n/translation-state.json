@@ -20,6 +20,10 @@
       "back" : "· Synchronized",
       "src" : "07e834eaacc24f6e"
     },
+    " (attempted)" : {
+      "back" : "(tried)",
+      "src" : "125673401c789d85"
+    },
     " (today)" : {
       "back" : "(today)",
       "src" : "24ad4d8479ffbe4b"
@@ -96,6 +100,14 @@
       "back" : "\"New sublease in Brooklyn: 75 Dupont St, 1 bedroom $3,661\" - at 2:14 p.m., not tomorrow at 8 a.m.",
       "src" : "48e82c6283c2b62b"
     },
+    "/mo" : {
+      "back" : "/mo",
+      "src" : "47fcc14623bf50ec"
+    },
+    "/yr" : {
+      "back" : "/year",
+      "src" : "e9383e7769533265"
+    },
     "%@ — not fixed? File a complaint with 311." : {
       "back" : "%@ - is not resolved? File a complaint with 311.",
       "src" : "921bb87295a027cd"
@@ -103,6 +115,10 @@
     "%@ — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price." : {
       "back" : "%@: what is in the file record, not a requested rental. Buildings without a rental in the file are not shown when a price is set.",
       "src" : "281e4d61842684c9"
+    },
+    "%@ · %lld added" : {
+      "back" : "%1$@ · %2$lld added",
+      "src" : "077a763da73f0210"
     },
     "%@ · %lld open violations" : {
       "back" : "%1$@ · Open violations of %2$lld",
@@ -192,9 +208,25 @@
       "back" : "%@ included in the rent",
       "src" : "b82f9704195977f5"
     },
+    "%@ is above the %@ limit" : {
+      "back" : "%1$@ is above the limit %2$@",
+      "src" : "325db212900ce125"
+    },
+    "%@ is below the minimum" : {
+      "back" : "%@ is below the minimum",
+      "src" : "1f4561a71170d0ea"
+    },
+    "%@ is inside the %@ limit" : {
+      "back" : "%1$@ is within the limit of %2$@",
+      "src" : "4708fbab8c3bcf67"
+    },
     "%@ is typing…" : {
       "back" : "%@ is writing...",
       "src" : "1b1a9339298c2b76"
+    },
+    "%@ tax return" : {
+      "back" : "Tax return %@",
+      "src" : "1750d8f300dc43fc"
     },
     "%@–%@ bed" : {
       "back" : "Bed %1$@-%2$@",
@@ -248,10 +280,6 @@
       "back" : "%lld days",
       "src" : "0076863d0c35ad38"
     },
-    "%lld documents" : {
-      "back" : "%lld documents",
-      "src" : "683905c0c7c72469"
-    },
     "%lld drawings are open elsewhere in New Jersey. Pick another county or tap Clear." : {
       "back" : "The %lld drawings are open elsewhere in New Jersey. Choose another county or tap Delete.",
       "src" : "278139599390b428"
@@ -272,6 +300,10 @@
       "back" : "%lld units restricted by income",
       "src" : "83d03bbac3c4316b"
     },
+    "%lld left" : {
+      "back" : "%lld remaining",
+      "src" : "7890feafc601d060"
+    },
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
@@ -280,6 +312,10 @@
       "back" : "%lld neighbors are writing...",
       "src" : "3135c5f1fa7a9570"
     },
+    "%lld of %lld" : {
+      "back" : "%1$lld of %2$lld",
+      "src" : "b5ab00c26419f73c"
+    },
     "%lld of %lld open" : {
       "back" : "%1$lld of %2$lld open",
       "src" : "72137fd6367f6248"
@@ -287,6 +323,10 @@
     "%lld of %lld open in New Jersey" : {
       "back" : "%1$lld of %2$lld opens in New Jersey",
       "src" : "bfa9ac8fdebc089f"
+    },
+    "%lld of %lld ready" : {
+      "back" : "%1$lld of %2$lld ready",
+      "src" : "19923d0d27a09017"
     },
     "%lld of %lld units are income-restricted" : {
       "back" : "%1$lld of the %2$lld units are restricted by income",
@@ -340,6 +380,10 @@
       "back" : "%lld opened at the moment they were published. Click one to see it on the agent's website.",
       "src" : "e4654b24255e82e2"
     },
+    "%lld people" : {
+      "back" : "%lld people",
+      "src" : "d6127dbd2e825404"
+    },
     "%lld people in your household" : {
       "back" : "%lld people in your home",
       "src" : "43c72a10ee9ed55b"
@@ -355,6 +399,10 @@
     "%lld re-infested" : {
       "back" : "%lld refitted",
       "src" : "c2e3f5527bba062d"
+    },
+    "%lld ready" : {
+      "back" : "%lld ready",
+      "src" : "4ef648efaf5e83e7"
     },
     "%lld rooms" : {
       "back" : "%lld rooms",
@@ -392,13 +440,33 @@
       "back" : "%lld weeks",
       "src" : "432761efd43ad7ea"
     },
+    "%lld within half a mile: " : {
+      "back" : "%lld within half a mile:",
+      "src" : "bc60446586568dbf"
+    },
     "%lld years" : {
       "back" : "%lld years",
       "src" : "aed5f77a4a4505e0"
     },
+    "%lld-person" : {
+      "back" : "%lld people",
+      "src" : "0343e4b821e6204e"
+    },
+    "%lld–%lld bed" : {
+      "back" : "Bed %1$lld-%2$lld",
+      "src" : "e4e9871f45de1ff9"
+    },
+    "%lld–%lld people" : {
+      "back" : "People %1$lld-%2$lld",
+      "src" : "3b6247ce3ccaa377"
+    },
     "%lld+ on file" : {
       "back" : "%lld+ in file",
       "src" : "04017329113b550e"
+    },
+    "%lld+ people" : {
+      "back" : "%lld+ people",
+      "src" : "8e08bc0e78649f2e"
     },
     "≈ %@/mo" : {
       "back" : "≈ %@/month",
@@ -436,9 +504,17 @@
       "back" : "1 building",
       "src" : "8ed08e15a6b79a0e"
     },
+    "1 person" : {
+      "back" : "1 person",
+      "src" : "c2750ab9351a141f"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
+    },
+    "1-person" : {
+      "back" : "1 person",
+      "src" : "edc9e9c118528b43"
     },
     "2 bed" : {
       "back" : "2 beds",
@@ -560,25 +636,17 @@
       "back" : "Account created, log in to continue.",
       "src" : "0698788b1a12c812"
     },
-    "Add %@" : {
-      "back" : "Add %@",
-      "src" : "7798c7f2f80edd8a"
-    },
     "Add a comment…" : {
       "back" : "Add a comment...",
       "src" : "34e13e9f358e1e9d"
-    },
-    "Add another document" : {
-      "back" : "Add another document",
-      "src" : "f6d7152e8945c306"
     },
     "Add deadline to Calendar" : {
       "back" : "Add deadline to the calendar",
       "src" : "2ea4bae6bfe2c144"
     },
-    "Add documents above, then email them in one go from your own Mail." : {
-      "back" : "Add documents above, then send them by email all at once from your own email.",
-      "src" : "a5fb5dbc29d72662"
+    "Add from" : {
+      "back" : "Add from",
+      "src" : "018e84b2fe6d0c47"
     },
     "Add lease end to Calendar" : {
       "back" : "Add the end of the lease contract to the calendar",
@@ -600,9 +668,17 @@
       "back" : "Add what they charged you to check it",
       "src" : "0dd67f094bf783ea"
     },
+    "Add your documents above. Then we'll put them in one PDF and email it to you." : {
+      "back" : "Add your documents above. Then we will put them in a single PDF and send it to you by email.",
+      "src" : "3375901d0140936e"
+    },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent now and the new rent",
       "src" : "aeafcba0cfc8ef3c"
+    },
+    "Added" : {
+      "back" : "Added",
+      "src" : "6edd189329e3ab09"
     },
     "Adjust filters" : {
       "back" : "Adjust filters",
@@ -724,6 +800,10 @@
       "back" : "Any area",
       "src" : "2d873087cb2eafc9"
     },
+    "Any household" : {
+      "back" : "Any home",
+      "src" : "6aa8dfa60f2d4522"
+    },
     "Any price" : {
       "back" : "Any price",
       "src" : "ec5f521fea1ad455"
@@ -735,6 +815,10 @@
     "Any size" : {
       "back" : "Any size",
       "src" : "1b5a810ac35aa584"
+    },
+    "Anything else they asked for" : {
+      "back" : "Anything else you ask for",
+      "src" : "620f91d9baf97f97"
     },
     "Apartment" : {
       "back" : "apartment",
@@ -764,10 +848,6 @@
       "back" : "Application form printed out",
       "src" : "962b395c1e0286e6"
     },
-    "Application packet" : {
-      "back" : "Application package",
-      "src" : "c85f89a2ec18a6c3"
-    },
     "Apply" : {
       "back" : "to apply",
       "src" : "abd7e53b124056cf"
@@ -788,6 +868,10 @@
       "back" : "Request at %@",
       "src" : "e1481b1739b1ef9c"
     },
+    "Apply on %@'s site: %@" : {
+      "back" : "Request on the %1$@ site: %2$@",
+      "src" : "c3e1837e4f14c7d5"
+    },
     "Apply on Housing Connect" : {
       "back" : "Request at Housing Connect",
       "src" : "4a7065811f69d771"
@@ -799,6 +883,10 @@
     "Apply on HousingSearch.ny.gov" : {
       "back" : "Apply at HousingSearch.ny.gov",
       "src" : "ef2096ab6239cd9a"
+    },
+    "Apply on their site" : {
+      "back" : "Request on your website",
+      "src" : "01df1f1dc46cd020"
     },
     "Apply on their site ↗" : {
       "back" : "Request on your website ↗",
@@ -847,6 +935,10 @@
     "assessed at %@" : {
       "back" : "Evaluated in %@",
       "src" : "476c3646c0a8da36"
+    },
+    "Back" : {
+      "back" : "back",
+      "src" : "53c8090d60fba9a3"
     },
     "Bank statements" : {
       "back" : "Bank statements",
@@ -1124,6 +1216,10 @@
       "back" : "end",
       "src" : "95e72c6dc50245b2"
     },
+    "Close photos" : {
+      "back" : "Close photos",
+      "src" : "a2c48d3d072178c6"
+    },
     "Closed" : {
       "back" : "closed",
       "src" : "72f1a105353c7ecd"
@@ -1223,6 +1319,10 @@
     "Couldn't load openings" : {
       "back" : "The openings could not be loaded",
       "src" : "01ccbab840c5e108"
+    },
+    "Couldn't load the reports right now." : {
+      "back" : "The reports could not be loaded at this time.",
+      "src" : "f1bb174c133e2f1a"
     },
     "Couldn't load the subscription: %@" : {
       "back" : "The subscription could not be loaded: %@",
@@ -1348,9 +1448,9 @@
       "back" : "Delete for you",
       "src" : "6dcf5008d2e8b712"
     },
-    "Delete my packet" : {
-      "back" : "Delete my package",
-      "src" : "ff6259ff0b5e993f"
+    "Delete my documents" : {
+      "back" : "Delete my documents",
+      "src" : "0ce9de8d28dca7f8"
     },
     "Delete saved search" : {
       "back" : "Delete saved search",
@@ -1364,9 +1464,9 @@
       "back" : "Delete your account?",
       "src" : "79d98705e250922e"
     },
-    "Delete your profile and every document in the packet from this phone?" : {
-      "back" : "Delete your profile and all the documents from this phone's package?",
-      "src" : "6b6797848a8d72c8"
+    "Delete your details and every document from this phone?" : {
+      "back" : "Delete your data and all the documents on this phone?",
+      "src" : "0396352faaafc7d0"
     },
     "Describe it (optional)" : {
       "back" : "Describe it (optional)",
@@ -1396,9 +1496,9 @@
       "back" : "to say goodbye",
       "src" : "f6c98b307392221c"
     },
-    "Documents" : {
-      "back" : "Documents",
-      "src" : "33635c221801b6e7"
+    "Dismissed" : {
+      "back" : "Dismissed",
+      "src" : "8ab52e2509b5384d"
     },
     "Does your building have pests?" : {
       "back" : "Does your building have pests?",
@@ -1411,6 +1511,18 @@
     "Done" : {
       "back" : "done",
       "src" : "6fd4b0b98b05a3b8"
+    },
+    "Double-tap to zoom" : {
+      "back" : "Tap twice to expand",
+      "src" : "208e5cc28581fd40"
+    },
+    "Driver's license, passport or IDNYC" : {
+      "back" : "Driver's license, passport or IDNYC",
+      "src" : "2afad1e1137eaf93"
+    },
+    "Drug offense" : {
+      "back" : "Drug crime",
+      "src" : "9c9e25c4a4d8f5b1"
     },
     "Drugs" : {
       "back" : "Drugs",
@@ -1428,17 +1540,13 @@
       "back" : "Email address",
       "src" : "09a6d515341a57fb"
     },
-    "Email my packet" : {
-      "back" : "Send me my package by email",
-      "src" : "9f20feb9e52f4913"
+    "Email them to me" : {
+      "back" : "Send them to me by email",
+      "src" : "6c867fdb424c6fd8"
     },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
-    },
-    "Emails your %lld documents from your own Mail. Only send what the agent asked for." : {
-      "back" : "Send your %lld documents by email from your own email. Only send what the agent asked for.",
-      "src" : "5cdb820c2c0d86ec"
     },
     "Emergency" : {
       "back" : "emergency",
@@ -1512,10 +1620,6 @@
       "back" : "Every stabilized building for rent in the city of New York, in your pocket.",
       "src" : "d134494912b39ed5"
     },
-    "Everything an agent asks for, in one place" : {
-      "back" : "Everything an agent asks for, in one place",
-      "src" : "5a85b31a14872cb0"
-    },
     "Eviction notices" : {
       "back" : "Eviction notices",
       "src" : "04c9deded9a9f3b7"
@@ -1551,6 +1655,10 @@
     "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address." : {
       "back" : "Presented to the San Francisco Rent Board. Like the rental figures, these are anonymous at the block level, so they cover all the buildings on this side of the block instead of a single address.",
       "src" : "83e63b624a8dda42"
+    },
+    "Files" : {
+      "back" : "Files",
+      "src" : "ccd6c84d7fc9b858"
     },
     "Fill in an application form" : {
       "back" : "Fill out a request form",
@@ -1608,6 +1716,10 @@
       "back" : "first name",
       "src" : "c88cc58c003fcf6a"
     },
+    "Fits the screen" : {
+      "back" : "It adapts to the screen",
+      "src" : "3e76890bff694326"
+    },
     "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD)." : {
       "back" : "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (through the UF Shimberg Center) · Low Income Housing Tax Credit HUD Database · Public Housing HUD (Miami-Dade PHCD).",
       "src" : "a1340d3538e28160"
@@ -1660,9 +1772,17 @@
       "back" : "From %@ · as indicated",
       "src" : "9caea8b11aa50ebc"
     },
+    "From %@'s listing. Check the details with them before you apply." : {
+      "back" : "From the %@ list. Check the details with them before requesting it.",
+      "src" : "a02e453f9073d8a1"
+    },
     "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile." : {
       "back" : "From Affordable Homes New Jersey (CGP&H), checked daily. To be in a raffle, fill out the previous CGP&H application, then join the waiting list for that city from your CGP&H profile before the indicated date. The units, rents and income limits are shown in your profile.",
       "src" : "beaa34b5b4988c30"
+    },
+    "From every job you had last year" : {
+      "back" : "Of each job you had last year",
+      "src" : "dfb0f14155a4bda1"
     },
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on the size of the home, please check each ad.",
@@ -1671,10 +1791,6 @@
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "From NYC Open Data: 311 Service Requests and NYPD complaint data.",
       "src" : "458ade514f9b8a19"
-    },
-    "From the agent — not something the packet holds" : {
-      "back" : "Of the agent, not something that the package contains",
-      "src" : "bafba53bf0e758d4"
     },
     "From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries." : {
       "back" : "From the property registration HPD of the building. The numbers come from public commercial lists and are for tenant inquiries.",
@@ -1764,6 +1880,10 @@
       "back" : "harassment",
       "src" : "22e87567840affad"
     },
+    "Harassment report" : {
+      "back" : "Harassment report",
+      "src" : "87c1f5d46052d780"
+    },
     "Have an account? Sign in" : {
       "back" : "Do you have an account? Log in",
       "src" : "08f6e1239ee8c09b"
@@ -1803,6 +1923,10 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Listen to what are the next NYC housing lotteries that close.",
       "src" : "9886cb8fef32b896"
+    },
+    "Help me apply" : {
+      "back" : "Help me apply",
+      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide the buildings where HPD has reported cockroaches, rats, mice or bed bugs in the last 12 months",
@@ -1876,6 +2000,10 @@
       "back" : "HousingSearch.ny.gov lists around 50 open lotteries and waiting lists in the city at the same time. Clear the other Show and price range boxes to see them all.",
       "src" : "017769ffe23b2904"
     },
+    "How to apply" : {
+      "back" : "How to request",
+      "src" : "feac2e8eb4f6e440"
+    },
     "How you found the apartment" : {
       "back" : "How did you find the apartment?",
       "src" : "0154ef4d6e36164c"
@@ -1916,6 +2044,10 @@
       "back" : "I'm here to",
       "src" : "05591b379de8a13b"
     },
+    "If they apply to you" : {
+      "back" : "If they apply to you",
+      "src" : "fb31606eb21efd21"
+    },
     "Immediately hazardous" : {
       "back" : "Immediately dangerous",
       "src" : "1d857a4847128e19"
@@ -1932,6 +2064,10 @@
       "back" : "Notifications within the application and emails to %@ at the moment a lottery or subletting is opened.",
       "src" : "e9e29c9fe338ecdf"
     },
+    "Income %@" : {
+      "back" : "Income %@",
+      "src" : "a4ca79d6bdc0fa7f"
+    },
     "Income %@–%@" : {
       "back" : "Revenues %1$@-%2$@",
       "src" : "80caa150177627fa"
@@ -1944,6 +2080,10 @@
       "back" : "Income below the minimum",
       "src" : "2300f9080ea1e565"
     },
+    "Income from %@" : {
+      "back" : "Earnings from %@",
+      "src" : "68e74aed436ff654"
+    },
     "Income limit · 1 person" : {
       "back" : "Income limit · 1 person",
       "src" : "3b1a6a777b7a39d9"
@@ -1955,6 +2095,14 @@
     "Income should be a number of dollars per year, between 1,000 and 2,000,000." : {
       "back" : "The income should be a number of dollars per year, between 1,000 and 2,000,000.",
       "src" : "33b4f9fa332ad766"
+    },
+    "Income up to %@" : {
+      "back" : "Income up to %@",
+      "src" : "0938146a971dd22b"
+    },
+    "Income up to %@ · 1 person" : {
+      "back" : "Entrance fees up to %@ · 1 person",
+      "src" : "270b241847b17824"
     },
     "Income-restricted" : {
       "back" : "Restricted by income",
@@ -2060,9 +2208,9 @@
       "back" : "Keep writing your street address in New York City.",
       "src" : "26520d9f2f05253f"
     },
-    "Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself." : {
-      "back" : "He stayed alone on this phone, he never went up to Find A Crib. You send it yourself to the agent.",
-      "src" : "8fbfe766e8de127b"
+    "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone." : {
+      "back" : "It is only kept on this phone. Find A Crib never uploads your documents or sends them to anyone.",
+      "src" : "4434706dccbab94b"
     },
     "Kind" : {
       "back" : "kind",
@@ -2084,6 +2232,10 @@
       "back" : "LAHD registration",
       "src" : "6a9e8aacf2d945fe"
     },
+    "Landlord reference, a letter" : {
+      "back" : "Owner's reference, a letter",
+      "src" : "7b48ab33c8d65387"
+    },
     "Landlord soliciting voucher tenants on AffordableHousing.com" : {
       "back" : "Landlord requesting tenants with coupons on AffordableHousing.com",
       "src" : "342910494df3c9e4"
@@ -2103,10 +2255,6 @@
     "Last name" : {
       "back" : "surname",
       "src" : "4d2ca9b010101382"
-    },
-    "Last year's tax return" : {
-      "back" : "Last year's tax return",
-      "src" : "d994be97cd07cfbf"
     },
     "Late fee" : {
       "back" : "Late fee",
@@ -2163,6 +2311,10 @@
     "Listed by " : {
       "back" : "Listed by",
       "src" : "49b9497af1f5655f"
+    },
+    "Listed by %@" : {
+      "back" : "Listed by %@",
+      "src" : "83f48d068da963d9"
     },
     "Listed on HousingSearch.ny.gov" : {
       "back" : "Listed on HousingSearch.ny.gov",
@@ -2387,6 +2539,22 @@
     "My Activity" : {
       "back" : "My activity",
       "src" : "5e171f35ad5a4562"
+    },
+    "My application documents" : {
+      "back" : "My application documents",
+      "src" : "1cf8dc01b6fbce60"
+    },
+    "My application documents — %@" : {
+      "back" : "My application documents — %@",
+      "src" : "e8ec3e0af1b46c1f"
+    },
+    "My documents" : {
+      "back" : "My documents",
+      "src" : "d6c8be492ae59d96"
+    },
+    "My documents for apartment applications, in one PDF:" : {
+      "back" : "My documents for apartment applications, in one PDF:",
+      "src" : "3171818c29ce4497"
     },
     "Name" : {
       "back" : "name",
@@ -2684,6 +2852,10 @@
       "back" : "None reported",
       "src" : "300746757d4bec9f"
     },
+    "None reported within half a mile." : {
+      "back" : "None reported within half a mile.",
+      "src" : "e3fc75b70ea49679"
+    },
     "None with %@" : {
       "back" : "None with %@",
       "src" : "500695f535c8cf08"
@@ -2691,10 +2863,6 @@
     "nonprofit sponsor" : {
       "back" : "Non-profit sponsor",
       "src" : "bd5b897764de5016"
-    },
-    "Not added" : {
-      "back" : "Not added",
-      "src" : "1ec2a304445cc460"
     },
     "Not available right now. Try again in a little while." : {
       "back" : "It is not available at this time. Try again later.",
@@ -2804,9 +2972,21 @@
       "back" : "In the empty and deteriorated DC register - %@",
       "src" : "736f416c80dbd393"
     },
+    "On letterhead, with your salary" : {
+      "back" : "On letter paper, with your salary",
+      "src" : "42dca406f61adce9"
+    },
     "On the App Store" : {
       "back" : "In the App Store",
       "src" : "264c719339ca501c"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach to any application." : {
+      "back" : "A PDF with all the documents, sent to your own email address, so that it is ready to be attached to any application.",
+      "src" : "d28d36b3f3d5001d"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach when you apply on %@'s site." : {
+      "back" : "A PDF with all the documents, sent to your own email address, so that it is ready to attach when you request it on the %@ website.",
+      "src" : "c8805d814e519d60"
     },
     "Only if it fits (optional)" : {
       "back" : "Only if it fits (optional)",
@@ -2831,6 +3011,10 @@
     "Open complaints" : {
       "back" : "Open complaints",
       "src" : "d2447c64d6aee22b"
+    },
+    "Open details" : {
+      "back" : "Open details",
+      "src" : "322f024a300e165e"
     },
     "Open Find A Crib's Renewal coach to check the offer." : {
       "back" : "Open the Find A Crib renewal trainer to check the offer.",
@@ -2860,13 +3044,17 @@
       "back" : "It opened at the moment it was published. Tap to apply on the agent's website.",
       "src" : "4ab6710450fa675f"
     },
+    "Opens the details" : {
+      "back" : "Open the details",
+      "src" : "caf09d3a4bb2f2ed"
+    },
+    "Opens the photos full screen" : {
+      "back" : "Open the photos in full screen",
+      "src" : "5d9bce9b49b5a4f1"
+    },
     "or continue with email" : {
       "back" : "Or continue with the email",
       "src" : "6e7cb08da2ed65cb"
-    },
-    "Other document" : {
-      "back" : "Another document",
-      "src" : "1c326e0074f90430"
     },
     "Owner" : {
       "back" : "owner",
@@ -2915,6 +3103,10 @@
     "Paste the listing's text" : {
       "back" : "Paste the text from the list",
       "src" : "082910de870acee3"
+    },
+    "Pay stubs" : {
+      "back" : "Payroll forms",
+      "src" : "8b4c4501451e9876"
     },
     "Payment is charged to your Apple Account at confirmation. " : {
       "back" : "The payment will be charged to your Apple account in the confirmation.",
@@ -2979,6 +3171,10 @@
     "Photo of the building" : {
       "back" : "Photo of the building",
       "src" : "608b67a850317346"
+    },
+    "Photos" : {
+      "back" : "Photos",
+      "src" : "d9c9ef65dbf37664"
     },
     "Pick at least one borough." : {
       "back" : "Choose at least one borough.",
@@ -3131,10 +3327,6 @@
     "Recent" : {
       "back" : "recent",
       "src" : "7bf8b69ae2c50f86"
-    },
-    "Recent pay stubs" : {
-      "back" : "Recent payroll forms",
-      "src" : "4cca3edb28943756"
     },
     "Recently viewed" : {
       "back" : "Recently viewed",
@@ -3384,6 +3576,10 @@
       "back" : "Save changes",
       "src" : "eb9b0644d7fbe954"
     },
+    "Save PDF" : {
+      "back" : "Save PDF",
+      "src" : "7cda2613ace3577d"
+    },
     "Saved" : {
       "back" : "Saved",
       "src" : "9430f95cc652889d"
@@ -3395,6 +3591,14 @@
     "Saved searches" : {
       "back" : "Saved searches",
       "src" : "e4693c2256fe76b4"
+    },
+    "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time." : {
+      "back" : "Saved in your Profile › My documents. They are also there for the next floor, and you can delete them at any time.",
+      "src" : "9cf9f0882ed0177e"
+    },
+    "Scan" : {
+      "back" : "scanner",
+      "src" : "351f3dc6cfae0fc4"
     },
     "Search" : {
       "back" : "search",
@@ -3460,10 +3664,6 @@
       "back" : "Check if the cockroaches, mice or rats are a pattern or an isolated occurrence.",
       "src" : "231659f1285ce099"
     },
-    "Send to the agent" : {
-      "back" : "Send to the agent",
-      "src" : "ce7dff4f029d0de3"
-    },
     "Send…" : {
       "back" : "Send...",
       "src" : "8a82a16a6b17adb9"
@@ -3496,9 +3696,17 @@
       "back" : "Share anonymous use",
       "src" : "65c250373fe45bf3"
     },
+    "Shooting" : {
+      "back" : "shot",
+      "src" : "2686934d40fb68bb"
+    },
     "Shootings" : {
       "back" : "Shots",
       "src" : "b001b4be27007fa3"
+    },
+    "Shootings, robberies and burglaries. Turn on crime alerts to choose." : {
+      "back" : "Assaults, robberies and home burglaries. Activate crime alerts to choose from.",
+      "src" : "f996a45cc3b94ec4"
     },
     "Show" : {
       "back" : "exhibition",
@@ -3511,6 +3719,10 @@
     "Show all %lld calls" : {
       "back" : "Show all %lld calls",
       "src" : "2d57a5e7beb40114"
+    },
+    "Show all %lld reports" : {
+      "back" : "Show all %lld reports",
+      "src" : "d46c646f0bba12bf"
     },
     "Show fewer" : {
       "back" : "Show less",
@@ -3652,6 +3864,10 @@
       "back" : "Logged in",
       "src" : "87d3e15c993a1b00"
     },
+    "Signed in as %@" : {
+      "back" : "Logged in as %@",
+      "src" : "e8a78edc928aec38"
+    },
     "Since" : {
       "back" : "from",
       "src" : "b07cec8dafdaa548"
@@ -3659,6 +3875,10 @@
     "Since –" : {
       "back" : "Since when -",
       "src" : "be97f90995f198ed"
+    },
+    "SNAP, SSI, unemployment, support orders" : {
+      "back" : "SNAP, SSI, unemployment, support orders",
+      "src" : "5609ce65bafe32e8"
     },
     "Some of these charges are likely illegal" : {
       "back" : "It is likely that some of these accusations are illegal",
@@ -3751,6 +3971,10 @@
     "Studio" : {
       "back" : "study",
       "src" : "59d91c5703aa6d72"
+    },
+    "Studio–%lld bed" : {
+      "back" : "Studio bed-%lld",
+      "src" : "a30f8c5b8cfaf40d"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "SUBSIDIZED BUILDING / FRIENDLY WITH VALUES",
@@ -3884,6 +4108,10 @@
       "back" : "The first %1$@ costs nothing; the %2$@ is charged on your Apple Account when it ends, unless you cancel at least 24 hours in advance.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The full return, all pages" : {
+      "back" : "The complete return, all the pages",
+      "src" : "26e1dbee82241fb9"
+    },
     "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
       "back" : "The icon on your home screen shows the colors of each holiday, then return to the home screen. iOS indicates each time it changes.",
       "src" : "0e9afbce184b781e"
@@ -3892,9 +4120,21 @@
       "back" : "The increase",
       "src" : "0987c272aed25458"
     },
+    "The kinds your alerts watch." : {
+      "back" : "The guys who monitor your alerts.",
+      "src" : "4416d1b179243fe6"
+    },
+    "The last 2 months" : {
+      "back" : "The last 2 months",
+      "src" : "defd042bff2924e0"
+    },
     "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent." : {
       "back" : "The legal rent registered in DC DHCD for the units with rent control of this property, is not a requested rent.",
       "src" : "b90fadff97265d29"
+    },
+    "The listing" : {
+      "back" : "The list",
+      "src" : "6a56f9721a0b46a1"
     },
     "The listing (optional)" : {
       "back" : "The list (optional)",
@@ -3916,6 +4156,10 @@
       "back" : "The offer",
       "src" : "8d337cc473af04ec"
     },
+    "The reports, %@" : {
+      "back" : "The reports, %@",
+      "src" : "5430de208416dfe3"
+    },
     "the SF Rent Board" : {
       "back" : "The San Francisco Rental Board",
       "src" : "2e9133125d571a33"
@@ -3927,6 +4171,10 @@
     "Theft" : {
       "back" : "robbery",
       "src" : "a8239a929ea8f2f3"
+    },
+    "Their listings" : {
+      "back" : "Your listings",
+      "src" : "ebc58768269eb9fe"
     },
     "Their yearly income, $ (if any)" : {
       "back" : "Your annual income, $ (if applicable)",
@@ -4124,6 +4372,10 @@
       "back" : "Up to %@/year",
       "src" : "5fa524297160b25f"
     },
+    "Up to %lld people" : {
+      "back" : "Up to %lld people",
+      "src" : "a100c07ea83a2509"
+    },
     "Up to %lld%% of area median income" : {
       "back" : "Up to %lld%% of the median income of the area",
       "src" : "05ff1a36bc32ea2f"
@@ -4131,6 +4383,10 @@
     "Upgrade to Plus for instant notifications and emails" : {
       "back" : "Update to Plus to receive instant notifications and emails",
       "src" : "f71c1204783cd881"
+    },
+    "Upload" : {
+      "back" : "to go up",
+      "src" : "403fbea35c5a377a"
     },
     "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one." : {
       "back" : "Upload your lease contract and AI points out the clauses that the New York law limits or annuls, citing each one.",
@@ -4155,6 +4411,10 @@
     "Vandalism" : {
       "back" : "vandalism",
       "src" : "cc39eef310431f1d"
+    },
+    "Vandalism report" : {
+      "back" : "Vandalism report",
+      "src" : "b3fbec91b302c482"
     },
     "View %lld more replies" : {
       "back" : "See %lld more answers",
@@ -4224,6 +4484,10 @@
       "back" : "Coupons",
       "src" : "e1320cd435b8fd3d"
     },
+    "W-2 for %@" : {
+      "back" : "W-2 for %@",
+      "src" : "285d501619114f81"
+    },
     "Waiting list opening soon" : {
       "back" : "The waiting list will open soon",
       "src" : "26b279568863f626"
@@ -4244,9 +4508,17 @@
       "back" : "Weapons",
       "src" : "ce46fe2aa6485c6b"
     },
+    "Weapons offense" : {
+      "back" : "Weapon violation",
+      "src" : "51978ad97f51b0ee"
+    },
     "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
       "back" : "Westchester is not yet in the application, check the map of Yonkers and Westchester at findacrib.com",
       "src" : "829b6dee537c6fd0"
+    },
+    "What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file." : {
+      "back" : "What do agents request in an apartment with income restrictions. Scan with your camera or choose a photo or file.",
+      "src" : "bc5fa8e9c9e03cf1"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -4263,10 +4535,6 @@
     "What the law requires" : {
       "back" : "What the law requires",
       "src" : "900f5c61f40dbea6"
-    },
-    "What this listing asks for" : {
-      "back" : "What the list asks for",
-      "src" : "c4833fd5d7f6e01d"
     },
     "What to ask for, by when, and how to file with 311" : {
       "back" : "What to ask for, when and how to present it to 311",
@@ -4311,6 +4579,10 @@
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "What screens are used, so that the application can be improved. Never what you write, it is never sold, without advertising.",
       "src" : "505a48f4f34d2913"
+    },
+    "Who can apply" : {
+      "back" : "Who can request it?",
+      "src" : "7679fb020760b199"
     },
     "Who owns the building, and its head officer" : {
       "back" : "Who is the owner of the building and his head of personnel?",
@@ -4384,6 +4656,10 @@
       "back" : "You have Plus",
       "src" : "a283e8aaee53f155"
     },
+    "You must earn" : {
+      "back" : "You must win",
+      "src" : "cd8777882ba22966"
+    },
     "You qualify" : {
       "back" : "You qualify",
       "src" : "cd1a7bb2948bf5f9"
@@ -4411,6 +4687,10 @@
     "You've used this month's AI — more on the 1st." : {
       "back" : "You have used this month's AI, more information on the 1st.",
       "src" : "9fba06060dfa4ed5"
+    },
+    "Your 2 to 4 most recent" : {
+      "back" : "Your 2 to 4 most recent ones",
+      "src" : "d8914eaf1d6038c2"
     },
     "your account email" : {
       "back" : "The email address of your account",
@@ -4443,6 +4723,10 @@
     "Your details" : {
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
+    },
+    "Your documents" : {
+      "back" : "Your documents",
+      "src" : "42b1648a8600a273"
     },
     "Your email" : {
       "back" : "Your email address",
@@ -4492,9 +4776,13 @@
       "back" : "your name",
       "src" : "8802356b71d20561"
     },
-    "Your name, contact, address, job and household — typed once, used in every email and form." : {
-      "back" : "Your name, contact information, address, job and home address, entered once, used in each email and form.",
-      "src" : "20ef83388557fbeb"
+    "Your name, contact, address, job and household — typed once, used in every form." : {
+      "back" : "Your name, contact information, address, job and home address, all written once and used in each form.",
+      "src" : "c7e1b0f8f833a7bd"
+    },
+    "Your newest pay stub is over 60 days old. Most agents want the latest ones." : {
+      "back" : "Your last payment receipt is more than 60 days old. Most agents want the most recent ones.",
+      "src" : "d15ff30ccdce267d"
     },
     "your other building" : {
       "back" : "Your other building",
@@ -4527,6 +4815,10 @@
     "ZIP codes" : {
       "back" : "Postal codes",
       "src" : "0037bac098a21f4e"
+    },
+    "Zoomed in" : {
+      "back" : "Expanded",
+      "src" : "2447655742b5bca6"
     }
   },
   "ko" : {
@@ -4549,6 +4841,10 @@
     " · synced" : {
       "back" : "· Synchronized",
       "src" : "07e834eaacc24f6e"
+    },
+    " (attempted)" : {
+      "back" : "(Tried)",
+      "src" : "125673401c789d85"
     },
     " (today)" : {
       "back" : "(Today)",
@@ -4626,6 +4922,14 @@
       "back" : "\"New lease for Brooklyn: 75 Dupont St, 1 bedroom $3,661\" - at 2:14 p.m., not tomorrow at 8 a.m.",
       "src" : "48e82c6283c2b62b"
     },
+    "/mo" : {
+      "back" : "/mo",
+      "src" : "47fcc14623bf50ec"
+    },
+    "/yr" : {
+      "back" : "/year",
+      "src" : "e9383e7769533265"
+    },
     "%@ — not fixed? File a complaint with 311." : {
       "back" : "%@ - Not resolved? Please file a complaint with 311.",
       "src" : "921bb87295a027cd"
@@ -4633,6 +4937,10 @@
     "%@ — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price." : {
       "back" : "%@ - This is the content recorded in the register, not the rent. Buildings without rent in the register are not displayed when setting the price.",
       "src" : "281e4d61842684c9"
+    },
+    "%@ · %lld added" : {
+      "back" : "%1$@ · %2$lld added",
+      "src" : "077a763da73f0210"
     },
     "%@ · %lld open violations" : {
       "back" : "%1$@ · %2$lld violation of opening",
@@ -4722,9 +5030,25 @@
       "back" : "%@ included in the rent.",
       "src" : "b82f9704195977f5"
     },
+    "%@ is above the %@ limit" : {
+      "back" : "%1$@ exceeds the %2$@ limit.",
+      "src" : "325db212900ce125"
+    },
+    "%@ is below the minimum" : {
+      "back" : "%@ is lower than the minimum value.",
+      "src" : "1f4561a71170d0ea"
+    },
+    "%@ is inside the %@ limit" : {
+      "back" : "%1$@ is within the %2$@ limit.",
+      "src" : "4708fbab8c3bcf67"
+    },
     "%@ is typing…" : {
       "back" : "%@ is typing...",
       "src" : "1b1a9339298c2b76"
+    },
+    "%@ tax return" : {
+      "back" : "%@ tax return form",
+      "src" : "1750d8f300dc43fc"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -4778,10 +5102,6 @@
       "back" : "%lld day",
       "src" : "0076863d0c35ad38"
     },
-    "%lld documents" : {
-      "back" : "%lld documents",
-      "src" : "683905c0c7c72469"
-    },
     "%lld drawings are open elsewhere in New Jersey. Pick another county or tap Clear." : {
       "back" : "The %lld drawing is open elsewhere in New Jersey. Select another county or tap Clear.",
       "src" : "278139599390b428"
@@ -4802,6 +5122,10 @@
       "back" : "%lld income restricted area",
       "src" : "83d03bbac3c4316b"
     },
+    "%lld left" : {
+      "back" : "%lld left",
+      "src" : "7890feafc601d060"
+    },
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
@@ -4810,6 +5134,10 @@
       "back" : "%lld My neighbors are typing...",
       "src" : "3135c5f1fa7a9570"
     },
+    "%lld of %lld" : {
+      "back" : "%2$lld's %1$lld",
+      "src" : "b5ab00c26419f73c"
+    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is open.",
       "src" : "72137fd6367f6248"
@@ -4817,6 +5145,10 @@
     "%lld of %lld open in New Jersey" : {
       "back" : "%2$lld's %1$lld is opened in New Jersey.",
       "src" : "bfa9ac8fdebc089f"
+    },
+    "%lld of %lld ready" : {
+      "back" : "%2$lld's %1$lld is ready.",
+      "src" : "19923d0d27a09017"
     },
     "%lld of %lld units are income-restricted" : {
       "back" : "%1$lld in the %2$lld unit has an income limit.",
@@ -4870,6 +5202,10 @@
       "back" : "%lld has been open since the moment it was posted. Tap one to check it out on the agent's website.",
       "src" : "e4654b24255e82e2"
     },
+    "%lld people" : {
+      "back" : "%lld person",
+      "src" : "d6127dbd2e825404"
+    },
     "%lld people in your household" : {
       "error" : "placeholders or terms lost: 귀하의 가정에 0명입니다.",
       "src" : "43c72a10ee9ed55b"
@@ -4885,6 +5221,10 @@
     "%lld re-infested" : {
       "back" : "%lld reinfection",
       "src" : "c2e3f5527bba062d"
+    },
+    "%lld ready" : {
+      "back" : "%lld preparation completed",
+      "src" : "4ef648efaf5e83e7"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -4922,13 +5262,33 @@
       "back" : "%lld weeks",
       "src" : "432761efd43ad7ea"
     },
+    "%lld within half a mile: " : {
+      "back" : "%lld within half a mile:",
+      "src" : "bc60446586568dbf"
+    },
     "%lld years" : {
       "back" : "%lld years",
       "src" : "aed5f77a4a4505e0"
     },
+    "%lld-person" : {
+      "back" : "%lld person",
+      "src" : "0343e4b821e6204e"
+    },
+    "%lld–%lld bed" : {
+      "back" : "%1$lld-%2$lld bed",
+      "src" : "e4e9871f45de1ff9"
+    },
+    "%lld–%lld people" : {
+      "back" : "%1$lld-%2$lld people",
+      "src" : "3b6247ce3ccaa377"
+    },
     "%lld+ on file" : {
       "back" : "There is %lld+ in the file.",
       "src" : "04017329113b550e"
+    },
+    "%lld+ people" : {
+      "back" : "%lld+ people",
+      "src" : "8e08bc0e78649f2e"
     },
     "≈ %@/mo" : {
       "back" : "≈ %@/month",
@@ -4966,9 +5326,17 @@
       "back" : "1 building",
       "src" : "8ed08e15a6b79a0e"
     },
+    "1 person" : {
+      "back" : "1 person",
+      "src" : "c2750ab9351a141f"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
+    },
+    "1-person" : {
+      "back" : "1 person",
+      "src" : "edc9e9c118528b43"
     },
     "2 bed" : {
       "back" : "2 beds",
@@ -5090,25 +5458,17 @@
       "back" : "An account has been created - please log in to continue.",
       "src" : "0698788b1a12c812"
     },
-    "Add %@" : {
-      "back" : "Add %@",
-      "src" : "7798c7f2f80edd8a"
-    },
     "Add a comment…" : {
       "back" : "Add a comment...",
       "src" : "34e13e9f358e1e9d"
-    },
-    "Add another document" : {
-      "back" : "Add other documents.",
-      "src" : "f6d7152e8945c306"
     },
     "Add deadline to Calendar" : {
       "back" : "Add the deadline to the calendar.",
       "src" : "2ea4bae6bfe2c144"
     },
-    "Add documents above, then email them in one go from your own Mail." : {
-      "back" : "Add the above document and send it as an email at once from your own email.",
-      "src" : "a5fb5dbc29d72662"
+    "Add from" : {
+      "back" : "Add from",
+      "src" : "018e84b2fe6d0c47"
     },
     "Add lease end to Calendar" : {
       "back" : "Add the end date of the lease to the calendar",
@@ -5130,9 +5490,17 @@
       "back" : "Please add the amount charged to check.",
       "src" : "0dd67f094bf783ea"
     },
+    "Add your documents above. Then we'll put them in one PDF and email it to you." : {
+      "back" : "Add the document to the document above. Then we will put them in one PDF and send them to you by email.",
+      "src" : "3375901d0140936e"
+    },
     "Add your rent now and the new rent" : {
       "back" : "Add the current rent and the new rent now.",
       "src" : "aeafcba0cfc8ef3c"
+    },
+    "Added" : {
+      "back" : "Added",
+      "src" : "6edd189329e3ab09"
     },
     "Adjust filters" : {
       "back" : "Adjust the filter.",
@@ -5254,6 +5622,10 @@
       "back" : "No matter what region",
       "src" : "2d873087cb2eafc9"
     },
+    "Any household" : {
+      "back" : "Any family",
+      "src" : "6aa8dfa60f2d4522"
+    },
     "Any price" : {
       "back" : "No matter what price",
       "src" : "ec5f521fea1ad455"
@@ -5265,6 +5637,10 @@
     "Any size" : {
       "back" : "All sizes",
       "src" : "1b5a810ac35aa584"
+    },
+    "Anything else they asked for" : {
+      "back" : "Any other anything else they requested",
+      "src" : "620f91d9baf97f97"
     },
     "Apartment" : {
       "back" : "Luxurious room",
@@ -5294,10 +5670,6 @@
       "back" : "a written application",
       "src" : "962b395c1e0286e6"
     },
-    "Application packet" : {
-      "back" : "Application package",
-      "src" : "c85f89a2ec18a6c3"
-    },
     "Apply" : {
       "back" : "apply to",
       "src" : "abd7e53b124056cf"
@@ -5318,6 +5690,10 @@
       "back" : "Apply to %@",
       "src" : "e1481b1739b1ef9c"
     },
+    "Apply on %@'s site: %@" : {
+      "back" : "Apply on the %1$@ site: %2$@",
+      "src" : "c3e1837e4f14c7d5"
+    },
     "Apply on Housing Connect" : {
       "back" : "Apply to Housing Connect",
       "src" : "4a7065811f69d771"
@@ -5329,6 +5705,10 @@
     "Apply on HousingSearch.ny.gov" : {
       "back" : "Apply at HousingSearch.ny.gov",
       "src" : "ef2096ab6239cd9a"
+    },
+    "Apply on their site" : {
+      "back" : "Apply on their website.",
+      "src" : "01df1f1dc46cd020"
     },
     "Apply on their site ↗" : {
       "back" : "Apply on their website ↗",
@@ -5377,6 +5757,10 @@
     "assessed at %@" : {
       "back" : "Evaluated at %@",
       "src" : "476c3646c0a8da36"
+    },
+    "Back" : {
+      "back" : "Backwards.",
+      "src" : "53c8090d60fba9a3"
     },
     "Bank statements" : {
       "back" : "Bank statement",
@@ -5654,6 +6038,10 @@
       "back" : "Closer",
       "src" : "95e72c6dc50245b2"
     },
+    "Close photos" : {
+      "back" : "Close the picture.",
+      "src" : "a2c48d3d072178c6"
+    },
     "Closed" : {
       "back" : "Closed",
       "src" : "72f1a105353c7ecd"
@@ -5753,6 +6141,10 @@
     "Couldn't load openings" : {
       "back" : "The vacancy cannot be loaded.",
       "src" : "01ccbab840c5e108"
+    },
+    "Couldn't load the reports right now." : {
+      "back" : "You cannot load the report now.",
+      "src" : "f1bb174c133e2f1a"
     },
     "Couldn't load the subscription: %@" : {
       "back" : "Subscription cannot be loaded: %@",
@@ -5878,9 +6270,9 @@
       "back" : "I'm deleting it for you.",
       "src" : "6dcf5008d2e8b712"
     },
-    "Delete my packet" : {
-      "back" : "Delete my package",
-      "src" : "ff6259ff0b5e993f"
+    "Delete my documents" : {
+      "back" : "Please delete my document.",
+      "src" : "0ce9de8d28dca7f8"
     },
     "Delete saved search" : {
       "back" : "Delete saved search",
@@ -5894,9 +6286,9 @@
       "back" : "Do you want to delete your account?",
       "src" : "79d98705e250922e"
     },
-    "Delete your profile and every document in the packet from this phone?" : {
-      "back" : "Do you want to delete all the documents of your profile and package from this phone?",
-      "src" : "6b6797848a8d72c8"
+    "Delete your details and every document from this phone?" : {
+      "back" : "Are you going to delete your details and all documents from this phone?",
+      "src" : "0396352faaafc7d0"
     },
     "Describe it (optional)" : {
       "back" : "Please explain it (optional)",
@@ -5926,9 +6318,9 @@
       "back" : "Release",
       "src" : "f6c98b307392221c"
     },
-    "Documents" : {
-      "back" : "Documents",
-      "src" : "33635c221801b6e7"
+    "Dismissed" : {
+      "back" : "I cheated.",
+      "src" : "8ab52e2509b5384d"
     },
     "Does your building have pests?" : {
       "back" : "Are there any pests in your building?",
@@ -5941,6 +6333,18 @@
     "Done" : {
       "back" : "It's all done.",
       "src" : "6fd4b0b98b05a3b8"
+    },
+    "Double-tap to zoom" : {
+      "back" : "Double tap to zoom in.",
+      "src" : "208e5cc28581fd40"
+    },
+    "Driver's license, passport or IDNYC" : {
+      "back" : "Driver's license, passport or IDNYC",
+      "src" : "2afad1e1137eaf93"
+    },
+    "Drug offense" : {
+      "back" : "Drug crime",
+      "src" : "9c9e25c4a4d8f5b1"
     },
     "Drugs" : {
       "back" : "a narcotic",
@@ -5958,17 +6362,13 @@
       "back" : "Email.",
       "src" : "09a6d515341a57fb"
     },
-    "Email my packet" : {
-      "back" : "Please send my package by email.",
-      "src" : "9f20feb9e52f4913"
+    "Email them to me" : {
+      "back" : "Send them an email.",
+      "src" : "6c867fdb424c6fd8"
     },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
-    },
-    "Emails your %lld documents from your own Mail. Only send what the agent asked for." : {
-      "back" : "Send your %lld document by email from your own email. Only send what the agent requested.",
-      "src" : "5cdb820c2c0d86ec"
     },
     "Emergency" : {
       "back" : "a state of emergency",
@@ -6042,10 +6442,6 @@
       "back" : "All rental stabilization buildings in New York City are in your pocket.",
       "src" : "d134494912b39ed5"
     },
-    "Everything an agent asks for, in one place" : {
-      "back" : "Everything the agent requires is in one place.",
-      "src" : "5a85b31a14872cb0"
-    },
     "Eviction notices" : {
       "back" : "Notice of eviction",
       "src" : "04c9deded9a9f3b7"
@@ -6081,6 +6477,10 @@
     "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address." : {
       "back" : "It has been submitted to the SF Rental Committee. Like the rental amount, these are processed anonymously by block, so they include all buildings on this block, not just one address.",
       "src" : "83e63b624a8dda42"
+    },
+    "Files" : {
+      "back" : "Files",
+      "src" : "ccd6c84d7fc9b858"
     },
     "Fill in an application form" : {
       "back" : "Please fill out the application form.",
@@ -6138,6 +6538,10 @@
       "back" : "name",
       "src" : "c88cc58c003fcf6a"
     },
+    "Fits the screen" : {
+      "back" : "It fits on the screen.",
+      "src" : "3e76890bff694326"
+    },
     "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD)." : {
       "back" : "Florida Housing Finance Corporation's rental properties and HUD/USDA-supported properties (through the UF Shimberg Center)·HUD low-income housing tax deduction database·HUD public housing (Miami-Dade PHCD).",
       "src" : "a1340d3538e28160"
@@ -6190,6 +6594,10 @@
       "back" : "From %@ · As listed",
       "src" : "9caea8b11aa50ebc"
     },
+    "From %@'s listing. Check the details with them before you apply." : {
+      "back" : "In the list of %@s. Please check the details with them before supporting.",
+      "src" : "a02e453f9073d8a1"
+    },
     "from %@/yr" : {
       "back" : "From %@/year",
       "src" : "0a817762effd51c0"
@@ -6198,6 +6606,10 @@
       "back" : "Checked daily at affordable housing New Jersey (CGP&H). To participate in the lottery, please fill out the CGP&H pre-application form and join the waiting list for the village in the CGP&H profile by the date indicated. Unit, rent and income limits are displayed in the profile.",
       "src" : "beaa34b5b4988c30"
     },
+    "From every job you had last year" : {
+      "back" : "In all the jobs I did last year",
+      "src" : "dfb0f14155a4bda1"
+    },
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "It is updated every 10 minutes from NYC Housing Connect. Eligibility also depends on the size of the household. Please check each list.",
       "src" : "31d147a61f541aed"
@@ -6205,10 +6617,6 @@
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "From NYC open data: 311 service request and NYPD complaint data.",
       "src" : "458ade514f9b8a19"
-    },
-    "From the agent — not something the packet holds" : {
-      "back" : "Not included in the package by the agent.",
-      "src" : "bafba53bf0e758d4"
     },
     "From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries." : {
       "back" : "It was taken from the building's HPD property registration. The number is from the public works list and is used for tenant inquiries.",
@@ -6298,6 +6706,10 @@
       "back" : "Bullying",
       "src" : "22e87567840affad"
     },
+    "Harassment report" : {
+      "back" : "Report of harassment",
+      "src" : "87c1f5d46052d780"
+    },
     "Have an account? Sign in" : {
       "back" : "Do you have an account? Please log in.",
       "src" : "08f6e1239ee8c09b"
@@ -6337,6 +6749,10 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Next, listen to when the next NYC housing lottery will end.",
       "src" : "9886cb8fef32b896"
+    },
+    "Help me apply" : {
+      "back" : "Help me apply.",
+      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide buildings that have mentioned cockroaches, mice, rats or parasites in the past 12 months.",
@@ -6410,6 +6826,10 @@
       "back" : "HousingSearch.ny.gov lists about 50 open lotteries and waiting lists in the city at once. If you clear other checkboxes and price ranges, you can see them all.",
       "src" : "017769ffe23b2904"
     },
+    "How to apply" : {
+      "back" : "How to apply",
+      "src" : "feac2e8eb4f6e440"
+    },
     "How you found the apartment" : {
       "back" : "How did you find the apartment?",
       "src" : "0154ef4d6e36164c"
@@ -6450,6 +6870,10 @@
       "back" : "I'm here.",
       "src" : "05591b379de8a13b"
     },
+    "If they apply to you" : {
+      "back" : "If they apply to you",
+      "src" : "fb31606eb21efd21"
+    },
     "Immediately hazardous" : {
       "back" : "It's dangerous immediately.",
       "src" : "1d857a4847128e19"
@@ -6466,6 +6890,10 @@
       "back" : "As soon as the lottery or re-rental opens, notifications in the app and emails about %@ will be sent.",
       "src" : "e9e29c9fe338ecdf"
     },
+    "Income %@" : {
+      "back" : "Income %@",
+      "src" : "a4ca79d6bdc0fa7f"
+    },
     "Income %@–%@" : {
       "back" : "Income %1$@-%2$@",
       "src" : "80caa150177627fa"
@@ -6478,6 +6906,10 @@
       "back" : "Below the minimum income",
       "src" : "2300f9080ea1e565"
     },
+    "Income from %@" : {
+      "back" : "Income from %@ onwards",
+      "src" : "68e74aed436ff654"
+    },
     "Income limit · 1 person" : {
       "back" : "Income limit · 1 person",
       "src" : "3b1a6a777b7a39d9"
@@ -6489,6 +6921,14 @@
     "Income should be a number of dollars per year, between 1,000 and 2,000,000." : {
       "back" : "Income must be in the range of $1,000 to $2,000,000 per year.",
       "src" : "33b4f9fa332ad766"
+    },
+    "Income up to %@" : {
+      "back" : "Income up to %@",
+      "src" : "0938146a971dd22b"
+    },
+    "Income up to %@ · 1 person" : {
+      "back" : "Maximum income %@ · 1 person",
+      "src" : "270b241847b17824"
     },
     "Income-restricted" : {
       "back" : "Income restriction",
@@ -6594,9 +7034,9 @@
       "back" : "Please continue to enter your street address in New York City.",
       "src" : "26520d9f2f05253f"
     },
-    "Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself." : {
-      "back" : "I only used this phone and never uploaded it to Find A Crib. Please send it directly to the agent.",
-      "src" : "8fbfe766e8de127b"
+    "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone." : {
+      "back" : "I have only used this phone number. Find A Crib will never upload your documents or send them to anyone.",
+      "src" : "4434706dccbab94b"
     },
     "Kind" : {
       "back" : "kind",
@@ -6618,6 +7058,10 @@
       "back" : "LAHD record",
       "src" : "6a9e8aacf2d945fe"
     },
+    "Landlord reference, a letter" : {
+      "back" : "For reference to the landlord, letter",
+      "src" : "7b48ab33c8d65387"
+    },
     "Landlord soliciting voucher tenants on AffordableHousing.com" : {
       "back" : "Landlords recruiting no-deposit landlords on AffordableHousing.com",
       "src" : "342910494df3c9e4"
@@ -6637,10 +7081,6 @@
     "Last name" : {
       "back" : "anger",
       "src" : "4d2ca9b010101382"
-    },
-    "Last year's tax return" : {
-      "back" : "Last year's tax return",
-      "src" : "d994be97cd07cfbf"
     },
     "Late fee" : {
       "back" : "Special rates outside of regular hours",
@@ -6697,6 +7137,10 @@
     "Listed by " : {
       "back" : "Listed by",
       "src" : "49b9497af1f5655f"
+    },
+    "Listed by %@" : {
+      "back" : "Listed by %@",
+      "src" : "83f48d068da963d9"
     },
     "Listed on HousingSearch.ny.gov" : {
       "back" : "Listed on HousingSearch.ny.gov",
@@ -6921,6 +7365,22 @@
     "My Activity" : {
       "back" : "My activities",
       "src" : "5e171f35ad5a4562"
+    },
+    "My application documents" : {
+      "back" : "My application documents",
+      "src" : "1cf8dc01b6fbce60"
+    },
+    "My application documents — %@" : {
+      "back" : "My application documents - %@",
+      "src" : "e8ec3e0af1b46c1f"
+    },
+    "My documents" : {
+      "back" : "My documents",
+      "src" : "d6c8be492ae59d96"
+    },
+    "My documents for apartment applications, in one PDF:" : {
+      "back" : "My documents for apartment application are in one PDF:",
+      "src" : "3171818c29ce4497"
     },
     "Name" : {
       "back" : "one's full name",
@@ -7218,6 +7678,10 @@
       "back" : "Not reported",
       "src" : "300746757d4bec9f"
     },
+    "None reported within half a mile." : {
+      "back" : "Nothing has been reported within half a mile.",
+      "src" : "e3fc75b70ea49679"
+    },
     "None with %@" : {
       "back" : "There is nothing without %@.",
       "src" : "500695f535c8cf08"
@@ -7225,10 +7689,6 @@
     "nonprofit sponsor" : {
       "back" : "Non-profit sponsor",
       "src" : "bd5b897764de5016"
-    },
-    "Not added" : {
-      "back" : "Not added",
-      "src" : "1ec2a304445cc460"
     },
     "Not available right now. Try again in a little while." : {
       "back" : "It is not available now. Please try again later.",
@@ -7338,9 +7798,21 @@
       "back" : "About the empty and desolate register of DC - %@",
       "src" : "736f416c80dbd393"
     },
+    "On letterhead, with your salary" : {
+      "back" : "On letter paper, with your salary.",
+      "src" : "42dca406f61adce9"
+    },
     "On the App Store" : {
       "back" : "In the app store",
       "src" : "264c719339ca501c"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach to any application." : {
+      "back" : "It is sent as a single PDF file containing all documents to your email, so it is ready to be attached to any application.",
+      "src" : "d28d36b3f3d5001d"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach when you apply on %@'s site." : {
+      "back" : "A single PDF containing all the documents will be sent to your email address, so you are ready to attach it when applying on the %@ site.",
+      "src" : "c8805d814e519d60"
     },
     "Only if it fits (optional)" : {
       "back" : "If that's correct (optional)",
@@ -7365,6 +7837,10 @@
     "Open complaints" : {
       "back" : "Open complaints",
       "src" : "d2447c64d6aee22b"
+    },
+    "Open details" : {
+      "back" : "Open detailed information column",
+      "src" : "322f024a300e165e"
     },
     "Open Find A Crib's Renewal coach to check the offer." : {
       "back" : "Open the renewal coach of Find A Crib and check the proposal.",
@@ -7394,13 +7870,17 @@
       "back" : "It has been opened within one minute of posting. Please tap to apply on the agent's website.",
       "src" : "4ab6710450fa675f"
     },
+    "Opens the details" : {
+      "back" : "Open detailed information",
+      "src" : "caf09d3a4bb2f2ed"
+    },
+    "Opens the photos full screen" : {
+      "back" : "Open the photo in full screen",
+      "src" : "5d9bce9b49b5a4f1"
+    },
     "or continue with email" : {
       "back" : "Or continue with an email.",
       "src" : "6e7cb08da2ed65cb"
-    },
-    "Other document" : {
-      "back" : "Other documents",
-      "src" : "1c326e0074f90430"
     },
     "Owner" : {
       "back" : "an owner",
@@ -7449,6 +7929,10 @@
     "Paste the listing's text" : {
       "back" : "Paste the text from the list",
       "src" : "082910de870acee3"
+    },
+    "Pay stubs" : {
+      "back" : "Salary statement",
+      "src" : "8b4c4501451e9876"
     },
     "Payment is charged to your Apple Account at confirmation. " : {
       "back" : "The payment amount will be charged to the Apple account upon confirmation.",
@@ -7513,6 +7997,10 @@
     "Photo of the building" : {
       "back" : "Photo of the building",
       "src" : "608b67a850317346"
+    },
+    "Photos" : {
+      "back" : "Photos",
+      "src" : "d9c9ef65dbf37664"
     },
     "Pick at least one borough." : {
       "back" : "Please choose at least one autonomous district.",
@@ -7665,10 +8153,6 @@
     "Recent" : {
       "back" : "Recent",
       "src" : "7bf8b69ae2c50f86"
-    },
-    "Recent pay stubs" : {
-      "back" : "Recent salary statement",
-      "src" : "4cca3edb28943756"
     },
     "Recently viewed" : {
       "back" : "Recently seen",
@@ -7918,6 +8402,10 @@
       "back" : "Save changes",
       "src" : "eb9b0644d7fbe954"
     },
+    "Save PDF" : {
+      "back" : "Save PDF",
+      "src" : "7cda2613ace3577d"
+    },
     "Saved" : {
       "back" : "Saved",
       "src" : "9430f95cc652889d"
@@ -7929,6 +8417,14 @@
     "Saved searches" : {
       "back" : "Saved search",
       "src" : "e4693c2256fe76b4"
+    },
+    "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time." : {
+      "back" : "Profile › Saved to My Documents. It is also in the following apartments and can be deleted at any time.",
+      "src" : "9cf9f0882ed0177e"
+    },
+    "Scan" : {
+      "back" : "a close examination",
+      "src" : "351f3dc6cfae0fc4"
     },
     "Search" : {
       "back" : "reference",
@@ -7994,10 +8490,6 @@
       "back" : "Check if it's a pattern of cockroaches, mice, or mice, or if it's one-time.",
       "src" : "231659f1285ce099"
     },
-    "Send to the agent" : {
-      "back" : "Send to the agent",
-      "src" : "ce7dff4f029d0de3"
-    },
     "Send…" : {
       "back" : "Send...",
       "src" : "8a82a16a6b17adb9"
@@ -8030,9 +8522,17 @@
       "back" : "Anonymous use and sharing",
       "src" : "65c250373fe45bf3"
     },
+    "Shooting" : {
+      "back" : "target practice",
+      "src" : "2686934d40fb68bb"
+    },
     "Shootings" : {
       "back" : "Shooting incident",
       "src" : "b001b4be27007fa3"
+    },
+    "Shootings, robberies and burglaries. Turn on crime alerts to choose." : {
+      "back" : "Shooting incidents, robbery and theft. Choose by turning on crime alerts.",
+      "src" : "f996a45cc3b94ec4"
     },
     "Show" : {
       "back" : "a show",
@@ -8045,6 +8545,10 @@
     "Show all %lld calls" : {
       "back" : "Please display all %lld calls.",
       "src" : "2d57a5e7beb40114"
+    },
+    "Show all %lld reports" : {
+      "back" : "Please display all %lld reports.",
+      "src" : "d46c646f0bba12bf"
     },
     "Show fewer" : {
       "back" : "Show less",
@@ -8186,6 +8690,10 @@
       "back" : "Logged in",
       "src" : "87d3e15c993a1b00"
     },
+    "Signed in as %@" : {
+      "back" : "I logged in with %@.",
+      "src" : "e8a78edc928aec38"
+    },
     "Since" : {
       "back" : "After that",
       "src" : "b07cec8dafdaa548"
@@ -8193,6 +8701,10 @@
     "Since –" : {
       "back" : "Since then -",
       "src" : "be97f90995f198ed"
+    },
+    "SNAP, SSI, unemployment, support orders" : {
+      "back" : "SNAP, SSI, unemployment, support orders",
+      "src" : "5609ce65bafe32e8"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges are likely illegal.",
@@ -8285,6 +8797,10 @@
     "Studio" : {
       "back" : "a studio",
       "src" : "59d91c5703aa6d72"
+    },
+    "Studio–%lld bed" : {
+      "back" : "Studio–%lld bed",
+      "src" : "a30f8c5b8cfaf40d"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidy support / Voucher-friendly buildings",
@@ -8418,6 +8934,10 @@
       "back" : "The first %1$@ is free; %2$@ will be charged to the Apple account at the end unless canceled at least 24 hours in advance.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The full return, all pages" : {
+      "back" : "All returns, all pages",
+      "src" : "26e1dbee82241fb9"
+    },
     "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
       "back" : "The icon on the home screen wears the color of each holiday and then returns. iOS indicates each changing time.",
       "src" : "0e9afbce184b781e"
@@ -8426,9 +8946,21 @@
       "back" : "increase",
       "src" : "0987c272aed25458"
     },
+    "The kinds your alerts watch." : {
+      "back" : "The types of notifications you see.",
+      "src" : "4416d1b179243fe6"
+    },
+    "The last 2 months" : {
+      "back" : "The past 2 months",
+      "src" : "defd042bff2924e0"
+    },
     "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent." : {
       "back" : "The legal rent submitted to DC DHCD for the rental control unit of this property - is not the requested rent.",
       "src" : "b90fadff97265d29"
+    },
+    "The listing" : {
+      "back" : "a catalog",
+      "src" : "6a56f9721a0b46a1"
     },
     "The listing (optional)" : {
       "back" : "List (optional)",
@@ -8450,6 +8982,10 @@
       "back" : "a proposal",
       "src" : "8d337cc473af04ec"
     },
+    "The reports, %@" : {
+      "back" : "Reports, %@",
+      "src" : "5430de208416dfe3"
+    },
     "the SF Rent Board" : {
       "back" : "San Francisco Rental Board",
       "src" : "2e9133125d571a33"
@@ -8461,6 +8997,10 @@
     "Theft" : {
       "back" : "moderation",
       "src" : "a8239a929ea8f2f3"
+    },
+    "Their listings" : {
+      "back" : "Their lists",
+      "src" : "ebc58768269eb9fe"
     },
     "Their yearly income, $ (if any)" : {
       "back" : "Their annual income, $ (if applicable)",
@@ -8658,6 +9198,10 @@
       "back" : "Maximum %@/year",
       "src" : "5fa524297160b25f"
     },
+    "Up to %lld people" : {
+      "back" : "Up to %lld people",
+      "src" : "a100c07ea83a2509"
+    },
     "Up to %lld%% of area median income" : {
       "back" : "Up to the maximum %lld%% of the regional median income",
       "src" : "05ff1a36bc32ea2f"
@@ -8665,6 +9209,10 @@
     "Upgrade to Plus for instant notifications and emails" : {
       "back" : "Upgrade to Plus for instant notifications and emails.",
       "src" : "f71c1204783cd881"
+    },
+    "Upload" : {
+      "back" : "Upload",
+      "src" : "403fbea35c5a377a"
     },
     "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one." : {
       "back" : "Upload your rental agreement and AI will display it citing provisions that the New York law restricts or invalidates.",
@@ -8689,6 +9237,10 @@
     "Vandalism" : {
       "back" : "Destruction of art and culture",
       "src" : "cc39eef310431f1d"
+    },
+    "Vandalism report" : {
+      "back" : "Report of litter dumping",
+      "src" : "b3fbec91b302c482"
     },
     "View %lld more replies" : {
       "back" : "See more than %lld answers",
@@ -8758,6 +9310,10 @@
       "back" : "Voucher",
       "src" : "e1320cd435b8fd3d"
     },
+    "W-2 for %@" : {
+      "back" : "%@'s W-2",
+      "src" : "285d501619114f81"
+    },
     "Waiting list opening soon" : {
       "back" : "Waiting list will be opened soon.",
       "src" : "26b279568863f626"
@@ -8778,9 +9334,17 @@
       "back" : "a weapon",
       "src" : "ce46fe2aa6485c6b"
     },
+    "Weapons offense" : {
+      "back" : "Weapon attack",
+      "src" : "51978ad97f51b0ee"
+    },
     "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
       "back" : "Westchester is not yet on the app - check the Yonkers and Westchester maps on findacrib.com.",
       "src" : "829b6dee537c6fd0"
+    },
+    "What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file." : {
+      "back" : "What does the agent require from an income-restricted apartment? Please scan with a camera or select a photo or file.",
+      "src" : "bc5fa8e9c9e03cf1"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -8797,10 +9361,6 @@
     "What the law requires" : {
       "back" : "What the law requires",
       "src" : "900f5c61f40dbea6"
-    },
-    "What this listing asks for" : {
-      "back" : "What this list requires",
-      "src" : "c4833fd5d7f6e01d"
     },
     "What to ask for, by when, and how to file with 311" : {
       "back" : "What to request, how long to request, and how to submit it to 311.",
@@ -8845,6 +9405,10 @@
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "What screens are used, so that the app can be improved. We never disclose, never sell, and never advertise what you enter.",
       "src" : "505a48f4f34d2913"
+    },
+    "Who can apply" : {
+      "back" : "Who can apply?",
+      "src" : "7679fb020760b199"
     },
     "Who owns the building, and its head officer" : {
       "back" : "Who owns the building, and who is the person in charge of the building?",
@@ -8918,6 +9482,10 @@
       "back" : "You have Plus.",
       "src" : "a283e8aaee53f155"
     },
+    "You must earn" : {
+      "back" : "You must pay.",
+      "src" : "cd8777882ba22966"
+    },
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
@@ -8945,6 +9513,10 @@
     "You've used this month's AI — more on the 1st." : {
       "back" : "You have used AI this month - learn more in detail on the 1st.",
       "src" : "9fba06060dfa4ed5"
+    },
+    "Your 2 to 4 most recent" : {
+      "back" : "Your 2~4 most recent",
+      "src" : "d8914eaf1d6038c2"
     },
     "your account email" : {
       "back" : "Your account email",
@@ -8977,6 +9549,10 @@
     "Your details" : {
       "back" : "Your details",
       "src" : "037a48651b2d0b9b"
+    },
+    "Your documents" : {
+      "back" : "Your documents",
+      "src" : "42b1648a8600a273"
     },
     "Your email" : {
       "back" : "Your email",
@@ -9026,9 +9602,13 @@
       "back" : "your name",
       "src" : "8802356b71d20561"
     },
-    "Your name, contact, address, job and household — typed once, used in every email and form." : {
-      "back" : "Name, contact information, address, occupation, and family members are entered once and used for all emails and forms.",
-      "src" : "20ef83388557fbeb"
+    "Your name, contact, address, job and household — typed once, used in every form." : {
+      "back" : "Name, contact information, address, occupation, and family members are entered once and used for all forms.",
+      "src" : "c7e1b0f8f833a7bd"
+    },
+    "Your newest pay stub is over 60 days old. Most agents want the latest ones." : {
+      "back" : "Your latest pay stub has been more than 60 days old. Most agents want your latest pay stub.",
+      "src" : "d15ff30ccdce267d"
     },
     "your other building" : {
       "back" : "Your other building",
@@ -9061,6 +9641,10 @@
     "ZIP codes" : {
       "back" : "Postal code",
       "src" : "0037bac098a21f4e"
+    },
+    "Zoomed in" : {
+      "back" : "Expanded",
+      "src" : "2447655742b5bca6"
     }
   },
   "zh-Hans" : {
@@ -9083,6 +9667,10 @@
     " · synced" : {
       "back" : "· Synchronization",
       "src" : "07e834eaacc24f6e"
+    },
+    " (attempted)" : {
+      "back" : "(Try)",
+      "src" : "125673401c789d85"
     },
     " (today)" : {
       "back" : "(Today)",
@@ -9160,6 +9748,14 @@
       "back" : "\"New re-rental of Brooklyn: No. 75 Dupont Street, 1 bedroom, $3,661\" - 2:14 p.m., not tomorrow at 8 a.m.",
       "src" : "48e82c6283c2b62b"
     },
+    "/mo" : {
+      "back" : "/mo",
+      "src" : "47fcc14623bf50ec"
+    },
+    "/yr" : {
+      "back" : "/year",
+      "src" : "e9383e7769533265"
+    },
     "%@ — not fixed? File a complaint with 311." : {
       "back" : "%@ — Not fixed? File a complaint with 311.",
       "src" : "921bb87295a027cd"
@@ -9167,6 +9763,10 @@
     "%@ — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price." : {
       "back" : "%@ - The content archived by the registration office, not the required rent. When you set the price, buildings without archived rent will not be displayed.",
       "src" : "281e4d61842684c9"
+    },
+    "%@ · %lld added" : {
+      "back" : "%1$@·%2$lld has been added.",
+      "src" : "077a763da73f0210"
     },
     "%@ · %lld open violations" : {
       "back" : "%1$@ · %2$lld open violation",
@@ -9256,9 +9856,25 @@
       "back" : "%@ is included in the rent.",
       "src" : "b82f9704195977f5"
     },
+    "%@ is above the %@ limit" : {
+      "back" : "%1$@ is higher than the %2$@ limit.",
+      "src" : "325db212900ce125"
+    },
+    "%@ is below the minimum" : {
+      "back" : "%@ is below the minimum value.",
+      "src" : "1f4561a71170d0ea"
+    },
+    "%@ is inside the %@ limit" : {
+      "back" : "%1$@ is within the limit of %2$@.",
+      "src" : "4708fbab8c3bcf67"
+    },
     "%@ is typing…" : {
       "back" : "%@ is typing...",
       "src" : "1b1a9339298c2b76"
+    },
+    "%@ tax return" : {
+      "back" : "%@ tax declaration form",
+      "src" : "1750d8f300dc43fc"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -9312,10 +9928,6 @@
       "back" : "%lld days",
       "src" : "0076863d0c35ad38"
     },
-    "%lld documents" : {
-      "back" : "%lld file",
-      "src" : "683905c0c7c72469"
-    },
     "%lld drawings are open elsewhere in New Jersey. Pick another county or tap Clear." : {
       "back" : "The %lld drawing is opened elsewhere in New Jersey. Select another county or tap Clear.",
       "src" : "278139599390b428"
@@ -9336,6 +9948,10 @@
       "back" : "%lld income-restricted units",
       "src" : "83d03bbac3c4316b"
     },
+    "%lld left" : {
+      "back" : "%lld on the left",
+      "src" : "7890feafc601d060"
+    },
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
@@ -9344,6 +9960,10 @@
       "back" : "%lld neighbors are typing...",
       "src" : "3135c5f1fa7a9570"
     },
+    "%lld of %lld" : {
+      "back" : "%2$lld's %1$lld",
+      "src" : "b5ab00c26419f73c"
+    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
       "src" : "72137fd6367f6248"
@@ -9351,6 +9971,10 @@
     "%lld of %lld open in New Jersey" : {
       "back" : "%1$lld of %2$lld is turned on in New Jersey.",
       "src" : "bfa9ac8fdebc089f"
+    },
+    "%lld of %lld ready" : {
+      "back" : "%1$lld of %2$lld is ready.",
+      "src" : "19923d0d27a09017"
     },
     "%lld of %lld units are income-restricted" : {
       "back" : "%1$lld in Unit %2$lld is income-restricted.",
@@ -9404,6 +10028,10 @@
       "back" : "%lld is opened as soon as it is released. Click one to view it on the agent's website.",
       "src" : "e4654b24255e82e2"
     },
+    "%lld people" : {
+      "back" : "%lld people",
+      "src" : "d6127dbd2e825404"
+    },
     "%lld people in your household" : {
       "back" : "There are %lld people in your family.",
       "src" : "43c72a10ee9ed55b"
@@ -9419,6 +10047,10 @@
     "%lld re-infested" : {
       "back" : "%lld reinfection",
       "src" : "c2e3f5527bba062d"
+    },
+    "%lld ready" : {
+      "back" : "%lld is ready.",
+      "src" : "4ef648efaf5e83e7"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -9456,13 +10088,33 @@
       "back" : "%lld week",
       "src" : "432761efd43ad7ea"
     },
+    "%lld within half a mile: " : {
+      "back" : "%lld within half a mile:",
+      "src" : "bc60446586568dbf"
+    },
     "%lld years" : {
       "back" : "%lld years",
       "src" : "aed5f77a4a4505e0"
     },
+    "%lld-person" : {
+      "back" : "%lld people",
+      "src" : "0343e4b821e6204e"
+    },
+    "%lld–%lld bed" : {
+      "back" : "%1$lld-%2$lld bed",
+      "src" : "e4e9871f45de1ff9"
+    },
+    "%lld–%lld people" : {
+      "back" : "%1$lld-%2$lld population",
+      "src" : "3b6247ce3ccaa377"
+    },
     "%lld+ on file" : {
       "back" : "%lld+ is in the file.",
       "src" : "04017329113b550e"
+    },
+    "%lld+ people" : {
+      "back" : "%lld+people",
+      "src" : "8e08bc0e78649f2e"
     },
     "≈ %@/mo" : {
       "back" : "≈ %@/month",
@@ -9500,9 +10152,17 @@
       "back" : "1 building",
       "src" : "8ed08e15a6b79a0e"
     },
+    "1 person" : {
+      "back" : "1 person",
+      "src" : "c2750ab9351a141f"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
+    },
+    "1-person" : {
+      "back" : "1 person",
+      "src" : "edc9e9c118528b43"
     },
     "2 bed" : {
       "back" : "2 beds",
@@ -9624,25 +10284,17 @@
       "back" : "Account has been created - please log in to continue.",
       "src" : "0698788b1a12c812"
     },
-    "Add %@" : {
-      "back" : "Add %@",
-      "src" : "7798c7f2f80edd8a"
-    },
     "Add a comment…" : {
       "back" : "Add comments...",
       "src" : "34e13e9f358e1e9d"
-    },
-    "Add another document" : {
-      "back" : "Add another file",
-      "src" : "f6d7152e8945c306"
     },
     "Add deadline to Calendar" : {
       "back" : "Add the deadline to the calendar.",
       "src" : "2ea4bae6bfe2c144"
     },
-    "Add documents above, then email them in one go from your own Mail." : {
-      "back" : "Add the attached documents and send the email all at once from your own email.",
-      "src" : "a5fb5dbc29d72662"
+    "Add from" : {
+      "back" : "From adding",
+      "src" : "018e84b2fe6d0c47"
     },
     "Add lease end to Calendar" : {
       "back" : "Add the end date of the lease to the calendar.",
@@ -9664,9 +10316,17 @@
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
     },
+    "Add your documents above. Then we'll put them in one PDF and email it to you." : {
+      "back" : "Add your files above. Then we will put them into a PDF and send them to you by email.",
+      "src" : "3375901d0140936e"
+    },
     "Add your rent now and the new rent" : {
       "back" : "Now add your rent and the new rent.",
       "src" : "aeafcba0cfc8ef3c"
+    },
+    "Added" : {
+      "back" : "additional",
+      "src" : "6edd189329e3ab09"
     },
     "Adjust filters" : {
       "back" : "Adjust the filter",
@@ -9788,6 +10448,10 @@
       "back" : "Any area",
       "src" : "2d873087cb2eafc9"
     },
+    "Any household" : {
+      "back" : "Any family",
+      "src" : "6aa8dfa60f2d4522"
+    },
     "Any price" : {
       "back" : "Any price",
       "src" : "ec5f521fea1ad455"
@@ -9799,6 +10463,10 @@
     "Any size" : {
       "back" : "Any size",
       "src" : "1b5a810ac35aa584"
+    },
+    "Anything else they asked for" : {
+      "back" : "Any other things they ask for.",
+      "src" : "620f91d9baf97f97"
     },
     "Apartment" : {
       "back" : "Apartment suite",
@@ -9828,10 +10496,6 @@
       "back" : "application form",
       "src" : "962b395c1e0286e6"
     },
-    "Application packet" : {
-      "back" : "Application packet",
-      "src" : "c85f89a2ec18a6c3"
-    },
     "Apply" : {
       "back" : "apply for",
       "src" : "abd7e53b124056cf"
@@ -9852,6 +10516,10 @@
       "back" : "Apply on %@",
       "src" : "e1481b1739b1ef9c"
     },
+    "Apply on %@'s site: %@" : {
+      "back" : "Apply on the website of %1$@: %2$@",
+      "src" : "c3e1837e4f14c7d5"
+    },
     "Apply on Housing Connect" : {
       "back" : "Apply on Housing Connect",
       "src" : "4a7065811f69d771"
@@ -9863,6 +10531,10 @@
     "Apply on HousingSearch.ny.gov" : {
       "back" : "Apply on HousingSearch.ny.gov",
       "src" : "ef2096ab6239cd9a"
+    },
+    "Apply on their site" : {
+      "back" : "Apply on their website.",
+      "src" : "01df1f1dc46cd020"
     },
     "Apply on their site ↗" : {
       "back" : "Apply on their website↗",
@@ -9911,6 +10583,10 @@
     "assessed at %@" : {
       "back" : "Evaluate at %@",
       "src" : "476c3646c0a8da36"
+    },
+    "Back" : {
+      "back" : "back",
+      "src" : "53c8090d60fba9a3"
     },
     "Bank statements" : {
       "back" : "Bank statement",
@@ -10188,6 +10864,10 @@
       "back" : "end",
       "src" : "95e72c6dc50245b2"
     },
+    "Close photos" : {
+      "back" : "Close the photo",
+      "src" : "a2c48d3d072178c6"
+    },
     "Closed" : {
       "back" : "Closed",
       "src" : "72f1a105353c7ecd"
@@ -10287,6 +10967,10 @@
     "Couldn't load openings" : {
       "back" : "Cannot load vacancies.",
       "src" : "01ccbab840c5e108"
+    },
+    "Couldn't load the reports right now." : {
+      "back" : "The report cannot be loaded now.",
+      "src" : "f1bb174c133e2f1a"
     },
     "Couldn't load the subscription: %@" : {
       "back" : "Unable to load subscription: %@",
@@ -10412,9 +11096,9 @@
       "back" : "Delete for you",
       "src" : "6dcf5008d2e8b712"
     },
-    "Delete my packet" : {
-      "back" : "Delete my data package",
-      "src" : "ff6259ff0b5e993f"
+    "Delete my documents" : {
+      "back" : "Delete my files",
+      "src" : "0ce9de8d28dca7f8"
     },
     "Delete saved search" : {
       "back" : "Delete saved searches",
@@ -10428,9 +11112,9 @@
       "back" : "Delete your account?",
       "src" : "79d98705e250922e"
     },
-    "Delete your profile and every document in the packet from this phone?" : {
-      "back" : "Do you want to delete your profile and all files in this package from this phone?",
-      "src" : "6b6797848a8d72c8"
+    "Delete your details and every document from this phone?" : {
+      "back" : "Do you want to delete your details and all files from this phone?",
+      "src" : "0396352faaafc7d0"
     },
     "Describe it (optional)" : {
       "back" : "Describe it (optional)",
@@ -10460,9 +11144,9 @@
       "back" : "No consideration for...",
       "src" : "f6c98b307392221c"
     },
-    "Documents" : {
-      "back" : "document",
-      "src" : "33635c221801b6e7"
+    "Dismissed" : {
+      "back" : "Discharged",
+      "src" : "8ab52e2509b5384d"
     },
     "Does your building have pests?" : {
       "back" : "Are there harmful insects in your building?",
@@ -10475,6 +11159,18 @@
     "Done" : {
       "back" : "accomplish",
       "src" : "6fd4b0b98b05a3b8"
+    },
+    "Double-tap to zoom" : {
+      "back" : "Double-click to enlarge",
+      "src" : "208e5cc28581fd40"
+    },
+    "Driver's license, passport or IDNYC" : {
+      "back" : "Driver's license, passport or IDNYC",
+      "src" : "2afad1e1137eaf93"
+    },
+    "Drug offense" : {
+      "back" : "Drug crime",
+      "src" : "9c9e25c4a4d8f5b1"
     },
     "Drugs" : {
       "back" : "medicines",
@@ -10492,17 +11188,13 @@
       "back" : "email",
       "src" : "09a6d515341a57fb"
     },
-    "Email my packet" : {
-      "back" : "Send my package to me by email.",
-      "src" : "9f20feb9e52f4913"
+    "Email them to me" : {
+      "back" : "Send them to me.",
+      "src" : "6c867fdb424c6fd8"
     },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
-    },
-    "Emails your %lld documents from your own Mail. Only send what the agent asked for." : {
-      "back" : "Send your %lld file by email from your own email. Only send what the agent requires.",
-      "src" : "5cdb820c2c0d86ec"
     },
     "Emergency" : {
       "back" : "Emergency accident",
@@ -10576,10 +11268,6 @@
       "back" : "Every stable rental building in New York City is in your pocket.",
       "src" : "d134494912b39ed5"
     },
-    "Everything an agent asks for, in one place" : {
-      "back" : "Everything the agent requires is in one place.",
-      "src" : "5a85b31a14872cb0"
-    },
     "Eviction notices" : {
       "back" : "Eviction notice",
       "src" : "04c9deded9a9f3b7"
@@ -10615,6 +11303,10 @@
     "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address." : {
       "back" : "Submitted to the San Francisco Rent Board. Like the rent numbers, these numbers are anonymized for the block, so they cover every building on the side of the block, not a single address.",
       "src" : "83e63b624a8dda42"
+    },
+    "Files" : {
+      "back" : "document",
+      "src" : "ccd6c84d7fc9b858"
     },
     "Fill in an application form" : {
       "back" : "Fill in the application form",
@@ -10672,6 +11364,10 @@
       "back" : "name",
       "src" : "c88cc58c003fcf6a"
     },
+    "Fits the screen" : {
+      "back" : "Suitable for screens",
+      "src" : "3e76890bff694326"
+    },
     "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD)." : {
       "back" : "Florida Housing Finance Corporation rents properties and HUD/USDA assisted properties (through UF Shimberg Center)·HUD low-income housing tax credit database·HUD public housing (Miami-Dade PHCD).",
       "src" : "a1340d3538e28160"
@@ -10724,6 +11420,10 @@
       "back" : "From %@, as shown in the list.",
       "src" : "9caea8b11aa50ebc"
     },
+    "From %@'s listing. Check the details with them before you apply." : {
+      "back" : "List from %@. Please verify the details with them before applying.",
+      "src" : "a02e453f9073d8a1"
+    },
     "from %@/yr" : {
       "back" : "Starting from %@/year",
       "src" : "0a817762effd51c0"
@@ -10732,6 +11432,10 @@
       "back" : "From Affordable Homes New Jersey (CGP&H), checked every day. To participate in the lottery, please fill in the CGP&H application form and then join the town's waiting list through your CGP&H profile before the date shown. Your profile shows the unit, rent and income limits.",
       "src" : "beaa34b5b4988c30"
     },
+    "From every job you had last year" : {
+      "back" : "From every job you did last year",
+      "src" : "dfb0f14155a4bda1"
+    },
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "Starting from NYC Housing Connect, it will be updated every 10 minutes. Eligibility also depends on the size of the family - please check each list.",
       "src" : "31d147a61f541aed"
@@ -10739,10 +11443,6 @@
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "Open data from NYC: 311 service requests and NYPD complaint data.",
       "src" : "458ade514f9b8a19"
-    },
-    "From the agent — not something the packet holds" : {
-      "back" : "From the agent - not the content contained in the packet",
-      "src" : "bafba53bf0e758d4"
     },
     "From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries." : {
       "back" : "HPD property registration from the building. The numbers come from the public commercial list for tenant inquiries.",
@@ -10832,6 +11532,10 @@
       "back" : "harass",
       "src" : "22e87567840affad"
     },
+    "Harassment report" : {
+      "back" : "Harassment report",
+      "src" : "87c1f5d46052d780"
+    },
     "Have an account? Sign in" : {
       "back" : "Do you have an account?enter",
       "src" : "08f6e1239ee8c09b"
@@ -10871,6 +11575,10 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Learn about the next closed NYC housing lottery.",
       "src" : "9886cb8fef32b896"
+    },
+    "Help me apply" : {
+      "back" : "Help me apply.",
+      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide buildings where HPD has mentioned cockroaches, mice, rats or bed bugs in the past 12 months.",
@@ -10944,6 +11652,10 @@
       "back" : "HousingSearch.ny.gov also lists about 50 open lottery tickets and waiting lists in the city. Clear other display boxes and price ranges to view all lottery tickets.",
       "src" : "017769ffe23b2904"
     },
+    "How to apply" : {
+      "back" : "How to apply",
+      "src" : "feac2e8eb4f6e440"
+    },
     "How you found the apartment" : {
       "back" : "How did you find this apartment?",
       "src" : "0154ef4d6e36164c"
@@ -10984,6 +11696,10 @@
       "back" : "I'm here for",
       "src" : "05591b379de8a13b"
     },
+    "If they apply to you" : {
+      "back" : "If they are suitable for you.",
+      "src" : "fb31606eb21efd21"
+    },
     "Immediately hazardous" : {
       "back" : "Immediate danger",
       "src" : "1d857a4847128e19"
@@ -11000,6 +11716,10 @@
       "back" : "At the moment of opening the lottery or re-rental, you can receive notifications in the application and emails sent to %@.",
       "src" : "e9e29c9fe338ecdf"
     },
+    "Income %@" : {
+      "back" : "Income %@",
+      "src" : "a4ca79d6bdc0fa7f"
+    },
     "Income %@–%@" : {
       "back" : "Income %1$@-%2$@",
       "src" : "80caa150177627fa"
@@ -11012,6 +11732,10 @@
       "back" : "Income below the minimum limit",
       "src" : "2300f9080ea1e565"
     },
+    "Income from %@" : {
+      "back" : "Income starting from %@",
+      "src" : "68e74aed436ff654"
+    },
     "Income limit · 1 person" : {
       "back" : "Income limit·1 person",
       "src" : "3b1a6a777b7a39d9"
@@ -11023,6 +11747,14 @@
     "Income should be a number of dollars per year, between 1,000 and 2,000,000." : {
       "back" : "The income should be an annual amount between $1,000 and $2,000,000.",
       "src" : "33b4f9fa332ad766"
+    },
+    "Income up to %@" : {
+      "back" : "The highest income can reach %@.",
+      "src" : "0938146a971dd22b"
+    },
+    "Income up to %@ · 1 person" : {
+      "back" : "The highest income is %@ · 1 person.",
+      "src" : "270b241847b17824"
     },
     "Income-restricted" : {
       "back" : "Limited income",
@@ -11128,9 +11860,9 @@
       "back" : "Continue to enter your street address in New York City.",
       "src" : "26520d9f2f05253f"
     },
-    "Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself." : {
-      "back" : "It is only kept on the mobile phone - never uploaded to Find A Crib. You send it to the agent yourself.",
-      "src" : "8fbfe766e8de127b"
+    "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone." : {
+      "back" : "It is only kept on this mobile phone. Find A Crib will never upload your files or send them to anyone.",
+      "src" : "4434706dccbab94b"
     },
     "Kind" : {
       "back" : "kind",
@@ -11152,6 +11884,10 @@
       "back" : "LAHD records",
       "src" : "6a9e8aacf2d945fe"
     },
+    "Landlord reference, a letter" : {
+      "back" : "Landlord recommendation letter, a letter",
+      "src" : "7b48ab33c8d65387"
+    },
     "Landlord soliciting voucher tenants on AffordableHousing.com" : {
       "back" : "Landlords recruit coupon tenants on AffordableHousing.com",
       "src" : "342910494df3c9e4"
@@ -11171,10 +11907,6 @@
     "Last name" : {
       "back" : "surname",
       "src" : "4d2ca9b010101382"
-    },
-    "Last year's tax return" : {
-      "back" : "Last year's tax return form",
-      "src" : "d994be97cd07cfbf"
     },
     "Late fee" : {
       "back" : "fine for late payment",
@@ -11231,6 +11963,10 @@
     "Listed by " : {
       "back" : "Listed by...",
       "src" : "49b9497af1f5655f"
+    },
+    "Listed by %@" : {
+      "back" : "Listed by %@",
+      "src" : "83f48d068da963d9"
     },
     "Listed on HousingSearch.ny.gov" : {
       "back" : "Listed on HousingSearch.ny.gov",
@@ -11455,6 +12191,22 @@
     "My Activity" : {
       "back" : "My activities",
       "src" : "5e171f35ad5a4562"
+    },
+    "My application documents" : {
+      "back" : "My application documents",
+      "src" : "1cf8dc01b6fbce60"
+    },
+    "My application documents — %@" : {
+      "back" : "My application documents - %@",
+      "src" : "e8ec3e0af1b46c1f"
+    },
+    "My documents" : {
+      "back" : "My documents",
+      "src" : "d6c8be492ae59d96"
+    },
+    "My documents for apartment applications, in one PDF:" : {
+      "back" : "My apartment application documents are in a PDF:",
+      "src" : "3171818c29ce4497"
     },
     "Name" : {
       "back" : "name",
@@ -11752,6 +12504,10 @@
       "back" : "Not reported",
       "src" : "300746757d4bec9f"
     },
+    "None reported within half a mile." : {
+      "back" : "No incidents have been reported within half a mile.",
+      "src" : "e3fc75b70ea49679"
+    },
     "None with %@" : {
       "back" : "There is no one without %@.",
       "src" : "500695f535c8cf08"
@@ -11759,10 +12515,6 @@
     "nonprofit sponsor" : {
       "back" : "Non-profit organization sponsor",
       "src" : "bd5b897764de5016"
-    },
-    "Not added" : {
-      "back" : "Not added",
-      "src" : "1ec2a304445cc460"
     },
     "Not available right now. Try again in a little while." : {
       "back" : "Currently unavailable. Please try again later.",
@@ -11872,9 +12624,21 @@
       "back" : "On the idle and dilapidated register in DC - %@",
       "src" : "736f416c80dbd393"
     },
+    "On letterhead, with your salary" : {
+      "back" : "Attach your salary to the top of the letter.",
+      "src" : "42dca406f61adce9"
+    },
     "On the App Store" : {
       "back" : "On the App Store",
       "src" : "264c719339ca501c"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach to any application." : {
+      "back" : "Each file is attached to a PDF file and sent to your own email, so it can be attached to any application.",
+      "src" : "d28d36b3f3d5001d"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach when you apply on %@'s site." : {
+      "back" : "Each document is attached to a PDF file and sent to your own email, so it can be attached immediately when you apply on the %@ website.",
+      "src" : "c8805d814e519d60"
     },
     "Only if it fits (optional)" : {
       "back" : "Only when it is appropriate (optional)",
@@ -11899,6 +12663,10 @@
     "Open complaints" : {
       "back" : "Unresolved complaints",
       "src" : "d2447c64d6aee22b"
+    },
+    "Open details" : {
+      "back" : "Open the details",
+      "src" : "322f024a300e165e"
     },
     "Open Find A Crib's Renewal coach to check the offer." : {
       "back" : "Open the Find A Crib renewal coach to view the offer.",
@@ -11928,13 +12696,17 @@
       "back" : "It will be opened as soon as it is released. Click to enter the agent's website to apply.",
       "src" : "4ab6710450fa675f"
     },
+    "Opens the details" : {
+      "back" : "Open the details",
+      "src" : "caf09d3a4bb2f2ed"
+    },
+    "Opens the photos full screen" : {
+      "back" : "Open the photo to display it full screen.",
+      "src" : "5d9bce9b49b5a4f1"
+    },
     "or continue with email" : {
       "back" : "Or continue using email.",
       "src" : "6e7cb08da2ed65cb"
-    },
-    "Other document" : {
-      "back" : "Other documents",
-      "src" : "1c326e0074f90430"
     },
     "Owner" : {
       "back" : "Owner",
@@ -11983,6 +12755,10 @@
     "Paste the listing's text" : {
       "back" : "Paste the text of the list",
       "src" : "082910de870acee3"
+    },
+    "Pay stubs" : {
+      "back" : "Payroll slip",
+      "src" : "8b4c4501451e9876"
     },
     "Payment is charged to your Apple Account at confirmation. " : {
       "back" : "After confirmation, the payment will be deducted from your Apple account.",
@@ -12047,6 +12823,10 @@
     "Photo of the building" : {
       "back" : "Photos of buildings",
       "src" : "608b67a850317346"
+    },
+    "Photos" : {
+      "back" : "photograph",
+      "src" : "d9c9ef65dbf37664"
     },
     "Pick at least one borough." : {
       "back" : "Choose at least one district.",
@@ -12199,10 +12979,6 @@
     "Recent" : {
       "back" : "Not long ago",
       "src" : "7bf8b69ae2c50f86"
-    },
-    "Recent pay stubs" : {
-      "back" : "The latest pay slip",
-      "src" : "4cca3edb28943756"
     },
     "Recently viewed" : {
       "back" : "Recently browsed",
@@ -12452,6 +13228,10 @@
       "back" : "Save changes",
       "src" : "eb9b0644d7fbe954"
     },
+    "Save PDF" : {
+      "back" : "Save PDF",
+      "src" : "7cda2613ace3577d"
+    },
     "Saved" : {
       "back" : "Saved",
       "src" : "9430f95cc652889d"
@@ -12463,6 +13243,14 @@
     "Saved searches" : {
       "back" : "Saved searches",
       "src" : "e4693c2256fe76b4"
+    },
+    "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time." : {
+      "back" : "Save them to your personal profile›My Files. They also exist in the next apartment, and you can delete them at any time.",
+      "src" : "9cf9f0882ed0177e"
+    },
+    "Scan" : {
+      "back" : "scan",
+      "src" : "351f3dc6cfae0fc4"
     },
     "Search" : {
       "back" : "seek",
@@ -12528,10 +13316,6 @@
       "back" : "See if cockroaches, mice or rats are a pattern or a one-time event.",
       "src" : "231659f1285ce099"
     },
-    "Send to the agent" : {
-      "back" : "Send to the agent",
-      "src" : "ce7dff4f029d0de3"
-    },
     "Send…" : {
       "back" : "Send...",
       "src" : "8a82a16a6b17adb9"
@@ -12564,9 +13348,17 @@
       "back" : "Share anonymous use",
       "src" : "65c250373fe45bf3"
     },
+    "Shooting" : {
+      "back" : "shoot",
+      "src" : "2686934d40fb68bb"
+    },
     "Shootings" : {
       "back" : "Shooting incident",
       "src" : "b001b4be27007fa3"
+    },
+    "Shootings, robberies and burglaries. Turn on crime alerts to choose." : {
+      "back" : "Gunshots, robberies and burglaries. Turn on the crime alarm to choose.",
+      "src" : "f996a45cc3b94ec4"
     },
     "Show" : {
       "back" : "exhibit",
@@ -12579,6 +13371,10 @@
     "Show all %lld calls" : {
       "back" : "Show all %lld calls",
       "src" : "2d57a5e7beb40114"
+    },
+    "Show all %lld reports" : {
+      "back" : "Show all %lld reports",
+      "src" : "d46c646f0bba12bf"
     },
     "Show fewer" : {
       "back" : "Show less",
@@ -12720,6 +13516,10 @@
       "back" : "Already logged in",
       "src" : "87d3e15c993a1b00"
     },
+    "Signed in as %@" : {
+      "back" : "Log in with the identity of %@",
+      "src" : "e8a78edc928aec38"
+    },
     "Since" : {
       "back" : "Since...",
       "src" : "b07cec8dafdaa548"
@@ -12727,6 +13527,10 @@
     "Since –" : {
       "back" : "Since——",
       "src" : "be97f90995f198ed"
+    },
+    "SNAP, SSI, unemployment, support orders" : {
+      "back" : "SNAP, SSI, unemployment, support orders",
+      "src" : "5609ce65bafe32e8"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges may be illegal.",
@@ -12819,6 +13623,10 @@
     "Studio" : {
       "back" : "Recording room",
       "src" : "59d91c5703aa6d72"
+    },
+    "Studio–%lld bed" : {
+      "error" : "placeholders or terms lost: 单间床",
+      "src" : "a30f8c5b8cfaf40d"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidies/coupon-friendly buildings",
@@ -12952,6 +13760,10 @@
       "back" : "The first %1$@ is free; unless you cancel at least 24 hours in advance, %2$@ will be charged when the Apple account expires.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The full return, all pages" : {
+      "back" : "Complete return, all pages",
+      "src" : "26e1dbee82241fb9"
+    },
     "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
       "back" : "The icon on the home screen will display the color of each holiday, and then return. iOS will tell you the time of each change.",
       "src" : "0e9afbce184b781e"
@@ -12960,9 +13772,21 @@
       "back" : "increase",
       "src" : "0987c272aed25458"
     },
+    "The kinds your alerts watch." : {
+      "back" : "The type of alarm monitoring you have.",
+      "src" : "4416d1b179243fe6"
+    },
+    "The last 2 months" : {
+      "back" : "The past 2 months",
+      "src" : "defd042bff2924e0"
+    },
     "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent." : {
       "back" : "The legal rent of the rental-controlled unit of this property archived by DC DHCD is not the quoted rent.",
       "src" : "b90fadff97265d29"
+    },
+    "The listing" : {
+      "back" : "list",
+      "src" : "6a56f9721a0b46a1"
     },
     "The listing (optional)" : {
       "back" : "Listed on the stock exchange (optional)",
@@ -12984,6 +13808,10 @@
       "back" : "quote",
       "src" : "8d337cc473af04ec"
     },
+    "The reports, %@" : {
+      "back" : "Report, %@",
+      "src" : "5430de208416dfe3"
+    },
     "the SF Rent Board" : {
       "back" : "San Francisco Rent Board",
       "src" : "2e9133125d571a33"
@@ -12995,6 +13823,10 @@
     "Theft" : {
       "back" : "steal",
       "src" : "a8239a929ea8f2f3"
+    },
+    "Their listings" : {
+      "back" : "Their list",
+      "src" : "ebc58768269eb9fe"
     },
     "Their yearly income, $ (if any)" : {
       "back" : "Their annual income, in dollars (if applicable)",
@@ -13192,6 +14024,10 @@
       "back" : "Up to %@/year",
       "src" : "5fa524297160b25f"
     },
+    "Up to %lld people" : {
+      "back" : "Up to %lld people",
+      "src" : "a100c07ea83a2509"
+    },
     "Up to %lld%% of area median income" : {
       "back" : "%lld%% of the median income in the highest region",
       "src" : "05ff1a36bc32ea2f"
@@ -13199,6 +14035,10 @@
     "Upgrade to Plus for instant notifications and emails" : {
       "back" : "Upgrade to Plus to get instant notifications and emails.",
       "src" : "f71c1204783cd881"
+    },
+    "Upload" : {
+      "back" : "upload",
+      "src" : "403fbea35c5a377a"
     },
     "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one." : {
       "back" : "Upload your lease, and AI will mark New York legal restrictions or invalid terms and quote each one.",
@@ -13223,6 +14063,10 @@
     "Vandalism" : {
       "back" : "Destructive behavior",
       "src" : "cc39eef310431f1d"
+    },
+    "Vandalism report" : {
+      "back" : "Damage report",
+      "src" : "b3fbec91b302c482"
     },
     "View %lld more replies" : {
       "back" : "View more %lld reply",
@@ -13292,6 +14136,10 @@
       "back" : "Coupon",
       "src" : "e1320cd435b8fd3d"
     },
+    "W-2 for %@" : {
+      "back" : "%@'s W-2",
+      "src" : "285d501619114f81"
+    },
     "Waiting list opening soon" : {
       "back" : "The waiting list is about to open.",
       "src" : "26b279568863f626"
@@ -13312,9 +14160,17 @@
       "back" : "weapon",
       "src" : "ce46fe2aa6485c6b"
     },
+    "Weapons offense" : {
+      "back" : "Weapon attack",
+      "src" : "51978ad97f51b0ee"
+    },
     "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
       "back" : "West Chester is not yet in the application - please check the map of York and West Chester on findacrib.com.",
       "src" : "829b6dee537c6fd0"
+    },
+    "What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file." : {
+      "back" : "What does the broker ask for in an apartment with limited income? Scan your camera or choose a photo or document.",
+      "src" : "bc5fa8e9c9e03cf1"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -13331,10 +14187,6 @@
     "What the law requires" : {
       "back" : "What does the law require?",
       "src" : "900f5c61f40dbea6"
-    },
-    "What this listing asks for" : {
-      "back" : "What does this list require?",
-      "src" : "c4833fd5d7f6e01d"
     },
     "What to ask for, by when, and how to file with 311" : {
       "back" : "What to request, when to request it, and how to submit an application to 311",
@@ -13379,6 +14231,10 @@
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "Which screens are used in order to improve the application. Never use what you enter, never sell, no ads.",
       "src" : "505a48f4f34d2913"
+    },
+    "Who can apply" : {
+      "back" : "Who can apply?",
+      "src" : "7679fb020760b199"
     },
     "Who owns the building, and its head officer" : {
       "back" : "Who owns this building and who is in charge of it?",
@@ -13452,6 +14308,10 @@
       "back" : "You have Plus.",
       "src" : "a283e8aaee53f155"
     },
+    "You must earn" : {
+      "back" : "You must make money.",
+      "src" : "cd8777882ba22966"
+    },
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
@@ -13479,6 +14339,10 @@
     "You've used this month's AI — more on the 1st." : {
       "back" : "You have used this month's AI - more information will be released on the 1st.",
       "src" : "9fba06060dfa4ed5"
+    },
+    "Your 2 to 4 most recent" : {
+      "back" : "Your last 2 to 4",
+      "src" : "d8914eaf1d6038c2"
     },
     "your account email" : {
       "back" : "Your account email",
@@ -13511,6 +14375,10 @@
     "Your details" : {
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
+    },
+    "Your documents" : {
+      "back" : "Your documents",
+      "src" : "42b1648a8600a273"
     },
     "Your email" : {
       "back" : "Your email",
@@ -13560,9 +14428,13 @@
       "back" : "what is your name",
       "src" : "8802356b71d20561"
     },
-    "Your name, contact, address, job and household — typed once, used in every email and form." : {
-      "back" : "Your name, contact information, address, work and family - enter once, for each email and form.",
-      "src" : "20ef83388557fbeb"
+    "Your name, contact, address, job and household — typed once, used in every form." : {
+      "back" : "Your name, contact information, address, work and family - enter once for all forms.",
+      "src" : "c7e1b0f8f833a7bd"
+    },
+    "Your newest pay stub is over 60 days old. Most agents want the latest ones." : {
+      "back" : "Your latest pay slip has been more than 60 days old. Most agents want the latest pay slip.",
+      "src" : "d15ff30ccdce267d"
     },
     "your other building" : {
       "back" : "Your other building",
@@ -13595,6 +14467,10 @@
     "ZIP codes" : {
       "back" : "postcode",
       "src" : "0037bac098a21f4e"
+    },
+    "Zoomed in" : {
+      "back" : "enlarge",
+      "src" : "2447655742b5bca6"
     }
   },
   "zh-Hant" : {
@@ -13617,6 +14493,10 @@
     " · synced" : {
       "back" : "· Synchronization",
       "src" : "07e834eaacc24f6e"
+    },
+    " (attempted)" : {
+      "back" : "(Try)",
+      "src" : "125673401c789d85"
     },
     " (today)" : {
       "back" : "(Today)",
@@ -13694,6 +14574,14 @@
       "back" : "\"New re-rental of Brooklyn: 75 Dupont Street, 1 bedroom, $3,661\" - 2:14 p.m., not tomorrow at 8 a.m.",
       "src" : "48e82c6283c2b62b"
     },
+    "/mo" : {
+      "back" : "/mo",
+      "src" : "47fcc14623bf50ec"
+    },
+    "/yr" : {
+      "back" : "/year",
+      "src" : "e9383e7769533265"
+    },
     "%@ — not fixed? File a complaint with 311." : {
       "back" : "%@ - Not fixed? File a complaint with 311.",
       "src" : "921bb87295a027cd"
@@ -13701,6 +14589,10 @@
     "%@ — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price." : {
       "back" : "%@ - The content of the records in the registration office, not the required rent. When you set the price, buildings without archived rent will not be displayed.",
       "src" : "281e4d61842684c9"
+    },
+    "%@ · %lld added" : {
+      "back" : "%1$@ · %2$lld addition",
+      "src" : "077a763da73f0210"
     },
     "%@ · %lld open violations" : {
       "back" : "%1$@ · %2$lld Openly violate the law",
@@ -13790,9 +14682,25 @@
       "back" : "%@ is included in the rent.",
       "src" : "b82f9704195977f5"
     },
+    "%@ is above the %@ limit" : {
+      "back" : "%1$@ is greater than the %2$@ limit.",
+      "src" : "325db212900ce125"
+    },
+    "%@ is below the minimum" : {
+      "back" : "%@ is lower than the minimum value.",
+      "src" : "1f4561a71170d0ea"
+    },
+    "%@ is inside the %@ limit" : {
+      "back" : "%1$@ is within the limit of %2$@",
+      "src" : "4708fbab8c3bcf67"
+    },
     "%@ is typing…" : {
       "back" : "%@ is typing...",
       "src" : "1b1a9339298c2b76"
+    },
+    "%@ tax return" : {
+      "back" : "%@ tax return form",
+      "src" : "1750d8f300dc43fc"
     },
     "%@–%@ bed" : {
       "back" : "%1$@-%2$@ bed",
@@ -13846,10 +14754,6 @@
       "back" : "%lld days",
       "src" : "0076863d0c35ad38"
     },
-    "%lld documents" : {
-      "back" : "%lld file",
-      "src" : "683905c0c7c72469"
-    },
     "%lld drawings are open elsewhere in New Jersey. Pick another county or tap Clear." : {
       "back" : "The %lld drawing is open elsewhere in New Jersey. Select another county or click Clear.",
       "src" : "278139599390b428"
@@ -13870,6 +14774,10 @@
       "back" : "%lld units with limited income",
       "src" : "83d03bbac3c4316b"
     },
+    "%lld left" : {
+      "back" : "%lld remaining",
+      "src" : "7890feafc601d060"
+    },
     "%lld months" : {
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
@@ -13878,6 +14786,10 @@
       "back" : "%lld neighbors are typing...",
       "src" : "3135c5f1fa7a9570"
     },
+    "%lld of %lld" : {
+      "back" : "%2$lld's %1$lld",
+      "src" : "b5ab00c26419f73c"
+    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
       "src" : "72137fd6367f6248"
@@ -13885,6 +14797,10 @@
     "%lld of %lld open in New Jersey" : {
       "back" : "%1$lld of %2$lld is opened in New Jersey.",
       "src" : "bfa9ac8fdebc089f"
+    },
+    "%lld of %lld ready" : {
+      "back" : "%1$lld of %2$lld is ready.",
+      "src" : "19923d0d27a09017"
     },
     "%lld of %lld units are income-restricted" : {
       "back" : "%1$lld of unit %2$lld is income-restricted.",
@@ -13938,6 +14854,10 @@
       "back" : "It will be opened as soon as it is released. Click on one to view it on the agent's website.",
       "src" : "e4654b24255e82e2"
     },
+    "%lld people" : {
+      "back" : "%lld people",
+      "src" : "d6127dbd2e825404"
+    },
     "%lld people in your household" : {
       "back" : "There are %lld people in your family.",
       "src" : "43c72a10ee9ed55b"
@@ -13953,6 +14873,10 @@
     "%lld re-infested" : {
       "back" : "%lld is being invaded again.",
       "src" : "c2e3f5527bba062d"
+    },
+    "%lld ready" : {
+      "back" : "%lld is ready.",
+      "src" : "4ef648efaf5e83e7"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -13990,13 +14914,33 @@
       "back" : "%lld week",
       "src" : "432761efd43ad7ea"
     },
+    "%lld within half a mile: " : {
+      "back" : "%lld within half a mile:",
+      "src" : "bc60446586568dbf"
+    },
     "%lld years" : {
       "back" : "%lld years",
       "src" : "aed5f77a4a4505e0"
     },
+    "%lld-person" : {
+      "back" : "%lld people",
+      "src" : "0343e4b821e6204e"
+    },
+    "%lld–%lld bed" : {
+      "back" : "%1$lld-%2$lld bed",
+      "src" : "e4e9871f45de1ff9"
+    },
+    "%lld–%lld people" : {
+      "back" : "%1$lld-%2$lld population",
+      "src" : "3b6247ce3ccaa377"
+    },
     "%lld+ on file" : {
       "back" : "%lld+ in the file",
       "src" : "04017329113b550e"
+    },
+    "%lld+ people" : {
+      "back" : "%lld+people",
+      "src" : "8e08bc0e78649f2e"
     },
     "≈ %@/mo" : {
       "back" : "≈ %@/month",
@@ -14034,9 +14978,17 @@
       "back" : "1 building",
       "src" : "8ed08e15a6b79a0e"
     },
+    "1 person" : {
+      "back" : "1 person",
+      "src" : "c2750ab9351a141f"
+    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
+    },
+    "1-person" : {
+      "back" : "1 person",
+      "src" : "edc9e9c118528b43"
     },
     "2 bed" : {
       "back" : "2 beds",
@@ -14158,25 +15110,17 @@
       "back" : "An account has been created - please log in to continue.",
       "src" : "0698788b1a12c812"
     },
-    "Add %@" : {
-      "back" : "Add %@",
-      "src" : "7798c7f2f80edd8a"
-    },
     "Add a comment…" : {
       "back" : "Add a comment...",
       "src" : "34e13e9f358e1e9d"
-    },
-    "Add another document" : {
-      "back" : "Add another file",
-      "src" : "f6d7152e8945c306"
     },
     "Add deadline to Calendar" : {
       "back" : "Add the deadline to the calendar.",
       "src" : "2ea4bae6bfe2c144"
     },
-    "Add documents above, then email them in one go from your own Mail." : {
-      "back" : "Add the above files, and then send the email in one go from your own email.",
-      "src" : "a5fb5dbc29d72662"
+    "Add from" : {
+      "back" : "Add from",
+      "src" : "018e84b2fe6d0c47"
     },
     "Add lease end to Calendar" : {
       "back" : "Add the end date of the lease to the calendar.",
@@ -14198,9 +15142,17 @@
       "back" : "Add the fees you have been charged to check it.",
       "src" : "0dd67f094bf783ea"
     },
+    "Add your documents above. Then we'll put them in one PDF and email it to you." : {
+      "back" : "Add your files on top of it. Then we will put them into a PDF and send them to you by email.",
+      "src" : "3375901d0140936e"
+    },
     "Add your rent now and the new rent" : {
       "back" : "Add your rent and new rent now",
       "src" : "aeafcba0cfc8ef3c"
+    },
+    "Added" : {
+      "back" : "Additional",
+      "src" : "6edd189329e3ab09"
     },
     "Adjust filters" : {
       "back" : "Adjust the filter",
@@ -14322,6 +15274,10 @@
       "back" : "Any area",
       "src" : "2d873087cb2eafc9"
     },
+    "Any household" : {
+      "back" : "Any family",
+      "src" : "6aa8dfa60f2d4522"
+    },
     "Any price" : {
       "back" : "Any price",
       "src" : "ec5f521fea1ad455"
@@ -14333,6 +15289,10 @@
     "Any size" : {
       "back" : "Any size",
       "src" : "1b5a810ac35aa584"
+    },
+    "Anything else they asked for" : {
+      "back" : "What else do they ask for?",
+      "src" : "620f91d9baf97f97"
     },
     "Apartment" : {
       "back" : "Room",
@@ -14362,10 +15322,6 @@
       "back" : "Application form",
       "src" : "962b395c1e0286e6"
     },
-    "Application packet" : {
-      "back" : "Application package",
-      "src" : "c85f89a2ec18a6c3"
-    },
     "Apply" : {
       "back" : "Application",
       "src" : "abd7e53b124056cf"
@@ -14386,6 +15342,10 @@
       "back" : "Apply on %@",
       "src" : "e1481b1739b1ef9c"
     },
+    "Apply on %@'s site: %@" : {
+      "back" : "Apply on the website of %1$@: %2$@",
+      "src" : "c3e1837e4f14c7d5"
+    },
     "Apply on Housing Connect" : {
       "back" : "Apply on Housing Connect",
       "src" : "4a7065811f69d771"
@@ -14397,6 +15357,10 @@
     "Apply on HousingSearch.ny.gov" : {
       "back" : "Apply on HousingSearch.ny.gov",
       "src" : "ef2096ab6239cd9a"
+    },
+    "Apply on their site" : {
+      "back" : "Apply on their website",
+      "src" : "01df1f1dc46cd020"
     },
     "Apply on their site ↗" : {
       "back" : "Apply on their website↗",
@@ -14445,6 +15409,10 @@
     "assessed at %@" : {
       "back" : "Evaluate at %@",
       "src" : "476c3646c0a8da36"
+    },
+    "Back" : {
+      "back" : "Back side",
+      "src" : "53c8090d60fba9a3"
     },
     "Bank statements" : {
       "back" : "Bank statement",
@@ -14722,6 +15690,10 @@
       "back" : "Close",
       "src" : "95e72c6dc50245b2"
     },
+    "Close photos" : {
+      "back" : "Close the photo",
+      "src" : "a2c48d3d072178c6"
+    },
     "Closed" : {
       "back" : "Closed",
       "src" : "72f1a105353c7ecd"
@@ -14821,6 +15793,10 @@
     "Couldn't load openings" : {
       "back" : "Cannot load the empty space.",
       "src" : "01ccbab840c5e108"
+    },
+    "Couldn't load the reports right now." : {
+      "back" : "The report cannot be loaded now.",
+      "src" : "f1bb174c133e2f1a"
     },
     "Couldn't load the subscription: %@" : {
       "back" : "Unable to load subscription: %@",
@@ -14946,9 +15922,9 @@
       "back" : "Delete it for you",
       "src" : "6dcf5008d2e8b712"
     },
-    "Delete my packet" : {
-      "back" : "Delete my package",
-      "src" : "ff6259ff0b5e993f"
+    "Delete my documents" : {
+      "back" : "Delete my files",
+      "src" : "0ce9de8d28dca7f8"
     },
     "Delete saved search" : {
       "back" : "Delete the saved ones",
@@ -14962,9 +15938,9 @@
       "back" : "Delete your account?",
       "src" : "79d98705e250922e"
     },
-    "Delete your profile and every document in the packet from this phone?" : {
-      "back" : "Are you going to delete all your personal information and files in your data package from this mobile phone?",
-      "src" : "6b6797848a8d72c8"
+    "Delete your details and every document from this phone?" : {
+      "back" : "Delete your details and all files from this phone?",
+      "src" : "0396352faaafc7d0"
     },
     "Describe it (optional)" : {
       "back" : "Describe it (optional)",
@@ -14994,9 +15970,9 @@
       "back" : "Reject",
       "src" : "f6c98b307392221c"
     },
-    "Documents" : {
-      "back" : "File",
-      "src" : "33635c221801b6e7"
+    "Dismissed" : {
+      "back" : "Being fired",
+      "src" : "8ab52e2509b5384d"
     },
     "Does your building have pests?" : {
       "back" : "Are there harmful insects in your building?",
@@ -15009,6 +15985,18 @@
     "Done" : {
       "back" : "Good",
       "src" : "6fd4b0b98b05a3b8"
+    },
+    "Double-tap to zoom" : {
+      "back" : "Double-click to enlarge",
+      "src" : "208e5cc28581fd40"
+    },
+    "Driver's license, passport or IDNYC" : {
+      "back" : "Driver's license, passport or IDNYC",
+      "src" : "2afad1e1137eaf93"
+    },
+    "Drug offense" : {
+      "back" : "Drug crime",
+      "src" : "9c9e25c4a4d8f5b1"
     },
     "Drugs" : {
       "back" : "Drugs",
@@ -15026,17 +16014,13 @@
       "back" : "Email",
       "src" : "09a6d515341a57fb"
     },
-    "Email my packet" : {
-      "back" : "Send my package by email.",
-      "src" : "9f20feb9e52f4913"
+    "Email them to me" : {
+      "back" : "Email them to me.",
+      "src" : "6c867fdb424c6fd8"
     },
     "Email: %@" : {
       "back" : "Email: %@",
       "src" : "60a07d802e9e0cfb"
-    },
-    "Emails your %lld documents from your own Mail. Only send what the agent asked for." : {
-      "back" : "Send your %lld file by email from your own email. Only send the content required by the agent.",
-      "src" : "5cdb820c2c0d86ec"
     },
     "Emergency" : {
       "back" : "Emergency situation",
@@ -15110,10 +16094,6 @@
       "back" : "Every stable building with rent in New York City is in your pocket.",
       "src" : "d134494912b39ed5"
     },
-    "Everything an agent asks for, in one place" : {
-      "back" : "Everything the agent requires is in one place.",
-      "src" : "5a85b31a14872cb0"
-    },
     "Eviction notices" : {
       "back" : "Eviction notice",
       "src" : "04c9deded9a9f3b7"
@@ -15149,6 +16129,10 @@
     "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address." : {
       "back" : "Submitted to the San Francisco Rent Board. Like the rent numbers, this data is anonymous for the entire block, so it covers every building in the block, not just a single address.",
       "src" : "83e63b624a8dda42"
+    },
+    "Files" : {
+      "back" : "File",
+      "src" : "ccd6c84d7fc9b858"
     },
     "Fill in an application form" : {
       "back" : "Fill in the application form",
@@ -15206,6 +16190,10 @@
       "back" : "The first character of Western names",
       "src" : "c88cc58c003fcf6a"
     },
+    "Fits the screen" : {
+      "back" : "Suitable for screens",
+      "src" : "3e76890bff694326"
+    },
     "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD)." : {
       "back" : "Florida Housing Finance Corporation Rental Properties and HUD/USDA Assisted Properties (through UF Shimberg Center)·HUD Low Income Housing Tax Credit Database·HUD Public Housing (Miami-Dade PHCD).",
       "src" : "a1340d3538e28160"
@@ -15258,6 +16246,10 @@
       "back" : "Starting from %@ · as shown in the list",
       "src" : "9caea8b11aa50ebc"
     },
+    "From %@'s listing. Check the details with them before you apply." : {
+      "back" : "List from %@. Please check the details with them before applying.",
+      "src" : "a02e453f9073d8a1"
+    },
     "from %@/yr" : {
       "back" : "From %@/year",
       "src" : "0a817762effd51c0"
@@ -15266,6 +16258,10 @@
       "back" : "From affordable housing New Jersey (CGP&H), checked once a day. To participate in the lottery, please fill in the application plan of CGP&H, and then add the candidate list of the town to your CGP&H profile before the date shown. Unit, rent and income restrictions are shown in your profile.",
       "src" : "beaa34b5b4988c30"
     },
+    "From every job you had last year" : {
+      "back" : "From every job you did last year",
+      "src" : "dfb0f14155a4bda1"
+    },
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "Starting from NYC Housing Connect, it is updated every 10 minutes. Eligibility also depends on the size of the family - please check each list.",
       "src" : "31d147a61f541aed"
@@ -15273,10 +16269,6 @@
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "Open data from NYC: 311 service requests and NYPD complaint data.",
       "src" : "458ade514f9b8a19"
-    },
-    "From the agent — not something the packet holds" : {
-      "back" : "From the agent - not the content contained in the packet",
-      "src" : "bafba53bf0e758d4"
     },
     "From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries." : {
       "back" : "HPD property registration from the building. These numbers come from the public commercial list and are used for tenant inquiries.",
@@ -15366,6 +16358,10 @@
       "back" : "Harassment",
       "src" : "22e87567840affad"
     },
+    "Harassment report" : {
+      "back" : "Harassment report",
+      "src" : "87c1f5d46052d780"
+    },
     "Have an account? Sign in" : {
       "back" : "Do you have an account? Check in",
       "src" : "08f6e1239ee8c09b"
@@ -15405,6 +16401,10 @@
     "Hear which NYC housing lotteries close next." : {
       "back" : "Find out when the next NYC housing lottery will end.",
       "src" : "9886cb8fef32b896"
+    },
+    "Help me apply" : {
+      "back" : "Help me apply",
+      "src" : "81d866976cc2d3f1"
     },
     "Hide buildings where HPD cited roaches, mice, rats or bedbugs in the last 12 months" : {
       "back" : "Hide HPD buildings that have been cited for cockroaches, mice, rats or bed bugs in the past 12 months.",
@@ -15478,6 +16478,10 @@
       "back" : "HousingSearch.ny.gov lists about 50 open lottery and candidate lists for the city at once. Clear other \"Show\" boxes and price ranges to view everything.",
       "src" : "017769ffe23b2904"
     },
+    "How to apply" : {
+      "back" : "How to apply",
+      "src" : "feac2e8eb4f6e440"
+    },
     "How you found the apartment" : {
       "back" : "How did you find this apartment?",
       "src" : "0154ef4d6e36164c"
@@ -15518,6 +16522,10 @@
       "back" : "I'm here for",
       "src" : "05591b379de8a13b"
     },
+    "If they apply to you" : {
+      "back" : "If they are suitable for you.",
+      "src" : "fb31606eb21efd21"
+    },
     "Immediately hazardous" : {
       "back" : "Immediate danger",
       "src" : "1d857a4847128e19"
@@ -15534,6 +16542,10 @@
       "back" : "At the moment the lottery or the re-rental is opened, notifications and emails will be sent to %@ immediately in the application.",
       "src" : "e9e29c9fe338ecdf"
     },
+    "Income %@" : {
+      "back" : "Income %@",
+      "src" : "a4ca79d6bdc0fa7f"
+    },
     "Income %@–%@" : {
       "back" : "Income %1$@-%2$@",
       "src" : "80caa150177627fa"
@@ -15546,6 +16558,10 @@
       "back" : "Income below the minimum threshold",
       "src" : "2300f9080ea1e565"
     },
+    "Income from %@" : {
+      "back" : "Income starting from %@",
+      "src" : "68e74aed436ff654"
+    },
     "Income limit · 1 person" : {
       "back" : "Income limit · 1 person",
       "src" : "3b1a6a777b7a39d9"
@@ -15557,6 +16573,14 @@
     "Income should be a number of dollars per year, between 1,000 and 2,000,000." : {
       "back" : "The income should be a few dollars per year, between 1,000 and 200,000 dollars.",
       "src" : "33b4f9fa332ad766"
+    },
+    "Income up to %@" : {
+      "back" : "The highest income can reach %@.",
+      "src" : "0938146a971dd22b"
+    },
+    "Income up to %@ · 1 person" : {
+      "back" : "The highest income is %@ · 1 person",
+      "src" : "270b241847b17824"
     },
     "Income-restricted" : {
       "back" : "Limited income",
@@ -15662,9 +16686,9 @@
       "back" : "Continue to enter your street address in New York City.",
       "src" : "26520d9f2f05253f"
     },
-    "Kept on this phone only — never uploaded to Find A Crib. You send it to the agent yourself." : {
-      "back" : "It is only kept on this mobile phone - it has never been uploaded to Find A Crib. You can send it to the agent yourself.",
-      "src" : "8fbfe766e8de127b"
+    "Kept on this phone only. Find A Crib never uploads your documents or sends them to anyone." : {
+      "back" : "It is only kept on this mobile phone. Find A Crib will never upload your files or send them to anyone.",
+      "src" : "4434706dccbab94b"
     },
     "Kind" : {
       "back" : "Type",
@@ -15686,6 +16710,10 @@
       "back" : "LAHD records",
       "src" : "6a9e8aacf2d945fe"
     },
+    "Landlord reference, a letter" : {
+      "back" : "For the landlord's reference, a letter.",
+      "src" : "7b48ab33c8d65387"
+    },
     "Landlord soliciting voucher tenants on AffordableHousing.com" : {
       "back" : "Landlords are recruiting coupon renters on AffordableHousing.com",
       "src" : "342910494df3c9e4"
@@ -15705,10 +16733,6 @@
     "Last name" : {
       "back" : "Surname",
       "src" : "4d2ca9b010101382"
-    },
-    "Last year's tax return" : {
-      "back" : "Last year's tax return form",
-      "src" : "d994be97cd07cfbf"
     },
     "Late fee" : {
       "back" : "Overdue fee",
@@ -15765,6 +16789,10 @@
     "Listed by " : {
       "back" : "Listed by...",
       "src" : "49b9497af1f5655f"
+    },
+    "Listed by %@" : {
+      "back" : "Listed by %@",
+      "src" : "83f48d068da963d9"
     },
     "Listed on HousingSearch.ny.gov" : {
       "back" : "Listed on HousingSearch.ny.gov",
@@ -15989,6 +17017,22 @@
     "My Activity" : {
       "back" : "My activities",
       "src" : "5e171f35ad5a4562"
+    },
+    "My application documents" : {
+      "back" : "My application documents",
+      "src" : "1cf8dc01b6fbce60"
+    },
+    "My application documents — %@" : {
+      "back" : "My application file - %@",
+      "src" : "e8ec3e0af1b46c1f"
+    },
+    "My documents" : {
+      "back" : "My files",
+      "src" : "d6c8be492ae59d96"
+    },
+    "My documents for apartment applications, in one PDF:" : {
+      "back" : "My apartment application documents are in a PDF:",
+      "src" : "3171818c29ce4497"
     },
     "Name" : {
       "back" : "Name",
@@ -16286,6 +17330,10 @@
       "back" : "No situation has been reported.",
       "src" : "300746757d4bec9f"
     },
+    "None reported within half a mile." : {
+      "back" : "No one was reported within half a mile.",
+      "src" : "e3fc75b70ea49679"
+    },
     "None with %@" : {
       "back" : "None of them have %@.",
       "src" : "500695f535c8cf08"
@@ -16293,10 +17341,6 @@
     "nonprofit sponsor" : {
       "back" : "Non-profit organization sponsors",
       "src" : "bd5b897764de5016"
-    },
-    "Not added" : {
-      "back" : "Not added",
-      "src" : "1ec2a304445cc460"
     },
     "Not available right now. Try again in a little while." : {
       "back" : "Currently unavailable. Please try again later.",
@@ -16406,9 +17450,21 @@
       "back" : "On the vacant and destroyed register in DC - %@",
       "src" : "736f416c80dbd393"
     },
+    "On letterhead, with your salary" : {
+      "back" : "Attach your salary to the letterhead.",
+      "src" : "42dca406f61adce9"
+    },
     "On the App Store" : {
       "back" : "On the App Store",
       "src" : "264c719339ca501c"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach to any application." : {
+      "back" : "Each document has a PDF file that is sent to your own email, so it can be attached to any application.",
+      "src" : "d28d36b3f3d5001d"
+    },
+    "One PDF with every document, sent to your own email, so it's ready to attach when you apply on %@'s site." : {
+      "back" : "Each document has a PDF file that is sent to your own email, so it is ready to be attached when you apply on the %@ website.",
+      "src" : "c8805d814e519d60"
     },
     "Only if it fits (optional)" : {
       "back" : "Only when it is appropriate (optional)",
@@ -16433,6 +17489,10 @@
     "Open complaints" : {
       "back" : "Unresolved complaints",
       "src" : "d2447c64d6aee22b"
+    },
+    "Open details" : {
+      "back" : "Open the detailed information",
+      "src" : "322f024a300e165e"
     },
     "Open Find A Crib's Renewal coach to check the offer." : {
       "back" : "Open the renewal coach of Find A Crib to view the quotation.",
@@ -16462,13 +17522,17 @@
       "back" : "It will be open as soon as it is released. Click to enter the agent's website to apply.",
       "src" : "4ab6710450fa675f"
     },
+    "Opens the details" : {
+      "back" : "Open the detailed information",
+      "src" : "caf09d3a4bb2f2ed"
+    },
+    "Opens the photos full screen" : {
+      "back" : "Open the photo full screen",
+      "src" : "5d9bce9b49b5a4f1"
+    },
     "or continue with email" : {
       "back" : "Or continue using email.",
       "src" : "6e7cb08da2ed65cb"
-    },
-    "Other document" : {
-      "back" : "Other documents",
-      "src" : "1c326e0074f90430"
     },
     "Owner" : {
       "back" : "Everyone",
@@ -16517,6 +17581,10 @@
     "Paste the listing's text" : {
       "back" : "Paste the text of the list",
       "src" : "082910de870acee3"
+    },
+    "Pay stubs" : {
+      "back" : "Payroll slip",
+      "src" : "8b4c4501451e9876"
     },
     "Payment is charged to your Apple Account at confirmation. " : {
       "back" : "The payment will be deducted from your Apple account at the time of confirmation.",
@@ -16581,6 +17649,10 @@
     "Photo of the building" : {
       "back" : "Photos of the building",
       "src" : "608b67a850317346"
+    },
+    "Photos" : {
+      "back" : "Photos",
+      "src" : "d9c9ef65dbf37664"
     },
     "Pick at least one borough." : {
       "back" : "At least choose one district.",
@@ -16733,10 +17805,6 @@
     "Recent" : {
       "back" : "The latest",
       "src" : "7bf8b69ae2c50f86"
-    },
-    "Recent pay stubs" : {
-      "back" : "The latest pay slip",
-      "src" : "4cca3edb28943756"
     },
     "Recently viewed" : {
       "back" : "Recently viewed",
@@ -16986,6 +18054,10 @@
       "back" : "Storage changes",
       "src" : "eb9b0644d7fbe954"
     },
+    "Save PDF" : {
+      "back" : "Save PDF",
+      "src" : "7cda2613ace3577d"
+    },
     "Saved" : {
       "back" : "Saved",
       "src" : "9430f95cc652889d"
@@ -16997,6 +18069,14 @@
     "Saved searches" : {
       "back" : "Saved searches",
       "src" : "e4693c2256fe76b4"
+    },
+    "Saved to your Profile › My documents. They're there for the next apartment too, and you can delete them any time." : {
+      "back" : "Saved in your personal profile›My files. They are also available in the next apartment, and you can delete them at any time.",
+      "src" : "9cf9f0882ed0177e"
+    },
+    "Scan" : {
+      "back" : "Scan",
+      "src" : "351f3dc6cfae0fc4"
     },
     "Search" : {
       "back" : "Search",
@@ -17062,10 +18142,6 @@
       "back" : "See if cockroaches, mice or rats are models or single events.",
       "src" : "231659f1285ce099"
     },
-    "Send to the agent" : {
-      "back" : "Send to the agent",
-      "src" : "ce7dff4f029d0de3"
-    },
     "Send…" : {
       "back" : "Send...",
       "src" : "8a82a16a6b17adb9"
@@ -17098,9 +18174,17 @@
       "back" : "Share anonymous use",
       "src" : "65c250373fe45bf3"
     },
+    "Shooting" : {
+      "back" : "Launch",
+      "src" : "2686934d40fb68bb"
+    },
     "Shootings" : {
       "back" : "Shooting incident",
       "src" : "b001b4be27007fa3"
+    },
+    "Shootings, robberies and burglaries. Turn on crime alerts to choose." : {
+      "back" : "Gunshots, robberies and burglaries. Turn on the crime alert to make a choice.",
+      "src" : "f996a45cc3b94ec4"
     },
     "Show" : {
       "back" : "Performance",
@@ -17113,6 +18197,10 @@
     "Show all %lld calls" : {
       "back" : "Show all %lld calls",
       "src" : "2d57a5e7beb40114"
+    },
+    "Show all %lld reports" : {
+      "back" : "Show all %lld reports",
+      "src" : "d46c646f0bba12bf"
     },
     "Show fewer" : {
       "back" : "Show less",
@@ -17254,6 +18342,10 @@
       "back" : "Already logged in",
       "src" : "87d3e15c993a1b00"
     },
+    "Signed in as %@" : {
+      "back" : "Log in with the identity of %@",
+      "src" : "e8a78edc928aec38"
+    },
     "Since" : {
       "back" : "Because",
       "src" : "b07cec8dafdaa548"
@@ -17261,6 +18353,10 @@
     "Since –" : {
       "back" : "Since——",
       "src" : "be97f90995f198ed"
+    },
+    "SNAP, SSI, unemployment, support orders" : {
+      "back" : "SNAP, SSI, Unemployment, Support Orders",
+      "src" : "5609ce65bafe32e8"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges may be illegal.",
@@ -17353,6 +18449,10 @@
     "Studio" : {
       "back" : "Studio",
       "src" : "59d91c5703aa6d72"
+    },
+    "Studio–%lld bed" : {
+      "back" : "Single room - %lld bed",
+      "src" : "a30f8c5b8cfaf40d"
     },
     "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING" : {
       "back" : "Subsidized/coupon-friendly buildings",
@@ -17486,6 +18586,10 @@
       "back" : "The first %1$@ is free; unless you cancel at least 24 hours in advance, %2$@ will be charged to your Apple account at the expiration date.",
       "src" : "c65c3d2dfbc6dc7d"
     },
+    "The full return, all pages" : {
+      "back" : "Complete returns, all pages",
+      "src" : "26e1dbee82241fb9"
+    },
     "The icon on your Home Screen wears each holiday's colours, then goes back. iOS tells you each time it changes." : {
       "back" : "The icons on the main screen will wear the colors of each holiday, and then return. iOS will tell you every time you change it.",
       "src" : "0e9afbce184b781e"
@@ -17494,9 +18598,21 @@
       "back" : "Increase",
       "src" : "0987c272aed25458"
     },
+    "The kinds your alerts watch." : {
+      "back" : "The type of alert you are following.",
+      "src" : "4416d1b179243fe6"
+    },
+    "The last 2 months" : {
+      "back" : "The past 2 months",
+      "src" : "defd042bff2924e0"
+    },
     "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent." : {
       "back" : "The legal rent of the rental-controlled unit of the property recorded by DC DHCD is not the required rent.",
       "src" : "b90fadff97265d29"
+    },
+    "The listing" : {
+      "back" : "List",
+      "src" : "6a56f9721a0b46a1"
     },
     "The listing (optional)" : {
       "back" : "Listed on the stock exchange (optional)",
@@ -17518,6 +18634,10 @@
       "back" : "Quotation",
       "src" : "8d337cc473af04ec"
     },
+    "The reports, %@" : {
+      "back" : "Report, %@",
+      "src" : "5430de208416dfe3"
+    },
     "the SF Rent Board" : {
       "back" : "San Francisco Rent Board",
       "src" : "2e9133125d571a33"
@@ -17529,6 +18649,10 @@
     "Theft" : {
       "back" : "Theft",
       "src" : "a8239a929ea8f2f3"
+    },
+    "Their listings" : {
+      "back" : "Their list",
+      "src" : "ebc58768269eb9fe"
     },
     "Their yearly income, $ (if any)" : {
       "back" : "Their annual income, in dollars (if applicable)",
@@ -17726,6 +18850,10 @@
       "back" : "Up to %@/year",
       "src" : "5fa524297160b25f"
     },
+    "Up to %lld people" : {
+      "back" : "Up to %lld people",
+      "src" : "a100c07ea83a2509"
+    },
     "Up to %lld%% of area median income" : {
       "back" : "%lld%% of the median income in the high-income area",
       "src" : "05ff1a36bc32ea2f"
@@ -17733,6 +18861,10 @@
     "Upgrade to Plus for instant notifications and emails" : {
       "back" : "Upgrade to Plus to get instant notifications and emails.",
       "src" : "f71c1204783cd881"
+    },
+    "Upload" : {
+      "back" : "Upload",
+      "src" : "403fbea35c5a377a"
     },
     "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one." : {
       "back" : "Upload your lease and AI will flag New York legal restrictions or invalid terms and cite each one.",
@@ -17757,6 +18889,10 @@
     "Vandalism" : {
       "back" : "Intentional damage to public property",
       "src" : "cc39eef310431f1d"
+    },
+    "Vandalism report" : {
+      "back" : "Damage report",
+      "src" : "b3fbec91b302c482"
     },
     "View %lld more replies" : {
       "back" : "View more %lld replies",
@@ -17826,6 +18962,10 @@
       "back" : "Coupon",
       "src" : "e1320cd435b8fd3d"
     },
+    "W-2 for %@" : {
+      "back" : "%@'s W-2",
+      "src" : "285d501619114f81"
+    },
     "Waiting list opening soon" : {
       "back" : "The waiting list is about to open.",
       "src" : "26b279568863f626"
@@ -17846,9 +18986,17 @@
       "back" : "Weapons",
       "src" : "ce46fe2aa6485c6b"
     },
+    "Weapons offense" : {
+      "back" : "Weapon attack",
+      "src" : "51978ad97f51b0ee"
+    },
     "Westchester isn’t in the app yet — see the Yonkers & Westchester map on findacrib.com" : {
       "back" : "Westchester is not yet in the app - please check the map of Yorkers and Westchester on findacrib.com.",
       "src" : "829b6dee537c6fd0"
+    },
+    "What agents ask for on an income-restricted apartment. Scan with your camera or pick a photo or file." : {
+      "back" : "What does the agent ask for in a limited-income apartment? Scan with a camera or select photos or documents.",
+      "src" : "bc5fa8e9c9e03cf1"
     },
     "What are you looking for?" : {
       "back" : "What are you looking for?",
@@ -17865,10 +19013,6 @@
     "What the law requires" : {
       "back" : "What does the law require?",
       "src" : "900f5c61f40dbea6"
-    },
-    "What this listing asks for" : {
-      "back" : "What does this list require?",
-      "src" : "c4833fd5d7f6e01d"
     },
     "What to ask for, by when, and how to file with 311" : {
       "back" : "What to request, when to request, and how to submit documents to 311",
@@ -17913,6 +19057,10 @@
     "Which screens get used, so the app can be improved. Never what you type, never sold, no advertising." : {
       "back" : "Which screens are used so that the application can be improved. It will never show what you enter, never sell anything, and never advertise.",
       "src" : "505a48f4f34d2913"
+    },
+    "Who can apply" : {
+      "back" : "Who can apply?",
+      "src" : "7679fb020760b199"
     },
     "Who owns the building, and its head officer" : {
       "back" : "Who owns this building and its senior officials?",
@@ -17986,6 +19134,10 @@
       "back" : "You have Plus.",
       "src" : "a283e8aaee53f155"
     },
+    "You must earn" : {
+      "back" : "You must make money.",
+      "src" : "cd8777882ba22966"
+    },
     "You qualify" : {
       "back" : "You are qualified.",
       "src" : "cd1a7bb2948bf5f9"
@@ -18013,6 +19165,10 @@
     "You've used this month's AI — more on the 1st." : {
       "back" : "You have used this month's AI - for more information, please refer to No. 1.",
       "src" : "9fba06060dfa4ed5"
+    },
+    "Your 2 to 4 most recent" : {
+      "back" : "Your last 2 to 4",
+      "src" : "d8914eaf1d6038c2"
     },
     "your account email" : {
       "back" : "Your account email address",
@@ -18045,6 +19201,10 @@
     "Your details" : {
       "back" : "Your detailed information",
       "src" : "037a48651b2d0b9b"
+    },
+    "Your documents" : {
+      "back" : "Your file",
+      "src" : "42b1648a8600a273"
     },
     "Your email" : {
       "back" : "Your email address",
@@ -18094,9 +19254,13 @@
       "back" : "Your name",
       "src" : "8802356b71d20561"
     },
-    "Your name, contact, address, job and household — typed once, used in every email and form." : {
-      "back" : "Your name, contact information, address, work and family - enter once and use it in every email and form.",
-      "src" : "20ef83388557fbeb"
+    "Your name, contact, address, job and household — typed once, used in every form." : {
+      "back" : "Your name, contact information, address, work and family - enter once and use it in all forms.",
+      "src" : "c7e1b0f8f833a7bd"
+    },
+    "Your newest pay stub is over 60 days old. Most agents want the latest ones." : {
+      "back" : "Your latest pay slip has been more than 60 days overdue. Most agents want the latest pay slip.",
+      "src" : "d15ff30ccdce267d"
     },
     "your other building" : {
       "back" : "Your other building",
@@ -18129,6 +19293,10 @@
     "ZIP codes" : {
       "back" : "Postal code",
       "src" : "0037bac098a21f4e"
+    },
+    "Zoomed in" : {
+      "back" : "Magnify",
+      "src" : "2447655742b5bca6"
     }
   }
 }

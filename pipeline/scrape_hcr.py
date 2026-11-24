@@ -25,6 +25,15 @@ off the portal's home page on every run rather than hard-coded. The site
 does not send its GlobalSign intermediate, so hcr_chain.pem is added to the
 trust store; without it every request fails certificate verification.
 
+GlobalSign issues from a new intermediate every quarter, so each renewal of
+the portal's certificate used to stop this feed until someone replaced
+hcr_chain.pem by hand (2026-11-23: R3 "2025 Q4" -> R46 "2026 Q4", ten hours
+stale). heal_chain() now does that step itself: when verification fails it
+reads the "CA Issuers" address printed in the portal's certificate, downloads
+that intermediate, and keeps it only if it chains to a root this machine
+already trusts. Trust is never widened: a certificate the system roots do
+not vouch for is thrown away and the run fails as before.
+
 Output hcr.json:
   {"updated": epoch, "updated_iso": ..., "count": n,
    "listings": [{"id", "name", "kind": "Lottery|Waitlist|Mitchell-Lama Waitlist",
@@ -35,7 +44,7 @@ Output hcr.json:
 
 Usage:  python3 pipeline/scrape_hcr.py [--out hcr.json]
 """
-import json, re, ssl, sys, time, urllib.parse, urllib.request
+import json, os, re, ssl, subprocess, sys, tempfile, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
 from addr_match import build_index, normalize_addr
@@ -51,15 +60,112 @@ PAUSE = 1.0
 GEOSEARCH = "https://geosearch.planninglabs.nyc/v2/search"
 COUNTY_TO_BORO = {"New York": "M", "Bronx": "Bx", "Kings": "Bk", "Queens": "Q", "Richmond": "SI"}
 
+CHAIN = Path(__file__).resolve().parent / "hcr_chain.pem"       # tracked: intermediates checked in by hand
+CHAIN_AUTO = Path(__file__).resolve().parent / "hcr_chain.auto.pem"  # untracked: the one heal_chain() fetched
+# The only places an intermediate may be downloaded from. The address comes out
+# of a certificate nobody has verified yet, so it is never followed blindly.
+AIA_HOSTS = {"secure.globalsign.com"}
+AIA_MAX = 64 * 1024
+
 _ctx = ssl.create_default_context()
-try:
-    _ctx.load_verify_locations(cafile=str(Path(__file__).resolve().parent / "hcr_chain.pem"))
-except Exception as e:  # keep going; the default store may have it
-    print("warn: hcr_chain.pem not loaded:", e, file=sys.stderr)
+for _f in (CHAIN, CHAIN_AUTO):
+    try:
+        _ctx.load_verify_locations(cafile=str(_f))
+    except FileNotFoundError:
+        if _f is CHAIN:
+            print("warn: hcr_chain.pem is missing", file=sys.stderr)
+    except Exception as e:  # keep going; the default store may have it
+        print(f"warn: {_f.name} not loaded:", e, file=sys.stderr)
+_healed = False
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None
+
+
+def aia_url(leaf_pem):
+    """The "CA Issuers" address printed in a certificate, if we may fetch it."""
+    try:
+        text = subprocess.run(["openssl", "x509", "-noout", "-text"], input=leaf_pem,
+                              capture_output=True, text=True, timeout=20).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    m = re.search(r"CA Issuers - URI:(\S+)", text)
+    if not m:
+        return None
+    u = urllib.parse.urlsplit(m.group(1))
+    if u.scheme not in ("http", "https") or (u.hostname or "").lower() not in AIA_HOSTS or u.port:
+        return None
+    return m.group(1)
+
+
+def chains_to_a_trusted_root(pem):
+    """True only when the system's own roots vouch for this certificate."""
+    paths = ssl.get_default_verify_paths()
+    cmd = ["openssl", "verify"]
+    if paths.cafile and os.path.exists(paths.cafile):
+        cmd += ["-CAfile", paths.cafile]
+    if paths.capath and os.path.isdir(paths.capath):
+        cmd += ["-CApath", paths.capath]
+    with tempfile.NamedTemporaryFile("w", suffix=".pem") as f:
+        f.write(pem)
+        f.flush()
+        try:
+            return subprocess.run(cmd + [f.name], capture_output=True, timeout=20).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            return False
+
+
+def heal_chain():
+    """Fetch the intermediate the portal does not send. True when one was added.
+
+    Runs after a verification failure, at most once per run. The portal's own
+    certificate is read unverified, but only to find out which intermediate it
+    names; that intermediate must come from a known CA host and must chain to
+    a root already trusted here before it is used or saved.
+    """
+    global _healed
+    if _healed:
+        return False
+    _healed = True
+    try:
+        host = urllib.parse.urlsplit(SITE).hostname
+        url = aia_url(ssl.get_server_certificate((host, 443), timeout=20))
+        if not url:
+            print("warn: certificate chain broken and no usable CA Issuers address", file=sys.stderr)
+            return False
+        opener = urllib.request.build_opener(_NoRedirect)
+        with opener.open(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=20) as r:
+            raw = r.read(AIA_MAX + 1)
+        if len(raw) > AIA_MAX:
+            print("warn: intermediate from", url, "is too large", file=sys.stderr)
+            return False
+        pem = raw.decode("ascii") if raw.lstrip().startswith(b"-----BEGIN") else ssl.DER_cert_to_PEM_cert(raw)
+        if not chains_to_a_trusted_root(pem):
+            print("warn: intermediate from", url, "does not chain to a trusted root; not used", file=sys.stderr)
+            return False
+        _ctx.load_verify_locations(cadata=pem)
+    except Exception as e:
+        print("warn: could not repair the certificate chain:", e, file=sys.stderr)
+        return False
+    print("certificate chain repaired with", url)
+    try:
+        CHAIN_AUTO.write_text(pem)
+    except OSError as e:  # the next run fetches it again; nothing is lost
+        print("warn: could not save", CHAIN_AUTO.name, e, file=sys.stderr)
+    return True
 
 
 def get(url, data=None, headers=None, timeout=40):
     req = urllib.request.Request(url, data=data, headers={"User-Agent": UA, **(headers or {})})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_ctx) as r:
+            return r.read().decode("utf-8", "replace")
+    except urllib.error.URLError as e:
+        broken_chain = isinstance(e.reason, ssl.SSLCertVerificationError) and url.startswith(SITE + "/")
+        if not (broken_chain and heal_chain()):
+            raise
     with urllib.request.urlopen(req, timeout=timeout, context=_ctx) as r:
         return r.read().decode("utf-8", "replace")
 

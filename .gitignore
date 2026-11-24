@@ -124,3 +124,6 @@ data/boundaries/
 comp_sent.json
 comp_recipients*.txt
 .venv/
+
+# intermediate fetched by scrape_hcr.heal_chain() (droplet-side)
+hcr_chain.auto.pem

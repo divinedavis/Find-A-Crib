@@ -68,6 +68,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # growth/ lives at the repo root
 from growth.emailkit import mask_email   # addresses never reach the cron log in full
 import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
+import bed_sizes  # which sizes a listing states / a subscriber asked for (2026-11-24)
 import alert_photos  # the building photo in a one-listing email (2026-11-18)
 import webpush  # the browser side (Web Push, 2026-11-10); no-op until webpush.env names the key
 
@@ -185,7 +186,8 @@ def hc_items(d):
                     "hood": l.get("neighborhood"), "image_src": l.get("image") or None,
                     "rent_low": l.get("rent_low"),
                     "income_min": l.get("income_min"), "income_max": l.get("income_max"),
-                    "household_min": l.get("household_min"), "household_max": l.get("household_max")})
+                    "household_min": l.get("household_min"), "household_max": l.get("household_max"),
+                    "bed_sizes": bed_sizes.sizes_of(l.get("beds"))})
     return out
 
 
@@ -244,6 +246,13 @@ def board_fragment(url, label):
     return url + "#:~:text=" + _up.quote(m.group(1), safe="")
 
 
+def bed_label(sizes):
+    """[0] -> "Studio"; [1, 2] -> "1-bed / 2-bed" — how Housing Connect rows read."""
+    if not sizes:
+        return None
+    return " / ".join("Studio" if n == 0 else "4+ bed" if n == bed_sizes.TOP else f"{n}-bed" for n in sizes)
+
+
 def rerental_items(d):
     out = []
     feed = (d or {}).get("items") or []
@@ -257,7 +266,7 @@ def rerental_items(d):
         rent = money(e["rent_low"]) + "/mo" if e.get("rent_low") else None
         bits = [b for b in (
             " · ".join(x for x in (e.get("hood"), e.get("boro")) if x),
-            rent, f"listed by {e['agent']}") if b]
+            rent, bed_label(bed_sizes.sizes_of(e.get("beds"))), f"listed by {e['agent']}") if b]
         out.append({"id": f"rr:{e['agent']}|{e['key']}", "kind": "rerental",
                     "boro": boro_code(e.get("boro")), "label": "re-rental",
                     "text": e.get("label") or e["key"],
@@ -268,7 +277,9 @@ def rerental_items(d):
                     "posted": e.get("posted") if valid_date(e.get("posted")) else None,
                     "board_change": bool(e.get("board_change")),
                     "hood": e.get("hood"), "agent": e.get("agent"),
-                    "price": money(e["rent_low"]) if e.get("rent_low") else None, "beds": None,
+                    "price": money(e["rent_low"]) if e.get("rent_low") else None,
+                    "beds": bed_label(bed_sizes.sizes_of(e.get("beds"))),
+                    "bed_sizes": bed_sizes.sizes_of(e.get("beds")),
                     "url": (board_fragment(e["url"], e.get("label") or e["key"]) if shared.get(e.get("url"), 0) > 1
                             else e.get("url")) or f"{SITE}/marketing-agents/",
                     "rent_low": e.get("rent_low"),
@@ -379,6 +390,12 @@ def enrich_rerentals(items, units_by_href):
         t = units_by_href.get(i.get("url") or "")
         if not t:
             continue
+        # The flyer's own unit table also says which sizes there are; it only
+        # fills a gap, never overrides what the board itself printed.
+        table_sizes = bed_sizes.sizes_of([u.get("beds") for u in t.get("units") or []])
+        if table_sizes and not i.get("bed_sizes"):
+            i["bed_sizes"] = table_sizes
+            i["beds"] = i.get("beds") or bed_label(table_sizes)
         rows = [u for u in t.get("units") or [] if u.get("income_min") or u.get("income_max")]
         if rows:
             i["units"] = rows
@@ -527,6 +544,8 @@ def filter_words(sub):
         bits.append(f"rent up to {money(sub['max_rent'])}/mo")
     if sub.get("income"):
         bits.append(f"household income {money(sub['income'])}/yr")
+    if bed_sizes.wanted(sub.get("beds")):
+        bits.append(bed_sizes.words(sub["beds"]))
     return (", " + ", ".join(bits)) if bits else ""
 
 
@@ -1092,6 +1111,14 @@ def with_households(subs, key):
         seniors = set()
     for s_ in subs:
         s_["seniors"] = s_.get("email") in seniors
+    # Bedroom sizes they asked for (db/0079). On failure nobody has a size
+    # filter: an alert for the wrong size beats a missed home.
+    try:
+        beds = {r["email"]: r["beds"] for r in rpc("lottery_alerts_beds_all", {}, key) or []}
+    except Exception:
+        beds = {}
+    for s_ in subs:
+        s_["beds"] = sorted(bed_sizes.wanted(beds.get(s_.get("email"))))
     return subs
 
 
@@ -1161,6 +1188,11 @@ def wants(sub, item):
     # dropping the first-come units for exactly the people who set a cap.
     cap = sub.get("max_rent")
     if cap and item.get("rent_low") and item["rent_low"] > cap:
+        return False
+    # Bedroom sizes (2026-11-24, db/0079): someone who asked for 1-bedrooms is
+    # not sent a studio. Same rule as the rest: only a size the source stated
+    # can rule a listing out.
+    if not bed_sizes.fits(sub.get("beds"), item.get("bed_sizes")):
         return False
     hh = sub.get("household_size")
     if hh and ((item.get("household_min") and hh < item["household_min"])

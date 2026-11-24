@@ -37,6 +37,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import bed_sizes
+
 # The same identifying UA as featured_rerentals: a public agency reading its
 # logs should be able to tell what this is and who to mail in one search.
 UA = ("Mozilla/5.0 (compatible; FindACribBot/1.0; +https://findacrib.com/marketing-agents/) "
@@ -504,7 +506,10 @@ def daily_items(records):
         out.append({"key": key, "label": label[:80], "url": r["href"],
                     "geo": geo, "boro": r.get("borough"),
                     "rent_low": r["money_low"] if r.get("money_kind") == "rent" else None,
-                    "income_max": r.get("income_1p_max")})
+                    "income_max": r.get("income_1p_max"),
+                    # Every size the source names (0 = studio … 4 = four or
+                    # more), for the alerts' Beds filter; None when it names none.
+                    "beds": bed_sizes.sizes_in(r.get("_card") or []) or bed_sizes.sizes_of(r.get("beds"))})
     return out
 
 

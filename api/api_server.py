@@ -495,6 +495,44 @@ ALERT_KINDS = ("lottery", "rerental", "voucher")
 TOKEN_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
+def _alert_beds(raw):
+    """The Beds choice as sorted sizes 0 (studio) … 4 (four or more), [] for
+    "any size", or None when it is not a list of those. Someone who picked a
+    size expects it to hold, so rubbish is refused, not read as "any"."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list) or len(raw) > 5:
+        return None
+    if any(isinstance(b, bool) or not isinstance(b, int) or not 0 <= b <= 4 for b in raw):
+        return None
+    return sorted(set(raw))
+
+
+@app.route("/alerts/beds", methods=["POST"])
+def alerts_beds():
+    """Set only the bedroom sizes on the signed-in caller's own alerts
+    (2026-11-24): the app's Beds row saves here the moment it changes, so the
+    alerts and the list on the phone can never disagree again. Keyed on the
+    verified session email — there is no email parameter."""
+    if rate_limited("alerts_beds_ip", 120, 3600):
+        return _too_many()
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    email = _session_email()
+    if not email:
+        return jsonify(error="sign_in_required"), 401
+    if rate_limited("alerts_beds:" + hashlib.sha256(email.encode()).hexdigest()[:16], 60, 3600):
+        return _too_many()
+    beds = _alert_beds((request.get_json(silent=True) or {}).get("beds"))
+    if beds is None:
+        return jsonify(error="bad_beds"), 400
+    try:
+        rpc("lottery_alerts_set_beds", {"p_email": email, "p_beds": beds})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True, beds=beds)
+
+
 @app.route("/alerts/subscribe", methods=["POST"])
 def alerts_subscribe():
     if rate_limited("alerts_sub", 6, 3600):           # a few sign-ups per hour per IP
@@ -530,6 +568,9 @@ def alerts_subscribe():
     income, e2 = _num("income", 1000, 2000000, "bad_income")
     if e1 or e2:
         return jsonify(error=e1 or e2), 400
+    beds = _alert_beds(body.get("beds")) if "beds" in body else []
+    if beds is None:
+        return jsonify(error="bad_beds"), 400
     try:
         res = rpc("lottery_alerts_subscribe",
                   {"p_email": email, "p_boroughs": boros, "p_kinds": kinds,
@@ -547,6 +588,10 @@ def alerts_subscribe():
         sen = (request.get_json(silent=True) or {}).get("seniors")
         if res.get("ok") and isinstance(sen, bool):
             rpc("lottery_alerts_set_seniors", {"p_email": email, "p_seniors": sen})
+        # Bedroom sizes (2026-11-24, db/0079). Only a client that sends the
+        # field changes it; an empty list means "any size" again.
+        if res.get("ok") and "beds" in body:
+            rpc("lottery_alerts_set_beds", {"p_email": email, "p_beds": beds})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     if not res.get("ok"):
@@ -1138,6 +1183,12 @@ def alerts_prefs():
         res["seniors"] = bool(rpc("lottery_alerts_senior", {"p_email": email}))
     except Exception:
         res["seniors"] = False
+    # Bedroom sizes (db/0079): [] = any size. The key is left out when the
+    # read fails, so the app never mistakes "could not tell" for "none set".
+    try:
+        res["beds"] = _alert_beds(rpc("lottery_alerts_beds", {"p_email": email})) or []
+    except Exception:
+        pass
     return jsonify(res)
 
 

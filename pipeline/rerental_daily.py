@@ -35,6 +35,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import bed_sizes
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(HERE) == "pipeline":  # in the repo, data and growth/ live one level up; flat copies keep them beside the script
     HERE = os.path.dirname(HERE)
@@ -551,22 +553,9 @@ NEW_FEED = os.path.join(HERE, "rerental_new.json")
 NEW_FEED_DAYS = 45
 
 
-def featured_money():
-    """(agent, key) -> rent / income figures from the last featured pass.
-
-    The digest pass keeps only a key per listing; the money lives in
-    featured.json, which the once-a-day photo pass writes. It is a day stale
-    for an intraday sweep, so this only helps a listing that was already on
-    the board this morning — that is the best-effort the rent filter on the
-    alerts can offer for re-rentals, and it is stated as such on /alerts/.
-    """
+def figures_of(feats):
+    """(agent, key) -> the rent, income and bedroom sizes a set of tiles states."""
     out = {}
-    for base in (os.environ.get("GROWTH_DOCROOT") or "", HERE):
-        try:
-            feats = json.load(open(os.path.join(base, "featured.json"))).get("listings") or []
-            break
-        except (FileNotFoundError, ValueError, OSError):
-            feats = []
     for f in feats:
         k = key_of(f.get("address") or "")
         if not k or not f.get("agent"):
@@ -576,12 +565,71 @@ def featured_money():
             rec["rent_low"] = f["money_low"]
         if f.get("income_1p_max"):
             rec["income_max"] = f["income_1p_max"]
+        # Every size the card names when we still have its text (a sweep made
+        # just now); the tile's single printed size otherwise.
+        sizes = bed_sizes.sizes_in(f.get("_card") or []) or bed_sizes.sizes_of(f.get("beds"))
+        if sizes:
+            rec["beds"] = sizes
         out.setdefault((f["agent"], k), rec)
     return out
 
 
-def record_new(deltas, results, today):
+def featured_money():
+    """(agent, key) -> rent / income figures from the last featured pass.
+
+    The digest pass keeps only a key per listing; the money lives in
+    featured.json, which the once-a-day photo pass writes. It is a day stale
+    for an intraday sweep, so this only helps a listing that was already on
+    the board this morning. A listing that is new right now gets its figures
+    from fresh_figures() instead.
+    """
+    for base in (os.environ.get("GROWTH_DOCROOT") or "", HERE):
+        try:
+            feats = json.load(open(os.path.join(base, "featured.json"))).get("listings") or []
+            break
+        except (FileNotFoundError, ValueError, OSError):
+            feats = []
+    return figures_of(feats)
+
+
+# Boards re-read for a new listing's figures in one sweep. A board-change
+# sweep can turn up a dozen agents at once; the alert must not wait on all of
+# them, and the ones past the cap simply go out without figures, as before.
+FRESH_MAX = 6
+
+
+def fresh_figures(names, pages=None, sweep=None):
+    """(agent, key) -> figures read off the agents' boards right now.
+
+    2026-11-24: a studio was sent to someone who had asked for 1-bedrooms.
+    The sweep that found it keeps only an address per listing, and
+    featured.json had never seen it, so the alert knew neither its size nor
+    its rent and no filter could apply. For the agents that just posted
+    something, read their cards once more with the same parser that builds
+    the tiles. Any failure here means "no figures", never "no alert".
+    """
+    names = sorted(names)[:FRESH_MAX]
+    if not names:
+        return {}
+    try:
+        if pages is None:
+            pages = json.load(open(RERENTALS))["pages"]
+        chosen = {n: pages[n] for n in names if n in pages}
+        if sweep is None:
+            import featured_rerentals as fr
+            sweep = lambda pg: (fr.feed_sweep(pg)[0] + (fr.sweep(pg)[0] if any(not m.get("feed") for m in pg.values()) else []))
+        return figures_of(sweep(chosen)) if chosen else {}
+    except Exception as e:
+        print(f"  fresh figures unavailable ({type(e).__name__}: {str(e)[:80]})")
+        return {}
+
+
+def record_new(deltas, results, today, fresh=None):
     """Append this sweep's new listings to rerental_new.json.
+
+    `fresh` (main() passes fresh_figures) re-reads the boards of agents whose
+    new listings have no bedroom size yet, so the alert's filters have
+    something to go on. Left out, nothing extra is fetched.
 
     lottery_alerts.py reads that file every 10 minutes and mails whoever is
     subscribed to the borough, so the sweep itself never has to know about
@@ -602,13 +650,20 @@ def record_new(deltas, results, today):
     have = {(i.get("agent"), i.get("key")) for i in items}
     places = load_places()
     money = featured_money()
+    # Agents with a listing nobody has figures for yet: read their boards now.
+    lacking = {name for name, d in deltas.items() for it in d.get("new") or []
+               if (name, it["key"]) not in have
+               and not ((money.get((name, it["key"])) or {}).get("beds") or it.get("beds"))}
+    fresh = fresh(lacking) if (fresh and lacking) else {}
     added = 0
     for name, d in deltas.items():
         for it in d.get("new") or []:
             if (name, it["key"]) in have:
                 continue
             pl = place_of(it.get("geo") or it["label"], places) or {}
-            fm = money.get((name, it["key"])) or {}
+            fm = dict(money.get((name, it["key"])) or {})
+            fm.update(fresh.get((name, it["key"])) or {})   # read just now beats this morning's
+            sizes = bed_sizes.sizes_of(it.get("beds")) or fm.get("beds")
             # A feed item (rerental_feeds) brings its own borough and rent from
             # the source; those beat both the geocoder and yesterday's tiles.
             items.append({"agent": name, "key": it["key"], "label": it["label"],
@@ -617,6 +672,9 @@ def record_new(deltas, results, today):
                           "hood": pl.get("hood"),
                           "rent_low": it.get("rent_low") or fm.get("rent_low"),
                           "income_max": it.get("income_max") or fm.get("income_max"),
+                          # Sizes the listing states, 0 = studio … 4 = four or
+                          # more; absent when it states none (bed_sizes).
+                          **({"beds": sizes} if sizes else {}),
                           # When the agent posted it (WordPress boards), and
                           # whether it arrived in a batch-guard sweep: the
                           # alert says "new" only when it really is.
@@ -833,7 +891,7 @@ def main():
     json.dump({"last": snap, "date": today}, open(HISTORY, "w"), indent=1)
 
     if had_history:
-        record_new(deltas, results, today)
+        record_new(deltas, results, today, fresh=fresh_figures)
 
     if args.update_site:
         update_site(results, today, args.out)

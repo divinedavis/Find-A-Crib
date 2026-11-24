@@ -510,12 +510,15 @@ struct LotteriesView: View {
 /// Bedrooms wanted in the Lotteries tab, kept across launches ("0,1" =
 /// studio or 1-bed; empty = any size). Lives in the Filter sheet since
 /// 2026-10-17 (owner: off the tab, into "Edit boroughs", renamed Filter).
+/// A subscriber's alerts follow the same choice since 2026-11-24 (AlertBeds):
+/// it is saved to their subscription the moment it changes.
 struct LotteryBedsPicker: View {
-    @AppStorage("lotteries.beds") private var bedsRaw = ""
+    @AppStorage(AlertBeds.key) private var bedsRaw = ""
     private var binding: Binding<Set<Int>> {
-        Binding(get: { Set(bedsRaw.split(separator: ",").compactMap { Int($0) }) }, set: { new in
-            bedsRaw = new.sorted().map(String.init).joined(separator: ",")
+        Binding(get: { Set(AlertBeds.parse(bedsRaw)) }, set: { new in
+            bedsRaw = AlertBeds.raw(Array(new))
             Analytics.shared.track("lotteries_beds", ["beds": bedsRaw.isEmpty ? "any" : bedsRaw])
+            LotteryFeed.shared.bedsChanged(AlertBeds.parse(bedsRaw))
         })
     }
     var body: some View {
@@ -525,7 +528,7 @@ struct LotteryBedsPicker: View {
             // otherwise stretch it to fill the sheet.
             SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: binding)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Lotteries and re-rentals with any of these sizes. Leave all off for every size.")
+            Text("Lotteries and re-rentals with any of these sizes, in the list and in your alerts. Leave all off for every size.")
                 .font(.se(14)).foregroundStyle(SE.ink3)
         }
     }

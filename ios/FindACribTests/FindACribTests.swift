@@ -1229,6 +1229,33 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertNil(LotteryFeed.bedCount("Loft"))
     }
 
+    /// 2026-11-24: "1" was picked under Beds and a studio alert still came.
+    /// The choice now travels to the subscription; this is the rule for which
+    /// side moves when the phone and the subscription disagree.
+    func testBedsChoiceAndAlertsAgree() {
+        XCTAssertEqual(AlertBeds.parse("1"), [1])
+        XCTAssertEqual(AlertBeds.parse("4,0,0,9,x"), [0, 4], "sorted, deduped, only the five sizes")
+        XCTAssertEqual(AlertBeds.parse(""), [])
+        XCTAssertEqual(AlertBeds.raw([2, 0]), "0,2")
+        // picked before alerts honoured it: the phone's choice goes up
+        XCTAssertEqual(AlertBeds.reconcile(server: [], local: [1], subscribed: true), .push([1]))
+        // a second phone or a reinstall: show what the alerts are filtered by
+        XCTAssertEqual(AlertBeds.reconcile(server: [1], local: [], subscribed: true), .adopt([1]))
+        XCTAssertEqual(AlertBeds.reconcile(server: [0, 1], local: [2], subscribed: true), .adopt([0, 1]))
+        XCTAssertEqual(AlertBeds.reconcile(server: [1], local: [1], subscribed: true), .none)
+        XCTAssertEqual(AlertBeds.reconcile(server: [], local: [], subscribed: true), .none)
+        // the server could not say, or there are no alerts: nothing moves
+        XCTAssertEqual(AlertBeds.reconcile(server: nil, local: [1], subscribed: true), .none)
+        XCTAssertEqual(AlertBeds.reconcile(server: [2], local: [1], subscribed: false), .none)
+        let d = UserDefaults(suiteName: "alert-beds-test")!
+        d.removePersistentDomain(forName: "alert-beds-test")
+        XCTAssertEqual(AlertBeds.stored(d), [])
+        AlertBeds.store([3, 1], d)
+        XCTAssertEqual(d.string(forKey: AlertBeds.key), "1,3", "the same format the Beds row has always written")
+        XCTAssertEqual(AlertBeds.stored(d), [1, 3])
+        d.removePersistentDomain(forName: "alert-beds-test")
+    }
+
     func testIncomeFitIsInclusiveAndNeedsBothNumbers() {
         XCTAssertTrue(LotteryFeed.incomeFits(70_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))
         XCTAssertFalse(LotteryFeed.incomeFits(80_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))

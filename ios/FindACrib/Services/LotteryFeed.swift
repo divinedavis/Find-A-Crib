@@ -129,6 +129,12 @@ final class LotteryFeed {
                 income = j["income"] as? Int
                 checked = true; statusUnknown = false
                 Self.remember(uid: uid, subscribed: subscribed, boroughs: boroughs)
+                // The Beds choice and the alerts must agree (2026-11-24).
+                switch AlertBeds.reconcile(server: j["beds"] as? [Int], local: AlertBeds.stored(), subscribed: subscribed) {
+                case .adopt(let b): AlertBeds.store(b)
+                case .push(let b): Task { _ = await AlertBeds.save(b, token: token) }
+                case .none: break
+                }
             } else if !checked {
                 // A failed read: the last answer this phone had for this
                 // account, else no alerts box at all — never a spinner.
@@ -176,6 +182,13 @@ final class LotteryFeed {
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
         return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    }
+
+    /// The Beds row changed: a subscriber's alerts follow it at once. Someone
+    /// without alerts only filters their own list, so nothing is sent.
+    func bedsChanged(_ beds: [Int]) {
+        guard !demo, subscribed, let token = auth?.session?.accessToken else { return }
+        Task { _ = await AlertBeds.save(beds, token: token) }
     }
 
     /// In-app "Turn off alerts" for the signed-in account (2026-10-12).
@@ -275,5 +288,50 @@ final class LotteryFeed {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
         guard let c = closes, let a = f.date(from: today), let b = f.date(from: c) else { return nil }
         return Int((b.timeIntervalSince(a) / 86_400).rounded())
+    }
+}
+
+/// The Beds choice, shared by the Lotteries list and the alerts.
+///
+/// 2026-11-24: the owner had "1" picked and was alerted about a studio. The
+/// choice only filtered the list on this phone; the subscription never heard
+/// about it. Now the subscription stores it (db/0079) and the sender skips a
+/// listing whose stated sizes include none of them. Sizes are 0 (studio) … 4
+/// (four or more); empty means any size.
+enum AlertBeds {
+    static let key = "lotteries.beds"
+
+    nonisolated static func clean(_ beds: [Int]) -> [Int] { Array(Set(beds.filter { (0...4).contains($0) })).sorted() }
+    nonisolated static func parse(_ raw: String) -> [Int] { clean(raw.split(separator: ",").compactMap { Int($0) }) }
+    nonisolated static func raw(_ beds: [Int]) -> String { clean(beds).map(String.init).joined(separator: ",") }
+    nonisolated static func stored(_ d: UserDefaults = .standard) -> [Int] { parse(d.string(forKey: key) ?? "") }
+    nonisolated static func store(_ beds: [Int], _ d: UserDefaults = .standard) { d.set(raw(beds), forKey: key) }
+
+    enum Sync: Equatable { case none, adopt([Int]), push([Int]) }
+
+    /// What to do once the server has said what the subscription holds.
+    /// `server` is nil when it could not say (an older API, a failed read):
+    /// then nothing moves. A subscription with no sizes yet takes the
+    /// phone's — that is everyone who picked sizes before alerts honoured
+    /// them. Otherwise the subscription wins, so a second phone or a
+    /// reinstall shows what the alerts are really filtered by.
+    nonisolated static func reconcile(server: [Int]?, local: [Int], subscribed: Bool) -> Sync {
+        guard subscribed, let server else { return .none }
+        let s = clean(server), l = clean(local)
+        if s == l { return .none }
+        return s.isEmpty ? .push(l) : .adopt(s)
+    }
+
+    /// Save the sizes on the signed-in account's own alerts. The API takes
+    /// the address from the verified session; only the sizes are sent.
+    @MainActor static func save(_ beds: [Int], token: String) async -> Bool {
+        var req = URLRequest(url: URL(string: "https://findacrib.com/api/alerts/beds")!, timeoutInterval: 15)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["beds": clean(beds)])
+        let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
+        Analytics.shared.track("alerts_beds_saved", ["status": code, "beds": beds.isEmpty ? "any" : raw(beds)])
+        return code == 200
     }
 }

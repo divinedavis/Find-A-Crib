@@ -196,5 +196,36 @@ class Api(unittest.TestCase):
         self.assertIn("beds <@ array[0, 1, 2, 3, 4]::smallint[]", sql)
 
 
+class App(unittest.TestCase):
+    """The iPhone app sends the choice; the logic itself is unit-tested in
+    LotteryFeedTests.testBedsChoiceAndAlertsAgree."""
+    CAPTION = ("Lotteries and re-rentals with any of these sizes, in the list and in your alerts. "
+               "Leave all off for every size.")
+
+    def test_the_beds_row_saves_to_the_subscription_when_it_changes(self):
+        view = read("ios", "FindACrib", "Features", "Lotteries", "LotteriesView.swift")
+        picker = view[view.index("struct LotteryBedsPicker"):view.index("struct LotteryBedsSheet")]
+        self.assertIn("LotteryFeed.shared.bedsChanged(", picker)
+        self.assertIn("@AppStorage(AlertBeds.key)", picker)
+        self.assertIn(self.CAPTION, picker)
+        feed = read("ios", "FindACrib", "Services", "LotteryFeed.swift")
+        self.assertIn('static let key = "lotteries.beds"', feed)      # the key the row has always used
+        self.assertIn("https://findacrib.com/api/alerts/beds", feed)
+        self.assertIn('AlertBeds.reconcile(server: j["beds"] as? [Int]', feed)
+        changed = feed[feed.index("func bedsChanged"):]
+        self.assertIn("subscribed", changed[:changed.index("}")])     # no alerts: nothing is sent
+
+    def test_saving_alerts_carries_the_choice(self):
+        sheet = read("ios", "FindACrib", "Features", "Results", "AlertsSheet.swift")
+        self.assertIn('payload["beds"] = AlertBeds.stored()', sheet)
+
+    def test_the_caption_is_translated(self):
+        cat = json.loads(read("ios", "Shared", "Localizable.xcstrings"))["strings"]
+        self.assertNotIn("Lotteries and re-rentals with any of these sizes. Leave all off for every size.", cat)
+        for lang in ("es", "ko", "zh-Hans", "zh-Hant"):
+            unit = cat[self.CAPTION]["localizations"][lang]["stringUnit"]
+            self.assertTrue(unit["value"] and unit["state"] == "translated", lang)
+
+
 if __name__ == "__main__":
     unittest.main()

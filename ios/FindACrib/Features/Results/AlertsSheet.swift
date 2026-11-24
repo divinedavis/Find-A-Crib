@@ -183,6 +183,10 @@ struct AlertsSheet: View {
         if let r = j["max_rent"] as? Int { maxRent = String(r) }
         if let i = j["income"] as? Int { income = String(i) }
         if let h = j["household_size"] as? Int { household = h }
+        // Sizes already on the subscription show in the Beds row.
+        if case .adopt(let b) = AlertBeds.reconcile(server: j["beds"] as? [Int], local: AlertBeds.stored(), subscribed: true) {
+            AlertBeds.store(b)
+        }
         editing = true
     }
 
@@ -286,6 +290,8 @@ struct AlertsSheet: View {
             if let rent { payload["max_rent"] = rent }
             if let inc { payload["income"] = inc }
             if household > 0 { payload["household_size"] = household }
+            // The Beds choice rides along (2026-11-24): alerts follow it too.
+            payload["beds"] = AlertBeds.stored()
             req.httpBody = try JSONSerialization.data(withJSONObject: payload)
             let (data, resp) = try await URLSession.shared.data(for: req)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0

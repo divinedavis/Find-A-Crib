@@ -18138,30 +18138,30 @@
         }
       }
     },
-    "Lotteries and re-rentals with any of these sizes. Leave all off for every size." : {
+    "Lotteries and re-rentals with any of these sizes, in the list and in your alerts. Leave all off for every size." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sorteos y re-alquileres con cualquiera de estos tamaños. Déjalos todos sin marcar para ver todos."
+            "value" : "Sorteos y re-alquileres con cualquiera de estos tamaños, en la lista y en tus alertas. Déjalos todos sin marcar para ver todos."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 크기 중 하나라도 있는 추첨과 재임대. 모두 끄면 모든 크기를 봅니다."
+            "value" : "이 크기 중 하나라도 있는 추첨과 재임대를 목록과 알림에 표시합니다. 모두 끄면 모든 크기를 봅니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "含以上任一户型的抽签和转租房源。全部不选则显示所有户型。"
+            "value" : "列表和提醒中只显示含以上任一户型的抽签和转租房源。全部不选则显示所有户型。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "含以上任一戶型的抽籤和轉租房源。全部不選則顯示所有戶型。"
+            "value" : "列表和提醒中只顯示含以上任一戶型的抽籤和轉租房源。全部不選則顯示所有戶型。"
           }
         }
       }

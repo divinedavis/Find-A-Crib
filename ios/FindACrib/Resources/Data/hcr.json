@@ -1,6 +1,6 @@
 {
-"updated": 1795421103,
-"updated_iso": "2026-11-23T08:05:03+00:00",
+"updated": 1795683903,
+"updated_iso": "2026-11-26T09:05:03+00:00",
 "count": 55,
 "listings": [
 {
@@ -930,8 +930,8 @@
 "street": "Metropolitan Realty Group 60 Cuttermill Road Great Neck, NY 11021",
 "zip": null,
 "bbl": null,
-"lat": 40.55423,
-"lng": -74.16658
+"lat": 40.554453,
+"lng": -74.163
 }
 ]
 },
@@ -1573,8 +1573,8 @@
 "street": "2001 Marcus Ave Lake Success, NY 11042",
 "zip": null,
 "bbl": null,
-"lat": 40.699526,
-"lng": -73.941072
+"lat": 40.697362,
+"lng": -73.94184
 }
 ]
 },

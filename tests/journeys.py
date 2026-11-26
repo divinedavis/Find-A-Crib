@@ -532,9 +532,21 @@ class Runner:
         # download the whole 1.1 MB file TWICE (2026-09-15).
         boot = page.evaluate(r"()=>{const e=performance.getEntriesByType('resource').filter(r=>/buildings\.(slim|min)\.json/.test(r.name));"
                              r"const l=performance.getEntriesByType('resource').filter(r=>/leaflet\.js/.test(r.name))[0];"
-                             "return {n:e.length, start:e.length?Math.round(e[0].startTime):null, leaflet:l?Math.round(l.startTime):null}}")
+                             r"const m=performance.getEntriesByType('resource').filter(r=>/platform\/monitor\.js/.test(r.name))[0];"
+                             "return {n:e.length, start:e.length?Math.round(e[0].startTime):null, leaflet:l?Math.round(l.startTime):null,"
+                             " monitor:m?Math.round(m.responseEnd):null}}")
         self.ok(boot['n'] == 1, f'the boot payload should be fetched once, not {boot["n"]} times: {boot}', j)
-        self.ok(boot['start'] is not None and boot['leaflet'] is not None and boot['start'] <= boot['leaflet'] + 50,
+        # "With the head" is as early as the head allows: monitor.js sits above
+        # the fetch and blocks the parser, so the fetch cannot go out before
+        # that file has landed, while the browser's look-ahead asks for
+        # leaflet.js at once. On a fast line the two are together; on a slow
+        # one (2026-11-25, a tethered Mac: fetch at 296 ms, leaflet at 216)
+        # the gap is one round trip and the old leaflet-only limit failed on
+        # code that had passed for weeks. A fetch made from the boot script in
+        # the body would come after leaflet.js and five more scripts had
+        # loaded and run, far past either mark.
+        limit = max(boot['leaflet'] or 0, boot['monitor'] or 0) + 50
+        self.ok(boot['start'] is not None and boot['leaflet'] is not None and boot['start'] <= limit,
                 f'the boot payload should start with the head, not after the scripts: {boot}', j)
         j.notes.append(f'{n} pills, data at {boot["start"]}ms')
         if device == 'desktop':

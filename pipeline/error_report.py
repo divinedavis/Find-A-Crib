@@ -360,6 +360,38 @@ def _shrunk_away(labels, sw):
     return bool(widths) and widths[0] < TAB_GRID_SHRINK * sw
 
 
+# A background tab that heard another tab's sign-in. Supabase tells every open
+# tab about a sign-in or a saved profile, and each tab answers with an "auth
+# ..." step and the adoptHome it runs. A page in front of its visitor ticks
+# once a second, so auth steps that land many seconds after the last tick, with
+# no tick between them, came from a tab whose timers were stopped: it was in
+# the background, and a browser dropping a background tab is not a death anyone
+# saw. 2026-11-25 digest: an Android tab stopped ticking, then logged
+# SIGNED_IN 14.6 s later (0.1 s before the visitor's second page booted) and
+# USER_UPDATED twice more over the next 27 s, never ticking again, while the
+# visitor used that second page for three minutes. Only auth steps may follow
+# the last tick: a page that hung and then did real work still reports.
+FROZEN_TAB_MS = 5000
+_AUTH_ECHO = re.compile(r"auth [A-Z_]+$|adoptHome$")
+
+
+def _frozen_auth_echo(steps):
+    """True when nothing but auth steps follows the trace's last tick and the
+    final one landed more than FROZEN_TAB_MS after that tick."""
+    label = lambda s: s[1] if isinstance(s, list) and len(s) > 1 else ""
+    ticks = [i for i, s in enumerate(steps) if label(s) == "tick"]
+    if not ticks or ticks[-1] == len(steps) - 1:
+        return False
+    tail = steps[ticks[-1] + 1:]
+    if not all(_AUTH_ECHO.match(label(s)) for s in tail):
+        return False
+    try:
+        gap = (int(tail[-1][0]) - int(steps[ticks[-1]][0])) % 10_000_000   # steps wrap every 1e7 ms
+    except (TypeError, ValueError, IndexError):
+        return False
+    return gap > FROZEN_TAB_MS
+
+
 def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_lookups=SHADOW_LOOKUPS):
     """Traces that look like the page died mid-work (see the module docstring).
     `found`, a list, also collects each counted (row, last step): the owner
@@ -418,6 +450,9 @@ def crashes(rows, key=None, kept_going=visitor_kept_going, found=None, max_looku
         # since 9/20 had this shape. The page has to end on resize steps with
         # no work after the shrink, so a crash during it still reports.
         if _shrunk_away(labels, p.get("sw")):
+            continue
+        # Its timers had stopped and only another tab's sign-in reached it.
+        if _frozen_auth_echo(steps):
             continue
         # A lone "boot" died before its first step, so it says nothing about
         # what to fix; it is nearly always a tap away in the first second

@@ -92,18 +92,26 @@
    (ad22 + 2 videos on 10/20, the keyboard opening; ad26-ad34 in the 10/14-17
    census) while the page itself was still building its list and map. On a
    phone the tag now waits until the page has been open 8 s AND the visitor
-   has paused 1.5 s, never while the keyboard is up (a text field focused),
-   and goes by 30 s at the latest (still not mid-typing). Desktop and iPad
+   has paused (see below), never while the keyboard is up (a text field
+   focused), and goes by 45 s at the latest (still not mid-typing). Desktop and iPad
    load it at once, as before. window.__mvLoaded says when and why.
    A pause also means the PAGE has been quiet 3 s (2026-11-20): an iPhone
    died 0.9 s after "ads:load idle". The visitor had searched a zip, the tag
    went in 1.2 s after the keyboard closed, and they opened the list half a
    second later, so the ad stack booted on top of the list sheet sliding in.
    The crash trace's steps (window.__facBusyAt, set by tr) are the page's
-   work: a search, a list build, a resize, the sheet. */
+   work: a search, a list build, a resize, the sheet.
+   A pause is now a real stop (2026-11-25): hands off the screen 3 s and the
+   page quiet 5 s. An iPhone died 2.3 s after "ads:load idle": the visitor
+   was pinch-zooming the map, stopped for 3.2 s to look, the tag went in, and
+   they zoomed again 1.7 s later with the ad stack booting on top of it. Our
+   own code was idle (no list rebuild since 11/22), so the only thing left to
+   move is when the tag goes in. Half a minute in, the old shorter pause is
+   enough (why "late"); the tag used to go in at 30 s whatever the visitor
+   was doing, which is the same collision, so that hard limit is now 45 s. */
 (function () {
   try { if (localStorage.getItem('fac.noads') === '1') return; } catch (e) {}
-  var MIN_MS = 8000, IDLE_MS = 1500, QUIET_MS = 3000, MAX_MS = 30000;
+  var MIN_MS = 8000, IDLE_MS = 3000, QUIET_MS = 5000, LATE_MS = 30000, LATE_IDLE_MS = 1500, LATE_QUIET_MS = 3000, MAX_MS = 45000;
   function load(why) {
     if (window.__mvLoaded) return;
     window.__mvLoaded = { why: why, at: Date.now() - start };
@@ -124,8 +132,10 @@
   (function check() {
     var now = Date.now();
     if (document.visibilityState === 'visible' && !typing()) {
+      var hands = now - last, page = now - (window.__facBusyAt || 0);
       if (now - start >= MAX_MS) return load('max');
-      if (now - start >= MIN_MS && now - last >= IDLE_MS && now - (window.__facBusyAt || 0) >= QUIET_MS) return load('idle');
+      if (now - start >= LATE_MS && hands >= LATE_IDLE_MS && page >= LATE_QUIET_MS) return load('late');
+      if (now - start >= MIN_MS && hands >= IDLE_MS && page >= QUIET_MS) return load('idle');
     }
     setTimeout(check, 500);
   })();

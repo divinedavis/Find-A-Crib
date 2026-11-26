@@ -2130,8 +2130,9 @@ class Runner:
 
     def j_ads_later_on_phones(self, page, j, device):
         """Phones load Mediavine late (owner, 2026-10-20): not in the first
-        8 s, never while the keyboard is up, then once the visitor pauses.
-        Desktop and iPad load it at once."""
+        8 s, never while the keyboard is up, then once the visitor has really
+        stopped (hands off 3 s, page quiet 5 s). Desktop and iPad load it at
+        once."""
         if device == 'ipad':
             return
         seen = []
@@ -2155,7 +2156,12 @@ class Runner:
         for _ in range(8):
             page.evaluate("window.facTrace('test:work')"); time.sleep(0.5)
         self.ok(not seen, 'a phone loaded Mediavine while the page was still working', j)
-        self.wait_until(page, "(window.__mvLoaded || {}).why === 'idle'", 8000)
+        # A look at the map is not a stop (2026-11-25: an iPhone died 2.3 s
+        # after the tag went in on a 3.2 s pause between two pinch-zooms). The
+        # page has to be quiet 5 s, so 3.2 s after its last step is too soon.
+        time.sleep(2.7)
+        self.ok(not seen, 'a phone loaded Mediavine after only a three-second pause', j)
+        self.wait_until(page, "(window.__mvLoaded || {}).why === 'idle'", 12000)
         why = page.evaluate("(window.__mvLoaded || {}).why")
         self.ok(why == 'idle' and seen, f'once the visitor and the page paused, the phone should load Mediavine, got {why!r}', j)
         traced = page.evaluate("(JSON.parse(localStorage.getItem(window.facTraceKey) || '{}').s || []).some(x => String(x[1]).startsWith('ads:load'))")

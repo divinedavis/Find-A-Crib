@@ -198,3 +198,54 @@ def test_shadow_page_ending_on_a_waiting_feeds_redraw_is_dropped():
     # list when the boot feeds land; the same shadow now ends on grid:later.
     steps = SHADOW + ["win-resize 430x699", "grid:feeds", "grid 12", "grid:later"]
     assert not er.crashes([trace("v1", steps)], key="k", kept_going=lambda *a: False)
+
+
+def timed(vid, steps, booted="2026-11-25T02:16:10.103Z"):
+    """A trace whose steps carry their own clock, as [ms, label] pairs."""
+    return {"event": "crash_trace", "visitor_id": vid, "created_at": "2026-11-25T03:43:41+00:00",
+            "props": {"booted": booted, "ua": "Android", "steps": [list(s) for s in steps]}}
+
+
+# 2026-11-25 digest: an Android tab stopped ticking, then heard a sign-in and
+# two profile saves from the visitor's other tab, and never ticked again.
+ECHO = [(1000, "tick"), (2000, "tick"), (3000, "tick"), (17616, "auth SIGNED_IN"), (17617, "adoptHome"),
+        (40415, "auth USER_UPDATED"), (40416, "adoptHome"), (44935, "auth USER_UPDATED"), (44936, "adoptHome")]
+
+
+def test_a_background_tab_that_only_heard_another_tabs_sign_in_is_not_a_death():
+    assert not er.crashes([timed("v1", ECHO)], key="k", kept_going=lambda *a: False)
+
+
+def test_one_late_auth_echo_is_enough():
+    assert not er.crashes([timed("v1", ECHO[:5])], key="k", kept_going=lambda *a: False)
+
+
+def test_the_echo_rule_survives_the_step_clock_wrapping():
+    wrapped = [(9998000, "tick"), (9999000, "tick"), (4000, "auth SIGNED_IN"), (4001, "adoptHome")]
+    assert not er.crashes([timed("v1", wrapped)], key="k", kept_going=lambda *a: False)
+
+
+def test_a_sign_in_on_a_ticking_page_still_reports():
+    """The same last steps on a page whose timer was running: it was in front
+    of its visitor, so dying there is a death."""
+    live = [(1000, "tick"), (2000, "tick"), (2400, "auth SIGNED_IN"), (2401, "adoptHome")]
+    out = er.crashes([timed("v1", live)], key="k", kept_going=lambda *a: False)
+    assert out["adoptHome"]["n"] == 1
+
+
+def test_real_work_after_the_ticks_stopped_still_reports():
+    """A page that hung for seconds and then built its list was working, not
+    asleep in the background; only auth steps are an echo."""
+    hung = [(1000, "tick"), (2000, "tick"), (9000, "auth SIGNED_IN"), (9001, "adoptHome"),
+            (9100, "grid:build 200"), (9200, "grid:done")]
+    out = er.crashes([timed("v1", hung)], key="k", kept_going=lambda *a: False)
+    assert out["grid:done"]["n"] == 1
+    hung2 = [(1000, "tick"), (2000, "tick"), (9100, "grid:build 200"), (9200, "auth SIGNED_IN"), (9201, "adoptHome")]
+    out = er.crashes([timed("v2", hung2)], key="k", kept_going=lambda *a: False)
+    assert out["adoptHome"]["n"] == 1
+
+
+def test_a_trace_with_broken_step_times_is_kept():
+    odd = [["x", "tick"], [None, "auth SIGNED_IN"], [None, "adoptHome"]]
+    out = er.crashes([timed("v1", odd)], key="k", kept_going=lambda *a: False)
+    assert out["adoptHome"]["n"] == 1

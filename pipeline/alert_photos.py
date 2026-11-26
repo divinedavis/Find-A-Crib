@@ -39,19 +39,55 @@ STOCK = re.compile(r"(^|[/_.-])(og-?default|default|logo|placeholder|no-?image|a
                    r"([/_.-]|$)", re.I)
 
 
+_NAT64 = ipaddress.ip_network("64:ff9b::/96")
+
+
 def _public_host(host):
     """Only public addresses: listing links come from scraped boards, and a
     link to a private address must not make this box fetch inside its own
-    network."""
+    network.
+
+    An address written as numbers is judged as written. A network that only
+    speaks IPv6 hands back a made-up IPv6 form of an IPv4 address (NAT64), and
+    that form looks public: on such a network "10.0.0.5" resolved to
+    2607:7700:0:28:0:2:a00:5 and passed (2026-11-25). For a name, the plain
+    IPv4 answers are checked as well as whatever the resolver prefers, so a
+    name pointing at a private IPv4 address cannot hide behind the same
+    translation."""
+    host = (host or "").strip("[]")
     try:
-        infos = socket.getaddrinfo(host, None)
-    except (socket.gaierror, UnicodeError, OSError):
-        return False
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0].split("%")[0])
-        if not ip.is_global:
-            return False
-    return bool(infos)
+        return _global(ipaddress.ip_address(host.split("%")[0]))
+    except ValueError:
+        pass
+    seen = []
+    for family in (0, socket.AF_INET):
+        try:
+            infos = socket.getaddrinfo(host, None, family)
+        except (socket.gaierror, UnicodeError, OSError):
+            if family == 0:
+                return False
+            continue                       # a name with no IPv4 address at all
+        for info in infos:
+            try:
+                ip = ipaddress.ip_address(info[4][0].split("%")[0])
+            except ValueError:
+                return False
+            if not _global(ip):
+                return False
+            seen.append(ip)
+    return bool(seen)
+
+
+def _global(ip):
+    """A public address, looking inside the IPv6 forms that carry an IPv4 one
+    (::ffff:a.b.c.d and the standard NAT64 prefix 64:ff9b::/96)."""
+    if ip.version == 6:
+        inner = ip.ipv4_mapped
+        if inner is None and ip in _NAT64:
+            inner = ipaddress.ip_address(int(ip) & 0xFFFFFFFF)
+        if inner is not None:
+            return inner.is_global
+    return ip.is_global
 
 
 def _ok_url(u):

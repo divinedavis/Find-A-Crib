@@ -63,6 +63,60 @@ def test_private_addresses_are_never_fetched():
         assert ap._get(u, 100, "*/*") == (None, None)
 
 
+def _resolver(answers):
+    """A stand-in for socket.getaddrinfo: {(host, family): [address, ...]}."""
+    import socket
+
+    def fake(host, port, family=0, *a, **k):
+        if (host, family) not in answers:
+            raise socket.gaierror("no such name")
+        return [(family, 1, 6, "", (ip, 0)) for ip in answers[(host, family)]]
+    return fake
+
+
+def test_a_numeric_address_is_judged_as_written_whatever_the_network_says():
+    """On an IPv6-only network the resolver turned 10.0.0.5 into
+    2607:7700:0:28:0:2:a00:5, which looks public, and the check passed it
+    (2026-11-25). A numeric host must never reach the resolver."""
+    import socket
+    real, asked = socket.getaddrinfo, []
+    socket.getaddrinfo = lambda *a, **k: asked.append(a) or [(30, 1, 6, "", ("2607:7700:0:28:0:2:a00:5", 0, 0, 0))]
+    try:
+        for host in ("10.0.0.5", "192.168.1.1", "127.0.0.1", "169.254.169.254", "::1", "[::1]", "fe80::1%en0",
+                     "::ffff:10.0.0.5", "64:ff9b::a00:5", "64:ff9b::7f00:1"):
+            assert not ap._public_host(host), host
+        for host in ("8.8.8.8", "2606:4700:4700::1111", "64:ff9b::808:808"):
+            assert ap._public_host(host), host
+        assert not asked
+    finally:
+        socket.getaddrinfo = real
+
+
+def test_a_name_pointing_at_a_private_address_cannot_hide_behind_ipv6_translation():
+    import socket
+    real = socket.getaddrinfo
+    try:
+        # The resolver prefers a translated, public-looking IPv6 form; the
+        # plain IPv4 answer is the private address it stands for.
+        socket.getaddrinfo = _resolver({("inside.example", 0): ["2607:7700:0:28:0:2:a00:5"],
+                                        ("inside.example", socket.AF_INET): ["10.0.0.5"]})
+        assert not ap._public_host("inside.example")
+        socket.getaddrinfo = _resolver({("mixed.example", 0): ["93.184.216.34", "10.0.0.5"],
+                                        ("mixed.example", socket.AF_INET): ["93.184.216.34", "10.0.0.5"]})
+        assert not ap._public_host("mixed.example")
+        socket.getaddrinfo = _resolver({("ok.example", 0): ["93.184.216.34"],
+                                        ("ok.example", socket.AF_INET): ["93.184.216.34"]})
+        assert ap._public_host("ok.example")
+        # IPv6 only: no IPv4 answer is not a reason to refuse it.
+        socket.getaddrinfo = _resolver({("six.example", 0): ["2606:4700:4700::1111"]})
+        assert ap._public_host("six.example")
+        socket.getaddrinfo = _resolver({})
+        assert not ap._public_host("nowhere.example")
+        assert not ap._public_host("")
+    finally:
+        socket.getaddrinfo = real
+
+
 def test_jpeg_is_shrunk_and_tiny_images_refused():
     from PIL import Image
     import io
